@@ -1,10 +1,54 @@
-# grc overides for ls
-#   Made possible through contributions from generous benefactors like
-#   `brew install coreutils`
-if $(gls &>/dev/null)
-then
-  alias ls="gls -F --color"
-  alias l="gls -lAh --color"
-  alias ll="gls -l --color"
-  alias la='gls -A --color'
+# Modern CLI replacements
+
+# eza - modern ls replacement
+if command -v eza > /dev/null; then
+  alias ls='eza --icons --group-directories-first'
+  alias ll='eza --icons --group-directories-first -la'
+  alias l='eza --icons --group-directories-first -l'
+  alias la='eza --icons --group-directories-first -a'
+  alias tree='eza --tree --icons'
 fi
+
+# bat - better cat with syntax highlighting
+if command -v bat > /dev/null; then
+  alias cat='bat --style=plain'
+  alias catn='bat --style=numbers'
+  export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+fi
+
+# ripgrep - ultra-fast grep
+if command -v rg > /dev/null; then
+  alias grep='rg'
+fi
+
+# fd - simple, fast find
+if command -v fd > /dev/null; then
+  alias find='fd'
+fi
+
+# Other useful aliases
+alias reload!='. ~/.zshrc'
+alias cls='clear'
+alias path='echo -e ${PATH//:/\\n}'
+alias now='date +"%Y-%m-%d %H:%M:%S"'
+
+# Quick directory navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+
+# Git shortcuts (keeping your existing ones)
+alias g='git'
+alias ga='git add'
+alias gc='git commit'
+alias gco='git checkout'
+alias gd='git diff'
+alias gl='git log --oneline --graph --decorate'
+alias gp='git push'
+alias gs='git status -sb'
+
+# Safety nets
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
