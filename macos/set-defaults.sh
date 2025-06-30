@@ -61,14 +61,18 @@ defaults write com.apple.finder QuitMenuItem -bool true
 defaults write com.apple.dock wvous-bl-corner -int 5
 defaults write com.apple.dock wvous-bl-modifier -int 0
 
-# Hide Safari's bookmark bar.
-defaults write com.apple.Safari ShowFavoritesBar -bool false
+# Safari preferences are now sandboxed and require different handling
+# These commands may fail on newer macOS versions due to security restrictions
+# If you need to set Safari preferences, do it manually through Safari's preferences
 
-# Set up Safari for development.
-defaults write com.apple.Safari IncludeInternalDebugMenu -bool true
-defaults write com.apple.Safari IncludeDevelopMenu -bool true
-defaults write com.apple.Safari WebKitDeveloperExtrasEnabledPreferenceKey -bool true
-defaults write com.apple.Safari "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled" -bool true
+# The following Safari defaults are commented out as they cause permission errors:
+# defaults write com.apple.Safari ShowFavoritesBar -bool false
+# defaults write com.apple.Safari IncludeInternalDebugMenu -bool true
+# defaults write com.apple.Safari IncludeDevelopMenu -bool true
+# defaults write com.apple.Safari WebKitDeveloperExtrasEnabledPreferenceKey -bool true
+# defaults write com.apple.Safari "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled" -bool true
+
+# This global preference still works and enables developer extras in web views
 defaults write NSGlobalDomain WebKitDeveloperExtras -bool true
 
 # Show the main window when launching Activity Monitor
