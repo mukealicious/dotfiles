@@ -1,6 +1,3 @@
-# Taps
-tap "homebrew/services"
-
 # Modern Shell Tools
 brew "starship"                  # Fast, customizable prompt
 brew "zsh-syntax-highlighting"   # Fish-like syntax highlighting
@@ -12,7 +9,7 @@ brew "bat"                       # Better cat with syntax highlighting
 brew "ripgrep"                   # Ultra-fast grep alternative
 brew "fd"                        # Simple, fast find alternative
 
-# Core Development Tools (already installed)
+# Core Development Tools
 brew "gh"                        # GitHub CLI
 brew "git"
 brew "git-lfs"
@@ -41,4 +38,5 @@ brew "imagemagick"
 brew "uv"                        # Fast Python package manager
 
 # Casks
+cask "wezterm"                   # GPU-accelerated terminal emulator
 cask "deskpad"
