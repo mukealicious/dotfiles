@@ -5,17 +5,19 @@ Personal macOS development environment configuration based on [Holman's dotfiles
 ## Quick Setup (New Machine)
 
 ```sh
-git clone https://github.com/mukealicious/dotfiles.git ~/.dotfiles
+git clone https://github.com/mikeywills/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 script/bootstrap  # Sets up symlinks and git config
 script/install    # Runs all installers (Homebrew, etc.)
+bin/dot           # Install packages from Brewfile and set macOS defaults
 ```
 
 ## What's Included
 
-- **Shell**: ZSH with custom prompt and completions
-- **Package Managers**: Homebrew, Bun, Yarn
+- **Shell**: ZSH with Starship prompt, syntax highlighting, and autosuggestions
+- **Package Managers**: Homebrew (with Brewfile), Bun, Yarn
 - **Version Managers**: pyenv (Python), asdf (Node.js)
+- **Modern CLI Tools**: fzf, zoxide, eza, bat, ripgrep, fd
 - **Database**: PostgreSQL 11
 - **Editor**: VS Code (default), Vim config
 - **Git**: Custom aliases and commands
@@ -39,14 +41,29 @@ Topic-centric organization - each directory represents a specific area (git, zsh
 ### Key Commands
 
 ```sh
-dot            # Update macOS defaults, Homebrew, and run installers
-dot -e         # Open dotfiles in your default editor
+bin/dot        # Update macOS defaults, Homebrew, and run installers
+bin/dot -e     # Open dotfiles in VS Code
+brew bundle    # Install/update packages from Brewfile
 ```
 
 ### Secrets Management
 
 - Private environment variables go in `~/.localrc` (not tracked)
 - Git user config goes in `~/.gitconfig.local` (not tracked)
+
+## Modern Shell Features
+
+### Key Bindings
+- **Ctrl+R**: Fuzzy search command history (fzf)
+- **Ctrl+T**: Fuzzy find files (fzf)
+- **Alt+C**: Fuzzy find directories (fzf)
+- **Ctrl+Space**: Accept autosuggestion
+
+### Smart Commands
+- `z <partial-path>`: Jump to directory (zoxide)
+- `ls`: Modern listing with icons (eza)
+- `cat`: Syntax highlighted viewing (bat)
+- `grep`: Ultra-fast search (ripgrep)
 
 ## Adding New Topics
 
@@ -69,17 +86,17 @@ brew list
 brew list --cask
 ```
 
-## Current Tools & Versions
-
-- **Homebrew packages**: Run `brew list` to see all
-- **Python**: Managed by pyenv
-- **Node.js**: Managed by asdf
-- **PostgreSQL**: Version 11 (path: `/opt/homebrew/opt/postgresql@11/bin`)
-
 ## AI Integration
 
 - **CLAUDE.md**: Provides context for Claude Code when working in this repository
 - **GitHub Actions**: Claude PR assistant (triggered by @claude mentions)
+
+## Performance
+
+Shell startup time optimized with:
+- Lazy loading for pyenv/python commands
+- Fast Starship prompt (10-50ms vs 100ms+ custom prompt)
+- Minimal plugin loading
 
 ## Credits
 
