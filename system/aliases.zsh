@@ -38,15 +38,6 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../../..'
 
-# Git shortcuts (keeping your existing ones)
-alias g='git'
-alias ga='git add'
-alias gc='git commit'
-alias gco='git checkout'
-alias gd='git diff'
-alias gl='git log --oneline --graph --decorate'
-alias gp='git push'
-alias gs='git status -sb'
 
 # Safety nets
 alias rm='rm -i'
