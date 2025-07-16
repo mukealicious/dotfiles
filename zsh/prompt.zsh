@@ -1,3 +1,13 @@
+# Replaced by Starship prompt - see starship/starship.toml.symlink
+# To revert to custom prompt, comment out the eval line below
+
+# Only initialize Starship if not already done (performance optimization)
+if [[ -z "$STARSHIP_SHELL" ]]; then
+  eval "$(starship init zsh)"
+fi
+
+return
+
 autoload colors && colors
 # cheers, @ehrenmurdick
 # http://github.com/ehrenmurdick/config/blob/master/zsh/prompt.zsh

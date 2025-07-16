@@ -1,0 +1,72 @@
+# Uchu theme - Modern OKLCH color palette for internet lovers
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Use Starship's default format but with Uchu colors
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_status\
+$c\
+$golang\
+$java\
+$nodejs\
+$php\
+$python\
+$ruby\
+$rust\
+$terraform\
+$docker_context\
+$package\
+$fill\
+$battery\
+$time\
+$line_break\
+$character"""
+
+[directory]
+style = "bold blue"
+truncation_length = 3
+truncate_to_repo = true
+
+[character]
+success_symbol = "[❯](bold blue)"
+error_symbol = "[❯](bold red)"
+
+[git_branch]
+style = "purple"
+
+[git_status]
+style = "yellow"
+
+[nodejs]
+style = "green"
+
+[python]
+style = "blue"
+
+[ruby]
+style = "red"
+
+[rust]
+style = "red"
+
+[golang]
+style = "cyan"
+
+[package]
+style = "208"
+
+[battery]
+full_symbol = "🔋"
+charging_symbol = "⚡️"
+discharging_symbol = "💀"
+
+[[battery.display]]
+threshold = 20
+style = "bold red"
+
+[cmd_duration]
+min_time = 500
+style = "yellow"
