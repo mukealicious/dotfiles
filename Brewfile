@@ -33,6 +33,7 @@ brew "jq"                        # JSON processor
 brew "httpie"                    # Modern curl alternative
 brew "gnupg"
 brew "imagemagick"
+brew "promptfoo"                 # LLM prompt testing and evaluation
 
 # Fast Python tools
 brew "uv"                        # Fast Python package manager
