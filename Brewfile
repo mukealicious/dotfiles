@@ -21,8 +21,10 @@ brew "tlrc"                      # Simplified man pages (tldr client in Rust)
 brew "pyenv"
 brew "pyenv-virtualenv"
 brew "asdf"
+brew "node"
 brew "bun"
 brew "yarn"  # Install globally via Homebrew (faster than asdf)
+brew "pnpm"  # Fast Node.js package manager
 
 # Databases & Services
 brew "postgresql@17"
@@ -34,6 +36,11 @@ brew "httpie"                    # Modern curl alternative
 brew "gnupg"
 brew "imagemagick"
 brew "promptfoo"                 # LLM prompt testing and evaluation
+
+# Image Optimization
+brew "oxipng"                    # Fast PNG optimizer in Rust
+brew "pngquant"                  # PNG lossy compression
+brew "svgo"                      # SVG optimizer
 
 # Fast Python tools
 brew "uv"                        # Fast Python package manager
