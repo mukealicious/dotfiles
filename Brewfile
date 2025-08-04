@@ -48,3 +48,4 @@ brew "uv"                        # Fast Python package manager
 # Casks
 cask "wezterm"                   # GPU-accelerated terminal emulator
 cask "deskpad"
+cask "docker-desktop"            # Docker Desktop with CLI tools
