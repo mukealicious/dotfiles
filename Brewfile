@@ -49,3 +49,4 @@ brew "uv"                        # Fast Python package manager
 cask "wezterm"                   # GPU-accelerated terminal emulator
 cask "deskpad"
 cask "docker-desktop"            # Docker Desktop with CLI tools
+cask "gcloud-cli"                # Google Cloud CLI
