@@ -11,6 +11,7 @@ brew "fd"                        # Simple, fast find alternative
 
 # Core Development Tools
 brew "gh"                        # GitHub CLI
+brew "vercel-cli"                # Vercel CLI for deployment and development
 brew "git"
 brew "git-lfs"
 brew "coreutils"
