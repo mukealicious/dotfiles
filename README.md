@@ -18,6 +18,7 @@ bin/dot           # Install packages from Brewfile and set macOS defaults
 - **Package Managers**: Homebrew (with Brewfile), Bun, Yarn
 - **Version Managers**: pyenv (Python), asdf (Node.js)
 - **Modern CLI Tools**: fzf, zoxide, eza, bat, ripgrep, fd
+- **Cloud Storage**: Backblaze B2 CLI with aliases
 - **Database**: PostgreSQL 11
 - **Editor**: VS Code (default), Vim config
 - **Git**: Custom aliases and commands

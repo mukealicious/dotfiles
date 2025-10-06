@@ -77,6 +77,7 @@ bin/dot -e
 ### Current Stack
 - Shell: ZSH with custom configuration
 - Package Managers: Homebrew, Yarn, Bun
-- Version Managers: pyenv (Python)
-- Database: PostgreSQL 11
+- Version Managers: pyenv (Python), asdf (Node.js)
+- Cloud Storage: Backblaze B2 CLI
+- Database: PostgreSQL 17
 - Editor: Vim configuration included

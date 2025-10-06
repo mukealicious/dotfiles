@@ -47,6 +47,9 @@ brew "svgo"                      # SVG optimizer
 # Fast Python tools
 brew "uv"                        # Fast Python package manager
 
+# Cloud Storage Tools
+brew "b2-tools"                  # Backblaze B2 command-line tool
+
 # Casks
 cask "wezterm"                   # GPU-accelerated terminal emulator
 cask "deskpad"
