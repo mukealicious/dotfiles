@@ -17,7 +17,8 @@ brew "git-lfs"
 brew "coreutils"
 brew "wget"
 brew "tlrc"                      # Simplified man pages (tldr client in Rust)
-brew "codex"
+brew "codex"                     # OpenAI's coding agent
+brew "opencode"                  # AI coding agent for terminal
 
 # Languages & Version Management
 brew "pyenv"
