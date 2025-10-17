@@ -78,6 +78,12 @@ bin/dot -e
 - Shell: ZSH with custom configuration
 - Package Managers: Homebrew, Yarn, Bun
 - Version Managers: pyenv (Python), asdf (Node.js)
+- AI Tools: Claude Code, Codex, OpenCode, Gemini CLI
+- Window Management: AeroSpace (i3-like tiling), Ice (menu bar manager)
 - Cloud Storage: Backblaze B2 CLI
 - Database: PostgreSQL 17
 - Editor: Vim configuration included
+
+### Recent Additions
+- **gemini/**: Google Gemini CLI with shell completions
+- **aerospace/**: AeroSpace tiling window manager with `aerospace.toml.symlink` → `~/.aerospace.toml`

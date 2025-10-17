@@ -19,6 +19,7 @@ brew "wget"
 brew "tlrc"                      # Simplified man pages (tldr client in Rust)
 brew "codex"                     # OpenAI's coding agent
 brew "opencode"                  # AI coding agent for terminal
+brew "gemini-cli"                # Google Gemini AI CLI
 
 # Languages & Version Management
 brew "pyenv"
@@ -56,3 +57,5 @@ cask "wezterm"                   # GPU-accelerated terminal emulator
 cask "deskpad"
 cask "docker-desktop"            # Docker Desktop with CLI tools
 cask "gcloud-cli"                # Google Cloud CLI
+cask "jordanbaird-ice"           # Menu bar manager for macOS
+cask "nikitabobko/tap/aerospace" # i3-like tiling window manager for macOS
