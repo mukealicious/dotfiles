@@ -1,0 +1,76 @@
+#!/bin/sh
+#
+# claude-debug
+#
+# Debug what instructions Claude Code is actually using in the current context
+# This asks Claude directly rather than making assumptions
+
+set -e
+
+echo "## Claude Code Context Debug"
+echo ""
+echo "Asking Claude what instruction files it's currently using..."
+echo "---"
+echo ""
+
+# Create a specific query that will make Claude reveal its context
+QUERY="Please list all CLAUDE.md or instruction files you are currently reading or have access to in this session. For each file:
+1. Show the full path
+2. Indicate if it's global, project-specific, or directory-specific
+3. Show the first few lines to confirm the content
+Be specific about what you're actually using, not what might exist on the filesystem."
+
+# Run the query with Claude in print mode
+echo "$QUERY" | claude --print 2>/dev/null || {
+    echo "Error: Failed to query Claude. Make sure Claude CLI is installed and working."
+    exit 1
+}
+
+echo ""
+echo "---"
+echo ""
+
+# Also check what files exist in the filesystem for comparison
+echo "## Filesystem Check (for comparison)"
+echo ""
+echo "### Files that exist (may or may not be loaded by Claude):"
+echo ""
+
+# Check for global CLAUDE.md
+if [ -f "$HOME/CLAUDE.md" ] || [ -L "$HOME/CLAUDE.md" ]; then
+    echo "✓ ~/CLAUDE.md"
+    if [ -L "$HOME/CLAUDE.md" ]; then
+        echo "  └─ Symlink to: $(readlink "$HOME/CLAUDE.md")"
+    fi
+fi
+
+# Check for AGENTS.md (in case Claude reads it)
+if [ -f "$HOME/AGENTS.md" ] || [ -L "$HOME/AGENTS.md" ]; then
+    echo "✓ ~/AGENTS.md"
+    if [ -L "$HOME/AGENTS.md" ]; then
+        echo "  └─ Symlink to: $(readlink "$HOME/AGENTS.md")"
+    fi
+fi
+
+# Check current directory and parents for CLAUDE.md
+echo ""
+echo "### Searching upward from: $(pwd)"
+dir="$(pwd)"
+while [ "$dir" != "/" ] && [ "$dir" != "$HOME" ]; do
+    if [ -f "$dir/CLAUDE.md" ]; then
+        echo "✓ $dir/CLAUDE.md"
+        if [ -L "$dir/CLAUDE.md" ]; then
+            echo "  └─ Symlink to: $(readlink "$dir/CLAUDE.md")"
+        fi
+    fi
+    dir="$(dirname "$dir")"
+done
+
+echo ""
+echo "### Claude CLI Info:"
+echo "Version: $(claude --version 2>/dev/null || echo 'Not available')"
+echo "Location: $(which claude 2>/dev/null || echo 'Not found')"
+
+echo ""
+echo "---"
+echo "*Use 'claude --debug' for more verbose output during sessions*"

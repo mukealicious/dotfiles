@@ -35,6 +35,7 @@ brew "postgresql@17"
 brew "redis"
 
 # Utilities
+brew "tree"                      # Display directory tree structure
 brew "jq"                        # JSON processor
 brew "httpie"                    # Modern curl alternative
 brew "gnupg"
