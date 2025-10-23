@@ -2,6 +2,12 @@
 
 This file provides comprehensive instructions for AI agents (Claude, Codex, OpenCode, Gemini) working on this system. It documents available tools, configurations, and workflows.
 
+## Communication Guidelines
+
+In all interactions, plans and commit messages, be extremely concise and sacrifice grammar for the sake of concision.
+
+When creating plans, list any unresolved questions at the end, if any.
+
 ## System Overview
 
 - **Operating System**: macOS (Darwin)
