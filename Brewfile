@@ -55,6 +55,7 @@ brew "b2-tools"                  # Backblaze B2 command-line tool
 
 # Casks
 cask "wezterm"                   # GPU-accelerated terminal emulator
+cask "1password-cli"             # 1Password CLI for secrets management
 cask "deskpad"
 cask "docker-desktop"            # Docker Desktop with CLI tools
 cask "gcloud-cli"                # Google Cloud CLI

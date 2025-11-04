@@ -95,5 +95,6 @@ bin/dot -e
 ### Recent Additions
 - **claude/**: Claude Code skills system with `install.sh` that symlinks skills to `~/.claude/skills/`
   - **favicon-generator**: Generates complete favicon sets (PNG, ICO, Apple Touch, Android Chrome) from a single source PNG using ImageMagick and oxipng
+- **1password-cli**: 1Password CLI (`op`) for secrets management
 - **gemini/**: Google Gemini CLI with shell completions
 - **aerospace/**: AeroSpace tiling window manager with `aerospace.toml.symlink` → `~/.aerospace.toml`
