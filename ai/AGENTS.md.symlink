@@ -35,6 +35,7 @@ When creating plans, list any unresolved questions at the end, if any.
 ### Development Tools
 - **git** - Version control with custom commands (see below)
 - **gh** - GitHub CLI for PRs, issues, releases
+- **op** - 1Password CLI for secrets management
 - **docker** - Containerization (Docker Desktop installed)
 - **jq** - JSON processor for parsing/manipulating JSON
 - **httpie** - Modern curl alternative for HTTP requests
@@ -156,6 +157,7 @@ Located in `~/.dotfiles/bin/`, these extend git functionality:
 - `./bin` - Project-specific binaries
 - `~/.local/bin` - Python tools installed via uv
 - Homebrew paths (`/opt/homebrew/bin`, etc.)
+- PostgreSQL@17 (`/opt/homebrew/opt/postgresql@17/bin`)
 - Docker CLI from Docker Desktop
 
 ## Dotfiles Structure
