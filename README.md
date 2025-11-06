@@ -18,7 +18,7 @@ bin/dot           # Install packages from Brewfile and set macOS defaults
 - **Package Managers**: Homebrew (with Brewfile), Bun, Yarn
 - **Version Managers**: pyenv (Python), asdf (Node.js)
 - **Modern CLI Tools**: fzf, zoxide, eza, bat, ripgrep, fd
-- **AI Tools**: Claude Code, Codex, OpenCode, Gemini CLI
+- **AI Tools**: Claude Code (with custom skills), Codex, OpenCode, Gemini CLI
 - **Window Management**: AeroSpace (i3-like tiling), Ice (menu bar manager)
 - **Cloud Storage**: Backblaze B2 CLI with aliases
 - **Database**: PostgreSQL 17
@@ -93,6 +93,28 @@ brew list --cask
 
 - **CLAUDE.md**: Provides context for Claude Code when working in this repository
 - **GitHub Actions**: Claude PR assistant (triggered by @claude mentions)
+- **Claude Skills**: Custom skills in `claude/skills/` (e.g., favicon-generator)
+
+### Claude Code Skills
+
+Custom skills extend Claude's capabilities with domain-specific tools:
+
+```
+claude/
+├── install.sh              # Symlinks skills to ~/.claude/skills/
+└── skills/
+    └── favicon-generator/  # Generate complete favicon sets
+        ├── SKILL.md        # Skill metadata + instructions
+        └── generate.sh     # Generation script
+```
+
+**Adding skills:**
+1. Create directory in `claude/skills/`
+2. Add `SKILL.md` with YAML frontmatter
+3. Add supporting scripts/resources
+4. Run `bin/dot` to install
+
+Skills are version-controlled and sync across machines via your dotfiles.
 
 ## Performance
 

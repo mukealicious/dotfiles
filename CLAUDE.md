@@ -45,6 +45,13 @@ bin/dot -e
 3. Add `*.zsh` files for shell configurations
 4. Add `install.sh` if the topic needs installation steps
 
+### Claude Code Skills
+- Skills live in `claude/skills/` directory
+- Each skill has a `SKILL.md` with YAML frontmatter (name, description)
+- Skills are symlinked to `~/.claude/skills/` via `claude/install.sh`
+- Adding new skills: Create directory in `claude/skills/`, add `SKILL.md` + supporting files, run `bin/dot`
+- Skills use progressive disclosure (metadata → instructions → resources)
+
 ## Important Files & Conventions
 
 ### Secrets Management
@@ -68,6 +75,7 @@ bin/dot -e
 - Use `.symlink` extension for files that should be symlinked
 - Place PATH modifications in `path.zsh` files
 - Run `script/bootstrap` after adding new symlinks
+- **IMPORTANT**: When adding new topics, tools, scripts, or significant features, update `ai/AGENTS.md.symlink` to document them for all AI agents (Claude, Codex, OpenCode, Gemini)
 
 ### Testing Changes
 - Source changes: `. ~/.zshrc`
@@ -85,5 +93,7 @@ bin/dot -e
 - Editor: Vim configuration included
 
 ### Recent Additions
+- **claude/**: Claude Code skills system with `install.sh` that symlinks skills to `~/.claude/skills/`
+  - **favicon-generator**: Generates complete favicon sets (PNG, ICO, Apple Touch, Android Chrome) from a single source PNG using ImageMagick and oxipng
 - **gemini/**: Google Gemini CLI with shell completions
 - **aerospace/**: AeroSpace tiling window manager with `aerospace.toml.symlink` → `~/.aerospace.toml`

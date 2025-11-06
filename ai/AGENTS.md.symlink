@@ -42,6 +42,8 @@ When creating plans, list any unresolved questions at the end, if any.
 
 ### AI/LLM Tools
 - **claude** - Claude CLI (v2.0.0) - Primary AI assistant
+  - Custom skills in `~/.claude/skills/` (symlinked from `~/.dotfiles/claude/skills/`)
+  - Skills extend Claude with domain-specific capabilities
 - **codex** - OpenAI Codex for code generation
 - **opencode** - AI coding agent (uses Groq for fast inference)
 - **gemini** - Google Gemini CLI
@@ -164,6 +166,7 @@ The dotfiles follow a topic-based organization where each directory represents a
 ~/.dotfiles/
 ├── ai/           # AI tools configuration
 ├── bin/          # Custom scripts and git commands
+├── claude/       # Claude Code skills
 ├── git/          # Git configuration
 ├── zsh/          # ZSH shell configuration
 ├── python/       # Python/pyenv setup
@@ -215,6 +218,36 @@ Located in `~/.dotfiles/bin/`:
 - **headers [url]** - Show HTTP headers
 - **search** - Search functionality
 - **todo** - Simple todo management
+
+## Claude Code Skills
+
+Custom skills extend Claude's capabilities with domain-specific tools. Skills are located in `~/.dotfiles/claude/skills/` and symlinked to `~/.claude/skills/` during installation.
+
+### Available Skills
+
+- **favicon-generator** - Generate complete favicon sets (PNG, ICO, Apple Touch, Android Chrome) from a single source PNG using ImageMagick and oxipng
+
+### How Skills Work
+
+Skills use "progressive disclosure" - Claude loads information in stages:
+1. **Metadata** - Name and description (always loaded)
+2. **Instructions** - The SKILL.md content (loaded when skill is triggered)
+3. **Resources** - Supporting files/scripts (loaded as needed)
+
+### Adding New Skills
+
+1. Create directory in `~/.dotfiles/claude/skills/`
+2. Add `SKILL.md` with YAML frontmatter:
+   ```yaml
+   ---
+   name: skill-name
+   description: Brief description of what the skill does
+   ---
+   ```
+3. Add supporting scripts/resources
+4. Run `bin/dot` or `~/.dotfiles/claude/install.sh` to install
+
+Skills are version-controlled and sync across machines via dotfiles.
 
 ## File Operations Best Practices
 
