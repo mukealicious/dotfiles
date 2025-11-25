@@ -1,63 +1,85 @@
 ---
 name: dotfiles-dev
-description: Guide for working with the dotfiles system. Use when adding new topics, tools, or skills to dotfiles, understanding dotfiles architecture, or modifying shell/git configuration.
+description: Guide for working with the dotfiles system at ~/.dotfiles. Use when adding new topics/tools, creating shell aliases, adding Homebrew packages to Brewfile, creating custom git commands, adding Claude skills, modifying ZSH configuration, or understanding the topic-based (Holman-style) dotfiles architecture.
 ---
 
 # Dotfiles Development
 
-Topic-based dotfiles (Holman-style) at `~/.dotfiles`.
+Topic-based dotfiles at `~/.dotfiles`. Each directory = one topic (tool/app).
 
 ## Structure
 
 ```
 ~/.dotfiles/
-├── ai/           # AI agent instructions
-├── bin/          # Custom scripts, git commands
-├── claude/       # Claude skills
+├── bin/          # Scripts, custom git commands
+├── claude/       # Claude skills (skills/)
 ├── git/          # Git config
 ├── zsh/          # Shell config
 ├── homebrew/     # Brewfile
 ├── script/       # bootstrap, install
-└── [topic]/      # Other tools
+└── [topic]/      # Tool-specific config
 ```
+
+## Common Tasks
+
+### Add Shell Alias
+
+Edit or create `~/.dotfiles/[topic]/aliases.zsh`:
+
+```zsh
+alias myalias='command'
+```
+
+Run `reload` or `. ~/.zshrc` to apply.
+
+### Add Homebrew Package
+
+Edit `~/.dotfiles/homebrew/Brewfile`:
+
+```ruby
+brew "package-name"
+cask "app-name"
+```
+
+Run `brew bundle` to install.
+
+### Add New Topic
+
+1. Create `~/.dotfiles/[topic]/`
+2. Add files using patterns below
+3. Run `dot` to install
+
+### Add Custom Git Command
+
+See [references/git-commands.md](references/git-commands.md) for templates and existing commands.
+
+Quick: Create executable `~/.dotfiles/bin/git-<name>`, use as `git <name>`.
+
+### Add Claude Skill
+
+1. Create `~/.dotfiles/claude/skills/[name]/SKILL.md`
+2. Add frontmatter with `name` and `description`
+3. Run `dot` to symlink
+
+Use `skill-creator` skill for detailed guidance.
 
 ## File Patterns
 
-- `*.symlink` → symlinked to `~/` (with dot prefix)
-- `*.zsh` → auto-sourced by ZSH
-- `path.zsh` → PATH mods (loaded first)
-- `completion.zsh` → completions (loaded last)
-- `install.sh` → topic installer (run by `dot`)
+See [references/file-patterns.md](references/file-patterns.md) for complete reference.
 
-## Adding a Topic
+| Pattern | Behavior |
+|---------|----------|
+| `*.symlink` | Symlinked to `~/.<name>` |
+| `*.zsh` | Auto-sourced by ZSH |
+| `path.zsh` | PATH mods (loaded first) |
+| `install.sh` | Topic installer |
 
-1. Create `~/.dotfiles/[topic]/`
-2. Add `*.symlink` for home dir configs
-3. Add `*.zsh` for shell config
-4. Add `install.sh` if needed
-5. Run `dot` to install
+## Key Commands
 
-## Adding a Skill
+- `dot` - Update everything (defaults, brew, installers)
+- `dot -e` - Edit dotfiles in editor
+- `reload` - Reload shell config
 
-Use the `skill-creator` skill for detailed guidance.
+## Secrets
 
-Quick steps:
-1. Create `~/.dotfiles/claude/skills/[name]/`
-2. Add `SKILL.md` with name/description frontmatter
-3. Run `dot` to symlink
-
-## Custom Git Commands
-
-Located in `~/.dotfiles/bin/`:
-
-- `git-up` - smart pull with stash/rebase
-- `git-wtf` - branch status overview
-- `git-undo` - undo recent operations
-- `git-promote` - promote to tracking branch
-- `git-delete-local-merged` - cleanup merged branches
-- `git-unpushed` - show unpushed commits
-
-## Environment
-
-- PATH includes: `~/.dotfiles/bin`, `./bin`, `~/.local/bin`
-- pyenv lazy-loaded (triggers on python/pip)
+Never commit: `~/.localrc`, `~/.gitconfig.local`
