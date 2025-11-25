@@ -4,8 +4,8 @@
 export PYENV_LAZY_LOAD=1
 
 # Set default editors
-export EDITOR='cursor'
-export VISUAL='cursor'
+export EDITOR='code'
+export VISUAL='code'
 
 # Better ls colors
 export CLICOLOR=1

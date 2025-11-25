@@ -1,100 +1,20 @@
-# CLAUDE.md
+# Dotfiles Repository
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Topic-centric dotfiles (Holman-style). Manages macOS dev environment.
 
-## Repository Overview
+## Quick Reference
 
-This is a topic-centric dotfiles repository based on Holman's dotfiles philosophy. It manages macOS development environment configuration through modular "topics" - each directory represents a specific area of functionality (git, zsh, homebrew, etc.).
+- `script/bootstrap` - initial setup, symlinks
+- `script/install` - run all installers
+- `bin/dot` - update everything
 
-## Key Architecture Patterns
+## Development
 
-### Topic-Based Organization
-- Each directory is a "topic" containing related configurations
-- Topics can contain:
-  - `*.symlink` files - symlinked to home directory (e.g., `git/gitconfig.symlink` → `~/.gitconfig`)
-  - `*.zsh` files - automatically sourced by ZSH
-  - `install.sh` - topic-specific installation script
-  - `path.zsh` - PATH modifications (loaded first)
-  - `completion.zsh` - completions (loaded last)
+Use the `dotfiles-dev` skill for detailed guidance on:
+- Adding topics, skills, configurations
+- File patterns and conventions
+- Custom git commands
 
-### File Loading Order
-1. All `path.zsh` files (for PATH setup)
-2. All other `*.zsh` files
-3. All `completion.zsh` files (for autocomplete)
+## Secrets
 
-## Common Commands
-
-### Setup & Installation
-```bash
-# Initial setup - creates symlinks and configures git
-script/bootstrap
-
-# Run all installers (Homebrew, macOS defaults, etc.)
-script/install
-
-# Update everything (macOS defaults, Homebrew, run installers)
-bin/dot
-
-# Edit dotfiles in VS Code
-bin/dot -e
-```
-
-### Adding New Configurations
-1. Create a new topic directory
-2. Add `*.symlink` files for configs that go in home directory
-3. Add `*.zsh` files for shell configurations
-4. Add `install.sh` if the topic needs installation steps
-
-### Claude Code Skills
-- Skills live in `claude/skills/` directory
-- Each skill has a `SKILL.md` with YAML frontmatter (name, description)
-- Skills are symlinked to `~/.claude/skills/` via `claude/install.sh`
-- Adding new skills: Create directory in `claude/skills/`, add `SKILL.md` + supporting files, run `bin/dot`
-- Skills use progressive disclosure (metadata → instructions → resources)
-
-## Important Files & Conventions
-
-### Secrets Management
-- Private environment variables go in `~/.localrc` (not tracked)
-- Git user config goes in `~/.gitconfig.local` (not tracked)
-
-### PATH Management
-- PATH modifications go in `*/path.zsh` files
-- The system automatically removes duplicates
-- Local binaries: `$ZSH/bin` and `./bin` are added to PATH
-
-### Git Configuration
-- Global config: `git/gitconfig.symlink`
-- Local/private config: `~/.gitconfig.local` (included by global)
-- Custom git commands in `bin/` (git-promote, git-wtf, etc.)
-
-## Development Notes
-
-### When Adding Features
-- Follow the topic-based structure
-- Use `.symlink` extension for files that should be symlinked
-- Place PATH modifications in `path.zsh` files
-- Run `script/bootstrap` after adding new symlinks
-- **IMPORTANT**: When adding new topics, tools, scripts, or significant features, update `ai/AGENTS.md.symlink` to document them for all AI agents (Claude, Codex, OpenCode, Gemini)
-
-### Testing Changes
-- Source changes: `. ~/.zshrc`
-- Or start a new shell session
-- Run `bin/dot` to ensure everything installs correctly
-
-### Current Stack
-- Shell: ZSH with custom configuration
-- Package Managers: Homebrew, Yarn, Bun
-- Version Managers: pyenv (Python), asdf (Node.js)
-- AI Tools: Claude Code, Codex, OpenCode, Gemini CLI
-- Window Management: AeroSpace (i3-like tiling), Ice (menu bar manager)
-- Cloud Storage: Backblaze B2 CLI
-- Database: PostgreSQL 17
-- Editor: Vim configuration included
-
-### Recent Additions
-- **claude/**: Claude Code skills system with `install.sh` that symlinks skills to `~/.claude/skills/`
-  - **favicon-generator**: Generates complete favicon sets (PNG, ICO, Apple Touch, Android Chrome) from a single source PNG using ImageMagick and oxipng
-- **1password-cli**: 1Password CLI (`op`) for secrets management
-- **gemini/**: Google Gemini CLI with shell completions
-- **aerospace/**: AeroSpace tiling window manager with `aerospace.toml.symlink` → `~/.aerospace.toml`
+Never commit: `~/.localrc`, `~/.gitconfig.local`

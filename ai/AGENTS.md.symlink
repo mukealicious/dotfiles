@@ -1,323 +1,41 @@
 # AI Agent Instructions
 
-This file provides comprehensive instructions for AI agents (Claude, Codex, OpenCode, Gemini) working on this system. It documents available tools, configurations, and workflows.
+## Communication
 
-## Communication Guidelines
+- Extremely concise, sacrifice grammar
+- Plans: list unresolved questions at end
 
-In all interactions, plans and commit messages, be extremely concise and sacrifice grammar for the sake of concision.
+## System
 
-When creating plans, list any unresolved questions at the end, if any.
+- macOS (Darwin), ZSH, VSCode (experimenting with Cursor)
+- WezTerm terminal, AeroSpace window manager
+- Dotfiles: topic-based (Holman-style) in `~/.dotfiles`
 
-## System Overview
+## CLI Tools
 
-- **Operating System**: macOS (Darwin)
-- **Shell**: ZSH with custom dotfiles configuration
-- **Editor**: VS Code Cursor (set as EDITOR and VISUAL)
-- **Terminal**: WezTerm (GPU-accelerated)
-- **Window Manager**: AeroSpace (i3-like tiling)
-- **Dotfiles**: Topic-based organization (Holman-style) in `~/.dotfiles`
+Modern replacements installed:
+- `fd` (find), `rg` (grep), `bat` (cat), `eza` (ls), `fzf`, `zoxide`
 
-## Available CLI Tools
+Development:
+- `git`, `gh`, `docker`, `jq`, `httpie`
+- `op` - 1Password CLI for secrets
+- `brew`, `pyenv`, `asdf`, `bun`, `uv`
 
-### Modern Shell Tools
-- **eza** - Modern `ls` replacement with icons and colors
-- **bat** - Better `cat` with syntax highlighting (`cat` is aliased to `bat --style=plain`)
-- **ripgrep (rg)** - Ultra-fast grep alternative for searching file contents
-- **fd** - Simple, fast `find` replacement for finding files
-- **fzf** - Fuzzy finder for files, directories, and command history
-  - `Ctrl+R` - Fuzzy search command history
-  - `Ctrl+T` - Fuzzy find files
-  - `Alt+C` - Fuzzy change directory
-- **zoxide** - Smarter `cd` that learns your habits
-- **starship** - Fast, customizable shell prompt
-- **tree** - Display directory structures (use for showing project layout)
+Databases: PostgreSQL 17, Redis
 
-### Development Tools
-- **git** - Version control with custom commands (see below)
-- **gh** - GitHub CLI for PRs, issues, releases
-- **op** - 1Password CLI for secrets management
-- **docker** - Containerization (Docker Desktop installed)
-- **jq** - JSON processor for parsing/manipulating JSON
-- **httpie** - Modern curl alternative for HTTP requests
-- **tlrc** - Simplified man pages (tldr client in Rust)
+## Key Commands
 
-### AI/LLM Tools
-- **claude** - Claude CLI (v2.0.0) - Primary AI assistant
-  - Custom skills in `~/.claude/skills/` (symlinked from `~/.dotfiles/claude/skills/`)
-  - Skills extend Claude with domain-specific capabilities
-- **codex** - OpenAI Codex for code generation
-- **opencode** - AI coding agent (uses Groq for fast inference)
-- **gemini** - Google Gemini CLI
+- `dot` - update dotfiles (Homebrew, installers, defaults)
+- `dot -e` - edit dotfiles in editor
 
-### Package Managers & Version Management
-- **brew** - Homebrew package manager
-- **pyenv** - Python version manager (lazy-loaded)
-- **asdf** - Node.js version manager
-- **bun** - JavaScript runtime and package manager
-- **yarn** - Node package manager
-- **pnpm** - Fast, disk space efficient package manager
-- **uv** - Fast Python package installer
+## Secrets
 
-### Databases & Storage
-- **PostgreSQL 17** - Relational database
-- **Redis** - In-memory data store
-- **basic-memory** - Local knowledge base with SQLite database at `~/.basic-memory/memory.db`
-- **b2** - Backblaze B2 cloud storage CLI
+Never commit:
+- `~/.localrc` - private env vars, API keys
+- `~/.gitconfig.local` - private git config
 
-### Build Tools
-- **cmake** - Cross-platform build system
-- **make** - Traditional build automation
+## Notes
 
-## Custom Git Commands
-
-Located in `~/.dotfiles/bin/`, these extend git functionality:
-
-- **git-promote** - Promote local branch to remote tracking branch
-- **git-wtf** - Display branch status in readable format
-- **git-up** - Intelligent git pull with stash/rebase
-- **git-rank-contributors** - Show contributor statistics
-- **git-unpushed** - Show commits not pushed to remote
-- **git-unpushed-stat** - Statistics on unpushed commits
-- **git-undo** - Undo recent git operations
-- **git-amend** - Amend commits easily
-- **git-credit** - Credit co-authors in commits
-- **git-copy-branch-name** - Copy current branch name to clipboard
-- **git-delete-local-merged** - Clean up merged local branches
-- **git-track** - Set up tracking for remote branches
-- **git-nuke** - Force delete branches
-- **git-all** - Run git commands across multiple repositories
-
-## Shell Aliases
-
-### Navigation & Listing
-- **ls** → `eza` (with icons and colors)
-- **ll** → `eza -l` (long format)
-- **la** → `eza -la` (all files, long format)
-- **cat** → `bat --style=plain` (better cat)
-- **..** → `cd ..`
-- **...** → `cd ../..`
-
-### Git Aliases
-- **g** → `git`
-- **gl** → `git pull --prune`
-- **glog** → Pretty git log with graph
-- **gp** → `git push origin HEAD`
-- **gd** → `git diff`
-- **gc** → `git commit`
-- **gca** → `git commit -a`
-- **gco** → `git checkout`
-- **gb** → `git branch`
-- **gs** → `git status -sb`
-- **ga** → `git add`
-
-### Claude Aliases
-- **cl** → `claude`
-- **clc** → `claude --continue`
-- **clr** → `claude --resume`
-- **yolo** → `claude --continue --dangerously-skip-permissions`
-- **ask** → `claude --print` (non-interactive)
-- **clm** → `claude mcp`
-- **clcfg** → `claude config`
-
-### Bun Aliases
-- **b** → `bun`
-- **br** → `bun run`
-- **bi** → `bun install`
-- **ba** → `bun add`
-- **brm** → `bun remove`
-- **bu** → `bun update`
-- **bd** → `bun run dev`
-- **bb** → `bun run build`
-- **bs** → `bun run start`
-- **bt** → `bun test`
-
-### Utility Aliases
-- **reload** → `. ~/.zshrc` (reload shell configuration)
-- **cls/clear** → Clear terminal
-- **pubkey** → Copy SSH public key to clipboard
-- **localip** → Show local IP address
-- **cleanup** → Recursively remove .DS_Store files
-
-## Environment Variables
-
-### API Keys (stored in ~/.localrc - not tracked in git)
-- **OPENAI_API_KEY** - For Codex
-- **GROQ_API_KEY** - For OpenCode
-- **ANTHROPIC_API_KEY** - For Claude (if configured)
-- Gemini uses gcloud authentication
-
-### System Variables
-- **EDITOR** = 'cursor'
-- **VISUAL** = 'cursor'
-- **CLICOLOR** = 1 (enable colored output)
-- **HOMEBREW_NO_ANALYTICS** = 1
-
-### PATH Includes
-- `~/.dotfiles/bin` - Custom scripts and git commands
-- `./bin` - Project-specific binaries
-- `~/.local/bin` - Python tools installed via uv
-- Homebrew paths (`/opt/homebrew/bin`, etc.)
-- PostgreSQL@17 (`/opt/homebrew/opt/postgresql@17/bin`)
-- Docker CLI from Docker Desktop
-
-## Dotfiles Structure
-
-The dotfiles follow a topic-based organization where each directory represents a specific area:
-
-```
-~/.dotfiles/
-├── ai/           # AI tools configuration
-├── bin/          # Custom scripts and git commands
-├── claude/       # Claude Code skills
-├── git/          # Git configuration
-├── zsh/          # ZSH shell configuration
-├── python/       # Python/pyenv setup
-├── bun/          # Bun configuration
-├── homebrew/     # Homebrew setup
-├── macos/        # macOS defaults
-├── script/       # Bootstrap and install scripts
-└── [topic]/      # Other tool-specific configurations
-```
-
-### File Patterns
-- `*.symlink` - Files symlinked to home directory
-- `*.zsh` - Automatically sourced by ZSH
-- `path.zsh` - PATH modifications (loaded first)
-- `completion.zsh` - Shell completions (loaded last)
-- `install.sh` - Topic-specific installers
-
-## Working with Projects
-
-### Creating Project Context
-Use `ai-context` to generate a project summary:
-```bash
-ai-context  # Shows structure, recent commits, and status
-```
-
-### Basic Memory Database
-Access the local knowledge base:
-```bash
-basic-memory sync          # Sync knowledge files
-basic-memory --project NAME # Use specific project
-```
-
-The SQLite database is at `~/.basic-memory/memory.db`
-
-### Quick Navigation
-- **c [project]** - Quick change to project directory
-- **z [partial-name]** - Jump to frequently used directories (zoxide)
-
-## Helper Scripts
-
-Located in `~/.dotfiles/bin/`:
-
-- **dot** - Main dotfiles management command
-  - `dot` - Update everything (defaults, Homebrew, installers)
-  - `dot -e` - Edit dotfiles in VS Code
-- **e [file]** - Open file in editor (VS Code Cursor)
-- **battery-status** - Show battery percentage
-- **dns-flush** - Flush DNS cache
-- **headers [url]** - Show HTTP headers
-- **search** - Search functionality
-- **todo** - Simple todo management
-
-## Claude Code Skills
-
-Custom skills extend Claude's capabilities with domain-specific tools. Skills are located in `~/.dotfiles/claude/skills/` and symlinked to `~/.claude/skills/` during installation.
-
-### Available Skills
-
-- **favicon-generator** - Generate complete favicon sets (PNG, ICO, Apple Touch, Android Chrome) from a single source PNG using ImageMagick and oxipng
-
-### How Skills Work
-
-Skills use "progressive disclosure" - Claude loads information in stages:
-1. **Metadata** - Name and description (always loaded)
-2. **Instructions** - The SKILL.md content (loaded when skill is triggered)
-3. **Resources** - Supporting files/scripts (loaded as needed)
-
-### Adding New Skills
-
-1. Create directory in `~/.dotfiles/claude/skills/`
-2. Add `SKILL.md` with YAML frontmatter:
-   ```yaml
-   ---
-   name: skill-name
-   description: Brief description of what the skill does
-   ---
-   ```
-3. Add supporting scripts/resources
-4. Run `bin/dot` or `~/.dotfiles/claude/install.sh` to install
-
-Skills are version-controlled and sync across machines via dotfiles.
-
-## File Operations Best Practices
-
-1. **Finding files**: Use `fd` instead of `find`
-   ```bash
-   fd pattern
-   fd -e js  # Find JavaScript files
-   ```
-
-2. **Searching content**: Use `rg` (ripgrep) instead of `grep`
-   ```bash
-   rg "pattern"
-   rg -t py "def function"  # Search Python files
-   ```
-
-3. **Viewing files**: Use `bat` for syntax highlighting
-   ```bash
-   bat file.py
-   cat file.txt  # Aliased to bat --style=plain
-   ```
-
-4. **Listing directories**: Use `eza` instead of `ls`
-   ```bash
-   ls      # Aliased to eza
-   ll      # Long format with details
-   la      # All files including hidden
-   ```
-
-5. **Showing structure**: Use `tree`
-   ```bash
-   tree -L 2  # Show 2 levels deep
-   tree -I 'node_modules|.git'  # Ignore patterns
-   ```
-
-## System Management
-
-### Updating Everything
-```bash
-dot  # Updates macOS defaults, Homebrew, and runs installers
-```
-
-### Installing New Tools
-1. Add to `~/.dotfiles/Brewfile`
-2. Run `brew bundle` or `dot`
-
-### Managing Dotfiles
-```bash
-cd ~/.dotfiles
-git status
-git add -A
-git commit -m "Update configuration"
-git push
-```
-
-## Notes for AI Agents
-
-1. **Performance**: pyenv is lazy-loaded. Python/pip commands trigger initialization.
-
-2. **Secrets**: Never commit `.localrc` or `.gitconfig.local` - they contain private data.
-
-3. **Project-specific**: When in a project directory, check for local `.envrc` (direnv) or project-specific configurations.
-
-4. **Modern replacements**: Prefer modern tools (eza, bat, rg, fd) over traditional Unix commands.
-
-5. **Git workflow**: Use the custom git commands for common operations - they handle edge cases better than raw git commands.
-
-6. **Terminal**: WezTerm is configured with Berkeley Mono font and GruvboxLight theme.
-
-7. **Window management**: AeroSpace provides i3-like tiling. Configuration in `~/.aerospace.toml`.
-
-This system is optimized for modern development with AI assistance, providing powerful tools while maintaining simplicity and performance.
+- pyenv lazy-loaded (triggers on python/pip)
+- Check for `.envrc` in projects (direnv)
+- Custom git commands in `~/.dotfiles/bin/`
