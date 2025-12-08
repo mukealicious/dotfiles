@@ -22,10 +22,22 @@ pip() {
   pip "$@"
 }
 
-# Lazy load nvm if you use it (currently using asdf)
-# nvm() {
-#   unset -f nvm
-#   export NVM_DIR="$HOME/.nvm"
-#   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-#   nvm "$@"
-# }
+# Lazy load asdf for node/npm
+_asdf_load() {
+  unset -f node npm npx asdf
+  . /opt/homebrew/opt/asdf/libexec/asdf.sh
+}
+node() { _asdf_load; node "$@" }
+npm() { _asdf_load; npm "$@" }
+npx() { _asdf_load; npx "$@" }
+asdf() { _asdf_load; asdf "$@" }
+
+# Lazy load rbenv
+_rbenv_load() {
+  unset -f ruby gem bundle rbenv
+  eval "$(command rbenv init -)"
+}
+ruby() { _rbenv_load; ruby "$@" }
+gem() { _rbenv_load; gem "$@" }
+bundle() { _rbenv_load; bundle "$@" }
+rbenv() { _rbenv_load; rbenv "$@" }

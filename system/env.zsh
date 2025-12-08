@@ -1,8 +1,5 @@
 # Environment variables for shell configuration
 
-# Enable lazy loading for better performance
-export PYENV_LAZY_LOAD=1
-
 # Set default editors
 export EDITOR='code'
 export VISUAL='code'
