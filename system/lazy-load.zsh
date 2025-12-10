@@ -24,13 +24,13 @@ pip() {
 
 # Lazy load asdf for node/npm
 _asdf_load() {
-  unset -f node npm npx asdf
+  unset -f _asdf_load node npm npx asdf
   . /opt/homebrew/opt/asdf/libexec/asdf.sh
 }
-node() { _asdf_load; node "$@" }
-npm() { _asdf_load; npm "$@" }
-npx() { _asdf_load; npx "$@" }
-asdf() { _asdf_load; asdf "$@" }
+node() { _asdf_load && node "$@" }
+npm() { _asdf_load && npm "$@" }
+npx() { _asdf_load && npx "$@" }
+asdf() { _asdf_load && asdf "$@" }
 
 # Lazy load rbenv
 _rbenv_load() {

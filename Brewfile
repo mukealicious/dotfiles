@@ -61,3 +61,4 @@ cask "docker-desktop"            # Docker Desktop with CLI tools
 cask "gcloud-cli"                # Google Cloud CLI
 cask "jordanbaird-ice"           # Menu bar manager for macOS
 cask "nikitabobko/tap/aerospace" # i3-like tiling window manager for macOS
+cask "claude-code"               # Claude AI coding assistant CLI
