@@ -42,6 +42,7 @@ brew "httpie"                    # Modern curl alternative
 brew "gnupg"
 brew "imagemagick"
 brew "promptfoo"                 # LLM prompt testing and evaluation
+brew "tw93/tap/mole"             # Mac cleanup and optimization tool (mo)
 
 # Image Optimization
 brew "oxipng"                    # Fast PNG optimizer in Rust
