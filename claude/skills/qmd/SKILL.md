@@ -10,7 +10,7 @@ Local hybrid search for markdown files. Three search modes: keyword (BM25), sema
 ## Prerequisites
 
 - **Bun**: Already installed
-- **Ollama**: `brew install --cask ollama` (models auto-download on first use)
+- **Ollama**: `brew install --cask ollama-app` (models auto-download on first use)
 - **QMD**: `bun install -g https://github.com/tobi/qmd`
 
 ## Indexing

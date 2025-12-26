@@ -20,7 +20,7 @@ brew "tlrc"                      # Simplified man pages (tldr client in Rust)
 brew "codex"                     # OpenAI's coding agent
 brew "opencode"                  # AI coding agent for terminal
 brew "gemini-cli"                # Google Gemini AI CLI
-cask "ollama"                    # Local LLM runner for QMD embeddings
+cask "ollama-app"                # Local LLM runner for QMD embeddings
 
 # Languages & Version Management
 brew "pyenv"
