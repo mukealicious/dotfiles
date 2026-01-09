@@ -1,3 +1,13 @@
 git/gitconfig.local.symlink
 .claude/settings.local.json
 .b2_account_info
+
+# Environment variables and secrets
+.localrc
+.env*
+.cloudapp
+
+# OS and temporary files
+.DS_Store
+*.log
+*.tmp

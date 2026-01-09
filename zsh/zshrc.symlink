@@ -55,8 +55,8 @@ bindkey "^[[A" up-line-or-beginning-search # Up
 bindkey "^[[B" down-line-or-beginning-search # Down
 
 # bun completions
-[ -s "/Users/mikeywills/.bun/_bun" ] && source "/Users/mikeywills/.bun/_bun"
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 
 # Added by Antigravity
-export PATH="/Users/mikeywills/.antigravity/antigravity/bin:$PATH"
+export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
