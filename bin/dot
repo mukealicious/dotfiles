@@ -40,6 +40,9 @@ done
 
 export ZSH=$HOME/.dotfiles
 
+# Update symlinks (non-interactive, skips conflicts)
+$ZSH/script/symlink
+
 # Set macOS defaults
 $ZSH/macos/set-defaults.sh
 
