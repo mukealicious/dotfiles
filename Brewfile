@@ -34,6 +34,7 @@ brew "pnpm"  # Fast Node.js package manager
 # Databases & Services
 brew "postgresql@17"
 brew "redis"
+brew "neonctl"                   # Neon serverless Postgres CLI
 
 # Utilities
 brew "tree"                      # Display directory tree structure
