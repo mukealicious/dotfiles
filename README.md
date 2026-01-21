@@ -93,25 +93,38 @@ brew list --cask
 
 - **CLAUDE.md**: Provides context for Claude Code when working in this repository
 - **GitHub Actions**: Claude PR assistant (triggered by @claude mentions)
-- **Claude Skills**: Custom skills in `claude/skills/` (e.g., favicon-generator)
+- **Claude Skills**: Custom skills in `claude/skills/`
+- **Claude Agents**: Specialized subagents in `claude/agents/`
 
-### Claude Code Skills & Plugins
+### Claude Code Skills & Agents
 
-The `claude/install.sh` script handles two types of skills:
+The `claude/install.sh` script sets up:
 
-**Custom skills** (version-controlled in dotfiles):
-- Symlinked from `claude/skills/` to `~/.claude/skills/`
-- Current: `dotfiles-dev`, `favicon-generator`
+**Subagents** (specialized AI advisors):
+| Agent | Model | Purpose |
+|-------|-------|---------|
+| `oracle` | Opus | Architecture, planning, complex debugging |
+| `librarian` | Sonnet | Multi-repo exploration |
+| `review` | Sonnet | Code review (bugs, security) |
 
-**Plugin skills** (installed from marketplaces):
+**Slash commands** (agentic workflows):
+| Command | Purpose |
+|---------|---------|
+| `/code-review` | Parallel review with 3 agents |
+| `/prd` | Create PRD document |
+| `/prd-task` | Convert PRD to tasks |
+| `/complete-task` | Execute next task |
+| `/index-knowledge` | Generate AGENTS.md |
+| `/session-export` | Export session to PR |
+| `/opensrc` | Clone + index repo |
+
+**Utility skills**: `dotfiles-dev`, `favicon-generator`, `qmd`
+
+**Plugin skills** (from marketplaces):
 - `anthropics/skills` → document-skills, example-skills
 - `browserbase/agent-browse` → browser-automation
 
-**Adding custom skills:**
-1. Create directory in `claude/skills/`
-2. Add `SKILL.md` with YAML frontmatter
-3. Add supporting scripts/resources
-4. Run `bin/dot` to install
+See [claude/README.md](claude/README.md) for full documentation.
 
 ## Performance
 

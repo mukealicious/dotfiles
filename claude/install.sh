@@ -46,6 +46,38 @@ done
 
 echo "  Claude Code skills setup complete!"
 
+# Symlink subagents
+AGENTS_SOURCE="$DOTFILES_ROOT/claude/agents"
+AGENTS_TARGET="$HOME/.claude/agents"
+
+if [ -d "$AGENTS_SOURCE" ]; then
+  echo "  Setting up Claude Code agents..."
+
+  if [ ! -d "$AGENTS_TARGET" ]; then
+    echo "  Creating ~/.claude/agents directory"
+    mkdir -p "$AGENTS_TARGET"
+  fi
+
+  for agent_file in "$AGENTS_SOURCE"/*.md; do
+    if [ -f "$agent_file" ]; then
+      agent_name=$(basename "$agent_file")
+      target="$AGENTS_TARGET/$agent_name"
+
+      if [ -L "$target" ]; then
+        echo "  ~/.claude/agents/$agent_name symlink already exists"
+      elif [ -e "$target" ]; then
+        echo "  Warning: ~/.claude/agents/$agent_name already exists (not a symlink)"
+        echo "  Skipping to preserve existing agent"
+      else
+        echo "  Linking ~/.claude/agents/$agent_name -> $agent_file"
+        ln -s "$agent_file" "$target"
+      fi
+    fi
+  done
+
+  echo "  Claude Code agents setup complete!"
+fi
+
 # Install plugins from marketplaces (if claude CLI available)
 if command -v claude >/dev/null 2>&1; then
   echo "  Setting up Claude Code plugins..."

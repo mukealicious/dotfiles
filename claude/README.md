@@ -1,40 +1,94 @@
-# Claude Code Skills
+# Claude Code Skills & Agents
 
-This directory contains custom Claude Code skills that extend Claude's capabilities within the Claude Code environment.
+Custom Claude Code skills and subagents for automated agentic workflows.
 
 ## Structure
 
 ```
 claude/
-├── install.sh              # Symlinks skills to ~/.claude/skills/
-└── skills/
-    └── favicon-generator/  # Each skill in its own directory
-        ├── SKILL.md        # Skill metadata + instructions
-        └── generate.sh     # Supporting script/tool
+├── install.sh              # Symlinks skills + agents to ~/.claude/
+├── agents/                 # Subagents (specialized AI advisors)
+│   ├── oracle.md           # Senior advisor (Opus)
+│   ├── librarian.md        # Multi-repo explorer
+│   └── review.md           # Code reviewer
+└── skills/                 # Slash commands & capabilities
+    ├── code-review/        # /code-review
+    ├── prd/                # /prd
+    ├── prd-task/           # /prd-task
+    ├── complete-task/      # /complete-task
+    ├── index-knowledge/    # /index-knowledge
+    ├── session-export/     # /session-export
+    ├── opensrc/            # /opensrc
+    ├── dotfiles-dev/       # Dotfiles guidance
+    ├── favicon-generator/  # Favicon generation
+    └── qmd/                # Markdown search
 ```
+
+## Subagents
+
+Specialized AI advisors invoked via natural language:
+
+| Agent | Model | Purpose |
+|-------|-------|---------|
+| **oracle** | Opus | Senior advisor for architecture, planning, complex debugging |
+| **librarian** | Sonnet | Multi-repo explorer for external libraries |
+| **review** | Sonnet | Code reviewer focused on bugs, security |
+
+**Usage:**
+```
+Use the oracle agent to review this architecture
+Use the librarian to explore how zod validates schemas
+Use review to check my recent changes
+```
+
+## Slash Commands
+
+Skills that act as commands for automated workflows:
+
+| Command | Purpose |
+|---------|---------|
+| `/code-review` | Parallel code review with 3 agents |
+| `/prd <feature>` | Create Product Requirements Document |
+| `/prd-task <name>` | Convert PRD to executable JSON tasks |
+| `/complete-task <name>` | Execute next task from PRD |
+| `/index-knowledge` | Generate AGENTS.md for codebase |
+| `/session-export <pr>` | Export AI session to PR description |
+| `/opensrc <repo>` | Clone repo + generate knowledge base |
+
+## Utility Skills
+
+| Skill | Purpose |
+|-------|---------|
+| `dotfiles-dev` | Guidance for working with this dotfiles repo |
+| `favicon-generator` | Generate optimized favicons from PNG/SVG |
+| `qmd` | Hybrid markdown search (BM25 + vectors + LLM) |
 
 ## Adding New Skills
 
-1. Create a new directory in `skills/`
-2. Add a `SKILL.md` file with YAML frontmatter:
+1. Create directory in `skills/`
+2. Add `SKILL.md` with YAML frontmatter:
    ```yaml
    ---
    name: skill-name
    description: Brief description of what the skill does
    ---
    ```
-3. Add any supporting scripts or resources
-4. Run `./claude/install.sh` or `bin/dot` to symlink the new skill
+3. Add supporting scripts/resources
+4. Run `bin/dot` to symlink
 
-## Available Skills
+## Adding New Agents
 
-### favicon-generator
-
-Generates a complete set of optimized favicons from a single source PNG file.
-
-**Usage:** Provide a PNG file path, and the skill will generate all required favicon formats, sizes, and provide ready-to-use HTML snippets and web manifest templates.
-
-**Requirements:** ImageMagick (required), oxipng (optional for optimization)
+1. Create `agents/<name>.md` with frontmatter:
+   ```yaml
+   ---
+   name: agent-name
+   description: When to use this agent
+   tools: Read, Grep, Glob, WebFetch
+   disallowedTools: Edit, Write
+   model: sonnet
+   ---
+   ```
+2. Run `bin/dot` to symlink
 
 ## How Skills Work
 
