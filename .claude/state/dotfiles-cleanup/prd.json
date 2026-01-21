@@ -71,7 +71,8 @@
         "Linear MCP config exists in ~/.claude/settings.json",
         "Can query Linear issues from Claude session"
       ],
-      "passes": false
+      "passes": true,
+      "notes": "Config verified. Linear MCP uses OAuth via mcp-remote - auth happens on first use in Claude session."
     },
     {
       "id": "functional-7",

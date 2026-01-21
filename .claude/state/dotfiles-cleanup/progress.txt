@@ -44,3 +44,9 @@ Started: 2026-01-21
 - Hook script tested with JSON input/output
 - Full E2E test requires fresh Claude session (manual verification)
 - **Learnings:** ~/.Trash is permission-restricted for listing but trash command works fine
+
+## Task - functional-6
+- Verified Linear MCP config exists in `~/.claude/settings.json`
+- Uses `mcp-remote` with `https://mcp.linear.app/sse` endpoint
+- OAuth authentication happens on first Linear query in Claude session
+- **Learnings:** mcp-remote handles OAuth flow automatically via browser
