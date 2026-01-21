@@ -18,3 +18,8 @@ Started: 2026-01-21
 - Removed `browser-automation@browser-tools` from `~/.claude/settings.json` enabledPlugins
 - Files changed: `~/.claude/settings.json`
 - **Learnings:** Settings file is outside dotfiles repo - need to track via claude/install.sh or symlink
+
+## Task - functional-3
+- Removed browserbase marketplace add and plugin install from `claude/install.sh`
+- Files changed: `claude/install.sh`
+- **Learnings:** Plugin removal requires both marketplace and plugin install cleanup

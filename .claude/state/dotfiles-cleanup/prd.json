@@ -28,7 +28,7 @@
       "steps": [
         "grep -c browserbase claude/install.sh returns 0"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-4",
