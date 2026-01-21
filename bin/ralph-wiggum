@@ -6,7 +6,7 @@
 # are done or limit reached. Named after Ralph Wiggum because "Me fail English?
 # That's unpossible!" - much like how this script stubbornly keeps trying.
 #
-# Usage: ralph-wiggum <prd-name> [--max N] [--dry-run]
+# Usage: ralph-wiggum <prd-name> [--max N] [--dry-run] [--hitl]
 
 set -e
 
@@ -20,6 +20,7 @@ NC='\033[0m' # No Color
 # Defaults
 MAX_TASKS=0  # 0 = unlimited
 DRY_RUN=false
+HITL=false   # Human-in-the-loop mode (no auto-accept)
 PRD_NAME=""
 TASKS_COMPLETED=0
 START_TIME=$(date +%s)
@@ -40,10 +41,12 @@ Arguments:
 Options:
   --max N       Maximum number of tasks to complete (default: unlimited)
   --dry-run     Show what would be done without executing
+  --hitl        Human-in-the-loop mode (prompts for permission, default: AFK)
   -h, --help    Show this help message
 
 Examples:
-  ralph-wiggum dotfiles-cleanup           # Complete all remaining tasks
+  ralph-wiggum dotfiles-cleanup           # AFK mode: auto-accepts edits
+  ralph-wiggum dotfiles-cleanup --hitl    # Watch and approve each edit
   ralph-wiggum dotfiles-cleanup --max 3   # Complete at most 3 tasks
   ralph-wiggum dotfiles-cleanup --dry-run # Show tasks without running
 
@@ -83,6 +86,9 @@ while [ $# -gt 0 ]; do
             ;;
         --dry-run)
             DRY_RUN=true
+            ;;
+        --hitl)
+            HITL=true
             ;;
         -*)
             error "Unknown option: $1"
@@ -146,7 +152,14 @@ get_next_task() {
 # Execute a single task
 execute_task() {
     local prd="$1"
-    info "Running: claude /complete-task $prd"
+    local claude_args=""
+
+    # AFK mode: auto-accept edits so loop doesn't stall
+    if [ "$HITL" = "false" ]; then
+        claude_args="--permission-mode acceptEdits"
+    fi
+
+    info "Running: claude $claude_args /complete-task $prd"
 
     if [ "$DRY_RUN" = "true" ]; then
         warn "[dry-run] Would execute task"
@@ -154,7 +167,8 @@ execute_task() {
     fi
 
     # Run Claude with the complete-task skill
-    if claude "/complete-task $prd"; then
+    # shellcheck disable=SC2086
+    if claude $claude_args "/complete-task $prd"; then
         TASKS_COMPLETED=$((TASKS_COMPLETED + 1))
         return 0
     else
