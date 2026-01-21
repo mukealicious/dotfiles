@@ -1,0 +1,15 @@
+# Progress Log
+PRD: dotfiles-cleanup
+Started: 2026-01-21
+
+## Codebase Patterns
+- macOS 15+ includes `/usr/bin/trash` - no homebrew needed for trash CLI
+
+---
+<!-- Task logs below - APPEND ONLY -->
+
+## Task - functional-1
+- Verified macOS 15+ includes built-in `/usr/bin/trash`
+- No Brewfile change needed - homebrew `trash` or `macos-trash` only adds `--interactive` flag
+- Updated PRD to reflect using system trash
+- **Learnings:** Check for built-in macOS commands before adding brew dependencies
