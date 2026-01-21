@@ -122,7 +122,7 @@
         "ralph-wiggum nonexistent-prd shows error and lists available PRDs",
         "ralph-wiggum dotfiles-cleanup finds PRD successfully"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-12",
@@ -133,7 +133,7 @@
         "Main loop respects --max argument",
         "Shows summary with tasks completed and time elapsed"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-13",
@@ -142,7 +142,7 @@
       "steps": [
         "Ctrl+C during execution shows summary and exits cleanly with code 130"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "testing-2",

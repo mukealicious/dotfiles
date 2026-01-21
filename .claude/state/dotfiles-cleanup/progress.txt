@@ -73,3 +73,18 @@ Started: 2026-01-21
 - Features: --max N limit, --dry-run mode, colored output, PRD discovery
 - Files changed: `bin/ralph-wiggum` (new)
 - **Learnings:** Use `jq` for JSON parsing, walk up directories to find state
+
+## Task - functional-11
+- PRD validation already implemented in functional-10
+- Shows error with available PRDs when not found
+- Files changed: (none - already in ralph-wiggum)
+
+## Task - functional-12
+- Task execution loop already implemented in functional-10
+- Has execute_task(), respects --max, shows summary
+- Files changed: (none - already in ralph-wiggum)
+
+## Task - functional-13
+- Interrupt handling already implemented in functional-10
+- Uses trap for SIGINT/SIGTERM, shows summary, exits 130
+- Files changed: (none - already in ralph-wiggum)
