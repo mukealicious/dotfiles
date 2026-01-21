@@ -176,7 +176,8 @@
         "PR created via gh pr create",
         "PR description includes summary, changes, testing, and breaking changes sections"
       ],
-      "passes": false
+      "passes": true,
+      "notes": "PR: https://github.com/mukealicious/dotfiles/pull/12"
     }
   ],
   "context": {

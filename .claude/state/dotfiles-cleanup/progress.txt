@@ -103,3 +103,9 @@ Started: 2026-01-21
 - PreToolUse hook configured for Bash with safety-rm.sh
 - No browserbase references in claude/ directory
 - **Learnings:** Use rg over grep for faster searches, grep can hang on certain patterns
+
+## Task - functional-14
+- Added ralph-wiggum to CLAUDE.md quick reference
+- Created PR: https://github.com/mukealicious/dotfiles/pull/12
+- PR includes summary, changes, testing, breaking changes sections
+- **Learnings:** Check `gh pr create` target repo - forks default to upstream
