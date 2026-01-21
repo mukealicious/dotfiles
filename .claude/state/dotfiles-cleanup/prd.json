@@ -19,7 +19,7 @@
       "steps": [
         "jq '.enabledPlugins[\"browser-automation@browser-tools\"]' ~/.claude/settings.json returns null"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-3",

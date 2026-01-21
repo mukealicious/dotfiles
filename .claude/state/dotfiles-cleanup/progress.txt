@@ -13,3 +13,8 @@ Started: 2026-01-21
 - No Brewfile change needed - homebrew `trash` or `macos-trash` only adds `--interactive` flag
 - Updated PRD to reflect using system trash
 - **Learnings:** Check for built-in macOS commands before adding brew dependencies
+
+## Task - functional-2
+- Removed `browser-automation@browser-tools` from `~/.claude/settings.json` enabledPlugins
+- Files changed: `~/.claude/settings.json`
+- **Learnings:** Settings file is outside dotfiles repo - need to track via claude/install.sh or symlink
