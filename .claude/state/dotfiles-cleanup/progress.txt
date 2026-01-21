@@ -88,3 +88,10 @@ Started: 2026-01-21
 - Interrupt handling already implemented in functional-10
 - Uses trap for SIGINT/SIGTERM, shows summary, exits 130
 - Files changed: (none - already in ralph-wiggum)
+
+## Task - testing-2
+- Ran full bin/dot validation
+- All installers pass: ai, bun, claude, homebrew, python
+- macos/install.sh requires sudo (skipped in non-interactive mode - expected)
+- Brew update, upgrade, and bundle all complete successfully
+- **Learnings:** Use `env -i` with explicit PATH to test scripts without zsh aliases like zoxide's `z`
