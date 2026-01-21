@@ -30,3 +30,10 @@ Started: 2026-01-21
 - Sets `permissionDecision: "ask"` so user still confirms the trash command
 - Files changed: `claude/hooks/safety-rm.sh` (new)
 - **Learnings:** Claude hooks use [[:space:]] POSIX class for portable whitespace matching in sed
+
+## Task - functional-5
+- Added PreToolUse hook config to `~/.claude/settings.json`
+- Hook matches "Bash" tool and runs safety-rm.sh
+- Uses `~/.dotfiles/` path so it works from any cwd
+- Files changed: `~/.claude/settings.json`
+- **Learnings:** Hook commands support `~` expansion for home directory paths

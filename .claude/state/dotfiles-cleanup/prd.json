@@ -49,7 +49,7 @@
         "jq '.hooks.PreToolUse[0].matcher' ~/.claude/settings.json returns 'Bash'",
         "jq '.hooks.PreToolUse[0].hooks[0].command' ~/.claude/settings.json returns path to safety-rm.sh"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "testing-1",
