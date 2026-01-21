@@ -101,7 +101,7 @@
       "steps": [
         "CLAUDE.md contains documentation for safety hook, Linear MCP, and Remotion skills"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-10",

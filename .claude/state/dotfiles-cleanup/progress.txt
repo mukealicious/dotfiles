@@ -61,3 +61,9 @@ Started: 2026-01-21
 - Wrapped in npx availability check
 - Files changed: `claude/install.sh`
 - **Learnings:** skills.sh uses npx for installation, needs --yes for non-interactive
+
+## Task - functional-9
+- Added "Claude Code Capabilities" section to `CLAUDE.md`
+- Documented: safety hook, Linear MCP, Remotion skill
+- Files changed: `CLAUDE.md`
+- **Learnings:** Keep CLAUDE.md concise - link to skills for details
