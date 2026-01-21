@@ -39,7 +39,7 @@
         "echo '{\"tool_input\":{\"command\":\"rm -rf /tmp/test\"}}' | ./claude/hooks/safety-rm.sh | jq -e '.hookSpecificOutput.updatedInput.command' contains 'trash'",
         "echo '{\"tool_input\":{\"command\":\"ls -la\"}}' | ./claude/hooks/safety-rm.sh produces no output and exits 0"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-5",

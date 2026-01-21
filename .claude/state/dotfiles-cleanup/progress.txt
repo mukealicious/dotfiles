@@ -23,3 +23,10 @@ Started: 2026-01-21
 - Removed browserbase marketplace add and plugin install from `claude/install.sh`
 - Files changed: `claude/install.sh`
 - **Learnings:** Plugin removal requires both marketplace and plugin install cleanup
+
+## Task - functional-4
+- Created `claude/hooks/safety-rm.sh` - PreToolUse hook that rewrites rm -rf/r/f to trash
+- Hook uses JSON input/output format with jq for manipulation
+- Sets `permissionDecision: "ask"` so user still confirms the trash command
+- Files changed: `claude/hooks/safety-rm.sh` (new)
+- **Learnings:** Claude hooks use [[:space:]] POSIX class for portable whitespace matching in sed
