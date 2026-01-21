@@ -55,3 +55,9 @@ Started: 2026-01-21
 - Remotion skills already installed via `npx skills add`
 - Symlink: `~/.claude/skills/remotion-best-practices -> ~/.agents/skills/remotion-best-practices`
 - **Learnings:** skills.sh installs to ~/.agents/skills/ and creates symlinks in ~/.claude/skills/
+
+## Task - functional-8
+- Added `npx skills add remotion-dev/skills` to `claude/install.sh`
+- Wrapped in npx availability check
+- Files changed: `claude/install.sh`
+- **Learnings:** skills.sh uses npx for installation, needs --yes for non-interactive

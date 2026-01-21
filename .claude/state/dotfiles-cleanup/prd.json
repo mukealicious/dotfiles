@@ -92,7 +92,7 @@
       "steps": [
         "grep remotion claude/install.sh returns match"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-9",
