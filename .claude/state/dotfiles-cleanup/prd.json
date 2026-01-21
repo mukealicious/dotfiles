@@ -169,8 +169,9 @@
     {
       "id": "functional-14",
       "category": "functional",
-      "description": "Create PR with comprehensive description",
+      "description": "Update documentation and create PR",
       "steps": [
+        "Update CLAUDE.md and other docs as needed for new capabilities",
         "PR created via gh pr create",
         "PR description includes summary, changes, testing, and breaking changes sections"
       ],
