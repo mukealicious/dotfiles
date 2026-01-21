@@ -165,7 +165,7 @@
         "jq '.hooks' ~/.claude/settings.json shows PreToolUse config",
         "grep -r browserbase claude/ returns empty"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-14",
