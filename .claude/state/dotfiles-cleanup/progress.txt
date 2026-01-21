@@ -37,3 +37,10 @@ Started: 2026-01-21
 - Uses `~/.dotfiles/` path so it works from any cwd
 - Files changed: `~/.claude/settings.json`
 - **Learnings:** Hook commands support `~` expansion for home directory paths
+
+## Task - testing-1
+- Verified `/usr/bin/trash` exists and works (macOS 15+ built-in)
+- Confirmed trash moves files to ~/.Trash and removes from original location
+- Hook script tested with JSON input/output
+- Full E2E test requires fresh Claude session (manual verification)
+- **Learnings:** ~/.Trash is permission-restricted for listing but trash command works fine
