@@ -112,7 +112,7 @@
         "ralph-wiggum --help shows usage",
         "ralph-wiggum test --max 5 parses arguments correctly"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-11",

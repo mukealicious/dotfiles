@@ -67,3 +67,9 @@ Started: 2026-01-21
 - Documented: safety hook, Linear MCP, Remotion skill
 - Files changed: `CLAUDE.md`
 - **Learnings:** Keep CLAUDE.md concise - link to skills for details
+
+## Task - functional-10
+- Created `bin/ralph-wiggum` script for automated PRD task execution
+- Features: --max N limit, --dry-run mode, colored output, PRD discovery
+- Files changed: `bin/ralph-wiggum` (new)
+- **Learnings:** Use `jq` for JSON parsing, walk up directories to find state
