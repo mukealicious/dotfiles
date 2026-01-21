@@ -50,3 +50,8 @@ Started: 2026-01-21
 - Uses `mcp-remote` with `https://mcp.linear.app/sse` endpoint
 - OAuth authentication happens on first Linear query in Claude session
 - **Learnings:** mcp-remote handles OAuth flow automatically via browser
+
+## Task - functional-7
+- Remotion skills already installed via `npx skills add`
+- Symlink: `~/.claude/skills/remotion-best-practices -> ~/.agents/skills/remotion-best-practices`
+- **Learnings:** skills.sh installs to ~/.agents/skills/ and creates symlinks in ~/.claude/skills/

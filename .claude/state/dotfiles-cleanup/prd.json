@@ -82,7 +82,8 @@
         "npx skills add remotion-dev/skills --global --agent claude-code --skill remotion-best-practices --yes succeeds",
         "ls -la ~/.claude/skills/remotion-best-practices shows symlink exists"
       ],
-      "passes": false
+      "passes": true,
+      "notes": "Already installed - symlink at ~/.claude/skills/remotion-best-practices -> ~/.agents/skills/"
     },
     {
       "id": "functional-8",
