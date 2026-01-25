@@ -84,12 +84,16 @@ if command -v claude >/dev/null 2>&1; then
 
   # Add marketplaces (idempotent - won't duplicate)
   claude plugin marketplace add anthropics/skills 2>/dev/null || true
-  claude plugin marketplace add browserbase/agent-browse 2>/dev/null || true
 
   # Install plugins (idempotent - skips if installed)
   claude plugin install document-skills@anthropic-agent-skills 2>/dev/null || true
   claude plugin install example-skills@anthropic-agent-skills 2>/dev/null || true
-  claude plugin install browser-automation@browser-tools 2>/dev/null || true
+
+  # Install external skills via skills.sh
+  if command -v npx >/dev/null 2>&1; then
+    echo "  Installing external skills..."
+    npx skills add remotion-dev/skills --global --agent claude-code --skill remotion-best-practices --yes 2>/dev/null || true
+  fi
 
   echo "  Claude Code plugins setup complete!"
 else

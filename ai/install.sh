@@ -53,4 +53,101 @@ else
   echo "  ~/.codex/instructions.md already exists"
 fi
 
+# Claude Code: agents and skills
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+CLAUDE_DIR="$HOME/.claude"
+
+# Claude agents
+CLAUDE_AGENTS_SRC="$DOTFILES_ROOT/claude/agents"
+CLAUDE_AGENTS_DST="$CLAUDE_DIR/agents"
+if [ -d "$CLAUDE_AGENTS_SRC" ]; then
+  echo "  Setting up Claude agents..."
+  mkdir -p "$CLAUDE_AGENTS_DST"
+  for agent_file in "$CLAUDE_AGENTS_SRC"/*.md; do
+    [ -f "$agent_file" ] || continue
+    agent_name=$(basename "$agent_file")
+    target_link="$CLAUDE_AGENTS_DST/$agent_name"
+    if [ -L "$target_link" ]; then
+      echo "  ~/.claude/agents/$agent_name symlink already exists"
+    elif [ -e "$target_link" ]; then
+      echo "  Warning: $target_link already exists (not a symlink)"
+    else
+      echo "  Linking ~/.claude/agents/$agent_name"
+      ln -s "$agent_file" "$target_link"
+    fi
+  done
+fi
+
+# Claude skills
+CLAUDE_SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
+CLAUDE_SKILLS_DST="$CLAUDE_DIR/skills"
+if [ -d "$CLAUDE_SKILLS_SRC" ]; then
+  echo "  Setting up Claude skills..."
+  mkdir -p "$CLAUDE_SKILLS_DST"
+  # Remove dead symlinks
+  for link in "$CLAUDE_SKILLS_DST"/*; do
+    [ -L "$link" ] && [ ! -e "$link" ] && echo "  Removing dead symlink: $(basename "$link")" && rm "$link"
+  done
+  for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name=$(basename "$skill_dir")
+    target_link="$CLAUDE_SKILLS_DST/$skill_name"
+    if [ -L "$target_link" ]; then
+      echo "  ~/.claude/skills/$skill_name symlink already exists"
+    elif [ -e "$target_link" ]; then
+      echo "  Warning: $target_link already exists (not a symlink)"
+    else
+      echo "  Linking ~/.claude/skills/$skill_name"
+      ln -s "$skill_dir" "$target_link"
+    fi
+  done
+fi
+
+# OpenCode: agents and skills (same source, different destination)
+OPENCODE_DIR="$HOME/.config/opencode"
+
+# OpenCode agents
+OPENCODE_AGENTS_DST="$OPENCODE_DIR/agents"
+if [ -d "$CLAUDE_AGENTS_SRC" ]; then
+  echo "  Setting up OpenCode agents..."
+  mkdir -p "$OPENCODE_AGENTS_DST"
+  for agent_file in "$CLAUDE_AGENTS_SRC"/*.md; do
+    [ -f "$agent_file" ] || continue
+    agent_name=$(basename "$agent_file")
+    target_link="$OPENCODE_AGENTS_DST/$agent_name"
+    if [ -L "$target_link" ]; then
+      echo "  ~/.config/opencode/agents/$agent_name symlink already exists"
+    elif [ -e "$target_link" ]; then
+      echo "  Warning: $target_link already exists (not a symlink)"
+    else
+      echo "  Linking ~/.config/opencode/agents/$agent_name"
+      ln -s "$agent_file" "$target_link"
+    fi
+  done
+fi
+
+# OpenCode skills (note: OpenCode uses 'skill' not 'skills')
+OPENCODE_SKILLS_DST="$OPENCODE_DIR/skill"
+if [ -d "$CLAUDE_SKILLS_SRC" ]; then
+  echo "  Setting up OpenCode skills..."
+  mkdir -p "$OPENCODE_SKILLS_DST"
+  # Remove dead symlinks
+  for link in "$OPENCODE_SKILLS_DST"/*; do
+    [ -L "$link" ] && [ ! -e "$link" ] && echo "  Removing dead symlink: $(basename "$link")" && rm "$link"
+  done
+  for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name=$(basename "$skill_dir")
+    target_link="$OPENCODE_SKILLS_DST/$skill_name"
+    if [ -L "$target_link" ]; then
+      echo "  ~/.config/opencode/skill/$skill_name symlink already exists"
+    elif [ -e "$target_link" ]; then
+      echo "  Warning: $target_link already exists (not a symlink)"
+    else
+      echo "  Linking ~/.config/opencode/skill/$skill_name"
+      ln -s "$skill_dir" "$target_link"
+    fi
+  done
+fi
+
 echo "  AI instruction file setup complete!"
