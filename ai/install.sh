@@ -53,4 +53,50 @@ else
   echo "  ~/.codex/instructions.md already exists"
 fi
 
+# Claude Code: agents and skills
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+CLAUDE_DIR="$HOME/.claude"
+
+# Claude agents
+CLAUDE_AGENTS_SRC="$DOTFILES_ROOT/claude/agents"
+CLAUDE_AGENTS_DST="$CLAUDE_DIR/agents"
+if [ -d "$CLAUDE_AGENTS_SRC" ]; then
+  echo "  Setting up Claude agents..."
+  mkdir -p "$CLAUDE_AGENTS_DST"
+  for agent_file in "$CLAUDE_AGENTS_SRC"/*.md; do
+    [ -f "$agent_file" ] || continue
+    agent_name=$(basename "$agent_file")
+    target_link="$CLAUDE_AGENTS_DST/$agent_name"
+    if [ -L "$target_link" ]; then
+      echo "  ~/.claude/agents/$agent_name symlink already exists"
+    elif [ -e "$target_link" ]; then
+      echo "  Warning: $target_link already exists (not a symlink)"
+    else
+      echo "  Linking ~/.claude/agents/$agent_name"
+      ln -s "$agent_file" "$target_link"
+    fi
+  done
+fi
+
+# Claude skills
+CLAUDE_SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
+CLAUDE_SKILLS_DST="$CLAUDE_DIR/skills"
+if [ -d "$CLAUDE_SKILLS_SRC" ]; then
+  echo "  Setting up Claude skills..."
+  mkdir -p "$CLAUDE_SKILLS_DST"
+  for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name=$(basename "$skill_dir")
+    target_link="$CLAUDE_SKILLS_DST/$skill_name"
+    if [ -L "$target_link" ]; then
+      echo "  ~/.claude/skills/$skill_name symlink already exists"
+    elif [ -e "$target_link" ]; then
+      echo "  Warning: $target_link already exists (not a symlink)"
+    else
+      echo "  Linking ~/.claude/skills/$skill_name"
+      ln -s "$skill_dir" "$target_link"
+    fi
+  done
+fi
+
 echo "  AI instruction file setup complete!"
