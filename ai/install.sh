@@ -99,4 +99,47 @@ if [ -d "$CLAUDE_SKILLS_SRC" ]; then
   done
 fi
 
+# OpenCode: agents and skills (same source, different destination)
+OPENCODE_DIR="$HOME/.config/opencode"
+
+# OpenCode agents
+OPENCODE_AGENTS_DST="$OPENCODE_DIR/agents"
+if [ -d "$CLAUDE_AGENTS_SRC" ]; then
+  echo "  Setting up OpenCode agents..."
+  mkdir -p "$OPENCODE_AGENTS_DST"
+  for agent_file in "$CLAUDE_AGENTS_SRC"/*.md; do
+    [ -f "$agent_file" ] || continue
+    agent_name=$(basename "$agent_file")
+    target_link="$OPENCODE_AGENTS_DST/$agent_name"
+    if [ -L "$target_link" ]; then
+      echo "  ~/.config/opencode/agents/$agent_name symlink already exists"
+    elif [ -e "$target_link" ]; then
+      echo "  Warning: $target_link already exists (not a symlink)"
+    else
+      echo "  Linking ~/.config/opencode/agents/$agent_name"
+      ln -s "$agent_file" "$target_link"
+    fi
+  done
+fi
+
+# OpenCode skills (note: OpenCode uses 'skill' not 'skills')
+OPENCODE_SKILLS_DST="$OPENCODE_DIR/skill"
+if [ -d "$CLAUDE_SKILLS_SRC" ]; then
+  echo "  Setting up OpenCode skills..."
+  mkdir -p "$OPENCODE_SKILLS_DST"
+  for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name=$(basename "$skill_dir")
+    target_link="$OPENCODE_SKILLS_DST/$skill_name"
+    if [ -L "$target_link" ]; then
+      echo "  ~/.config/opencode/skill/$skill_name symlink already exists"
+    elif [ -e "$target_link" ]; then
+      echo "  Warning: $target_link already exists (not a symlink)"
+    else
+      echo "  Linking ~/.config/opencode/skill/$skill_name"
+      ln -s "$skill_dir" "$target_link"
+    fi
+  done
+fi
+
 echo "  AI instruction file setup complete!"
