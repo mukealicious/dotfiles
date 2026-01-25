@@ -12,7 +12,7 @@ Break projects into demoable sprints with atomic, committable tasks.
 1. User: `/sprint-plan <project description>` or "plan sprints for X"
 2. **Clarify** - Ask 3-5 questions about scope, constraints, tech stack
 3. **Generate** - Create sprint breakdown using generation prompt
-4. **Review** - Spawn Plan subagent to critique
+4. **Review** - Spawn `oracle` agent to critique
 5. **Revise** - Incorporate feedback
 6. **Write** - Save to `sprint-plan-<name>.md`
 7. **Convert** - Create TaskCreate calls for Sprint 1
@@ -45,7 +45,7 @@ Demoable outcome: <what can be shown/run>
 
 ## Review Prompt
 
-Spawn Plan subagent with:
+Spawn `oracle` agent (Task tool, subagent_type: "oracle") with:
 
 ```
 Review this sprint plan for:
@@ -99,7 +99,7 @@ TaskCreate({
 })
 ```
 
-Only create tasks for current sprint. User runs `/sprint-plan next` for subsequent sprints.
+Create tasks for Sprint 1. For subsequent sprints, user re-invokes `/sprint-plan` referencing the existing plan file.
 
 ## Principles
 
@@ -129,14 +129,17 @@ Only create tasks for current sprint. User runs `/sprint-plan next` for subseque
 |-------|--------|
 | Clarify | 3-5 questions about scope/constraints |
 | Generate | Use generation prompt |
-| Review | Spawn Plan agent |
+| Review | Spawn oracle agent |
 | Write | `sprint-plan-<name>.md` |
 | Convert | TaskCreate for Sprint 1 |
 
-## Commands
+## Usage
 
-| Command | Action |
-|---------|--------|
-| `/sprint-plan <desc>` | Start new plan |
-| `/sprint-plan next` | Convert next sprint to Tasks |
-| `/sprint-plan status` | Show progress across sprints |
+```
+/sprint-plan <project description>
+```
+
+For subsequent sprints, reference existing plan:
+```
+/sprint-plan continue sprint-plan-<name>.md
+```

@@ -84,6 +84,10 @@ CLAUDE_SKILLS_DST="$CLAUDE_DIR/skills"
 if [ -d "$CLAUDE_SKILLS_SRC" ]; then
   echo "  Setting up Claude skills..."
   mkdir -p "$CLAUDE_SKILLS_DST"
+  # Remove dead symlinks
+  for link in "$CLAUDE_SKILLS_DST"/*; do
+    [ -L "$link" ] && [ ! -e "$link" ] && echo "  Removing dead symlink: $(basename "$link")" && rm "$link"
+  done
   for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name=$(basename "$skill_dir")
@@ -127,6 +131,10 @@ OPENCODE_SKILLS_DST="$OPENCODE_DIR/skill"
 if [ -d "$CLAUDE_SKILLS_SRC" ]; then
   echo "  Setting up OpenCode skills..."
   mkdir -p "$OPENCODE_SKILLS_DST"
+  # Remove dead symlinks
+  for link in "$OPENCODE_SKILLS_DST"/*; do
+    [ -L "$link" ] && [ ! -e "$link" ] && echo "  Removing dead symlink: $(basename "$link")" && rm "$link"
+  done
   for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name=$(basename "$skill_dir")

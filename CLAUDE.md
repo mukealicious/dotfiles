@@ -7,7 +7,6 @@ Topic-centric dotfiles (Holman-style). Manages macOS dev environment.
 - `script/bootstrap` - initial setup, symlinks
 - `script/install` - run all installers
 - `bin/dot` - update everything
-- `bin/ralph-wiggum <prd>` - automate PRD task execution
 
 ## Development
 
