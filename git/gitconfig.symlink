@@ -1,4 +1,7 @@
-# Local/private config goes in the include
+[user]
+        name = mukealicious
+        email = 1085841+mukealicious@users.noreply.github.com
+# Local/private config goes in the include (overrides above if needed)
 [include]
         path = ~/.gitconfig.local
 [hub]
