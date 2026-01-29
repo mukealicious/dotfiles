@@ -20,6 +20,20 @@ if [ ! -d "$HOME/.claude" ]; then
   mkdir -p "$HOME/.claude"
 fi
 
+# Symlink global settings.json
+SETTINGS_SOURCE="$DOTFILES_ROOT/claude/settings.json"
+SETTINGS_TARGET="$HOME/.claude/settings.json"
+
+if [ -L "$SETTINGS_TARGET" ]; then
+  echo "  ~/.claude/settings.json symlink already exists"
+elif [ -e "$SETTINGS_TARGET" ]; then
+  echo "  Warning: ~/.claude/settings.json already exists (not a symlink)"
+  echo "  Back it up and remove it, then re-run: mv ~/.claude/settings.json ~/.claude/settings.json.bak"
+else
+  echo "  Linking ~/.claude/settings.json -> $SETTINGS_SOURCE"
+  ln -s "$SETTINGS_SOURCE" "$SETTINGS_TARGET"
+fi
+
 # Create ~/.claude/skills directory if it doesn't exist
 if [ ! -d "$SKILLS_TARGET" ]; then
   echo "  Creating ~/.claude/skills directory"
@@ -87,7 +101,6 @@ if command -v claude >/dev/null 2>&1; then
 
   # Install plugins (idempotent - skips if installed)
   claude plugin install document-skills@anthropic-agent-skills 2>/dev/null || true
-  claude plugin install example-skills@anthropic-agent-skills 2>/dev/null || true
 
   # Install external skills via skills.sh
   if command -v npx >/dev/null 2>&1; then
