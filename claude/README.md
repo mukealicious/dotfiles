@@ -2,11 +2,51 @@
 
 Custom Claude Code skills and subagents for automated agentic workflows.
 
+## Symlink Architecture
+
+All Claude Code configuration lives in this repo and is symlinked to `~/.claude/`:
+
+```mermaid
+graph LR
+    subgraph "Dotfiles Repo"
+        settings["claude/settings.json"]
+        skills_src["claude/skills/*"]
+        agents_src["claude/agents/*"]
+        hooks_src["claude/hooks/*"]
+    end
+
+    subgraph "~/.claude/"
+        settings_dst["settings.json"]
+        skills_dst["skills/*"]
+        agents_dst["agents/*"]
+    end
+
+    settings -->|symlink| settings_dst
+    skills_src -->|symlink| skills_dst
+    agents_src -->|symlink| agents_dst
+```
+
+**Key files:**
+- `settings.json` → `~/.claude/settings.json` - Global permissions, hooks, plugins, MCP servers
+- `skills/*/` → `~/.claude/skills/*/` - Custom slash commands
+- `agents/*.md` → `~/.claude/agents/*.md` - Specialized subagents
+- `hooks/` - PreToolUse hooks (referenced from settings.json)
+
+**Installation flow:**
+1. `script/bootstrap` or `bin/dot` runs all `*/install.sh` scripts
+2. `claude/install.sh` symlinks settings.json and installs plugins
+3. `ai/install.sh` symlinks skills and agents (single source of truth)
+
+Edit files in the dotfiles repo, not in `~/.claude/`.
+
 ## Structure
 
 ```
 claude/
-├── install.sh              # Symlinks skills + agents to ~/.claude/
+├── install.sh              # Symlinks settings.json + installs plugins
+├── settings.json           # Global config (permissions, hooks, MCP)
+├── hooks/                  # PreToolUse hooks
+│   └── safety-rm.sh        # Rewrites rm to trash
 ├── agents/                 # Subagents (specialized AI advisors)
 │   ├── oracle.md           # Senior advisor (Opus)
 │   ├── librarian.md        # Multi-repo explorer

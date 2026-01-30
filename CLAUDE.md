@@ -17,6 +17,14 @@ Use the `dotfiles-dev` skill for detailed guidance on:
 
 ## Claude Code Capabilities
 
+Claude Code config lives in `claude/` and is symlinked to `~/.claude/`. See `claude/README.md` for full architecture.
+
+**Key files (edit here, not in ~/.claude/):**
+- `claude/settings.json` - permissions, hooks, MCP servers
+- `claude/skills/` - custom slash commands
+- `claude/agents/` - subagents (oracle, librarian, review)
+- `claude/hooks/` - PreToolUse hooks
+
 **Safety Hook**: PreToolUse hook intercepts `rm -rf/-r/-f` commands and rewrites to `trash` (macOS built-in). User confirms the modified command.
 
 **MCP Servers**:
