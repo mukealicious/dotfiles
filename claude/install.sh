@@ -25,7 +25,13 @@ SETTINGS_SOURCE="$DOTFILES_ROOT/claude/settings.json"
 SETTINGS_TARGET="$HOME/.claude/settings.json"
 
 if [ -L "$SETTINGS_TARGET" ]; then
-  echo "  ~/.claude/settings.json symlink already exists"
+  if [ -e "$SETTINGS_TARGET" ]; then
+    echo "  ~/.claude/settings.json symlink already exists"
+  else
+    echo "  ~/.claude/settings.json symlink is broken, replacing..."
+    rm "$SETTINGS_TARGET"
+    ln -s "$SETTINGS_SOURCE" "$SETTINGS_TARGET"
+  fi
 elif [ -e "$SETTINGS_TARGET" ]; then
   echo "  Warning: ~/.claude/settings.json already exists (not a symlink)"
   echo "  Back it up and remove it, then re-run: mv ~/.claude/settings.json ~/.claude/settings.json.bak"
@@ -47,7 +53,13 @@ for skill_dir in "$SKILLS_SOURCE"/*; do
     target_path="$SKILLS_TARGET/$skill_name"
 
     if [ -L "$target_path" ]; then
-      echo "  ~/.claude/skills/$skill_name symlink already exists"
+      if [ -e "$target_path" ]; then
+        echo "  ~/.claude/skills/$skill_name symlink already exists"
+      else
+        echo "  ~/.claude/skills/$skill_name symlink is broken, replacing..."
+        rm "$target_path"
+        ln -s "$skill_dir" "$target_path"
+      fi
     elif [ -e "$target_path" ]; then
       echo "  Warning: ~/.claude/skills/$skill_name already exists (not a symlink)"
       echo "  Skipping to preserve existing skill"
@@ -78,7 +90,13 @@ if [ -d "$AGENTS_SOURCE" ]; then
       target="$AGENTS_TARGET/$agent_name"
 
       if [ -L "$target" ]; then
-        echo "  ~/.claude/agents/$agent_name symlink already exists"
+        if [ -e "$target" ]; then
+          echo "  ~/.claude/agents/$agent_name symlink already exists"
+        else
+          echo "  ~/.claude/agents/$agent_name symlink is broken, replacing..."
+          rm "$target"
+          ln -s "$agent_file" "$target"
+        fi
       elif [ -e "$target" ]; then
         echo "  Warning: ~/.claude/agents/$agent_name already exists (not a symlink)"
         echo "  Skipping to preserve existing agent"
