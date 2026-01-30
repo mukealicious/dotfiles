@@ -25,6 +25,29 @@ Use the `dotfiles-dev` skill for detailed guidance on:
 **Skills**:
 - `remotion-best-practices` - Remotion video creation guidance
 
+## Shell Scripting Conventions
+
+See `.claude/rules/shell-scripting.md` for detailed guidance. Summary:
+
+All installer scripts follow these patterns:
+
+- Use `#!/bin/sh` (portable) and `set -e` (fail fast)
+- Get script directory: `$(cd "$(dirname "$0")/.." && pwd -P)`
+- Safe file iteration: `[ -e "$file" ] || continue`
+- Provide `--force` flag for correcting misconfigurations
+
+**Symlink management** (see `ai/install.sh` for canonical implementation):
+- Always validate symlink targets, don't assume existing symlinks are correct
+- Handle: non-existent, correct, broken, misdirected symlinks
+- Clean dead symlinks before creating new ones
+- Provide actionable fix commands in warnings
+
+## Architecture Principles
+
+- **Single source of truth**: One script owns each config area (e.g., `ai/install.sh` for all AI tool configs)
+- **No overlapping ownership**: Avoid multiple scripts managing same directories
+- **Deterministic execution**: Explicit ordering over `find | while` when order matters
+
 ## Secrets
 
 Never commit: `~/.localrc`, `~/.gitconfig.local`
