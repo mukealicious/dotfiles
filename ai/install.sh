@@ -1,12 +1,91 @@
 #!/bin/sh
 #
-# AI Tools
+# AI Tools Configuration
 #
-# Sets up unified instruction files for all AI tools.
-# bootstrap creates ~/.AGENTS.md symlink to dotfiles source.
-# This script creates tool-specific symlinks pointing to ~/.AGENTS.md.
+# Single source of truth for AI tool configuration:
+# - Unified instruction files (CLAUDE.md, AGENTS.md, etc.)
+# - Skills and agents for Claude Code and OpenCode
+#
+# Usage:
+#   ./install.sh          # Normal install (warns about misconfigurations)
+#   ./install.sh --force  # Fix symlinks pointing to wrong locations
 
 set -e
+
+# Parse arguments
+FORCE=false
+if [ "$1" = "--force" ]; then
+  FORCE=true
+  echo "  Running in --force mode: will fix misdirected symlinks"
+fi
+
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+
+#
+# Helper: Create or validate a symlink
+#
+# Usage: ensure_symlink <source> <target> <description>
+#
+# Behavior:
+# - If target doesn't exist: create symlink
+# - If target is correct symlink: skip
+# - If target is broken symlink: remove and recreate
+# - If target points elsewhere: warn (or fix with --force)
+# - If target is regular file/dir: warn and skip
+#
+ensure_symlink() {
+  src="$1"
+  target="$2"
+  desc="$3"
+
+  if [ -L "$target" ]; then
+    current="$(readlink "$target")"
+    if [ ! -e "$target" ]; then
+      # Broken symlink
+      echo "  Removing dead symlink: $desc"
+      rm "$target"
+      echo "  Linking $desc"
+      ln -s "$src" "$target"
+    elif [ "$current" = "$src" ]; then
+      # Correct symlink
+      echo "  $desc already linked correctly"
+    else
+      # Points to wrong location
+      if [ "$FORCE" = "true" ]; then
+        echo "  Fixing $desc (was: $current)"
+        rm "$target"
+        ln -s "$src" "$target"
+      else
+        echo "  Warning: $desc points to wrong location"
+        echo "    Current:  $current"
+        echo "    Expected: $src"
+        echo "    Fix: rm \"$target\" && dot"
+      fi
+    fi
+  elif [ -e "$target" ]; then
+    # Regular file or directory
+    echo "  Warning: $desc exists but is not a symlink"
+    echo "    Skipping to preserve existing content"
+  else
+    # Doesn't exist
+    echo "  Linking $desc"
+    ln -s "$src" "$target"
+  fi
+}
+
+#
+# Helper: Clean dead symlinks from a directory
+#
+clean_dead_symlinks() {
+  dir="$1"
+  [ -d "$dir" ] || return 0
+  for link in "$dir"/*; do
+    if [ -L "$link" ] && [ ! -e "$link" ]; then
+      echo "  Removing dead symlink: $(basename "$link")"
+      rm "$link"
+    fi
+  done
+}
 
 echo "  Setting up AI instruction files..."
 
@@ -53,101 +132,64 @@ else
   echo "  ~/.codex/instructions.md already exists"
 fi
 
-# Claude Code: agents and skills
-DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+#
+# Skills and Agents (single source of truth for all AI tools)
+#
+
 CLAUDE_DIR="$HOME/.claude"
+SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
+AGENTS_SRC="$DOTFILES_ROOT/claude/agents"
 
-# Claude agents
-CLAUDE_AGENTS_SRC="$DOTFILES_ROOT/claude/agents"
-CLAUDE_AGENTS_DST="$CLAUDE_DIR/agents"
-if [ -d "$CLAUDE_AGENTS_SRC" ]; then
-  echo "  Setting up Claude agents..."
-  mkdir -p "$CLAUDE_AGENTS_DST"
-  for agent_file in "$CLAUDE_AGENTS_SRC"/*.md; do
-    [ -f "$agent_file" ] || continue
-    agent_name=$(basename "$agent_file")
-    target_link="$CLAUDE_AGENTS_DST/$agent_name"
-    if [ -L "$target_link" ]; then
-      echo "  ~/.claude/agents/$agent_name symlink already exists"
-    elif [ -e "$target_link" ]; then
-      echo "  Warning: $target_link already exists (not a symlink)"
-    else
-      echo "  Linking ~/.claude/agents/$agent_name"
-      ln -s "$agent_file" "$target_link"
-    fi
-  done
-fi
+# Claude Code
+if [ -d "$SKILLS_SRC" ]; then
+  echo "  Setting up Claude Code skills..."
+  mkdir -p "$CLAUDE_DIR/skills"
+  clean_dead_symlinks "$CLAUDE_DIR/skills"
 
-# Claude skills
-CLAUDE_SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
-CLAUDE_SKILLS_DST="$CLAUDE_DIR/skills"
-if [ -d "$CLAUDE_SKILLS_SRC" ]; then
-  echo "  Setting up Claude skills..."
-  mkdir -p "$CLAUDE_SKILLS_DST"
-  # Remove dead symlinks
-  for link in "$CLAUDE_SKILLS_DST"/*; do
-    [ -L "$link" ] && [ ! -e "$link" ] && echo "  Removing dead symlink: $(basename "$link")" && rm "$link"
-  done
-  for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
+  for skill_dir in "$SKILLS_SRC"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name=$(basename "$skill_dir")
-    target_link="$CLAUDE_SKILLS_DST/$skill_name"
-    if [ -L "$target_link" ]; then
-      echo "  ~/.claude/skills/$skill_name symlink already exists"
-    elif [ -e "$target_link" ]; then
-      echo "  Warning: $target_link already exists (not a symlink)"
-    else
-      echo "  Linking ~/.claude/skills/$skill_name"
-      ln -s "$skill_dir" "$target_link"
-    fi
+    ensure_symlink "$skill_dir" "$CLAUDE_DIR/skills/$skill_name" "~/.claude/skills/$skill_name"
   done
 fi
 
-# OpenCode: agents and skills (same source, different destination)
+if [ -d "$AGENTS_SRC" ]; then
+  echo "  Setting up Claude Code agents..."
+  mkdir -p "$CLAUDE_DIR/agents"
+  clean_dead_symlinks "$CLAUDE_DIR/agents"
+
+  for agent_file in "$AGENTS_SRC"/*.md; do
+    [ -e "$agent_file" ] || continue
+    agent_name=$(basename "$agent_file")
+    ensure_symlink "$agent_file" "$CLAUDE_DIR/agents/$agent_name" "~/.claude/agents/$agent_name"
+  done
+fi
+
+# OpenCode (uses same sources, different destinations)
 OPENCODE_DIR="$HOME/.config/opencode"
 
-# OpenCode agents
-OPENCODE_AGENTS_DST="$OPENCODE_DIR/agents"
-if [ -d "$CLAUDE_AGENTS_SRC" ]; then
-  echo "  Setting up OpenCode agents..."
-  mkdir -p "$OPENCODE_AGENTS_DST"
-  for agent_file in "$CLAUDE_AGENTS_SRC"/*.md; do
-    [ -f "$agent_file" ] || continue
-    agent_name=$(basename "$agent_file")
-    target_link="$OPENCODE_AGENTS_DST/$agent_name"
-    if [ -L "$target_link" ]; then
-      echo "  ~/.config/opencode/agents/$agent_name symlink already exists"
-    elif [ -e "$target_link" ]; then
-      echo "  Warning: $target_link already exists (not a symlink)"
-    else
-      echo "  Linking ~/.config/opencode/agents/$agent_name"
-      ln -s "$agent_file" "$target_link"
-    fi
-  done
-fi
-
-# OpenCode skills (note: OpenCode uses 'skill' not 'skills')
-OPENCODE_SKILLS_DST="$OPENCODE_DIR/skill"
-if [ -d "$CLAUDE_SKILLS_SRC" ]; then
+if [ -d "$SKILLS_SRC" ]; then
   echo "  Setting up OpenCode skills..."
-  mkdir -p "$OPENCODE_SKILLS_DST"
-  # Remove dead symlinks
-  for link in "$OPENCODE_SKILLS_DST"/*; do
-    [ -L "$link" ] && [ ! -e "$link" ] && echo "  Removing dead symlink: $(basename "$link")" && rm "$link"
-  done
-  for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
+  mkdir -p "$OPENCODE_DIR/skill"  # Note: OpenCode uses 'skill' not 'skills'
+  clean_dead_symlinks "$OPENCODE_DIR/skill"
+
+  for skill_dir in "$SKILLS_SRC"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name=$(basename "$skill_dir")
-    target_link="$OPENCODE_SKILLS_DST/$skill_name"
-    if [ -L "$target_link" ]; then
-      echo "  ~/.config/opencode/skill/$skill_name symlink already exists"
-    elif [ -e "$target_link" ]; then
-      echo "  Warning: $target_link already exists (not a symlink)"
-    else
-      echo "  Linking ~/.config/opencode/skill/$skill_name"
-      ln -s "$skill_dir" "$target_link"
-    fi
+    ensure_symlink "$skill_dir" "$OPENCODE_DIR/skill/$skill_name" "~/.config/opencode/skill/$skill_name"
   done
 fi
 
-echo "  AI instruction file setup complete!"
+if [ -d "$AGENTS_SRC" ]; then
+  echo "  Setting up OpenCode agents..."
+  mkdir -p "$OPENCODE_DIR/agents"
+  clean_dead_symlinks "$OPENCODE_DIR/agents"
+
+  for agent_file in "$AGENTS_SRC"/*.md; do
+    [ -e "$agent_file" ] || continue
+    agent_name=$(basename "$agent_file")
+    ensure_symlink "$agent_file" "$OPENCODE_DIR/agents/$agent_name" "~/.config/opencode/agents/$agent_name"
+  done
+fi
+
+echo "  AI configuration complete!"
