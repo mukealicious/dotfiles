@@ -98,9 +98,11 @@ if command -v claude >/dev/null 2>&1; then
 
   # Add marketplaces (idempotent - won't duplicate)
   claude plugin marketplace add anthropics/skills 2>/dev/null || true
+  claude plugin marketplace update claude-plugins-official 2>/dev/null || true
 
   # Install plugins (idempotent - skips if installed)
   claude plugin install document-skills@anthropic-agent-skills 2>/dev/null || true
+  claude plugin install playground@claude-plugins-official 2>/dev/null || true
 
   # Install external skills via skills.sh
   if command -v npx >/dev/null 2>&1; then

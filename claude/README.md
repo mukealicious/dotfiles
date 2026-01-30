@@ -99,6 +99,21 @@ Skills use "progressive disclosure" - Claude loads information in stages:
 
 Skills are invoked automatically by Claude when the user's request matches the skill's description.
 
+## Plugins
+
+Installed from official marketplaces:
+
+| Plugin | Source | Purpose |
+|--------|--------|---------|
+| **document-skills** | anthropic-agent-skills | PDF, XLSX, PPTX, DOCX creation/editing |
+| **playground** | claude-plugins-official | Interactive HTML playgrounds for visual collaboration |
+
+The playground plugin generates standalone HTML files for:
+- Visualizing codebase architecture
+- Adjusting component design
+- Brainstorming layouts
+- Tweaking interactive parameters
+
 ## Installation
 
 The `install.sh` script is automatically run by:
