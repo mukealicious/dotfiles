@@ -1,10 +1,9 @@
 # Zoxide - A smarter cd command
 # https://github.com/ajeetdsouza/zoxide
 
-# Initialize zoxide (only if not already done)
-if ! command -v z &> /dev/null; then
-  eval "$(zoxide init zsh)"
-fi
+# Always initialize zoxide - the guard was causing issues with coding agents
+# where the alias existed but __zoxide_z function wasn't defined
+eval "$(zoxide init zsh)"
 
 # Aliases
 alias cd="z"       # Replace cd with zoxide
