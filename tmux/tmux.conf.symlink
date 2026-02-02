@@ -1,0 +1,49 @@
+# Tmux Configuration
+# Minimal setup for coding agent session persistence
+
+# Prefix: Ctrl-; (closer to home row)
+unbind C-b
+set -g prefix 'C-;'
+bind 'C-;' send-prefix
+
+# Modern terminal settings
+set -g default-terminal "tmux-256color"
+set -ag terminal-overrides ",xterm-256color:RGB"
+
+# Mouse support
+set -g mouse on
+
+# Large scrollback buffer
+set -g history-limit 50000
+
+# Escape time (faster for vim/neovim)
+set -s escape-time 0
+
+# Start windows and panes at 1, not 0
+set -g base-index 1
+setw -g pane-base-index 1
+
+# Renumber windows when one is closed
+set -g renumber-windows on
+
+# Intuitive splits (in current directory)
+bind \\ split-window -h -c "#{pane_current_path}"
+bind Enter split-window -v -c "#{pane_current_path}"
+
+# Status bar - minimal
+set -g status-style 'bg=default fg=white'
+set -g status-left ''
+set -g status-right '#S'
+
+# Plugins (managed by TPM)
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'tmux-plugins/tmux-resurrect'   # Save/restore sessions
+set -g @plugin 'tmux-plugins/tmux-continuum'   # Auto-save sessions
+
+# Resurrect settings
+set -g @resurrect-capture-pane-contents 'on'
+set -g @continuum-restore 'on'
+set -g @continuum-save-interval '10'
+
+# Initialize TPM (keep at very bottom)
+run '~/.tmux/plugins/tpm/tpm'

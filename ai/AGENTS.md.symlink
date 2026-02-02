@@ -7,19 +7,15 @@
 
 ## System
 
-- macOS (Darwin), ZSH, VSCode (experimenting with Cursor)
+- macOS (Darwin), Fish shell, VSCode (experimenting with Cursor)
 - WezTerm terminal, AeroSpace window manager
 - Dotfiles: topic-based (Holman-style) in `~/.dotfiles`
 
 ## CLI Tools
 
-Modern replacements installed:
-- `fd` (find), `rg` (grep), `bat` (cat), `eza` (ls), `fzf`, `zoxide`
-
-Development:
 - `git`, `gh`, `docker`, `jq`, `httpie`
 - `op` - 1Password CLI for secrets
-- `brew`, `pyenv`, `asdf`, `bun`, `uv`
+- `brew`, `asdf`, `bun`, `uv`
 
 Databases: PostgreSQL 17, Redis
 
@@ -36,6 +32,6 @@ Never commit:
 
 ## Notes
 
-- pyenv lazy-loaded (triggers on python/pip)
+- asdf manages Node.js and Python versions
 - Check for `.envrc` in projects (direnv)
 - Custom git commands in `~/.dotfiles/bin/`

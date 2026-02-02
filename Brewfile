@@ -1,13 +1,6 @@
-# Modern Shell Tools
-brew "starship"                  # Fast, customizable prompt
-brew "zsh-syntax-highlighting"   # Fish-like syntax highlighting
-brew "zsh-autosuggestions"       # Fish-like autosuggestions
-brew "fzf"                       # Fuzzy finder
-brew "zoxide"                    # Smarter cd command
-brew "eza"                       # Modern ls replacement
-brew "bat"                       # Better cat with syntax highlighting
-brew "ripgrep"                   # Ultra-fast grep alternative
-brew "fd"                        # Simple, fast find alternative
+# Shell
+brew "fish"                      # Modern shell with built-in features
+brew "tmux"                      # Terminal multiplexer for session persistence
 
 # Core Development Tools
 brew "gh"                        # GitHub CLI
@@ -23,8 +16,6 @@ brew "gemini-cli"                # Google Gemini AI CLI
 cask "ollama-app"                # Local LLM runner for QMD embeddings
 
 # Languages & Version Management
-brew "pyenv"
-brew "pyenv-virtualenv"
 brew "asdf"
 brew "node"
 brew "bun"
