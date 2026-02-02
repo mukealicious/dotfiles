@@ -9,7 +9,8 @@ set -gx EDITOR cursor
 set -gx PROJECTS ~/Code
 set -gx DOTFILES ~/.dotfiles
 
-# PATH - dotfiles bin
+# PATH
+fish_add_path ~/.local/bin      # uv tools
 fish_add_path ~/.dotfiles/bin
 
 # Local secrets (not in git)
