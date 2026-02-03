@@ -28,7 +28,7 @@ dot -e    # Open dotfiles in editor
 | **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex |
 | **Window Mgmt** | AeroSpace (i3-like tiling), Ice (menu bar) |
 | **Database** | PostgreSQL 17, Redis |
-| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie |
+| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, agent-browser |
 
 ## Architecture
 
@@ -49,6 +49,7 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `aerospace/` | Window manager config |
 | `fzf/` | Fuzzy finder keybindings |
 | `bun/` | Bun global packages |
+| `agent-browser/` | Headless browser automation for AI agents |
 | `python/` | Python tools via uv |
 | `ruby/` | Ruby config (gemrc, irbrc) |
 
