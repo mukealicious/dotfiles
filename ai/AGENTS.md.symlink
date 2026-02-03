@@ -16,6 +16,7 @@
 - `git`, `gh`, `docker`, `jq`, `httpie`
 - `op` - 1Password CLI for secrets
 - `brew`, `asdf`, `bun`, `uv`
+- `agent-browser` - headless browser automation for AI agents
 
 Databases: PostgreSQL 17, Redis
 

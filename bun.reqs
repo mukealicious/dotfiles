@@ -3,3 +3,4 @@
 # Supports: package names, npm: prefix, or GitHub URLs
 https://github.com/tobi/qmd
 opensrc
+agent-browser
