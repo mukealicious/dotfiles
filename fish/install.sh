@@ -29,7 +29,7 @@ else
   echo "  config.fish exists (not a symlink), skipping"
 fi
 
-# Symlink conf.d files
+# Symlink conf.d files from fish/conf.d/
 for file in "$FISH_SRC/conf.d"/*.fish; do
   [ -e "$file" ] || continue
   name=$(basename "$file")
@@ -39,6 +39,20 @@ for file in "$FISH_SRC/conf.d"/*.fish; do
   fi
   if [ ! -e "$target" ]; then
     echo "  Linking conf.d/$name"
+    ln -s "$file" "$target"
+  fi
+done
+
+# Discover and symlink topic aliases (*/aliases.fish -> conf.d/<topic>-aliases.fish)
+for file in "$DOTFILES_ROOT"/*/aliases.fish; do
+  [ -e "$file" ] || continue
+  topic=$(basename "$(dirname "$file")")
+  target="$FISH_DEST/conf.d/${topic}-aliases.fish"
+  if [ -L "$target" ]; then
+    rm "$target"
+  fi
+  if [ ! -e "$target" ]; then
+    echo "  Linking $topic/aliases.fish"
     ln -s "$file" "$target"
   fi
 done
