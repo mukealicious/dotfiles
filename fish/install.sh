@@ -100,4 +100,9 @@ for file in "$FISH_SRC/completions"/*.fish; do
 done
 
 echo "  Fish configuration complete!"
-echo "  To switch to Fish: chsh -s /opt/homebrew/bin/fish"
+
+# Only show shell switch instruction if not already using Fish
+if [ "$SHELL" != "/opt/homebrew/bin/fish" ] && [ "$SHELL" != "/usr/local/bin/fish" ]; then
+  current_shell=$(basename "$SHELL")
+  echo "  Currently using $current_shell. To switch to Fish: chsh -s /opt/homebrew/bin/fish"
+fi
