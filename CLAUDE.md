@@ -30,9 +30,6 @@ Claude Code config lives in `claude/` and is symlinked to `~/.claude/`. See `cla
 **MCP Servers**:
 - Linear - project management via OAuth (auth on first use)
 
-**Skills**:
-- `remotion-best-practices` - Remotion video creation guidance
-
 ## Shell Scripting Conventions
 
 See `.claude/rules/shell-scripting.md` for detailed guidance. Summary:
