@@ -29,6 +29,7 @@ brew "neonctl"                   # Neon serverless Postgres CLI
 
 # Utilities
 brew "tree"                      # Display directory tree structure
+brew "fzf"                       # Fuzzy finder for shell
 brew "jq"                        # JSON processor
 brew "httpie"                    # Modern curl alternative
 brew "gnupg"

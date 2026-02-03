@@ -5,7 +5,7 @@
 set fish_greeting
 
 # Environment
-set -gx EDITOR cursor
+set -gx EDITOR code
 set -gx PROJECTS ~/Code
 set -gx DOTFILES ~/.dotfiles
 

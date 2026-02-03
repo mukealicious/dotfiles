@@ -57,6 +57,20 @@ for file in "$DOTFILES_ROOT"/*/aliases.fish; do
   fi
 done
 
+# Discover and symlink topic keybindings (*/keybindings.fish -> conf.d/<topic>-keybindings.fish)
+for file in "$DOTFILES_ROOT"/*/keybindings.fish; do
+  [ -e "$file" ] || continue
+  topic=$(basename "$(dirname "$file")")
+  target="$FISH_DEST/conf.d/${topic}-keybindings.fish"
+  if [ -L "$target" ]; then
+    rm "$target"
+  fi
+  if [ ! -e "$target" ]; then
+    echo "  Linking $topic/keybindings.fish"
+    ln -s "$file" "$target"
+  fi
+done
+
 # Symlink functions
 for file in "$FISH_SRC/functions"/*.fish; do
   [ -e "$file" ] || continue
