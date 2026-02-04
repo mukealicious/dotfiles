@@ -55,14 +55,5 @@
     "document-skills@anthropic-agent-skills": true,
     "playground@claude-plugins-official": true
   },
-  "mcpServers": {
-    "linear": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "https://mcp.linear.app/sse"
-      ]
-    }
-  }
+  "mcpServers": {}
 }
