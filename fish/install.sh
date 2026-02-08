@@ -104,5 +104,18 @@ echo "  Fish configuration complete!"
 # Only show shell switch instruction if not already using Fish
 if [ "$SHELL" != "/opt/homebrew/bin/fish" ] && [ "$SHELL" != "/usr/local/bin/fish" ]; then
   current_shell=$(basename "$SHELL")
-  echo "  Currently using $current_shell. To switch to Fish: chsh -s /opt/homebrew/bin/fish"
+
+  # Ensure Fish is in /etc/shells before suggesting chsh
+  FISH_PATH="/opt/homebrew/bin/fish"
+  if [ ! -f "$FISH_PATH" ]; then
+    FISH_PATH="/usr/local/bin/fish"
+  fi
+
+  if [ -f "$FISH_PATH" ] && ! grep -q "^$FISH_PATH$" /etc/shells; then
+    echo "  Adding Fish to /etc/shells (requires sudo)..."
+    echo "$FISH_PATH" | sudo tee -a /etc/shells > /dev/null
+    echo "  Fish registered in /etc/shells"
+  fi
+
+  echo "  Currently using $current_shell. To switch to Fish: chsh -s $FISH_PATH"
 fi
