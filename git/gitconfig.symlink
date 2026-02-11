@@ -12,6 +12,7 @@
         wtf     = !git-wtf
         rank-contributors = !git-rank-contributors
         count   = !git shortlog -sn
+        fomo = "!default=$(git config --get init.defaultBranch || echo main) && git fetch origin \"$default\" && git rebase \"origin/$default\" --autostash"
 [color]
         diff = auto
         status = auto
@@ -20,6 +21,7 @@
 [core]
         excludesfile = ~/.gitignore
 	editor = cursor
+	fsmonitor = true
 [apply]
         whitespace = nowarn
 [mergetool]
@@ -43,5 +45,14 @@
 	clean = git-lfs clean -- %f
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
+[rerere]
+	enabled = true
+[rebase]
+	updateRefs = true
+[fetch]
+	prune = true
+	writeCommitGraph = true
+[branch]
+	sort = -committerdate
 [init]
 	defaultBranch = main

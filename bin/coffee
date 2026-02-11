@@ -1,0 +1,175 @@
+#!/bin/sh
+# coffee - a friendly caffeinate wrapper
+# Prevents your Mac from sleeping during long-running tasks.
+#
+# Usage:
+#   coffee start [duration]  Start (e.g., 30m, 2h, 1h30m)
+#   coffee app <name>        Keep awake while app is running
+#   coffee until <HH:MM>     Keep awake until a specific time
+#   coffee status            Show current status
+#   coffee stop              Allow sleep again
+#   coffee help              Show this help
+
+set -e
+
+PIDFILE="$HOME/.coffee.pid"
+
+usage() {
+  sed -n '/^# Usage:/,/^$/p' "$0" | sed 's/^# //' | sed 's/^#//'
+}
+
+parse_duration() {
+  duration="$1"
+  seconds=0
+
+  # Extract hours
+  hours=$(echo "$duration" | grep -oE '[0-9]+h' | grep -oE '[0-9]+' || true)
+  if [ -n "$hours" ]; then
+    seconds=$((seconds + hours * 3600))
+  fi
+
+  # Extract minutes
+  minutes=$(echo "$duration" | grep -oE '[0-9]+m' | grep -oE '[0-9]+' || true)
+  if [ -n "$minutes" ]; then
+    seconds=$((seconds + minutes * 60))
+  fi
+
+  # Extract bare seconds
+  secs=$(echo "$duration" | grep -oE '[0-9]+s' | grep -oE '[0-9]+' || true)
+  if [ -n "$secs" ]; then
+    seconds=$((seconds + secs))
+  fi
+
+  # If just a number, treat as minutes
+  if [ "$seconds" -eq 0 ]; then
+    bare=$(echo "$duration" | grep -oE '^[0-9]+$' || true)
+    if [ -n "$bare" ]; then
+      seconds=$((bare * 60))
+    fi
+  fi
+
+  echo "$seconds"
+}
+
+do_start() {
+  do_stop_quiet
+
+  if [ -z "$1" ]; then
+    # Indefinite
+    caffeinate -dims &
+    echo $! > "$PIDFILE"
+    echo "Keeping awake indefinitely. Use 'coffee stop' to allow sleep."
+  else
+    seconds=$(parse_duration "$1")
+    if [ "$seconds" -eq 0 ]; then
+      echo "Invalid duration: $1"
+      echo "Examples: 30m, 2h, 1h30m, 90"
+      exit 1
+    fi
+    caffeinate -dims -t "$seconds" &
+    echo $! > "$PIDFILE"
+    echo "Keeping awake for $1 ($seconds seconds)."
+  fi
+}
+
+do_app() {
+  if [ -z "$1" ]; then
+    echo "Usage: coffee app <application-name>"
+    exit 1
+  fi
+
+  do_stop_quiet
+
+  # Find the PID of the application
+  app_pid=$(pgrep -x "$1" 2>/dev/null | head -1 || true)
+  if [ -z "$app_pid" ]; then
+    # Try case-insensitive
+    app_pid=$(pgrep -i "$1" 2>/dev/null | head -1 || true)
+  fi
+
+  if [ -z "$app_pid" ]; then
+    echo "Could not find running app: $1"
+    exit 1
+  fi
+
+  caffeinate -dims -w "$app_pid" &
+  echo $! > "$PIDFILE"
+  echo "Keeping awake while $1 (PID $app_pid) is running."
+}
+
+do_until() {
+  if [ -z "$1" ]; then
+    echo "Usage: coffee until HH:MM"
+    exit 1
+  fi
+
+  target_time="$1"
+  now=$(date +%s)
+  target=$(date -j -f "%H:%M" "$target_time" +%s 2>/dev/null || true)
+
+  if [ -z "$target" ]; then
+    echo "Invalid time format: $1 (use HH:MM)"
+    exit 1
+  fi
+
+  # If target is in the past, assume tomorrow
+  if [ "$target" -le "$now" ]; then
+    target=$((target + 86400))
+  fi
+
+  seconds=$((target - now))
+
+  do_stop_quiet
+  caffeinate -dims -t "$seconds" &
+  echo $! > "$PIDFILE"
+
+  hours=$((seconds / 3600))
+  mins=$(((seconds % 3600) / 60))
+  echo "Keeping awake until $target_time ($hours h $mins m from now)."
+}
+
+do_status() {
+  if [ -f "$PIDFILE" ]; then
+    pid=$(cat "$PIDFILE")
+    if kill -0 "$pid" 2>/dev/null; then
+      echo "Active (PID $pid)"
+    else
+      rm -f "$PIDFILE"
+      echo "Not active (stale PID file cleaned up)"
+    fi
+  else
+    echo "Not active"
+  fi
+}
+
+do_stop() {
+  if [ -f "$PIDFILE" ]; then
+    pid=$(cat "$PIDFILE")
+    if kill -0 "$pid" 2>/dev/null; then
+      kill "$pid" 2>/dev/null || true
+      echo "Stopped. Sleep allowed."
+    else
+      echo "Not active (stale PID file cleaned up)"
+    fi
+    rm -f "$PIDFILE"
+  else
+    echo "Not active"
+  fi
+}
+
+do_stop_quiet() {
+  if [ -f "$PIDFILE" ]; then
+    pid=$(cat "$PIDFILE")
+    kill "$pid" 2>/dev/null || true
+    rm -f "$PIDFILE"
+  fi
+}
+
+case "${1:-help}" in
+  start)  shift; do_start "$@" ;;
+  app)    shift; do_app "$@" ;;
+  until)  shift; do_until "$@" ;;
+  status) do_status ;;
+  stop)   do_stop ;;
+  help|*) usage ;;
+esac

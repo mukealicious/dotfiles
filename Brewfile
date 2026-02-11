@@ -37,6 +37,13 @@ brew "imagemagick"
 brew "promptfoo"                 # LLM prompt testing and evaluation
 brew "tw93/tap/mole"             # Mac cleanup and optimization tool (mo)
 
+# Modern CLI Tools
+brew "ast-grep"                  # Structural code search/rewrite (sg command)
+brew "zoxide"                    # Smart cd with frecency ranking (z command)
+brew "fd"                        # Modern find replacement
+brew "shellcheck"                # Shell script linter
+brew "just"                      # Simple command runner
+
 # Image Optimization
 brew "oxipng"                    # Fast PNG optimizer in Rust
 brew "pngquant"                  # PNG lossy compression
