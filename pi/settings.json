@@ -11,11 +11,12 @@
     "enabled": true,
     "maxRetries": 5
   },
+  "skills": [
+    "~/.dotfiles/ai/skills"
+  ],
   "packages": [
-    "npm:pi-mcp-adapter",
     "npm:pi-subagents",
-    "npm:pi-interactive-shell",
-    "npm:pi-web-access"
+    "npm:pi-interactive-shell"
   ],
   "lastChangelogVersion": "0.52.9"
 }

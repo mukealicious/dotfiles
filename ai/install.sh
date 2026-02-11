@@ -139,24 +139,41 @@ ensure_symlink "$AGENTS_FILE" "$HOME/.pi/agent/AGENTS.md" "~/.pi/agent/AGENTS.md
 #
 # Skills and Agents (single source of truth for all AI tools)
 #
+# Order: shared skills (ai/skills/) first, then harness-specific (claude/skills/).
+# This ensures deterministic symlink ordering — shared skills are the baseline,
+# harness-specific skills overlay on top.
+#
 
 CLAUDE_DIR="$HOME/.claude"
-SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
+SHARED_SKILLS_SRC="$DOTFILES_ROOT/ai/skills"
+CLAUDE_SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
 AGENTS_SRC="$DOTFILES_ROOT/claude/agents"
+OPENCODE_DIR="$HOME/.config/opencode"
 
-# Claude Code
-if [ -d "$SKILLS_SRC" ]; then
-  echo "  Setting up Claude Code skills..."
-  mkdir -p "$CLAUDE_DIR/skills"
-  clean_dead_symlinks "$CLAUDE_DIR/skills"
+# Claude Code skills
+echo "  Setting up Claude Code skills..."
+mkdir -p "$CLAUDE_DIR/skills"
+clean_dead_symlinks "$CLAUDE_DIR/skills"
 
-  for skill_dir in "$SKILLS_SRC"/*/; do
+# Shared skills first (ai/skills/ -> ~/.claude/skills/)
+if [ -d "$SHARED_SKILLS_SRC" ]; then
+  for skill_dir in "$SHARED_SKILLS_SRC"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name=$(basename "$skill_dir")
+    ensure_symlink "$skill_dir" "$CLAUDE_DIR/skills/$skill_name" "~/.claude/skills/$skill_name (shared)"
+  done
+fi
+
+# Harness-specific skills second (claude/skills/ -> ~/.claude/skills/)
+if [ -d "$CLAUDE_SKILLS_SRC" ]; then
+  for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name=$(basename "$skill_dir")
     ensure_symlink "$skill_dir" "$CLAUDE_DIR/skills/$skill_name" "~/.claude/skills/$skill_name"
   done
 fi
 
+# Claude Code agents
 if [ -d "$AGENTS_SRC" ]; then
   echo "  Setting up Claude Code agents..."
   mkdir -p "$CLAUDE_DIR/agents"
@@ -169,21 +186,30 @@ if [ -d "$AGENTS_SRC" ]; then
   done
 fi
 
-# OpenCode (uses same sources, different destinations)
-OPENCODE_DIR="$HOME/.config/opencode"
+# OpenCode skills
+echo "  Setting up OpenCode skills..."
+mkdir -p "$OPENCODE_DIR/skill"  # Note: OpenCode uses 'skill' not 'skills'
+clean_dead_symlinks "$OPENCODE_DIR/skill"
 
-if [ -d "$SKILLS_SRC" ]; then
-  echo "  Setting up OpenCode skills..."
-  mkdir -p "$OPENCODE_DIR/skill"  # Note: OpenCode uses 'skill' not 'skills'
-  clean_dead_symlinks "$OPENCODE_DIR/skill"
+# Shared skills first (ai/skills/ -> ~/.config/opencode/skill/)
+if [ -d "$SHARED_SKILLS_SRC" ]; then
+  for skill_dir in "$SHARED_SKILLS_SRC"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name=$(basename "$skill_dir")
+    ensure_symlink "$skill_dir" "$OPENCODE_DIR/skill/$skill_name" "~/.config/opencode/skill/$skill_name (shared)"
+  done
+fi
 
-  for skill_dir in "$SKILLS_SRC"/*/; do
+# Harness-specific skills second (claude/skills/ -> ~/.config/opencode/skill/)
+if [ -d "$CLAUDE_SKILLS_SRC" ]; then
+  for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name=$(basename "$skill_dir")
     ensure_symlink "$skill_dir" "$OPENCODE_DIR/skill/$skill_name" "~/.config/opencode/skill/$skill_name"
   done
 fi
 
+# OpenCode agents
 if [ -d "$AGENTS_SRC" ]; then
   echo "  Setting up OpenCode agents..."
   mkdir -p "$OPENCODE_DIR/agents"

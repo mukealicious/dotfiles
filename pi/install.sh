@@ -83,10 +83,8 @@ done
 # Install Tier 1 extensions
 # Uses `pi install npm:<pkg>` — idempotent, skips if already installed
 TIER1_PACKAGES="
-  pi-mcp-adapter
   pi-subagents
   pi-interactive-shell
-  pi-web-access
 "
 
 echo "  Installing Pi extensions..."
