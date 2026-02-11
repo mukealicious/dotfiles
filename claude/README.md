@@ -30,7 +30,7 @@ graph LR
 - `settings.json` → `~/.claude/settings.json` - Global permissions, hooks, plugins, MCP servers
 - `skills/*/` → `~/.claude/skills/*/` - Custom slash commands
 - `agents/*.md` → `~/.claude/agents/*.md` - Specialized subagents
-- `hooks/` - PreToolUse hooks (referenced from settings.json)
+- `hooks/` - PreToolUse, Stop, and Notification hooks (referenced from settings.json)
 
 **Installation flow:**
 1. `script/bootstrap` or `bin/dot` runs all `*/install.sh` scripts
@@ -45,8 +45,9 @@ Edit files in the dotfiles repo, not in `~/.claude/`.
 claude/
 ├── install.sh              # Symlinks settings.json + installs plugins
 ├── settings.json           # Global config (permissions, hooks, MCP)
-├── hooks/                  # PreToolUse hooks
-│   └── safety-rm.sh        # Rewrites rm to trash
+├── hooks/                  # Lifecycle hooks
+│   ├── safety-rm.sh        # PreToolUse: rewrites rm to trash
+│   └── notify-idle.sh      # Stop/Notification: sound + macOS alert
 ├── agents/                 # Subagents (specialized AI advisors)
 │   ├── oracle.md           # Senior advisor (Opus)
 │   ├── librarian.md        # Multi-repo explorer
@@ -59,6 +60,8 @@ claude/
     ├── index-knowledge/    # /index-knowledge
     ├── session-export/     # /session-export
     ├── opensrc/            # /opensrc
+    ├── sprint-plan/        # /sprint-plan
+    ├── build-skill/        # /build-skill
     ├── dotfiles-dev/       # Dotfiles guidance
     ├── favicon-generator/  # Favicon generation
     └── qmd/                # Markdown search

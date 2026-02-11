@@ -23,9 +23,11 @@ Claude Code config lives in `claude/` and is symlinked to `~/.claude/`. See `cla
 - `claude/settings.json` - permissions, hooks, MCP servers
 - `claude/skills/` - custom slash commands
 - `claude/agents/` - subagents (oracle, librarian, review)
-- `claude/hooks/` - PreToolUse hooks
+- `claude/hooks/` - PreToolUse and lifecycle hooks
 
 **Safety Hook**: PreToolUse hook intercepts `rm -rf/-r/-f` commands and rewrites to `trash` (macOS built-in). User confirms the modified command.
+
+**Notification Hook**: Stop and Notification hooks play a sound and show macOS notification when Claude Code finishes or needs attention.
 
 **MCP Servers**:
 - Linear - project management via OAuth (auth on first use)

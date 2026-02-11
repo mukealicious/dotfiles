@@ -10,7 +10,6 @@ Located in `~/.dotfiles/bin/`. Executable scripts named `git-*` become git subco
 | `git-wtf` | Branch status overview |
 | `git-undo` | Undo recent operations |
 | `git-promote` | Promote to tracking branch |
-| `git-delete-local-merged` | Cleanup merged branches |
 | `git-unpushed` | Show unpushed commits |
 | `git-unpushed-stat` | Stats on unpushed commits |
 | `git-rank-contributors` | Contributor statistics |
@@ -18,6 +17,7 @@ Located in `~/.dotfiles/bin/`. Executable scripts named `git-*` become git subco
 | `git-credit` | Credit co-authors |
 | `git-copy-branch-name` | Copy branch to clipboard |
 | `git-track` | Setup remote tracking |
+| `git-edit-new` | Open new/modified files in editor |
 | `git-nuke` | Force delete branches |
 | `git-all` | Run across multiple repos |
 

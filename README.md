@@ -28,7 +28,7 @@ dot -e    # Open dotfiles in editor
 | **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex, Pi |
 | **Window Mgmt** | AeroSpace (i3-like tiling), Ice (menu bar) |
 | **Database** | PostgreSQL 17, Redis |
-| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, agent-browser |
+| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, agent-browser |
 
 ## Architecture
 
@@ -51,6 +51,7 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `bun/` | Bun global packages |
 | `pi/` | Pi coding agent config, extensions |
 | `agent-browser/` | Headless browser automation for AI agents |
+| `ripgrep/` | Ripgrep config and environment setup |
 | `python/` | Python tools via uv |
 | `ruby/` | Ruby config (gemrc, irbrc) |
 
@@ -69,7 +70,8 @@ Each directory is a self-contained "topic" managing one tool or concern:
 
 - `dot` — Update everything
 - `e` — Launch editor
-- `git-*` — 15 custom git commands (delete-local-merged, amend, nuke, etc.)
+- `coffee` — Friendly caffeinate wrapper (prevent sleep)
+- `git-*` — 14 custom git commands (amend, nuke, undo, etc.)
 
 ## AI Integration
 
@@ -99,6 +101,10 @@ rm -rf ./build  →  trash ./build
 ```
 
 User confirms the modified command. No accidental deletions.
+
+### Notification Hook
+
+Stop and Notification hooks play a sound and show a macOS notification when Claude Code finishes a task or needs attention.
 
 ### Claude Subagents
 
@@ -145,17 +151,34 @@ See [claude/README.md](claude/README.md) for full documentation.
 - `scratch` — Open scratch file
 - `tempd` — Create and cd to temp directory
 - `gwip` / `gunwip` — Work-in-progress commits
+- `fcode [query]` — Fuzzy find file and open in editor
+- `gbda` — Delete all branches merged in HEAD (including squashed)
+- `grename <old> <new>` — Rename branch locally and on origin
+- `gtest <cmd>` — Run test command against staged changes only
+- `httpstatus <code>` — HTTP status code lookup
+- `timer <duration>` — Countdown timer with notification
+- `uuid` / `ulid` — Generate unique identifiers
 
 ### Git Aliases
 
 ```sh
-gs   # git status
-gp   # git push
-gl   # git pull
-gc   # git commit
-gd   # git diff
-glog # git log --oneline --graph
+gs     # git status
+gp     # git push
+gl     # git pull
+gc     # git commit
+gd     # git diff
+glog   # git log --oneline --graph
+gbage  # list branches sorted by last commit date
 ```
+
+### Git Config Extras
+
+- `git fomo` — Fetch and rebase default branch with autostash
+- `rerere` enabled — Remembers conflict resolutions
+- `fetch.prune` — Auto-remove deleted remote branches
+- `rebase.updateRefs` — Updates stacked branch refs on rebase
+- `core.fsmonitor` — Faster git status via filesystem monitor
+- `branch.sort = -committerdate` — Branches sorted by recent activity
 
 ## Adding New Topics
 
