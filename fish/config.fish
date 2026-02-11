@@ -10,6 +10,7 @@ set -gx PROJECTS ~/Code
 set -gx DOTFILES ~/.dotfiles
 
 # PATH
+fish_add_path ~/.bun/bin        # bun globals (pi, etc.)
 fish_add_path ~/.local/bin      # uv tools
 fish_add_path ~/.dotfiles/bin
 

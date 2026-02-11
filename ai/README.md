@@ -29,6 +29,14 @@ This directory manages the unified instruction system for AI tools.
 - **Authentication**: Uses gcloud auth (not API key)
 - **Instruction File**: `~/.gemini/GEMINI.md` (symlinked to AGENTS.md)
 
+### Pi Coding Agent (pi)
+- **Provider**: Anthropic (via @mariozechner/pi-coding-agent)
+- **Usage**: Lightweight coding agent with extensions
+- **Installed via**: Bun global (`bun.reqs`)
+- **Config**: `~/.pi/agent/settings.json` (symlinked from `pi/settings.json`)
+- **Instruction File**: `~/.pi/agent/AGENTS.md` (symlinked to AGENTS.md)
+- **Aliases**: `pi-print` (single-shot), `pi-json` (JSON output)
+
 ## Unified Instruction System
 
 All AI tools read from a single master instruction file:

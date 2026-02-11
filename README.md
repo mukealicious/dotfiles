@@ -25,7 +25,7 @@ dot -e    # Open dotfiles in editor
 | **Terminal** | WezTerm, tmux |
 | **Runtimes** | asdf (Node.js), uv (Python), Bun |
 | **Packages** | Homebrew (Brewfile) |
-| **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex |
+| **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex, Pi |
 | **Window Mgmt** | AeroSpace (i3-like tiling), Ice (menu bar) |
 | **Database** | PostgreSQL 17, Redis |
 | **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, agent-browser |
@@ -49,6 +49,7 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `aerospace/` | Window manager config |
 | `fzf/` | Fuzzy finder keybindings |
 | `bun/` | Bun global packages |
+| `pi/` | Pi coding agent config, extensions |
 | `agent-browser/` | Headless browser automation for AI agents |
 | `python/` | Python tools via uv |
 | `ruby/` | Ruby config (gemrc, irbrc) |
@@ -80,10 +81,11 @@ Single master file (`~/.AGENTS.md`) symlinked to all AI tools:
 
 ```
 ~/.AGENTS.md (canonical)
-├── ~/CLAUDE.md          → symlink
-├── ~/.config/opencode/  → symlink
-├── ~/.gemini/GEMINI.md  → symlink
-└── ~/.codex/instructions.md → symlink
+├── ~/CLAUDE.md              → symlink
+├── ~/.config/opencode/      → symlink
+├── ~/.gemini/GEMINI.md      → symlink
+├── ~/.codex/instructions.md → symlink
+└── ~/.pi/agent/AGENTS.md    → symlink
 ```
 
 Edit once, applies everywhere.
