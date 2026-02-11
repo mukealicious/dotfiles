@@ -37,6 +37,17 @@ TypeScript extensions using Pi's TUI API:
 - Desktop notifications
 - Custom UI integration
 
+### Dependencies in Shared Skills
+
+**Strategy: Bun-native, zero external dependencies.**
+
+Skills with scripts must use only Bun built-in APIs (WebSocket, fs, path, child_process, etc.) or shell commands. No `package.json` or `npm install` required.
+
+- **Bun** is already a toolchain prerequisite (installed via Homebrew)
+- Bun provides built-in WebSocket, HTTP server, file I/O — covers most needs
+- Scripts use `#!/usr/bin/env bun` shebang for direct execution
+- If a skill truly needs npm packages, add `bun install` to `ai/install.sh` for that skill dir
+
 ### Decision Framework
 
 **Start in `ai/skills/`** unless you need a harness-specific feature:
@@ -52,7 +63,10 @@ TypeScript extensions using Pi's TUI API:
 | Skill | Type | Description |
 |---|---|---|
 | `commit` | Instruction-only | Conventional Commits workflow |
+| `favicon-generator` | Scripts | Generate optimized favicons (ImageMagick) |
+| `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
 | `uv` | Instruction + docs | Python uv package manager reference |
+| `web-browser` | Scripts | Chrome CDP browser automation (Bun) |
 
 ### Claude-Specific (`claude/skills/`)
 
@@ -61,17 +75,19 @@ TypeScript extensions using Pi's TUI API:
 | `build-skill` | Instruction-only | Create effective Claude Code skills |
 | `code-review` | Subagents | Parallel code review with multiple agents |
 | `dotfiles-dev` | Instruction-only | Guide for working with dotfiles |
-| `favicon-generator` | Scripts | Generate optimized favicons |
 | `index-knowledge` | Scripts | Generate hierarchical AGENTS.md knowledge bases |
 | `librarian` | Subagents | Multi-repository codebase exploration |
 | `opensrc` | Scripts | Clone & generate knowledge base for external repos |
-| `qmd` | Scripts | Hybrid markdown search (BM25 + vectors + LLM) |
 | `session-export` | Scripts | Add AI session summary to GitHub PR |
 | `sprint-plan` | Instruction-only | Break projects into sprints with atomic tasks |
 
 ### Pi Extensions (`pi/extensions/`)
 
-_None yet — coming in Sprint 2._
+Custom extensions symlinked by `pi/install.sh`. Third-party extensions installed via packages:
+
+| Package | Source | Provides |
+|---|---|---|
+| `npm:mitsupi` | Armin Ronacher | /answer, /review, /todos, /files, /context |
 
 ## Available AI Tools
 

@@ -14,8 +14,10 @@ Generates complete favicon set from source PNG/SVG using ImageMagick. Follows 20
 
 ## Usage
 
+Run `generate.sh` from this skill's directory:
+
 ```bash
-bash $SKILL_DIR/generate.sh <input.png|svg> [options]
+bash generate.sh <input.png|svg> [options]
 ```
 
 Options:

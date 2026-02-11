@@ -80,11 +80,24 @@ for theme in "$DOTFILES_ROOT/pi/themes/"*.json; do
   ensure_symlink "$theme" "$PI_DIR/themes/$name" "~/.pi/agent/themes/$name"
 done
 
+# Symlink custom extensions
+EXTENSIONS_SRC="$DOTFILES_ROOT/pi/extensions"
+EXTENSIONS_DIR="$PI_DIR/extensions"
+if [ -d "$EXTENSIONS_SRC" ]; then
+  mkdir -p "$EXTENSIONS_DIR"
+  for ext in "$EXTENSIONS_SRC"/*.ts; do
+    [ -e "$ext" ] || continue
+    name="$(basename "$ext")"
+    ensure_symlink "$ext" "$EXTENSIONS_DIR/$name" "~/.pi/agent/extensions/$name"
+  done
+fi
+
 # Install Tier 1 extensions
 # Uses `pi install npm:<pkg>` — idempotent, skips if already installed
 TIER1_PACKAGES="
   pi-subagents
   pi-interactive-shell
+  mitsupi
 "
 
 echo "  Installing Pi extensions..."

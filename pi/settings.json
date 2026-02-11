@@ -16,7 +16,8 @@
   ],
   "packages": [
     "npm:pi-subagents",
-    "npm:pi-interactive-shell"
+    "npm:pi-interactive-shell",
+    "npm:mitsupi"
   ],
   "lastChangelogVersion": "0.52.9"
 }
