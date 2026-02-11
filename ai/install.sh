@@ -132,6 +132,10 @@ else
   echo "  ~/.codex/instructions.md already exists"
 fi
 
+# Pi: AGENTS.md in ~/.pi/agent/
+mkdir -p "$HOME/.pi/agent"
+ensure_symlink "$AGENTS_FILE" "$HOME/.pi/agent/AGENTS.md" "~/.pi/agent/AGENTS.md"
+
 #
 # Skills and Agents (single source of truth for all AI tools)
 #
