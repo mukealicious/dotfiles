@@ -15,6 +15,21 @@ Use the `dotfiles-dev` skill for detailed guidance on:
 - File patterns and conventions
 - Custom git commands
 
+## AI Agent Architecture
+
+Three-layer skill system across multiple AI tools. See `ai/README.md` for full details.
+
+| Layer | Location | Works With |
+|---|---|---|
+| Shared skills | `ai/skills/` | All agents (Claude, Pi, OpenCode, Codex) |
+| Claude-specific | `claude/skills/` | Claude Code only |
+| Pi extensions | `pi/extensions/` | Pi only |
+
+**Installer ownership**:
+- `ai/install.sh` — shared skills, agent instructions, symlinks to all tools
+- `claude/install.sh` — Claude Code settings, plugins
+- `pi/install.sh` — Pi settings, themes, extensions, packages
+
 ## Claude Code Capabilities
 
 Claude Code config lives in `claude/` and is symlinked to `~/.claude/`. See `claude/README.md` for full architecture.
@@ -29,6 +44,15 @@ Claude Code config lives in `claude/` and is symlinked to `~/.claude/`. See `cla
 
 **MCP Servers**:
 - Linear - project management via OAuth (auth on first use)
+
+## Pi Coding Agent
+
+Pi config lives in `pi/` and is symlinked to `~/.pi/agent/`. See `pi/README.md`.
+
+Key features:
+- Discovers shared skills via `settings.json` path config
+- `uv.ts` extension intercepts pip/python commands → redirects to uv
+- `notify.ts` extension sends desktop notifications (OSC 777)
 
 ## Shell Scripting Conventions
 

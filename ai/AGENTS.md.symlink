@@ -23,10 +23,7 @@ Databases: PostgreSQL 17, Redis
 ## Runtime Management
 
 - **Node.js**: managed by asdf (`node`, `npm` just work)
-- **Python**: use `uv run script.py` (handles venv + deps automatically)
-  - With dependencies: `uv run --with requests script.py`
-  - In projects: `uv run` uses `pyproject.toml`
-  - Never use bare `python` - use `uv run` instead
+- **Python**: always use `uv` — see `/uv` skill for details
 
 ## Key Commands
 

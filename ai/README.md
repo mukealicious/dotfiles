@@ -85,9 +85,24 @@ Skills with scripts must use only Bun built-in APIs (WebSocket, fs, path, child_
 
 Custom extensions symlinked by `pi/install.sh`. Third-party extensions installed via packages:
 
+| Extension | Type | Description |
+|---|---|---|
+| `uv.ts` | Tool wrapper | Prepends intercepted-commands to PATH, redirects pip/python to uv |
+| `notify.ts` | Lifecycle hook | Desktop notification via OSC 777 on agent completion (WezTerm) |
+
 | Package | Source | Provides |
 |---|---|---|
 | `npm:mitsupi` | Armin Ronacher | /answer, /review, /todos, /files, /context |
+
+### Intercepted Commands (`pi/intercepted-commands/`)
+
+Shell shims that intercept common Python tooling and redirect to uv equivalents. Loaded by the `uv.ts` extension which prepends the directory to PATH.
+
+| Command | Behavior |
+|---|---|
+| `pip`, `pip3` | Blocked — suggests `uv add` or `uv run --with` |
+| `poetry` | Blocked — suggests `uv init`, `uv add`, `uv sync`, `uv run` |
+| `python`, `python3` | Redirects to `uv run python` (blocks `-m pip` and `-m venv`) |
 
 ## Available AI Tools
 
