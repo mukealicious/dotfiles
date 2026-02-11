@@ -19,7 +19,6 @@ pi/
 ├── install.sh              # Symlinks config, installs packages
 ├── aliases.fish            # Shell aliases (pi-print, pi-json)
 ├── extensions/             # Custom TypeScript extensions
-│   ├── uv.ts              # Intercepts pip/python → uv
 │   └── notify.ts          # Desktop notification on agent completion
 ├── intercepted-commands/   # Shell shims for Python tooling
 │   ├── pip                # → uv add / uv run --with
@@ -44,23 +43,25 @@ pi/
 
 Extensions are TypeScript files using Pi's `ExtensionAPI`. Symlinked to `~/.pi/agent/extensions/` by `install.sh`.
 
-### uv.ts — Python Tooling Interceptor
-
-Wraps Pi's bash tool to prepend `intercepted-commands/` to PATH. Any `pip`, `python`, or `poetry` command the agent runs gets intercepted:
-
-- `pip install X` → error with `uv add X` suggestion
-- `python script.py` → `uv run python script.py`
-- `python -m pip` / `python -m venv` → blocked with uv alternatives
-
 ### notify.ts — Desktop Notifications
 
 Sends OSC 777 escape sequence on `agent_end` event. Shows a desktop notification with the last assistant message summary when Pi finishes a turn.
 
 **Supported terminals**: WezTerm, Ghostty, iTerm2
 
+### Provided by mitsupi
+
+The `npm:mitsupi` package provides additional extensions including `uv.ts` (Python tooling interceptor), `answer.ts`, `review.ts`, `todos.ts`, `files.ts`, and more. These are installed automatically via `pi install npm:mitsupi`.
+
 ## Intercepted Commands
 
-Shell shims in `pi/intercepted-commands/` that print helpful error messages redirecting to uv. These are NOT on PATH by default — the `uv.ts` extension prepends the directory to PATH within Pi's bash tool.
+Shell shims in `pi/intercepted-commands/` that print helpful error messages redirecting to uv. Used by mitsupi's `uv.ts` extension which prepends intercepted-commands to PATH within Pi's bash tool.
+
+**Note**: mitsupi bundles its own intercepted-commands, so these local shims serve as fallbacks and are available for non-Pi agents.
+
+## Skill Collisions
+
+Some shared skills (`commit`, `uv`, `web-browser`) collide with mitsupi's bundled copies. Pi prefers mitsupi's versions — this is expected. The shared copies in `ai/skills/` still serve Claude Code, OpenCode, Codex, and Gemini.
 
 ## Packages
 
@@ -70,4 +71,4 @@ Third-party packages installed via `pi install npm:<pkg>`:
 |---|---|
 | `pi-subagents` | Subagent spawning |
 | `pi-interactive-shell` | Interactive shell support |
-| `mitsupi` | /answer, /review, /todos, /files, /context |
+| `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |

@@ -87,16 +87,15 @@ Custom extensions symlinked by `pi/install.sh`. Third-party extensions installed
 
 | Extension | Type | Description |
 |---|---|---|
-| `uv.ts` | Tool wrapper | Prepends intercepted-commands to PATH, redirects pip/python to uv |
 | `notify.ts` | Lifecycle hook | Desktop notification via OSC 777 on agent completion (WezTerm) |
 
 | Package | Source | Provides |
 |---|---|---|
-| `npm:mitsupi` | Armin Ronacher | /answer, /review, /todos, /files, /context |
+| `npm:mitsupi` | Armin Ronacher | /answer, /review, /todos, /files, /context, uv interceptor |
 
 ### Intercepted Commands (`pi/intercepted-commands/`)
 
-Shell shims that intercept common Python tooling and redirect to uv equivalents. Loaded by the `uv.ts` extension which prepends the directory to PATH.
+Shell shims that intercept common Python tooling and redirect to uv equivalents. Used by mitsupi's `uv.ts` extension. Also available for non-Pi agents.
 
 | Command | Behavior |
 |---|---|
