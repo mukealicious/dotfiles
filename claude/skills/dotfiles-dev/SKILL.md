@@ -14,7 +14,7 @@ Topic-based dotfiles at `~/.dotfiles`. Each directory = one topic (tool/app).
 ├── bin/          # Scripts, custom git commands
 ├── claude/       # Claude skills (skills/)
 ├── git/          # Git config
-├── zsh/          # Shell config
+├── fish/         # Fish shell config, functions
 ├── homebrew/     # Brewfile
 ├── script/       # bootstrap, install
 └── [topic]/      # Tool-specific config
@@ -24,13 +24,13 @@ Topic-based dotfiles at `~/.dotfiles`. Each directory = one topic (tool/app).
 
 ### Add Shell Alias
 
-Edit or create `~/.dotfiles/[topic]/aliases.zsh`:
+Edit or create `~/.dotfiles/[topic]/aliases.fish`:
 
-```zsh
+```fish
 alias myalias='command'
 ```
 
-Run `reload` or `. ~/.zshrc` to apply.
+Run `dot` to symlink to Fish conf.d.
 
 ### Add Homebrew Package
 
@@ -70,15 +70,14 @@ See [references/file-patterns.md](references/file-patterns.md) for complete refe
 | Pattern | Behavior |
 |---------|----------|
 | `*.symlink` | Symlinked to `~/.<name>` |
-| `*.zsh` | Auto-sourced by ZSH |
-| `path.zsh` | PATH mods (loaded first) |
+| `aliases.fish` | Auto-discovered and symlinked to Fish conf.d |
+| `keybindings.fish` | Auto-discovered and symlinked to Fish conf.d |
 | `install.sh` | Topic installer |
 
 ## Key Commands
 
 - `dot` - Update everything (defaults, brew, installers)
 - `dot -e` - Edit dotfiles in editor
-- `reload` - Reload shell config
 
 ## Secrets
 

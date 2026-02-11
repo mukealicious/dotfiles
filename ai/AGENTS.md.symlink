@@ -16,6 +16,11 @@
 - `git`, `gh`, `docker`, `jq`, `httpie`
 - `op` - 1Password CLI for secrets
 - `brew`, `asdf`, `bun`, `uv`
+- `sg` (ast-grep) - structural code search/rewrite
+- `z` (zoxide) - smart cd with frecency ranking
+- `fd` - modern find replacement
+- `shellcheck` - shell script linter
+- `just` - simple command runner
 - `agent-browser` - headless browser automation for AI agents
 
 Databases: PostgreSQL 17, Redis
