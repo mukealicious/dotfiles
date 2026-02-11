@@ -72,6 +72,14 @@ mkdir -p "$PI_DIR"
 # Symlink settings.json
 ensure_symlink "$DOTFILES_ROOT/pi/settings.json" "$PI_DIR/settings.json" "~/.pi/agent/settings.json"
 
+# Symlink themes directory
+mkdir -p "$PI_DIR/themes"
+for theme in "$DOTFILES_ROOT/pi/themes/"*.json; do
+  [ -e "$theme" ] || continue
+  name="$(basename "$theme")"
+  ensure_symlink "$theme" "$PI_DIR/themes/$name" "~/.pi/agent/themes/$name"
+done
+
 # Install Tier 1 extensions
 # Uses `pi install npm:<pkg>` — idempotent, skips if already installed
 TIER1_PACKAGES="

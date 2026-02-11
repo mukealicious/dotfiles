@@ -1,4 +1,5 @@
 {
+  "theme": "gruvbox-light",
   "model": "anthropic/claude-opus-4-6",
   "thinkingLevel": "medium",
   "compaction": {
@@ -9,5 +10,12 @@
   "retry": {
     "enabled": true,
     "maxRetries": 5
-  }
+  },
+  "packages": [
+    "npm:pi-mcp-adapter",
+    "npm:pi-subagents",
+    "npm:pi-interactive-shell",
+    "npm:pi-web-access"
+  ],
+  "lastChangelogVersion": "0.52.9"
 }
