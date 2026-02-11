@@ -35,7 +35,10 @@
       "Bash(gh issue list:*)",
       "Bash(docker ps:*)",
       "Bash(docker images:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(sg:*)",
+      "Bash(shellcheck:*)",
+      "Bash(just:*)"
     ]
   },
   "hooks": {
@@ -46,6 +49,28 @@
           {
             "type": "command",
             "command": "~/.dotfiles/claude/hooks/safety-rm.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.dotfiles/claude/hooks/notify-idle.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.dotfiles/claude/hooks/notify-idle.sh",
+            "timeout": 10
           }
         ]
       }
