@@ -109,7 +109,7 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 - **Provider**: Anthropic
 - **Usage**: Primary AI assistant for complex tasks
 - **Aliases**: cl, clc, clr, yolo, ask
-- **Instruction File**: `~/CLAUDE.md` (symlinked to AGENTS.md)
+- **Instruction File**: `~/.claude/CLAUDE.md` (symlinked to AGENTS.md)
 
 ### Codex CLI (codex)
 - **Provider**: OpenAI
