@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "permissions": {
     "allow": [
       "Bash(eza:*)",
@@ -54,9 +57,6 @@
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true,
     "playground@claude-plugins-official": true
-  },
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "mcpServers": {}
 }
