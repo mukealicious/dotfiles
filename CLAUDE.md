@@ -51,8 +51,8 @@ Pi config lives in `pi/` and is symlinked to `~/.pi/agent/`. See `pi/README.md`.
 
 Key features:
 - Discovers shared skills via `settings.json` path config
-- `uv.ts` extension intercepts pip/python commands → redirects to uv
 - `notify.ts` extension sends desktop notifications (OSC 777)
+- mitsupi package provides uv interceptor, /answer, /review, /todos, /files
 
 ## Shell Scripting Conventions
 
