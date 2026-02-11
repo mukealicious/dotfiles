@@ -97,12 +97,22 @@ if [ ! -e "$AGENTS_FILE" ]; then
   exit 1
 fi
 
-# Claude: CLAUDE.md in home directory
-if [ ! -e "$HOME/CLAUDE.md" ]; then
-  echo "  Linking ~/CLAUDE.md -> ~/.AGENTS.md"
-  ln -s "$AGENTS_FILE" "$HOME/CLAUDE.md"
-else
-  echo "  ~/CLAUDE.md already exists"
+# Claude: CLAUDE.md in ~/.claude/ (user-level instructions)
+# Note: ~/CLAUDE.md is NOT used — it would be discovered by Pi's upward
+# directory traversal, causing duplicate instructions. ~/.claude/CLAUDE.md
+# is Claude Code's dedicated user-level location and avoids this.
+mkdir -p "$HOME/.claude"
+ensure_symlink "$AGENTS_FILE" "$HOME/.claude/CLAUDE.md" "~/.claude/CLAUDE.md"
+
+# Clean up legacy ~/CLAUDE.md symlink if it points to AGENTS
+if [ -L "$HOME/CLAUDE.md" ]; then
+  legacy_target="$(readlink "$HOME/CLAUDE.md")"
+  case "$legacy_target" in
+    *AGENTS*|*agents*)
+      echo "  Removing legacy ~/CLAUDE.md symlink (moved to ~/.claude/CLAUDE.md)"
+      rm "$HOME/CLAUDE.md"
+      ;;
+  esac
 fi
 
 # OpenCode: AGENTS.md in ~/.config/opencode/
