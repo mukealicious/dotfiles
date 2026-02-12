@@ -109,4 +109,39 @@ for pkg in $TIER1_PACKAGES; do
   fi
 done
 
+# Hotfix: mitsupi v1.1.1 ships with wrong execute() parameter order
+# Fixed upstream (Feb 2, 2026) but not yet published to npm
+# See: https://github.com/mitsuhiko/agent-stuff/commit/fix-extensions-update-tool-execute-signatures
+# TODO: Remove this block once mitsupi >1.1.1 is released
+patch_mitsupi() {
+  MITSUPI_EXT="$(npm root -g 2>/dev/null)/mitsupi/pi-extensions"
+  [ -d "$MITSUPI_EXT" ] || return 0
+
+  # uv.ts: broken wrapper swaps signal/onUpdate params, crashing bash tool
+  if grep -q 'async execute(id, params, onUpdate, _ctx, signal)' "$MITSUPI_EXT/uv.ts" 2>/dev/null; then
+    awk '
+      /pi\.registerTool\(\{/ { print "  pi.registerTool(bashTool);"; skip=1; next }
+      skip && /\}\);/ { skip=0; next }
+      skip { next }
+      { print }
+    ' "$MITSUPI_EXT/uv.ts" > "$MITSUPI_EXT/uv.ts.tmp" && mv "$MITSUPI_EXT/uv.ts.tmp" "$MITSUPI_EXT/uv.ts"
+    echo "    Patched uv.ts (execute signature)"
+  fi
+
+  # todos.ts: missing _signal param shifts ctx to wrong position
+  if grep -q 'execute(_toolCallId, params, _onUpdate, ctx)' "$MITSUPI_EXT/todos.ts" 2>/dev/null; then
+    sed -i '' 's/execute(_toolCallId, params, _onUpdate, ctx)/execute(_toolCallId, params, _signal, _onUpdate, ctx)/' "$MITSUPI_EXT/todos.ts"
+    echo "    Patched todos.ts (execute signature)"
+  fi
+
+  # loop.ts: missing _signal param shifts ctx to wrong position
+  if grep -q 'execute(_toolCallId, _params, _onUpdate, ctx)' "$MITSUPI_EXT/loop.ts" 2>/dev/null; then
+    sed -i '' 's/execute(_toolCallId, _params, _onUpdate, ctx)/execute(_toolCallId, _params, _signal, _onUpdate, ctx)/' "$MITSUPI_EXT/loop.ts"
+    echo "    Patched loop.ts (execute signature)"
+  fi
+}
+
+echo "  Applying mitsupi hotfixes..."
+patch_mitsupi
+
 echo "  Pi configuration complete!"
