@@ -1,6 +1,7 @@
 # Shell
 brew "fish"                      # Modern shell with built-in features
 brew "tmux"                      # Terminal multiplexer for session persistence
+brew "starship"                  # Cross-shell prompt with git, language detection
 
 # Core Development Tools
 brew "gh"                        # GitHub CLI
