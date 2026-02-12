@@ -220,16 +220,8 @@ if [ -d "$CLAUDE_SKILLS_SRC" ]; then
 fi
 
 # OpenCode agents
-if [ -d "$AGENTS_SRC" ]; then
-  echo "  Setting up OpenCode agents..."
-  mkdir -p "$OPENCODE_DIR/agents"
-  clean_dead_symlinks "$OPENCODE_DIR/agents"
-
-  for agent_file in "$AGENTS_SRC"/*.md; do
-    [ -e "$agent_file" ] || continue
-    agent_name=$(basename "$agent_file")
-    ensure_symlink "$agent_file" "$OPENCODE_DIR/agents/$agent_name" "~/.config/opencode/agents/$agent_name"
-  done
-fi
+# NOTE: Claude agents use incompatible frontmatter (tools: comma string vs YAML record).
+# Skipping symlink until OpenCode-specific agents are created.
+# See: https://opencode.ai/docs/agents/
 
 echo "  AI configuration complete!"
