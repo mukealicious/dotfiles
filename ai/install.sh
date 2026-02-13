@@ -223,5 +223,21 @@ fi
 # NOTE: Claude agents use incompatible frontmatter (tools: comma string vs YAML record).
 # Skipping symlink until OpenCode-specific agents are created.
 # See: https://opencode.ai/docs/agents/
+# Clean up stale agent symlinks from before this was disabled.
+if [ -d "$OPENCODE_DIR/agents" ]; then
+  clean_dead_symlinks "$OPENCODE_DIR/agents"
+  for link in "$OPENCODE_DIR/agents"/*; do
+    [ -L "$link" ] || continue
+    target="$(readlink "$link")"
+    case "$target" in
+      */claude/agents/*)
+        echo "  Removing stale OpenCode agent symlink: $(basename "$link") (Claude-incompatible)"
+        rm "$link"
+        ;;
+    esac
+  done
+  # Remove empty agents dir
+  rmdir "$OPENCODE_DIR/agents" 2>/dev/null || true
+fi
 
 echo "  AI configuration complete!"
