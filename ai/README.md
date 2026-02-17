@@ -116,7 +116,9 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 - **Instruction File**: `~/.codex/instructions.md` (symlinked to AGENTS.md)
 
 ### OpenCode CLI (opencode)
-- **Provider**: Groq (fast inference)
+- **Provider**: OpenAI
+- **API Key**: `OPENAI_API_KEY` in `~/.config/fish/local.fish`
+- **Config**: `~/.config/opencode/.opencode.json`
 - **Instruction File**: `~/.config/opencode/AGENTS.md` (symlinked)
 
 ### Gemini CLI (gemini)
