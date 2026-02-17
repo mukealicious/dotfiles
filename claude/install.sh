@@ -43,6 +43,10 @@ fi
 if command -v claude >/dev/null 2>&1; then
   echo "  Setting up Claude Code plugins..."
 
+  # Ensure user-scope MCP servers (idempotent - won't overwrite existing)
+  claude mcp add --transport stdio --scope user context7 -- npx -y @upstash/context7-mcp@latest 2>/dev/null || true
+  claude mcp add --transport http --scope user grep_app https://mcp.grep.app 2>/dev/null || true
+
   # Add marketplaces (idempotent - won't duplicate)
   claude plugin marketplace add anthropics/skills 2>/dev/null || true
   claude plugin marketplace update claude-plugins-official 2>/dev/null || true
