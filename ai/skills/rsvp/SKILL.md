@@ -14,9 +14,9 @@ rsvp README.md                     # Read markdown at 300 WPM (auto-strips forma
 rsvp -w 450 doc.md                 # Fast reading
 rsvp -w 200 doc.md                 # Slower, higher retention
 rsvp -r 42 doc.md                  # Resume from word 42
+rsvp -c                            # Read from clipboard
 rsvp -p file.txt                   # Plain text (skip preprocessing)
 cat notes.txt | rsvp               # Read from stdin
-pbpaste | rsvp -p                  # Read clipboard
 rsvp-url https://example.com/page  # Fetch and read a URL
 ```
 

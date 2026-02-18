@@ -10,11 +10,12 @@
 #   rsvp -w 350 document.md           # Read at 350 WPM
 #   rsvp -r 42 document.md            # Resume from word 42
 #   cat file.txt | rsvp               # Read from stdin
-#   pbpaste | rsvp                    # Read from clipboard
+#   rsvp -c                           # Read from clipboard
 #
 # Flags:
 #   -w WPM       Words per minute (default: 300)
 #   -r WORD      Resume from word number
+#   -c           Read from clipboard (pbpaste)
 #   -m           Multi-word mode (join short words)
 #   -p           Plain text mode (skip preprocessing)
 #   -h           Show help
@@ -30,6 +31,7 @@ WPM=300
 RESUME=""
 MULTIWORD=""
 PLAIN=false
+CLIPBOARD=false
 FILE=""
 
 usage() {
@@ -38,6 +40,7 @@ usage() {
   echo "Options:"
   echo "  -w WPM    Words per minute (default: 300)"
   echo "  -r WORD   Resume from word number"
+  echo "  -c        Read from clipboard (pbpaste)"
   echo "  -m        Multi-word mode (join short words)"
   echo "  -p        Plain text mode (skip preprocessing)"
   echo "  -h        Show this help"
@@ -53,6 +56,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     -w) WPM="$2"; shift 2 ;;
     -r) RESUME="$2"; shift 2 ;;
+    -c) CLIPBOARD=true; shift ;;
     -m) MULTIWORD="-m"; shift ;;
     -p) PLAIN=true; shift ;;
     -h|--help) usage ;;
@@ -107,7 +111,9 @@ preprocess() {
   fi
 }
 
-if [ -n "$FILE" ]; then
+if [ "$CLIPBOARD" = "true" ]; then
+  pbpaste | speedread "$@"
+elif [ -n "$FILE" ]; then
   if [ ! -f "$FILE" ]; then
     echo "Error: file not found: $FILE" >&2
     exit 1
