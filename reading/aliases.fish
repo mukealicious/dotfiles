@@ -3,11 +3,6 @@
 alias rsvp-fast 'rsvp -w 450'
 alias rsvp-slow 'rsvp -w 200'
 
-# Read clipboard content via RSVP
-function rsvp-clip
-    pbpaste | rsvp -p $argv
-end
-
 # Read a URL via RSVP (fetches, converts HTML to plain text, reads)
 function rsvp-url
     if test (count $argv) -lt 1

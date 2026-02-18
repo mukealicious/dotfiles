@@ -26,7 +26,6 @@ rsvp-url https://example.com/page  # Fetch and read a URL
 |-------|------------|
 | `rsvp-fast` | `rsvp -w 450` |
 | `rsvp-slow` | `rsvp -w 200` |
-| `rsvp-clip` | Read clipboard via RSVP |
 | `rsvp-url <url>` | Fetch URL, convert HTML to plain text, read via RSVP |
 
 ## Interactive Controls
