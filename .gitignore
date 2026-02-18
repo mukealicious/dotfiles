@@ -6,6 +6,9 @@
 .env*
 .cloudapp
 
+# Installer-created symlinks
+bin/speedread
+
 # OS and temporary files
 .DS_Store
 *.log
