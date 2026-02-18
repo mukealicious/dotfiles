@@ -1,0 +1,124 @@
+#!/bin/sh
+#
+# rsvp - Read documents using Rapid Serial Visual Presentation
+#
+# Preprocesses markdown/HTML to plain text, then displays via speedread.
+# Reads from file argument or stdin.
+#
+# Usage:
+#   rsvp README.md                    # Read a markdown file
+#   rsvp -w 350 document.md           # Read at 350 WPM
+#   rsvp -r 42 document.md            # Resume from word 42
+#   cat file.txt | rsvp               # Read from stdin
+#   pbpaste | rsvp                    # Read from clipboard
+#
+# Flags:
+#   -w WPM       Words per minute (default: 300)
+#   -r WORD      Resume from word number
+#   -m           Multi-word mode (join short words)
+#   -p           Plain text mode (skip preprocessing)
+#   -h           Show help
+#
+# Interactive controls:
+#   [ / ]        Decrease / increase speed by 10%
+#   space        Pause / resume (shows context)
+#   Ctrl-C       Quit (shows stats and resume point)
+
+set -e
+
+WPM=300
+RESUME=""
+MULTIWORD=""
+PLAIN=false
+FILE=""
+
+usage() {
+  echo "Usage: rsvp [options] [file]"
+  echo ""
+  echo "Options:"
+  echo "  -w WPM    Words per minute (default: 300)"
+  echo "  -r WORD   Resume from word number"
+  echo "  -m        Multi-word mode (join short words)"
+  echo "  -p        Plain text mode (skip preprocessing)"
+  echo "  -h        Show this help"
+  echo ""
+  echo "Interactive controls:"
+  echo "  [ / ]     Decrease / increase speed by 10%"
+  echo "  space     Pause / resume (shows context)"
+  echo "  Ctrl-C    Quit (shows stats and resume point)"
+  exit 0
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -w) WPM="$2"; shift 2 ;;
+    -r) RESUME="$2"; shift 2 ;;
+    -m) MULTIWORD="-m"; shift ;;
+    -p) PLAIN=true; shift ;;
+    -h|--help) usage ;;
+    -*) echo "Unknown option: $1" >&2; exit 1 ;;
+    *)  FILE="$1"; shift ;;
+  esac
+done
+
+if ! command -v speedread >/dev/null 2>&1; then
+  echo "Error: speedread not found. Run 'dot' to install." >&2
+  exit 1
+fi
+
+# Build speedread flags as positional args (safe from word splitting)
+set -- -w "$WPM"
+[ -n "$RESUME" ] && set -- "$@" -r "$RESUME"
+[ -n "$MULTIWORD" ] && set -- "$@" -m
+
+needs_preprocessing() {
+  if [ "$PLAIN" = "true" ]; then
+    return 1
+  fi
+  file="$1"
+  if [ -n "$file" ]; then
+    case "$file" in
+      *.md|*.markdown|*.mdown|*.mkd|*.mdx) return 0 ;;
+      *.html|*.htm) return 0 ;;
+      *.rst|*.org|*.adoc|*.tex) return 0 ;;
+      *) return 1 ;;
+    esac
+  fi
+  return 1
+}
+
+preprocess() {
+  if command -v pandoc >/dev/null 2>&1; then
+    pandoc -t plain --wrap=none "$@"
+  else
+    # Fallback: crude markdown stripping
+    sed -E \
+      -e 's/^#{1,6} //' \
+      -e 's/\*\*([^*]+)\*\*/\1/g' \
+      -e 's/\*([^*]+)\*/\1/g' \
+      -e 's/`([^`]+)`/\1/g' \
+      -e 's/^\s*[-*+] //' \
+      -e 's/^\s*[0-9]+\. //' \
+      -e 's/\[([^]]+)\]\([^)]+\)/\1/g' \
+      -e '/^```/d' \
+      -e '/^---$/d' \
+      -e '/^===*$/d' \
+      "$@"
+  fi
+}
+
+if [ -n "$FILE" ]; then
+  if [ ! -f "$FILE" ]; then
+    echo "Error: file not found: $FILE" >&2
+    exit 1
+  fi
+
+  if needs_preprocessing "$FILE"; then
+    preprocess "$FILE" | speedread "$@"
+  else
+    speedread "$@" < "$FILE"
+  fi
+else
+  # Reading from stdin — pass through as-is
+  speedread "$@"
+fi
