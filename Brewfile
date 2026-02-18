@@ -35,6 +35,7 @@ brew "jq"                        # JSON processor
 brew "httpie"                    # Modern curl alternative
 brew "gnupg"
 brew "imagemagick"
+brew "pandoc"                    # Universal document converter (markdown -> plain text)
 brew "promptfoo"                 # LLM prompt testing and evaluation
 brew "tw93/tap/mole"             # Mac cleanup and optimization tool (mo)
 
