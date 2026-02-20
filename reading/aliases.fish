@@ -13,3 +13,7 @@ function rsvp-url
     set -e argv[1]
     curl -sL "$url" | pandoc -f html -t plain --wrap=none | rsvp -p $argv
 end
+
+# Lue Reader TTS aliases
+alias read-aloud 'lue'
+alias read-fast 'lue --speed 2'
