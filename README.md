@@ -158,6 +158,9 @@ See [claude/README.md](claude/README.md) for full documentation.
 - `httpstatus <code>` — HTTP status code lookup
 - `timer <duration>` — Countdown timer with notification
 - `uuid` / `ulid` — Generate unique identifiers
+- `rsvp <file>` — RSVP speed-read a file (`-c` for clipboard, `-w WPM` for speed)
+- `read-aloud <file>` — Read file aloud via Lue TTS
+- `read-fast <file>` — Read file at 2x speed via Lue TTS
 
 ### Git Aliases
 
