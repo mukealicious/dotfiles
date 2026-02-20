@@ -1,6 +1,6 @@
 ---
 name: rsvp
-description: Generate RSVP speed-reading commands for documents. Use when user wants to speed-read, quickly consume, or visually scan markdown files, READMEs, documentation, or text content. Also covers TTS audio reading via macOS say command.
+description: Generate RSVP speed-reading commands for documents. Use when user wants to speed-read, quickly consume, or visually scan markdown files, READMEs, documentation, or text content. Also covers TTS audio reading via Lue Reader.
 ---
 
 # RSVP Speed Reading
@@ -37,26 +37,53 @@ rsvp-url https://example.com/page  # Fetch and read a URL
 | `space` | Pause/resume (shows surrounding context) |
 | `Ctrl-C` | Quit (shows stats and resume command) |
 
-## Audio Alternative (TTS)
+## Audio Alternative (TTS via Lue Reader)
 
-macOS `say` is built-in and requires no installation:
+[Lue](https://github.com/superstarryeyes/lue) is a terminal eBook reader with TTS (Edge TTS by default, Kokoro for offline). Supports EPUB, PDF, TXT, DOCX, HTML, RTF, and Markdown.
 
 ```bash
-say -f README.md                          # Read file aloud
-say -v Samantha -r 250 -f document.txt    # Specific voice and rate
-pandoc -t plain README.md | say -r 300    # Strip markdown first
+lue path/to/book.epub                     # Read with TTS
+lue README.md                             # Read markdown aloud
+lue --speed 1.5 doc.epub                  # 1.5x playback speed
+lue --voice "en-US-AriaNeural" book.epub  # Specific voice
+lue --tts kokoro book.epub                # Offline TTS (requires extra setup)
+lue --keys vim book.epub                  # Vim keybindings
+lue --guide                               # Interactive navigation tutorial
+lue                                       # Resume last book
 ```
 
-Note: `say` and `rsvp` cannot be synchronized — they handle pacing independently. Use them as separate modes (visual vs audio), not simultaneously.
+### Lue Keyboard Controls
+
+| Key | Action |
+|-----|--------|
+| `p` | Pause/resume TTS |
+| `a` | Toggle auto-scroll |
+| `h`/`l` | Previous/next paragraph |
+| `j`/`k` | Previous/next sentence |
+| `,`/`.` | Decrease/increase speed |
+| `s`/`w` | Toggle sentence/word highlighting |
+| `q` | Quit (auto-saves progress) |
+
+### Fish Aliases
+
+| Alias | Expands To |
+|-------|------------|
+| `read-aloud <file>` | `lue <file>` (TTS at default speed) |
+| `read-fast <file>` | `lue --speed 2 <file>` (2x TTS speed) |
+
+Note: `lue` and `rsvp` are separate modes (audio vs visual). Use them independently, not simultaneously.
 
 ## When to Suggest
 
 - User says "read this", "speed read", "scan this doc"
 - User wants to review documentation quickly
 - User asks about RSVP or speed reading
+- User wants to listen to a document (TTS) → suggest `lue`
 - Generate the command; do NOT run it (it's interactive and blocking)
 
 ## Prerequisites
 
 - `speedread` — vendored in dotfiles, auto-installed via `dot`
 - `pandoc` — installed via Brewfile (`brew install pandoc`)
+- `lue` — installed via uv (`uv tool install lue-reader`)
+- `ffmpeg` — installed via Brewfile (required by lue for audio processing)
