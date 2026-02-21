@@ -42,11 +42,13 @@ Claude Code config lives in `claude/` and is symlinked to `~/.claude/`. See `cla
 
 **Subagents** — invoke via natural language (e.g., "use the oracle to review this"):
 
-| Agent | When to invoke |
-|-------|----------------|
-| **oracle** (Opus) | Architecture decisions, complex debugging, planning, second opinions. Use when deeper reasoning is needed before acting. |
-| **librarian** (Sonnet) | Understanding 3rd-party libraries, exploring remote repositories, tracing code flow across unfamiliar codebases. |
-| **review** (Sonnet) | Code review after changes. Focused on bugs, security, and structural fit. |
+| Agent | When to invoke | Can write files? |
+|-------|----------------|------------------|
+| **oracle** (Opus) | Architecture decisions, complex debugging, planning, second opinions. | No (read-only) |
+| **librarian** (Sonnet) | Understanding 3rd-party libraries, exploring remote repositories, tracing code flow. | No (read-only) |
+| **review** (Sonnet) | Code review after changes. Focused on bugs, security, and structural fit. | No (read-only) |
+
+**Important: subagent routing for implementation work.** Oracle, librarian, and review are **read-only advisors** — they cannot Edit or Write files. For parallelized implementation tasks (writing code, editing files, running builds), use `subagent_type: "general-purpose"` which has full tool access. Never route implementation work to oracle/librarian/review — it will fail.
 
 Oracle and librarian are the primary users of `context7` and `grep_app` MCP tools for documentation lookup and GitHub-wide code search. These are configured at user scope in `~/.claude.json` (globally available — per-agent MCP scoping is not yet supported by Claude Code).
 
