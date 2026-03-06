@@ -19,8 +19,5 @@
     "npm:pi-interactive-shell",
     "npm:mitsupi"
   ],
-  "lastChangelogVersion": "0.56.2",
-  "defaultProvider": "openai",
-  "defaultModel": "gpt-5.3-codex",
-  "defaultThinkingLevel": "medium"
+  "lastChangelogVersion": "0.52.9"
 }

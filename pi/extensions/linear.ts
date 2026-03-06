@@ -7,6 +7,10 @@ type AnyObj = Record<string, any>;
 
 type LinearClientCtor = new (opts: { apiKey: string }) => AnyObj;
 
+let cachedLinearClient: AnyObj | null = null;
+let cachedLinearKey: string | null = null;
+let cachedLinearCtor: LinearClientCtor | null = null;
+
 const parseDate = (d: unknown): string | undefined => {
   if (!d) return undefined;
   if (d instanceof Date) return d.toISOString();
@@ -63,8 +67,31 @@ const resolveLinearApiKey = async (pi: ExtensionAPI, signal?: AbortSignal): Prom
 
 const getClient = async (pi: ExtensionAPI, signal?: AbortSignal): Promise<AnyObj> => {
   const key = await resolveLinearApiKey(pi, signal);
-  const sdk = (await import("@linear/sdk")) as { LinearClient: LinearClientCtor };
-  return new sdk.LinearClient({ apiKey: key });
+  if (cachedLinearClient && cachedLinearKey === key) return cachedLinearClient;
+
+  if (!cachedLinearCtor) {
+    const sdk = (await import("@linear/sdk")) as { LinearClient: LinearClientCtor };
+    cachedLinearCtor = sdk.LinearClient;
+  }
+
+  cachedLinearClient = new cachedLinearCtor({ apiKey: key });
+  cachedLinearKey = key;
+  return cachedLinearClient;
+};
+
+const withClient = async (
+  pi: ExtensionAPI,
+  signal: AbortSignal | undefined,
+  run: (client: AnyObj) => Promise<ReturnType<typeof text>>,
+): Promise<ReturnType<typeof text>> => {
+  try {
+    const client = await getClient(pi, signal);
+    return await run(client);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    const hint = msg.includes("Missing Linear auth") ? ensureLinearConfiguredMessage : `Linear init failed: ${msg}`;
+    return text(hint, { error: msg }, true);
+  }
 };
 
 const shortIssueUrl = (url: string | undefined, identifier: string | undefined): string => {
@@ -188,7 +215,7 @@ const IssueSchema = Type.Object({
   compact: Type.Optional(Type.Boolean({ description: "List only: render each issue as a minimal one-line entry. Default false." })),
   format: Type.Optional(StringEnum(["plain", "table"] as const, { description: "List only: output format (plain or fixed-width table). Default plain." })),
   showUrl: Type.Optional(Type.Boolean({ description: "List only: include URL in each row. Default true." })),
-  maxTitle: Type.Optional(Type.Integer({ minimum: 12, maximum: 200, default: 54, description: "List only: truncate title width to reduce wrapping." })),
+  maxTitle: Type.Optional(Type.Integer({ minimum: 12, maximum: 54, default: 54, description: "List only: truncate title width to reduce wrapping." })),
   includeComments: Type.Optional(Type.Boolean({ default: true })),
   title: Type.Optional(Type.String()),
   description: Type.Optional(Type.String()),
@@ -285,7 +312,17 @@ const findDocument = async (client: AnyObj, ref: string): Promise<AnyObj | null>
   if (!docs.length) {
     docs = (await client.documents({ first: 10, filter: { title: { contains: parsed.value } } })).nodes ?? [];
   }
-  return first(docs) ?? null;
+
+  if (!docs.length) return null;
+
+  const exact = docs.filter((d: AnyObj) => eqi(d.title, parsed.value));
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) {
+    throw new Error(`Multiple documents match exact title '${parsed.value}'. Use URL/slugId/id. Matches: ${exact.map((d: AnyObj) => d.url).join(", ")}`);
+  }
+
+  if (docs.length === 1) return docs[0];
+  throw new Error(`Multiple documents match '${parsed.value}'. Use URL/slugId/id. Matches: ${docs.map((d: AnyObj) => d.url).join(", ")}`);
 };
 
 const renderIssue = (i: AnyObj, includeDescription = false): string => {
@@ -362,16 +399,8 @@ export default function linearExtension(pi: ExtensionAPI) {
     ],
     parameters: IssueSchema,
     async execute(_toolCallId, params, signal) {
-      let client: AnyObj;
-      try {
-        client = await getClient(pi, signal);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        const hint = msg.includes("Missing Linear auth") ? ensureLinearConfiguredMessage : `Linear init failed: ${msg}`;
-        return text(hint, { error: msg }, true);
-      }
-
-      if (params.action === "list") {
+      return withClient(pi, signal, async (client) => {
+        if (params.action === "list") {
         const limit = params.limit ?? 25;
         const filter: AnyObj = {};
 
@@ -603,6 +632,7 @@ export default function linearExtension(pi: ExtensionAPI) {
       }
 
       return text(`Unsupported action: ${params.action}`, {}, true);
+      });
     },
   });
 
@@ -613,15 +643,7 @@ export default function linearExtension(pi: ExtensionAPI) {
     parameters: ProjectSchema,
     async execute(_toolCallId, params, signal) {
       if (params.action !== "list") return text(`Unsupported action: ${params.action}`, {}, true);
-      let client: AnyObj;
-      try {
-        client = await getClient(pi, signal);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        const hint = msg.includes("Missing Linear auth") ? ensureLinearConfiguredMessage : `Linear init failed: ${msg}`;
-        return text(hint, { error: msg }, true);
-      }
-
+      return withClient(pi, signal, async (client) => {
       const projects = (await client.projects()).nodes ?? [];
       if (!projects.length) return text("No projects found.", { count: 0, projects: [] });
 
@@ -638,6 +660,7 @@ export default function linearExtension(pi: ExtensionAPI) {
 
       const out = mapped.map((p: AnyObj) => `- ${p.name} — ${p.url ?? p.id}`).join("\n");
       return text(out, { count: mapped.length, projects: mapped });
+      });
     },
   });
 
@@ -648,14 +671,7 @@ export default function linearExtension(pi: ExtensionAPI) {
     parameters: TeamSchema,
     async execute(_toolCallId, params, signal) {
       if (params.action !== "list") return text(`Unsupported action: ${params.action}`, {}, true);
-      let client: AnyObj;
-      try {
-        client = await getClient(pi, signal);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        const hint = msg.includes("Missing Linear auth") ? ensureLinearConfiguredMessage : `Linear init failed: ${msg}`;
-        return text(hint, { error: msg }, true);
-      }
+      return withClient(pi, signal, async (client) => {
 
       const teams = (await client.teams()).nodes ?? [];
       if (!teams.length) return text("No teams found.", { count: 0, teams: [] });
@@ -663,6 +679,7 @@ export default function linearExtension(pi: ExtensionAPI) {
       const mapped = teams.map((t: AnyObj) => ({ id: t.id, key: t.key, name: t.name }));
       const out = mapped.map((t: AnyObj) => `- ${t.key}: ${t.name} (${t.id})`).join("\n");
       return text(out, { count: mapped.length, teams: mapped });
+      });
     },
   });
 
@@ -672,14 +689,7 @@ export default function linearExtension(pi: ExtensionAPI) {
     description: "SDK-backed Linear milestone operations: list, view, create, update, delete.",
     parameters: MilestoneSchema,
     async execute(_toolCallId, params, signal) {
-      let client: AnyObj;
-      try {
-        client = await getClient(pi, signal);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        const hint = msg.includes("Missing Linear auth") ? ensureLinearConfiguredMessage : `Linear init failed: ${msg}`;
-        return text(hint, { error: msg }, true);
-      }
+      return withClient(pi, signal, async (client) => {
 
       if (params.action === "list") {
         if (!params.project) return text("Missing required field: project", {}, true);
@@ -776,6 +786,7 @@ export default function linearExtension(pi: ExtensionAPI) {
       }
 
       return text(`Unsupported action: ${params.action}`, {}, true);
+      });
     },
   });
 
@@ -785,22 +796,21 @@ export default function linearExtension(pi: ExtensionAPI) {
     description: "Fetch a Linear document by URL/slugId/id/title.",
     parameters: DocumentRefSchema,
     async execute(_toolCallId, params, signal) {
-      let client: AnyObj;
-      try {
-        client = await getClient(pi, signal);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        const hint = msg.includes("Missing Linear auth") ? ensureLinearConfiguredMessage : `Linear init failed: ${msg}`;
-        return text(hint, { error: msg }, true);
-      }
-
+      return withClient(pi, signal, async (client) => {
       const includeContent = params.includeContent ?? true;
-      const doc = await findDocument(client, params.ref);
+      let doc: AnyObj | null = null;
+      try {
+        doc = await findDocument(client, params.ref);
+      } catch (e) {
+        const err = e instanceof Error ? e.message : String(e);
+        return text(`Document lookup failed: ${err}`, { ref: params.ref, error: err }, true);
+      }
       if (!doc) return text(`Document not found for ref: ${params.ref}`, { ref: params.ref }, true);
 
       const mapped = mapDocument(doc);
       if (!includeContent) delete mapped.content;
       return text(renderDoc(mapped, includeContent), { document: mapped });
+      });
     },
   });
 
@@ -810,14 +820,7 @@ export default function linearExtension(pi: ExtensionAPI) {
     description: "Search Linear documents by title.",
     parameters: DocumentSearchSchema,
     async execute(_toolCallId, params, signal) {
-      let client: AnyObj;
-      try {
-        client = await getClient(pi, signal);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        const hint = msg.includes("Missing Linear auth") ? ensureLinearConfiguredMessage : `Linear init failed: ${msg}`;
-        return text(hint, { error: msg }, true);
-      }
+      return withClient(pi, signal, async (client) => {
 
       const limit = params.limit ?? 10;
       let docs = (await client.documents({ first: limit, filter: { title: { containsIgnoreCase: params.query } } })).nodes ?? [];
@@ -831,6 +834,7 @@ export default function linearExtension(pi: ExtensionAPI) {
       });
       const out = mapped.map((d: AnyObj) => `- ${d.title} (${d.updatedAt ?? "unknown"}) — ${d.url}`).join("\n");
       return text(out, { query: params.query, count: mapped.length, documents: mapped });
+      });
     },
   });
 
@@ -840,37 +844,21 @@ export default function linearExtension(pi: ExtensionAPI) {
     description: "Create a Linear document from markdown content.",
     parameters: DocumentCreateSchema,
     async execute(_toolCallId, params, signal) {
-      let client: AnyObj;
-      try {
-        client = await getClient(pi, signal);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        const hint = msg.includes("Missing Linear auth") ? ensureLinearConfiguredMessage : `Linear init failed: ${msg}`;
-        return text(hint, { error: msg }, true);
-      }
-
-      const attempts: AnyObj[] = [
-        { title: params.title, content: params.contentMarkdown },
-        { title: params.title, contentData: params.contentMarkdown },
-      ];
+      return withClient(pi, signal, async (client) => {
 
       let created: AnyObj | null = null;
-      let lastErr = "unknown";
-      for (const input of attempts) {
-        try {
-          const res = await client.createDocument(input);
-          if (res.document) {
-            created = res.document;
-            break;
-          }
-        } catch (e) {
-          lastErr = e instanceof Error ? e.message : String(e);
-        }
+      try {
+        const res = await client.createDocument({ title: params.title, content: params.contentMarkdown });
+        created = res.document ?? null;
+      } catch (e) {
+        const err = e instanceof Error ? e.message : String(e);
+        return text(`Failed to create document: ${err}`, { title: params.title, error: err }, true);
       }
 
-      if (!created) return text(`Failed to create document: ${lastErr}`, { title: params.title }, true);
+      if (!created) return text("Failed to create document: empty response", { title: params.title }, true);
       const mapped = mapDocument(created);
       return text(`Created document: ${mapped.title}\n${mapped.url}`, { document: mapped });
+      });
     },
   });
 
@@ -880,16 +868,15 @@ export default function linearExtension(pi: ExtensionAPI) {
     description: "Update a Linear document (replace/append).",
     parameters: DocumentUpdateSchema,
     async execute(_toolCallId, params, signal) {
-      let client: AnyObj;
-      try {
-        client = await getClient(pi, signal);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        const hint = msg.includes("Missing Linear auth") ? ensureLinearConfiguredMessage : `Linear init failed: ${msg}`;
-        return text(hint, { error: msg }, true);
-      }
+      return withClient(pi, signal, async (client) => {
 
-      const current = await findDocument(client, params.ref);
+      let current: AnyObj | null = null;
+      try {
+        current = await findDocument(client, params.ref);
+      } catch (e) {
+        const err = e instanceof Error ? e.message : String(e);
+        return text(`Document lookup failed: ${err}`, { ref: params.ref, error: err }, true);
+      }
       if (!current) return text(`Document not found for ref: ${params.ref}`, { ref: params.ref }, true);
 
       const currentMapped = mapDocument(current);
@@ -906,27 +893,22 @@ export default function linearExtension(pi: ExtensionAPI) {
       }
 
       const mode = params.mode ?? "replace";
-      const next = mode === "append" ? `${currentMapped.content ?? ""}\n\n${params.contentMarkdown}`.trim() : params.contentMarkdown;
+      const next = mode === "append" ? `${currentMapped.content ?? ""}\n\n${params.contentMarkdown}` : params.contentMarkdown;
 
-      const attempts: AnyObj[] = [{ content: next }, { contentData: next }, { body: next }];
       let updated: AnyObj | null = null;
-      let lastErr = "unknown";
-      for (const input of attempts) {
-        try {
-          const res = await client.updateDocument(current.id, input);
-          if (res.document) {
-            updated = res.document;
-            break;
-          }
-        } catch (e) {
-          lastErr = e instanceof Error ? e.message : String(e);
-        }
+      try {
+        const res = await client.updateDocument(current.id, { content: next });
+        updated = res.document ?? null;
+      } catch (e) {
+        const err = e instanceof Error ? e.message : String(e);
+        return text(`Failed to update document: ${err}`, { document: currentMapped, error: err }, true);
       }
 
-      if (!updated) return text(`Failed to update document: ${lastErr}`, { document: currentMapped }, true);
+      if (!updated) return text("Failed to update document: empty response", { document: currentMapped }, true);
 
       const mapped = mapDocument(updated);
       return text(`Updated document: ${mapped.title}\n${mapped.url}`, { mode, document: mapped });
+      });
     },
   });
 
