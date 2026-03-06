@@ -1,0 +1,7 @@
+{
+  "name": "pi-local-extensions",
+  "private": true,
+  "dependencies": {
+    "@linear/sdk": "76.0.0"
+  }
+}
