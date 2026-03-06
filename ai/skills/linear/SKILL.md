@@ -17,7 +17,7 @@ Always use these local tools first:
 - `linear_milestone` — milestone actions: list, view, create, update, delete
 - `linear_doc_get` — fetch doc by URL, slugId, UUID, or title
 - `linear_doc_search` — find docs by title
-- `linear_doc_create` — create doc from markdown
+- `linear_doc_create` — create doc from markdown (requires `project` or `team`)
 - `linear_doc_update` — replace/append doc markdown
 - `format_list` — generic formatter for ad-hoc lists (avoid for `linear_issue` list tables; use `linear_issue format=table`)
 
@@ -84,6 +84,11 @@ Important: Unless user requests a different format, preserve tool row layout ver
    - `mode: "replace"` for full rewrite
    - `mode: "append"` for progress updates
    - optional `expectedUpdatedAt` for conflict guard
+
+## Caution
+
+- `action=delete` on issues and milestones is immediate and irreversible. Confirm with the user before executing.
+- `action=start` creates/switches git branches by default. Set `createBranch=false` to skip.
 
 ## Fallback
 

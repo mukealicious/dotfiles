@@ -103,7 +103,7 @@ const shortIssueUrl = (url: string | undefined, identifier: string | undefined):
   return u;
 };
 
-const mapIssue = async (issue: AnyObj): Promise<AnyObj> => {
+const mapIssue = async (issue: AnyObj): Promise<AnyObj | null> => {
   if (!issue) return null;
   const [state, team, project, assignee, milestone] = await Promise.all([
     issue.state?.catch?.(() => null) ?? issue.state,
@@ -144,6 +144,7 @@ const mapDocument = (doc: AnyObj): AnyObj => ({
 const resolveTeam = async (client: AnyObj, teamRef?: string): Promise<AnyObj | null> => {
   if (!teamRef) return null;
   const tr = norm(teamRef);
+  // TODO: pagination (cursor-based) for large workspaces
   const teams = (await client.teams()).nodes ?? [];
   return (
     teams.find((t: AnyObj) => t.id === tr) ??
@@ -156,6 +157,7 @@ const resolveTeam = async (client: AnyObj, teamRef?: string): Promise<AnyObj | n
 const resolveProject = async (client: AnyObj, projectRef?: string): Promise<AnyObj | null> => {
   if (!projectRef) return null;
   const pr = norm(projectRef);
+  // TODO: pagination (cursor-based) for large workspaces
   const projects = (await client.projects()).nodes ?? [];
   return (
     projects.find((p: AnyObj) => p.id === pr) ??
@@ -181,6 +183,7 @@ const resolveIssueStateId = async (issue: AnyObj, stateRef?: string): Promise<st
   const found =
     states.find((s: AnyObj) => s.id === sr) ??
     states.find((s: AnyObj) => eqi(s.name, sr)) ??
+    // Note: type match (e.g. "started") may be ambiguous if team has multiple states of same type
     states.find((s: AnyObj) => eqi(s.type, sr));
   if (!found) throw new Error(`State not found in team workflow: ${sr}`);
   return found.id;
@@ -259,6 +262,8 @@ const DocumentSearchSchema = Type.Object({
 const DocumentCreateSchema = Type.Object({
   title: Type.String(),
   contentMarkdown: Type.String(),
+  project: Type.Optional(Type.String({ description: "Project name or id to attach the document to." })),
+  team: Type.Optional(Type.String({ description: "Team key/name/id to attach the document to." })),
 });
 
 const DocumentUpdateSchema = Type.Object({
@@ -308,6 +313,7 @@ const findDocument = async (client: AnyObj, ref: string): Promise<AnyObj | null>
     return first(bySlug.nodes) ?? null;
   }
 
+  // TODO: pagination (cursor-based) for large workspaces
   let docs = (await client.documents({ first: 10, filter: { title: { containsIgnoreCase: parsed.value } } })).nodes ?? [];
   if (!docs.length) {
     docs = (await client.documents({ first: 10, filter: { title: { contains: parsed.value } } })).nodes ?? [];
@@ -396,6 +402,8 @@ export default function linearExtension(pi: ExtensionAPI) {
       "Do not call format_list on linear_issue list output; linear_issue with format='table' already returns final table text.",
       "For action=list, prefer compact=true and maxTitle around 48-64 for scannable output.",
       "When reporting list results to the user, preserve the tool's row layout verbatim unless the user asks to reformat.",
+      "action=start transitions the issue to In Progress AND creates/switches a git branch by default. Set createBranch=false to skip. Always inform the user about the branch operation.",
+      "Always confirm with the user before executing action=delete.",
     ],
     parameters: IssueSchema,
     async execute(_toolCallId, params, signal) {
@@ -423,8 +431,9 @@ export default function linearExtension(pi: ExtensionAPI) {
           }
         }
 
+        // TODO: pagination (cursor-based) for large workspaces
         const res = await client.issues({ first: limit, filter: Object.keys(filter).length ? filter : undefined });
-        const issues = await Promise.all((res.nodes ?? []).map(mapIssue));
+        const issues = (await Promise.all((res.nodes ?? []).map(mapIssue))).filter((i): i is AnyObj => i !== null);
         if (!issues.length) return text("No issues found.", { count: 0, issues: [] });
 
         const showUrl = params.showUrl ?? true;
@@ -484,7 +493,7 @@ export default function linearExtension(pi: ExtensionAPI) {
       if (params.action === "view") {
         if (!params.issue) return text("Missing required field: issue", {}, true);
         const issue = await resolveIssue(client, params.issue);
-        const mapped = await mapIssue(issue);
+        const mapped = (await mapIssue(issue))!;
 
         let comments: AnyObj[] = [];
         if (params.includeComments ?? true) {
@@ -570,7 +579,7 @@ export default function linearExtension(pi: ExtensionAPI) {
         }
 
         const updatedRes = await issue.update(update);
-        const updated = updatedRes?.issue ? await mapIssue(updatedRes.issue) : await mapIssue(await resolveIssue(client, params.issue));
+        const updated = (updatedRes?.issue ? await mapIssue(updatedRes.issue) : await mapIssue(await resolveIssue(client, params.issue)))!;
         return text(`Updated ${updated.identifier}: ${updated.title}\n${updated.url}`, { issue: updated, update });
       }
 
@@ -580,7 +589,7 @@ export default function linearExtension(pi: ExtensionAPI) {
 
         const issue = await resolveIssue(client, params.issue);
         const result = await client.createComment({ issueId: issue.id, body: params.body });
-        const mapped = await mapIssue(issue);
+        const mapped = (await mapIssue(issue))!;
         return text(`Comment added to ${mapped.identifier}\n${mapped.url}`, {
           issue: mapped,
           comment: result.comment ? { id: result.comment.id, body: result.comment.body } : undefined,
@@ -600,7 +609,7 @@ export default function linearExtension(pi: ExtensionAPI) {
 
         if (target) await issue.update({ stateId: target.id });
 
-        const refreshed = await mapIssue(await resolveIssue(client, params.issue));
+        const refreshed = (await mapIssue(await resolveIssue(client, params.issue)))!;
         const branchName = params.branch || refreshed.branchName || `${String(refreshed.identifier || "issue").toLowerCase()}-${String(refreshed.title || "work").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48)}`;
 
         let branchInfo = "";
@@ -626,7 +635,7 @@ export default function linearExtension(pi: ExtensionAPI) {
       if (params.action === "delete") {
         if (!params.issue) return text("Missing required field: issue", {}, true);
         const issue = await resolveIssue(client, params.issue);
-        const mapped = await mapIssue(issue);
+        const mapped = (await mapIssue(issue))!;
         const res = await client.deleteIssue(issue.id);
         return text(`Deleted issue: ${mapped.identifier} (${mapped.title})`, { success: res?.success ?? true, issue: mapped });
       }
@@ -644,22 +653,23 @@ export default function linearExtension(pi: ExtensionAPI) {
     async execute(_toolCallId, params, signal) {
       if (params.action !== "list") return text(`Unsupported action: ${params.action}`, {}, true);
       return withClient(pi, signal, async (client) => {
-      const projects = (await client.projects()).nodes ?? [];
-      if (!projects.length) return text("No projects found.", { count: 0, projects: [] });
+        // TODO: pagination (cursor-based) for large workspaces
+        const projects = (await client.projects()).nodes ?? [];
+        if (!projects.length) return text("No projects found.", { count: 0, projects: [] });
 
-      const mapped = projects.map((p: AnyObj) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description ?? "",
-        state: p.state ?? undefined,
-        url: p.url,
-        targetDate: parseDate(p.targetDate),
-        createdAt: parseDate(p.createdAt),
-        updatedAt: parseDate(p.updatedAt),
-      }));
+        const mapped = projects.map((p: AnyObj) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description ?? "",
+          state: p.state ?? undefined,
+          url: p.url,
+          targetDate: parseDate(p.targetDate),
+          createdAt: parseDate(p.createdAt),
+          updatedAt: parseDate(p.updatedAt),
+        }));
 
-      const out = mapped.map((p: AnyObj) => `- ${p.name} — ${p.url ?? p.id}`).join("\n");
-      return text(out, { count: mapped.length, projects: mapped });
+        const out = mapped.map((p: AnyObj) => `- ${p.name} — ${p.url ?? p.id}`).join("\n");
+        return text(out, { count: mapped.length, projects: mapped });
       });
     },
   });
@@ -672,13 +682,13 @@ export default function linearExtension(pi: ExtensionAPI) {
     async execute(_toolCallId, params, signal) {
       if (params.action !== "list") return text(`Unsupported action: ${params.action}`, {}, true);
       return withClient(pi, signal, async (client) => {
+        // TODO: pagination (cursor-based) for large workspaces
+        const teams = (await client.teams()).nodes ?? [];
+        if (!teams.length) return text("No teams found.", { count: 0, teams: [] });
 
-      const teams = (await client.teams()).nodes ?? [];
-      if (!teams.length) return text("No teams found.", { count: 0, teams: [] });
-
-      const mapped = teams.map((t: AnyObj) => ({ id: t.id, key: t.key, name: t.name }));
-      const out = mapped.map((t: AnyObj) => `- ${t.key}: ${t.name} (${t.id})`).join("\n");
-      return text(out, { count: mapped.length, teams: mapped });
+        const mapped = teams.map((t: AnyObj) => ({ id: t.id, key: t.key, name: t.name }));
+        const out = mapped.map((t: AnyObj) => `- ${t.key}: ${t.name} (${t.id})`).join("\n");
+        return text(out, { count: mapped.length, teams: mapped });
       });
     },
   });
@@ -687,105 +697,107 @@ export default function linearExtension(pi: ExtensionAPI) {
     name: "linear_milestone",
     label: "Linear Milestone",
     description: "SDK-backed Linear milestone operations: list, view, create, update, delete.",
+    promptGuidelines: [
+      "Always confirm with the user before executing action=delete.",
+    ],
     parameters: MilestoneSchema,
     async execute(_toolCallId, params, signal) {
       return withClient(pi, signal, async (client) => {
-
-      if (params.action === "list") {
-        if (!params.project) return text("Missing required field: project", {}, true);
-        const project = await resolveProject(client, params.project);
-        if (!project) return text(`Project not found: ${params.project}`, { project: params.project }, true);
-        const milestones = (await project.projectMilestones()).nodes ?? [];
-        const mapped = milestones.map((m: AnyObj) => ({
-          id: m.id,
-          name: m.name,
-          description: m.description ?? "",
-          status: m.status,
-          targetDate: parseDate(m.targetDate),
-          url: m.url,
-          updatedAt: parseDate(m.updatedAt),
-        }));
-        if (!mapped.length) return text(`No milestones for project: ${project.name}`, { count: 0, milestones: [] });
-        const out = mapped.map((m: AnyObj) => `- ${m.name} [${m.status ?? "unknown"}] — ${m.url ?? m.id}`).join("\n");
-        return text(out, { project: { id: project.id, name: project.name }, count: mapped.length, milestones: mapped });
-      }
-
-      if (params.action === "view") {
-        if (!params.milestone) return text("Missing required field: milestone", {}, true);
-        const m = await client.projectMilestone(params.milestone);
-        if (!m) return text(`Milestone not found: ${params.milestone}`, {}, true);
-        const payload = {
-          id: m.id,
-          name: m.name,
-          description: m.description ?? "",
-          status: m.status,
-          targetDate: parseDate(m.targetDate),
-          url: m.url,
-          updatedAt: parseDate(m.updatedAt),
-        };
-        const out = [`${payload.name}`, `Status: ${payload.status ?? "unknown"}`, `URL: ${payload.url ?? payload.id}`, payload.description ? `\n${payload.description}` : ""]
-          .filter(Boolean)
-          .join("\n");
-        return text(out, { milestone: payload });
-      }
-
-      if (params.action === "create") {
-        if (!params.project) return text("Missing required field: project", {}, true);
-        if (!params.name) return text("Missing required field: name", {}, true);
-        const project = await resolveProject(client, params.project);
-        if (!project) return text(`Project not found: ${params.project}`, {}, true);
-
-        const result = await client.createProjectMilestone({
-          projectId: project.id,
-          name: params.name,
-          description: params.description,
-          targetDate: params.targetDate,
-          status: params.status,
-        });
-
-        const m = result.projectMilestone;
-        if (!m) return text("Failed to create milestone.", {}, true);
-        return text(`Created milestone: ${m.name}\n${m.url ?? m.id}`, {
-          milestone: {
+        if (params.action === "list") {
+          if (!params.project) return text("Missing required field: project", {}, true);
+          const project = await resolveProject(client, params.project);
+          if (!project) return text(`Project not found: ${params.project}`, { project: params.project }, true);
+          const milestones = (await project.projectMilestones()).nodes ?? [];
+          const mapped = milestones.map((m: AnyObj) => ({
             id: m.id,
             name: m.name,
+            description: m.description ?? "",
             status: m.status,
+            targetDate: parseDate(m.targetDate),
             url: m.url,
-          },
-        });
-      }
+            updatedAt: parseDate(m.updatedAt),
+          }));
+          if (!mapped.length) return text(`No milestones for project: ${project.name}`, { count: 0, milestones: [] });
+          const out = mapped.map((m: AnyObj) => `- ${m.name} [${m.status ?? "unknown"}] — ${m.url ?? m.id}`).join("\n");
+          return text(out, { project: { id: project.id, name: project.name }, count: mapped.length, milestones: mapped });
+        }
 
-      if (params.action === "update") {
-        if (!params.milestone) return text("Missing required field: milestone", {}, true);
-        const patch: AnyObj = {};
-        if (params.name !== undefined) patch.name = params.name;
-        if (params.description !== undefined) patch.description = params.description;
-        if (params.targetDate !== undefined) patch.targetDate = params.targetDate;
-        if (params.status !== undefined) patch.status = params.status;
+        if (params.action === "view") {
+          if (!params.milestone) return text("Missing required field: milestone", {}, true);
+          const m = await client.projectMilestone(params.milestone);
+          if (!m) return text(`Milestone not found: ${params.milestone}`, {}, true);
+          const payload = {
+            id: m.id,
+            name: m.name,
+            description: m.description ?? "",
+            status: m.status,
+            targetDate: parseDate(m.targetDate),
+            url: m.url,
+            updatedAt: parseDate(m.updatedAt),
+          };
+          const out = [`${payload.name}`, `Status: ${payload.status ?? "unknown"}`, `URL: ${payload.url ?? payload.id}`, payload.description ? `\n${payload.description}` : ""]
+            .filter(Boolean)
+            .join("\n");
+          return text(out, { milestone: payload });
+        }
 
-        const result = await client.updateProjectMilestone(params.milestone, patch);
-        const m = result.projectMilestone;
-        if (!m) return text(`Failed to update milestone: ${params.milestone}`, { patch }, true);
+        if (params.action === "create") {
+          if (!params.project) return text("Missing required field: project", {}, true);
+          if (!params.name) return text("Missing required field: name", {}, true);
+          const project = await resolveProject(client, params.project);
+          if (!project) return text(`Project not found: ${params.project}`, {}, true);
 
-        return text(`Updated milestone: ${m.name}\n${m.url ?? m.id}`, {
-          milestone: { id: m.id, name: m.name, status: m.status, url: m.url },
-          patch,
-        });
-      }
+          const result = await client.createProjectMilestone({
+            projectId: project.id,
+            name: params.name,
+            description: params.description,
+            targetDate: params.targetDate,
+            status: params.status,
+          });
 
-      if (params.action === "delete") {
-        if (!params.milestone) return text("Missing required field: milestone", {}, true);
-        const existing = await client.projectMilestone(params.milestone);
-        const res = await client.deleteProjectMilestone(params.milestone);
-        return text(`Deleted milestone: ${existing?.name ?? params.milestone}`, {
-          success: res?.success ?? true,
-          milestone: existing
-            ? { id: existing.id, name: existing.name, url: existing.url }
-            : { id: params.milestone },
-        });
-      }
+          const m = result.projectMilestone;
+          if (!m) return text("Failed to create milestone.", {}, true);
+          return text(`Created milestone: ${m.name}\n${m.url ?? m.id}`, {
+            milestone: {
+              id: m.id,
+              name: m.name,
+              status: m.status,
+              url: m.url,
+            },
+          });
+        }
 
-      return text(`Unsupported action: ${params.action}`, {}, true);
+        if (params.action === "update") {
+          if (!params.milestone) return text("Missing required field: milestone", {}, true);
+          const patch: AnyObj = {};
+          if (params.name !== undefined) patch.name = params.name;
+          if (params.description !== undefined) patch.description = params.description;
+          if (params.targetDate !== undefined) patch.targetDate = params.targetDate;
+          if (params.status !== undefined) patch.status = params.status;
+
+          const result = await client.updateProjectMilestone(params.milestone, patch);
+          const m = result.projectMilestone;
+          if (!m) return text(`Failed to update milestone: ${params.milestone}`, { patch }, true);
+
+          return text(`Updated milestone: ${m.name}\n${m.url ?? m.id}`, {
+            milestone: { id: m.id, name: m.name, status: m.status, url: m.url },
+            patch,
+          });
+        }
+
+        if (params.action === "delete") {
+          if (!params.milestone) return text("Missing required field: milestone", {}, true);
+          const existing = await client.projectMilestone(params.milestone);
+          const res = await client.deleteProjectMilestone(params.milestone);
+          return text(`Deleted milestone: ${existing?.name ?? params.milestone}`, {
+            success: res?.success ?? true,
+            milestone: existing
+              ? { id: existing.id, name: existing.name, url: existing.url }
+              : { id: params.milestone },
+          });
+        }
+
+        return text(`Unsupported action: ${params.action}`, {}, true);
       });
     },
   });
@@ -797,19 +809,19 @@ export default function linearExtension(pi: ExtensionAPI) {
     parameters: DocumentRefSchema,
     async execute(_toolCallId, params, signal) {
       return withClient(pi, signal, async (client) => {
-      const includeContent = params.includeContent ?? true;
-      let doc: AnyObj | null = null;
-      try {
-        doc = await findDocument(client, params.ref);
-      } catch (e) {
-        const err = e instanceof Error ? e.message : String(e);
-        return text(`Document lookup failed: ${err}`, { ref: params.ref, error: err }, true);
-      }
-      if (!doc) return text(`Document not found for ref: ${params.ref}`, { ref: params.ref }, true);
+        const includeContent = params.includeContent ?? true;
+        let doc: AnyObj | null = null;
+        try {
+          doc = await findDocument(client, params.ref);
+        } catch (e) {
+          const err = e instanceof Error ? e.message : String(e);
+          return text(`Document lookup failed: ${err}`, { ref: params.ref, error: err }, true);
+        }
+        if (!doc) return text(`Document not found for ref: ${params.ref}`, { ref: params.ref }, true);
 
-      const mapped = mapDocument(doc);
-      if (!includeContent) delete mapped.content;
-      return text(renderDoc(mapped, includeContent), { document: mapped });
+        const mapped = mapDocument(doc);
+        if (!includeContent) delete mapped.content;
+        return text(renderDoc(mapped, includeContent), { document: mapped });
       });
     },
   });
@@ -821,19 +833,19 @@ export default function linearExtension(pi: ExtensionAPI) {
     parameters: DocumentSearchSchema,
     async execute(_toolCallId, params, signal) {
       return withClient(pi, signal, async (client) => {
+        const limit = params.limit ?? 10;
+        // TODO: pagination (cursor-based) for large workspaces
+        let docs = (await client.documents({ first: limit, filter: { title: { containsIgnoreCase: params.query } } })).nodes ?? [];
+        if (!docs.length) docs = (await client.documents({ first: limit, filter: { title: { contains: params.query } } })).nodes ?? [];
 
-      const limit = params.limit ?? 10;
-      let docs = (await client.documents({ first: limit, filter: { title: { containsIgnoreCase: params.query } } })).nodes ?? [];
-      if (!docs.length) docs = (await client.documents({ first: limit, filter: { title: { contains: params.query } } })).nodes ?? [];
+        if (!docs.length) return text(`No documents found for query: ${params.query}`, { query: params.query, count: 0, documents: [] });
 
-      if (!docs.length) return text(`No documents found for query: ${params.query}`, { query: params.query, count: 0, documents: [] });
-
-      const mapped = docs.map(mapDocument).map((d: AnyObj) => {
-        delete d.content;
-        return d;
-      });
-      const out = mapped.map((d: AnyObj) => `- ${d.title} (${d.updatedAt ?? "unknown"}) — ${d.url}`).join("\n");
-      return text(out, { query: params.query, count: mapped.length, documents: mapped });
+        const mapped = docs.map(mapDocument).map((d: AnyObj) => {
+          delete d.content;
+          return d;
+        });
+        const out = mapped.map((d: AnyObj) => `- ${d.title} (${d.updatedAt ?? "unknown"}) — ${d.url}`).join("\n");
+        return text(out, { query: params.query, count: mapped.length, documents: mapped });
       });
     },
   });
@@ -841,23 +853,43 @@ export default function linearExtension(pi: ExtensionAPI) {
   pi.registerTool({
     name: "linear_doc_create",
     label: "Linear Doc Create",
-    description: "Create a Linear document from markdown content.",
+    description: "Create a Linear document from markdown content. Requires a project or team as parent.",
+    promptGuidelines: [
+      "Linear requires a parent entity (project or team) to create a document. Always ask the user which project or team to attach the doc to if not specified.",
+    ],
     parameters: DocumentCreateSchema,
     async execute(_toolCallId, params, signal) {
       return withClient(pi, signal, async (client) => {
+        const payload: AnyObj = { title: params.title, content: params.contentMarkdown };
 
-      let created: AnyObj | null = null;
-      try {
-        const res = await client.createDocument({ title: params.title, content: params.contentMarkdown });
-        created = res.document ?? null;
-      } catch (e) {
-        const err = e instanceof Error ? e.message : String(e);
-        return text(`Failed to create document: ${err}`, { title: params.title, error: err }, true);
-      }
+        if (params.project) {
+          const project = await resolveProject(client, params.project);
+          if (!project) return text(`Project not found: ${params.project}`, { project: params.project }, true);
+          payload.projectId = project.id;
+        } else if (params.team) {
+          const team = await resolveTeam(client, params.team);
+          if (!team) return text(`Team not found: ${params.team}`, { team: params.team }, true);
+          payload.teamId = team.id;
+        } else {
+          return text(
+            "Missing required parent: specify project or team for document creation.",
+            { title: params.title },
+            true,
+          );
+        }
 
-      if (!created) return text("Failed to create document: empty response", { title: params.title }, true);
-      const mapped = mapDocument(created);
-      return text(`Created document: ${mapped.title}\n${mapped.url}`, { document: mapped });
+        let created: AnyObj | null = null;
+        try {
+          const res = await client.createDocument(payload);
+          created = res.document ?? null;
+        } catch (e) {
+          const err = e instanceof Error ? e.message : String(e);
+          return text(`Failed to create document: ${err}`, { title: params.title, error: err }, true);
+        }
+
+        if (!created) return text("Failed to create document: empty response", { title: params.title }, true);
+        const mapped = mapDocument(created);
+        return text(`Created document: ${mapped.title}\n${mapped.url}`, { document: mapped });
       });
     },
   });
@@ -869,45 +901,44 @@ export default function linearExtension(pi: ExtensionAPI) {
     parameters: DocumentUpdateSchema,
     async execute(_toolCallId, params, signal) {
       return withClient(pi, signal, async (client) => {
+        let current: AnyObj | null = null;
+        try {
+          current = await findDocument(client, params.ref);
+        } catch (e) {
+          const err = e instanceof Error ? e.message : String(e);
+          return text(`Document lookup failed: ${err}`, { ref: params.ref, error: err }, true);
+        }
+        if (!current) return text(`Document not found for ref: ${params.ref}`, { ref: params.ref }, true);
 
-      let current: AnyObj | null = null;
-      try {
-        current = await findDocument(client, params.ref);
-      } catch (e) {
-        const err = e instanceof Error ? e.message : String(e);
-        return text(`Document lookup failed: ${err}`, { ref: params.ref, error: err }, true);
-      }
-      if (!current) return text(`Document not found for ref: ${params.ref}`, { ref: params.ref }, true);
+        const currentMapped = mapDocument(current);
+        if (
+          params.expectedUpdatedAt &&
+          currentMapped.updatedAt &&
+          params.expectedUpdatedAt !== currentMapped.updatedAt
+        ) {
+          return text(
+            `Conflict: document updated since expected timestamp. expected=${params.expectedUpdatedAt} actual=${currentMapped.updatedAt}`,
+            { conflict: true, expectedUpdatedAt: params.expectedUpdatedAt, actualUpdatedAt: currentMapped.updatedAt, document: currentMapped },
+            true,
+          );
+        }
 
-      const currentMapped = mapDocument(current);
-      if (
-        params.expectedUpdatedAt &&
-        currentMapped.updatedAt &&
-        params.expectedUpdatedAt !== currentMapped.updatedAt
-      ) {
-        return text(
-          `Conflict: document updated since expected timestamp. expected=${params.expectedUpdatedAt} actual=${currentMapped.updatedAt}`,
-          { conflict: true, expectedUpdatedAt: params.expectedUpdatedAt, actualUpdatedAt: currentMapped.updatedAt, document: currentMapped },
-          true,
-        );
-      }
+        const mode = params.mode ?? "replace";
+        const next = mode === "append" ? `${currentMapped.content ?? ""}\n\n${params.contentMarkdown}` : params.contentMarkdown;
 
-      const mode = params.mode ?? "replace";
-      const next = mode === "append" ? `${currentMapped.content ?? ""}\n\n${params.contentMarkdown}` : params.contentMarkdown;
+        let updated: AnyObj | null = null;
+        try {
+          const res = await client.updateDocument(current.id, { content: next });
+          updated = res.document ?? null;
+        } catch (e) {
+          const err = e instanceof Error ? e.message : String(e);
+          return text(`Failed to update document: ${err}`, { document: currentMapped, error: err }, true);
+        }
 
-      let updated: AnyObj | null = null;
-      try {
-        const res = await client.updateDocument(current.id, { content: next });
-        updated = res.document ?? null;
-      } catch (e) {
-        const err = e instanceof Error ? e.message : String(e);
-        return text(`Failed to update document: ${err}`, { document: currentMapped, error: err }, true);
-      }
+        if (!updated) return text("Failed to update document: empty response", { document: currentMapped }, true);
 
-      if (!updated) return text("Failed to update document: empty response", { document: currentMapped }, true);
-
-      const mapped = mapDocument(updated);
-      return text(`Updated document: ${mapped.title}\n${mapped.url}`, { mode, document: mapped });
+        const mapped = mapDocument(updated);
+        return text(`Updated document: ${mapped.title}\n${mapped.url}`, { mode, document: mapped });
       });
     },
   });
