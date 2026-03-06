@@ -19,7 +19,8 @@ pi/
 ├── install.sh              # Symlinks config, installs packages
 ├── aliases.fish            # Shell aliases (pi-print, pi-json)
 ├── extensions/             # Custom TypeScript extensions
-│   └── notify.ts          # Desktop notification on agent completion
+│   ├── notify.ts          # Desktop notification on agent completion
+│   └── linear.ts          # SDK-backed Linear tools (issues/projects/milestones/teams/docs)
 ├── intercepted-commands/   # Shell shims for Python tooling
 │   ├── pip                # → uv add / uv run --with
 │   ├── pip3               # → uv add / uv run --with
@@ -48,6 +49,18 @@ Extensions are TypeScript files using Pi's `ExtensionAPI`. Symlinked to `~/.pi/a
 Sends OSC 777 escape sequence on `agent_end` event. Shows a desktop notification with the last assistant message summary when Pi finishes a turn.
 
 **Supported terminals**: WezTerm, Ghostty, iTerm2
+
+### linear.ts — SDK-backed Linear Tools
+
+Registers first-class Linear tools (using `@linear/sdk`) so agents can work with issues, projects, milestones, teams, and docs without shell GraphQL pipelines:
+
+- `linear_issue` (list/view/create/update/comment/start/delete)
+- `linear_project` (list)
+- `linear_team` (list)
+- `linear_milestone` (list/view/create/update/delete)
+- `linear_doc_get`, `linear_doc_search`, `linear_doc_create`, `linear_doc_update`
+
+Auth supports `LINEAR_API_KEY` or `LINEAR_OP_REF` (`op://...` preferred, direct `lin_api_...` supported).
 
 ### Provided by mitsupi
 

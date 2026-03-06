@@ -90,6 +90,24 @@ if [ -d "$EXTENSIONS_SRC" ]; then
     name="$(basename "$ext")"
     ensure_symlink "$ext" "$EXTENSIONS_DIR/$name" "~/.pi/agent/extensions/$name"
   done
+
+  # If extension package manifests exist, mirror them into ~/.pi/agent/extensions
+  # and install deps there so module resolution works from ~/.pi/agent/extensions/*.ts.
+  if [ -f "$EXTENSIONS_SRC/package.json" ]; then
+    ensure_symlink "$EXTENSIONS_SRC/package.json" "$EXTENSIONS_DIR/package.json" "~/.pi/agent/extensions/package.json"
+  fi
+  if [ -f "$EXTENSIONS_SRC/package-lock.json" ]; then
+    ensure_symlink "$EXTENSIONS_SRC/package-lock.json" "$EXTENSIONS_DIR/package-lock.json" "~/.pi/agent/extensions/package-lock.json"
+  fi
+
+  if [ -f "$EXTENSIONS_DIR/package.json" ]; then
+    echo "  Installing local extension dependencies..."
+    if (cd "$EXTENSIONS_DIR" && npm install >/dev/null 2>&1); then
+      echo "    Installed ~/.pi/agent/extensions npm dependencies"
+    else
+      echo "    Warning: Failed to install extension dependencies (run 'cd $EXTENSIONS_DIR && npm install' manually)"
+    fi
+  fi
 fi
 
 # Install Tier 1 extensions
