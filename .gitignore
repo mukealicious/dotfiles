@@ -13,3 +13,6 @@ bin/speedread
 .DS_Store
 *.log
 *.tmp
+
+# Local extension dependencies
+pi/extensions/node_modules/

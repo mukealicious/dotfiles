@@ -65,6 +65,7 @@ Skills with scripts must use only Bun built-in APIs (WebSocket, fs, path, child_
 | `commit` | Instruction-only | Conventional Commits workflow |
 | `favicon-generator` | Scripts | Generate optimized favicons (ImageMagick) |
 | `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
+| `linear` | Instruction-only | SDK-backed Linear Pi tools workflow |
 | `uv` | Instruction + docs | Python uv package manager reference |
 | `web-browser` | Scripts | Chrome CDP browser automation (Bun) |
 
