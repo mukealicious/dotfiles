@@ -71,7 +71,7 @@ Avoid migrating all three agents in Sprint 4.
 - Full OpenCode agent support
 - Major Pi-specific prompt tuning
 - Revisiting shared instructions or shared skills unless Sprint 4 is blocked without a tiny follow-up fix
-- Cleaning up `ai/AGENTS.md.symlink` ownership unless it directly blocks agent assembly
+- Cleaning up legacy `~/.AGENTS.md` compatibility handling unless it directly blocks agent assembly
 
 ## Tasks
 

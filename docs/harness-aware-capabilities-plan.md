@@ -77,7 +77,7 @@ Think in three layers:
   - skills → prefer shared skill directories, with harness-specific overrides only when needed
   - agents (optional) → assemble shared body + harness frontmatter (+ optional appendix) only when named harness-native agents are genuinely helpful
 - **Adapters own runtime format**: `claude/`, `pi/`, and `opencode/` decide the final file shape expected by that harness.
-- **Do not source installers into each other**: shared helper functions should live in a tiny library file, not inside `ai/install.sh` or `pi/install.sh`.
+- **Do not source installers into each other**: keep shared assembly logic small inside `ai/install.sh` for now, and extract a tiny library only if the duplication becomes real.
 
 ## Proposed repository layout
 
@@ -455,13 +455,9 @@ Claude hooks remain in `claude/hooks/`
 
 Do **not** source `ai/install.sh` from `pi/install.sh`.
 
-Instead, create something like:
+Instead, keep the shared assembly helpers in `ai/install.sh` for now. If the duplication grows later, extract a tiny shared library then.
 
-```text
-ai/lib/assemble.sh
-```
-
-Potential helpers:
+Potential helpers if that extraction becomes worthwhile:
 
 - `assemble_file part1 part2 [part3] output`
 - `write_managed_file output`

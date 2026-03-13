@@ -12,7 +12,7 @@ If Sprint 1 is not complete, stop early, document the gap, and avoid inventing a
 
 ## Current Repo State
 
-- Current Claude-only skill: `claude/skills/sprint-plan/SKILL.md`
+- Current Claude-only skill: `claude/skills/sprint-plan/SKILL.md` (migrated to `ai/skills/sprint-plan/SKILL.md`)
 - Architecture doc: `docs/harness-aware-capabilities-plan.md`
 - Sprint plan: `docs/sprint-plan-harness-portability-core.md`
 - Shared skill guidance: `ai/README.md`
@@ -54,13 +54,13 @@ The current `sprint-plan` skill is a migration candidate because it contains por
 
 - `docs/harness-aware-capabilities-plan.md`
 - `docs/sprint-plan-harness-portability-core.md`
-- `claude/skills/sprint-plan/SKILL.md`
+- `claude/skills/sprint-plan/SKILL.md` (migrated to `ai/skills/sprint-plan/SKILL.md`)
 - `ai/README.md`
 
 ## Deliverables
 
 - Shared `ai/skills/sprint-plan/SKILL.md`
-- Either a thinner `claude/skills/sprint-plan/SKILL.md` or a deliberate removal/simplification plan
+- Either a thinner `claude/skills/sprint-plan/SKILL.md` (migrated to `ai/skills/sprint-plan/SKILL.md`) or a deliberate removal/simplification plan
 - Updated docs explaining shared-vs-adapter policy
 
 ## Validation
@@ -96,7 +96,7 @@ Please implement the sprint, validate the result, and summarize the shared-vs-ad
 
 - Read `docs/harness-aware-capabilities-plan.md`
 - Read `docs/sprint-plan-harness-portability-core.md`
-- Read `claude/skills/sprint-plan/SKILL.md`
+- Read `claude/skills/sprint-plan/SKILL.md` (migrated to `ai/skills/sprint-plan/SKILL.md`)
 - Read `ai/README.md`
 - Implement only Sprint 2
 - Assume Sprint 1 is complete
@@ -126,7 +126,7 @@ Important rules:
 
 Deliverables:
 - Create shared `ai/skills/sprint-plan/SKILL.md`.
-- Thin down `claude/skills/sprint-plan/SKILL.md` or remove unnecessary wrapper logic.
+- Thin down `claude/skills/sprint-plan/SKILL.md` (migrated to `ai/skills/sprint-plan/SKILL.md`) or remove unnecessary wrapper logic.
 - Update docs explaining the shared-vs-adapter policy.
 - Validate the result and summarize the split you chose.
 
