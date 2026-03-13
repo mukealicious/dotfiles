@@ -1,0 +1,3 @@
+name: review
+description: Code reviewer focusing on bugs, security, and structure. Use for PR reviews or after code changes.
+tools: read, grep, find, ls

@@ -9,6 +9,10 @@
 # Installer-created symlinks
 bin/speedread
 
+# Installer-created runtime skill projections
+.agents/skills/
+.claude/skills/
+
 # OS and temporary files
 .DS_Store
 *.log
