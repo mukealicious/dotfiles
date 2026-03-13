@@ -6,6 +6,7 @@
 - Prefer surgical changes over broad rewrites.
 - Follow repo-local instruction files such as `AGENTS.md` or `CLAUDE.md` when they appear.
 - For multi-step work, keep an explicit plan and surface unresolved questions at the end.
+- For durable artifacts such as PRs, handoffs, and architecture docs, prefer high-density text-native structure over long prose when it improves comprehension: use tables, Mermaid or ASCII diagrams, before/after blocks, and review maps. Prefer text-native diagrams over screenshots so both humans and agents can parse them.
 
 ## System
 
