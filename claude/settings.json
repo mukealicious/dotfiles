@@ -91,6 +91,6 @@
       }
     }
   },
-  "mcpServers": {},
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "mcpServers": {}
 }
