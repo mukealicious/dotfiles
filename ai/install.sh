@@ -22,6 +22,14 @@ fi
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
+_TMPFILES=""
+_cleanup() {
+  for f in $_TMPFILES; do
+    rm -f "$f"
+  done
+}
+trap _cleanup EXIT INT TERM
+
 #
 # Helper: Create or validate a symlink
 #
@@ -198,6 +206,7 @@ assemble_instruction_file() {
 
   mkdir -p "$(dirname "$target")"
   tmp_file="$(mktemp "$(dirname "$target")/.dotfiles-instructions.XXXXXX")"
+  _TMPFILES="$_TMPFILES $tmp_file"
 
   {
     printf '%s\n\n' "$MANAGED_INSTRUCTIONS_MARKER"
@@ -231,12 +240,13 @@ assemble_agent_file() {
 
   mkdir -p "$(dirname "$target")"
   tmp_file="$(mktemp "$(dirname "$target")/.dotfiles-agent.XXXXXX")"
+  _TMPFILES="$_TMPFILES $tmp_file"
 
   {
     printf '%s\n' '---'
-    printf '%s\n' "$MANAGED_AGENT_MARKER"
     cat "$frontmatter_src"
-    printf '%s\n\n' '---'
+    printf '%s\n' '---'
+    printf '%s\n\n' "$MANAGED_AGENT_MARKER"
     cat "$body_src"
     if [ -n "$appendix_src" ] && [ -f "$appendix_src" ]; then
       printf '\n\n'
@@ -254,10 +264,10 @@ clean_dead_symlinks() {
   dir="$1"
   [ -d "$dir" ] || return 0
   for link in "$dir"/*; do
-    if [ -L "$link" ] && [ ! -e "$link" ]; then
-      echo "  Removing dead symlink: $(basename "$link")"
-      rm "$link"
-    fi
+    [ -L "$link" ] || continue
+    [ -e "$link" ] && continue
+    echo "  Removing dead symlink: $(basename "$link")"
+    rm "$link"
   done
 }
 
