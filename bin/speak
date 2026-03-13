@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e
+
+# speak — read clipboard (or stdin) aloud with lue TTS
+#
+# Usage:
+#   speak              # read clipboard
+#   speak file.txt     # read a file
+#   speak --speed 2    # pass flags through to lue
+
+tmpfile=""
+cleanup() { [ -n "$tmpfile" ] && rm -f "$tmpfile"; }
+trap cleanup EXIT
+
+# If a file arg is given, pass straight to lue
+if [ $# -gt 0 ] && [ -f "$1" ]; then
+  exec lue "$@"
+fi
+
+# Otherwise, read clipboard into a temp .txt file
+tmpfile="$(mktemp /tmp/speak-XXXXXX.txt)"
+pbpaste > "$tmpfile"
+
+if [ ! -s "$tmpfile" ]; then
+  echo "Clipboard is empty" >&2
+  exit 1
+fi
+
+lue "$tmpfile" "$@"
