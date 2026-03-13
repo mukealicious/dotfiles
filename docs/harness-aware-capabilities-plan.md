@@ -548,10 +548,15 @@ If a shared body works cleanly across harnesses, do not add extra files just to 
 
 ## Open questions
 
+### Resolved
+
 - Pi agent frontmatter has now been verified to support comma-separated `tools`, optional `model`, and optional `thinking`; keep using the installed `pi-subagents` schema as the source of truth for future migrations.
+- Shared instructions no longer rely on a repo-level symlink source; `~/.AGENTS.md` remains only as a base-only compatibility output assembled from `ai/instructions/base.md`.
+
+### Open
+
 - When OpenCode agent support is added, what file format differences exist versus Claude and Pi?
 - Should `pi/skills/` exist immediately, or only after a concrete Pi-specific skill use case appears?
-- Should shared instructions remain in `ai/AGENTS.md.symlink` during migration, with assembly introduced later?
 
 ## Short version
 
