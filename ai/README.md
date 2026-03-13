@@ -126,6 +126,7 @@ If the shared skill stands on its own, delete the wrapper instead of keeping two
 
 | Skill | Type | Description |
 |---|---|---|
+| `favicon-generator` | Scripts | Generate optimized favicons (ImageMagick) |
 | `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
 | `sprint-plan` | Instruction-only | Break projects into demoable sprints with atomic, testable tasks |
 | `workspace-snapshot` | Instruction-only | Quick workspace orientation before editing |
@@ -137,7 +138,6 @@ If the shared skill stands on its own, delete the wrapper instead of keeping two
 | `build-skill` | Instruction-only | Create effective Claude Code skills |
 | `code-review` | Subagents | Parallel code review with multiple agents |
 | `dotfiles-dev` | Instruction-only | Guide for working with dotfiles |
-| `favicon-generator` | Scripts | Generate optimized favicons (ImageMagick) |
 | `index-knowledge` | Scripts | Generate hierarchical AGENTS.md knowledge bases |
 | `librarian` | Subagents | Multi-repository codebase exploration |
 | `opensrc` | Scripts | Clone & generate knowledge base for external repos |
