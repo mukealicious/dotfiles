@@ -89,11 +89,31 @@ is_legacy_instruction_symlink() {
   legacy_target="$1"
 
   case "$legacy_target" in
-    "$HOME/.AGENTS.md"|*"/ai/AGENTS.md.symlink")
+    "$HOME/.AGENTS.md")
       return 0
       ;;
   esac
 
+  return 1
+}
+
+_handle_unexpected_symlink() {
+  current="$1"
+  target="$2"
+  desc="$3"
+  src_tmp="$4"
+
+  if [ "$FORCE" = "true" ]; then
+    echo "  Replacing symlinked $desc (was: $current)"
+    rm "$target"
+    return 0
+  fi
+
+  echo "  Warning: $desc is a symlink to an unexpected location"
+  echo "    Current:  $current"
+  echo "    Expected: installer-managed file"
+  echo "    Fix: rm \"$target\" && dot"
+  rm "$src_tmp"
   return 1
 }
 
@@ -106,19 +126,14 @@ write_managed_file() {
 
   if [ -L "$target" ]; then
     current="$(readlink "$target")"
-    if is_legacy_instruction_symlink "$current"; then
+    if [ "$target" = "$HOME/.AGENTS.md" ] && [ ! -e "$target" ]; then
       echo "  Replacing legacy symlink: $desc"
       rm "$target"
-    elif [ "$FORCE" = "true" ]; then
-      echo "  Replacing symlinked $desc (was: $current)"
+    elif is_legacy_instruction_symlink "$current"; then
+      echo "  Replacing legacy symlink: $desc"
       rm "$target"
     else
-      echo "  Warning: $desc is a symlink to an unexpected location"
-      echo "    Current:  $current"
-      echo "    Expected: installer-managed file"
-      echo "    Fix: rm \"$target\" && dot"
-      rm "$src_tmp"
-      return 0
+      _handle_unexpected_symlink "$current" "$target" "$desc" "$src_tmp" || return 0
     fi
   elif [ -e "$target" ]; then
     if grep -Fq "$MANAGED_INSTRUCTIONS_MARKER" "$target" 2>/dev/null; then
@@ -155,25 +170,19 @@ write_managed_agent_file() {
 
   if [ -L "$target" ]; then
     current="$(readlink "$target")"
-    case "$current" in
-      *"$legacy_suffix")
-        echo "  Replacing legacy symlink: $desc"
-        rm "$target"
-        ;;
-      *)
-        if [ "$FORCE" = "true" ]; then
-          echo "  Replacing symlinked $desc (was: $current)"
+    if [ -n "$legacy_suffix" ]; then
+      case "$current" in
+        *"$legacy_suffix")
+          echo "  Replacing legacy symlink: $desc"
           rm "$target"
-        else
-          echo "  Warning: $desc is a symlink to an unexpected location"
-          echo "    Current:  $current"
-          echo "    Expected: installer-managed file"
-          echo "    Fix: rm \"$target\" && dot"
-          rm "$src_tmp"
-          return 0
-        fi
-        ;;
-    esac
+          ;;
+        *)
+          _handle_unexpected_symlink "$current" "$target" "$desc" "$src_tmp" || return 0
+          ;;
+      esac
+    else
+      _handle_unexpected_symlink "$current" "$target" "$desc" "$src_tmp" || return 0
+    fi
   elif [ -e "$target" ]; then
     if grep -Fq "$MANAGED_AGENT_MARKER" "$target" 2>/dev/null; then
       :
