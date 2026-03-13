@@ -1,47 +1,64 @@
 # Claude Code Skills & Agents
 
-Custom Claude Code skills and subagents for automated agentic workflows.
+Claude-specific overlays, projected shared skills, and subagents for automated agentic workflows.
 
-## Symlink Architecture
+## Runtime Architecture
 
-All Claude Code configuration lives in this repo and is symlinked to `~/.claude/`:
+Claude runtime files now use a mix of symlinks and managed assembled outputs:
 
 ```mermaid
 graph LR
     subgraph "Dotfiles Repo"
         settings["claude/settings.json"]
-        skills_src["claude/skills/*"]
-        agents_src["claude/agents/*"]
+        shared_skills["ai/skills/*"]
+        claude_skills["claude/skills/*"]
+        review_body["ai/agents/review.body.md"]
+        review_meta["claude/agents/review.frontmatter"]
+        legacy_agents["claude/agents/{oracle,librarian}.md"]
         hooks_src["claude/hooks/*"]
     end
 
     subgraph "~/.claude/"
         settings_dst["settings.json"]
         skills_dst["skills/*"]
-        agents_dst["agents/*"]
+        review_dst["agents/review.md"]
+        legacy_agents_dst["agents/{oracle,librarian}.md"]
     end
 
     settings -->|symlink| settings_dst
-    skills_src -->|symlink| skills_dst
-    agents_src -->|symlink| agents_dst
+    shared_skills -->|projected| skills_dst
+    claude_skills -->|overlay| skills_dst
+    review_body -->|assemble| review_dst
+    review_meta -->|assemble| review_dst
+    legacy_agents -->|symlink| legacy_agents_dst
 ```
 
 **Key files:**
 - `settings.json` → `~/.claude/settings.json` - Global permissions, hooks, plugins, MCP servers
-- `skills/*/` → `~/.claude/skills/*/` - Custom slash commands
-- `agents/*.md` → `~/.claude/agents/*.md` - Specialized subagents
+- `ai/skills/*` + `claude/skills/*` → `~/.claude/skills/*` - Portable skills plus Claude-specific overlays
+- `ai/agents/review.body.md` + `claude/agents/review.frontmatter` → `~/.claude/agents/review.md` - Shared-body exemplar agent
+- `agents/{oracle,librarian}.md` → `~/.claude/agents/{oracle,librarian}.md` - Legacy combined subagents pending migration
 - `hooks/` - PreToolUse, Stop, and Notification hooks (referenced from settings.json)
 
 **Installation flow:**
 1. `script/bootstrap` or `bin/dot` runs all `*/install.sh` scripts
 2. `claude/install.sh` symlinks settings.json and installs plugins
-3. `ai/install.sh` symlinks skills and agents (single source of truth)
+3. `ai/install.sh` projects shared skills from `ai/skills/`, applies `claude/skills/` overlays, assembles `review`, and symlinks the remaining legacy agents
 
-Edit files in the dotfiles repo, not in `~/.claude/`.
+Author portable skills in `ai/skills/`, keep `claude/skills/` for Claude-native overlays, and edit repo files rather than `~/.claude/`.
 
 ## Structure
 
 ```
+ai/
+├── agents/
+│   └── review.body.md      # Shared review body
+└── skills/                 # Portable skills projected into ~/.claude/skills
+    ├── sprint-plan/        # Shared sprint planning
+    ├── qmd/                # Markdown search
+    ├── favicon-generator/  # Favicon generation
+    └── workspace-snapshot/ # Quick workspace orientation
+
 claude/
 ├── install.sh              # Symlinks settings.json + installs plugins
 ├── settings.json           # Global config (permissions, hooks, MCP)
@@ -49,22 +66,17 @@ claude/
 │   ├── safety-rm.sh        # PreToolUse: rewrites rm to trash
 │   └── notify-idle.sh      # Stop/Notification: sound + macOS alert
 ├── agents/                 # Subagents (specialized AI advisors)
-│   ├── oracle.md           # Senior advisor (Opus)
-│   ├── librarian.md        # Multi-repo explorer
-│   └── review.md           # Code reviewer
-└── skills/                 # Slash commands & capabilities
-    ├── code-review/        # /code-review
-    ├── prd/                # /prd
-    ├── prd-task/           # /prd-task
-    ├── complete-task/      # /complete-task
-    ├── index-knowledge/    # /index-knowledge
-    ├── session-export/     # /session-export
-    ├── opensrc/            # /opensrc
-    ├── sprint-plan/        # /sprint-plan
+│   ├── oracle.md           # Legacy combined agent (Opus)
+│   ├── librarian.md        # Legacy combined agent
+│   └── review.frontmatter  # Shared-body exemplar metadata
+└── skills/                 # Claude-only overlays
     ├── build-skill/        # /build-skill
+    ├── code-review/        # /code-review
     ├── dotfiles-dev/       # Dotfiles guidance
-    ├── favicon-generator/  # Favicon generation
-    └── qmd/                # Markdown search
+    ├── index-knowledge/    # /index-knowledge
+    ├── librarian/          # Librarian helper skill
+    ├── opensrc/            # /opensrc
+    └── session-export/     # /session-export
 ```
 
 ## Subagents
@@ -121,17 +133,20 @@ Skills that act as commands for automated workflows:
 
 ## Adding New Agents
 
-1. Create `agents/<name>.md` with frontmatter:
+Prefer the shared-body pattern for new portable agents:
+
+1. Create `ai/agents/<name>.body.md` with the neutral agent instructions.
+2. Create `claude/agents/<name>.frontmatter` with Claude-specific metadata:
    ```yaml
-   ---
    name: agent-name
    description: When to use this agent
    tools: Read, Grep, Glob, WebFetch
    disallowedTools: Edit, Write
    model: sonnet
-   ---
    ```
-2. Run `bin/dot` to symlink
+3. Run `bin/dot` to assemble the installed runtime file.
+
+`oracle` and `librarian` still use the older combined `agents/<name>.md` format until they are migrated.
 
 ## How Skills Work
 

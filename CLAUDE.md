@@ -15,7 +15,7 @@ Use the `dotfiles-dev` skill for detailed guidance on:
 - File patterns and conventions
 - Custom git commands
 
-## AI Agent Architecture
+## AI Capability Architecture
 
 Three-layer skill system across multiple AI tools. See `ai/README.md` for full details.
 

@@ -77,20 +77,20 @@ Each directory is a self-contained "topic" managing one tool or concern:
 
 This repo has deep integration with AI coding agents.
 
-### Unified Instruction System
+### Instruction Composition
 
-Single master file (`~/.AGENTS.md`) symlinked to all AI tools:
+Shared guidance now lives in `ai/instructions/base.md`, with small harness appendices added only where needed.
 
-```
-~/.AGENTS.md (canonical)
-├── ~/CLAUDE.md              → symlink
-├── ~/.config/opencode/      → symlink
-├── ~/.gemini/GEMINI.md      → symlink
-├── ~/.codex/instructions.md → symlink
-└── ~/.pi/agent/AGENTS.md    → symlink
-```
+`ai/install.sh` assembles the final installed instruction files:
 
-Edit once, applies everywhere.
+- `~/.claude/CLAUDE.md` = shared base + Claude appendix
+- `~/.pi/agent/AGENTS.md` = shared base + Pi appendix
+- `~/.config/opencode/AGENTS.md` = shared base + OpenCode appendix
+- `~/.codex/instructions.md` and `~/.gemini/GEMINI.md` = shared base only
+
+`~/.AGENTS.md` remains a base-only compatibility output rather than the main source of truth.
+
+The primary portability model is shared instructions plus shared skills. Harness-native `agents/` formats are optional and used only when a tool materially benefits from named agent metadata.
 
 ### Safety Hook
 

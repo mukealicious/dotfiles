@@ -15,6 +15,8 @@ Requires `pi` to be installed first (`bun install -g @mariozechner/pi-coding-age
 
 ```
 pi/
+├── agents/                 # Pi agent metadata assembled with shared agent bodies
+│   └── review.frontmatter  # Shared-body review exemplar
 ├── settings.json           # Agent config (model, theme, skills, packages)
 ├── install.sh              # Symlinks config, installs packages
 ├── aliases.fish            # Shell aliases (pi-print, pi-json)
@@ -37,6 +39,7 @@ pi/
 - **Model**: Claude Opus 4.6 via Anthropic
 - **Theme**: Gruvbox Light
 - **Skills**: Discovers shared skills from `~/.dotfiles/ai/skills/` (no symlinking needed — Pi supports path-based discovery)
+- **Agents**: `ai/install.sh` assembles shared-body agent outputs into `~/.pi/agent/agents/`
 - **Packages**: pi-subagents, pi-interactive-shell, mitsupi
 
 ## Extensions

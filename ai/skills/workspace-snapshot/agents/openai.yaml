@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workspace Snapshot"
+  short_description: "Orient quickly before editing a workspace"
+  default_prompt: "Create a quick workspace snapshot before editing"
