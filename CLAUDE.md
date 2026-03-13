@@ -37,7 +37,7 @@ Claude Code config lives in `claude/` and is symlinked to `~/.claude/`. See `cla
 **Key files (edit here, not in ~/.claude/):**
 - `claude/settings.json` - permissions, hooks, MCP servers
 - `claude/skills/` - custom slash commands
-- `claude/agents/` - subagents (oracle, librarian, review)
+- `claude/agents/` - subagents; `review` is split-source (`ai/agents/review.body.md` + `claude/agents/review.frontmatter`), while `oracle` and `librarian` remain combined
 - `claude/hooks/` - PreToolUse and lifecycle hooks
 
 **Subagents** — invoke via natural language (e.g., "use the oracle to review this"):

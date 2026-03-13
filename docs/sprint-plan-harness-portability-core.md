@@ -136,9 +136,9 @@ Each sprint has a companion handoff brief that is intended to be pasted into or 
 - **Files:** `claude/agents/review.frontmatter`, `pi/agents/review.frontmatter`, `docs/harness-aware-capabilities-plan.md`
 
 ### 4.4: Add managed assembly and cleanup logic
-- **Description:** Introduce the small helper logic needed to replace existing symlinked agents with assembled managed files safely and repeatably.
+- **Description:** Introduce the small helper logic needed to replace existing symlinked agents with assembled managed files safely and repeatably. Keep the helpers in `ai/install.sh` for now; shared-library extraction is deferred.
 - **Validation:** Installer logic removes stale symlinks or generated files safely, writes assembled outputs atomically, and does not overwrite repo source files.
-- **Files:** `ai/install.sh`, `pi/install.sh`, `ai/lib/assemble.sh`
+- **Files:** `ai/install.sh`, `pi/install.sh`
 
 ## Notes
 

@@ -61,7 +61,7 @@ When a harness genuinely benefits from named agents with specific metadata, use 
 - `claude/agents/*.frontmatter` and `pi/agents/*.frontmatter` hold harness-specific metadata.
 - `ai/install.sh` assembles the runtime agent files each harness expects.
 
-Current Sprint 4 state:
+Agent Assembly Status:
 
 | Capability | Shared source | Harness metadata | Installed outputs |
 |---|---|---|---|
@@ -126,13 +126,10 @@ If the shared skill stands on its own, delete the wrapper instead of keeping two
 
 | Skill | Type | Description |
 |---|---|---|
-| `commit` | Instruction-only | Conventional Commits workflow |
 | `favicon-generator` | Scripts | Generate optimized favicons (ImageMagick) |
 | `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
 | `sprint-plan` | Instruction-only | Break projects into demoable sprints with atomic, testable tasks |
 | `workspace-snapshot` | Instruction-only | Quick workspace orientation before editing |
-| `uv` | Instruction + docs | Python uv package manager reference |
-| `web-browser` | Scripts | Chrome CDP browser automation (Bun) |
 
 ### Claude-Specific (`claude/skills/`)
 

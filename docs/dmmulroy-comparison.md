@@ -26,7 +26,7 @@ Research and analysis comparing your Holman-style dotfiles with dmmulroy's Cloud
 - Extension stripped, symlinked to `$HOME`
 - Example: `git/gitconfig.symlink` → `~/.gitconfig`
 
-**Current symlinks (11 total):**
+**Current symlinks (10 total):**
 ```
 git/gitconfig.symlink           → ~/.gitconfig
 git/gitignore.symlink           → ~/.gitignore
@@ -38,7 +38,6 @@ wezterm/wezterm.lua.symlink     → ~/.wezterm.lua
 zsh/zshrc.symlink               → ~/.zshrc
 vim/vimrc.symlink               → ~/.vimrc
 aerospace/aerospace.toml.symlink → ~/.aerospace.toml
-ai/AGENTS.md.symlink            → ~/.AGENTS.md
 ```
 
 **Bootstrap code (~50 lines):**
@@ -401,13 +400,15 @@ dot benchmark-shell         # Fish startup profiling
 
 ### Your Setup
 
-**Unified instructions:** `ai/AGENTS.md.symlink` → `~/.AGENTS.md`
+**Unified instructions:** `ai/instructions/base.md` plus harness appendices assembled by `ai/install.sh`
 
-Symlinked to multiple tools:
-- `~/CLAUDE.md` (Claude Code)
+Assembled into multiple tool-specific outputs:
+- `~/.AGENTS.md` (base-only compatibility output)
+- `~/.claude/CLAUDE.md` (Claude Code)
 - `~/.config/opencode/AGENTS.md` (OpenCode)
 - `~/.gemini/GEMINI.md` (Gemini)
 - `~/.codex/instructions.md` (Codex)
+- `~/.pi/agent/AGENTS.md` (Pi)
 
 **Content:**
 ```markdown
@@ -614,7 +615,7 @@ Never read or modify:
 | `/Users/mikeywills/.dotfiles/bin/dot` | Main CLI (63 lines) |
 | `.../zsh/zshrc.symlink` | ZSH entry point |
 | `.../git/gitconfig.symlink` | Git configuration |
-| `.../ai/AGENTS.md.symlink` | AI instructions |
+| `.../ai/install.sh` | AI instruction and skill assembly |
 | `.../script/bootstrap` | Symlink setup |
 | `.../script/install` | Run installers |
 | `.../Brewfile` | Homebrew packages |

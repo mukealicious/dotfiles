@@ -22,6 +22,14 @@ fi
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
+_TMPFILES=""
+_cleanup() {
+  for f in $_TMPFILES; do
+    rm -f "$f"
+  done
+}
+trap _cleanup EXIT INT TERM
+
 #
 # Helper: Create or validate a symlink
 #
@@ -81,11 +89,31 @@ is_legacy_instruction_symlink() {
   legacy_target="$1"
 
   case "$legacy_target" in
-    "$HOME/.AGENTS.md"|*"/ai/AGENTS.md.symlink")
+    "$HOME/.AGENTS.md")
       return 0
       ;;
   esac
 
+  return 1
+}
+
+_handle_unexpected_symlink() {
+  current="$1"
+  target="$2"
+  desc="$3"
+  src_tmp="$4"
+
+  if [ "$FORCE" = "true" ]; then
+    echo "  Replacing symlinked $desc (was: $current)"
+    rm "$target"
+    return 0
+  fi
+
+  echo "  Warning: $desc is a symlink to an unexpected location"
+  echo "    Current:  $current"
+  echo "    Expected: installer-managed file"
+  echo "    Fix: rm \"$target\" && dot"
+  rm "$src_tmp"
   return 1
 }
 
@@ -98,19 +126,14 @@ write_managed_file() {
 
   if [ -L "$target" ]; then
     current="$(readlink "$target")"
-    if is_legacy_instruction_symlink "$current"; then
+    if [ "$target" = "$HOME/.AGENTS.md" ] && [ ! -e "$target" ]; then
       echo "  Replacing legacy symlink: $desc"
       rm "$target"
-    elif [ "$FORCE" = "true" ]; then
-      echo "  Replacing symlinked $desc (was: $current)"
+    elif is_legacy_instruction_symlink "$current"; then
+      echo "  Replacing legacy symlink: $desc"
       rm "$target"
     else
-      echo "  Warning: $desc is a symlink to an unexpected location"
-      echo "    Current:  $current"
-      echo "    Expected: installer-managed file"
-      echo "    Fix: rm \"$target\" && dot"
-      rm "$src_tmp"
-      return 0
+      _handle_unexpected_symlink "$current" "$target" "$desc" "$src_tmp" || return 0
     fi
   elif [ -e "$target" ]; then
     if grep -Fq "$MANAGED_INSTRUCTIONS_MARKER" "$target" 2>/dev/null; then
@@ -147,25 +170,19 @@ write_managed_agent_file() {
 
   if [ -L "$target" ]; then
     current="$(readlink "$target")"
-    case "$current" in
-      *"$legacy_suffix")
-        echo "  Replacing legacy symlink: $desc"
-        rm "$target"
-        ;;
-      *)
-        if [ "$FORCE" = "true" ]; then
-          echo "  Replacing symlinked $desc (was: $current)"
+    if [ -n "$legacy_suffix" ]; then
+      case "$current" in
+        *"$legacy_suffix")
+          echo "  Replacing legacy symlink: $desc"
           rm "$target"
-        else
-          echo "  Warning: $desc is a symlink to an unexpected location"
-          echo "    Current:  $current"
-          echo "    Expected: installer-managed file"
-          echo "    Fix: rm \"$target\" && dot"
-          rm "$src_tmp"
-          return 0
-        fi
-        ;;
-    esac
+          ;;
+        *)
+          _handle_unexpected_symlink "$current" "$target" "$desc" "$src_tmp" || return 0
+          ;;
+      esac
+    else
+      _handle_unexpected_symlink "$current" "$target" "$desc" "$src_tmp" || return 0
+    fi
   elif [ -e "$target" ]; then
     if grep -Fq "$MANAGED_AGENT_MARKER" "$target" 2>/dev/null; then
       :
@@ -198,6 +215,7 @@ assemble_instruction_file() {
 
   mkdir -p "$(dirname "$target")"
   tmp_file="$(mktemp "$(dirname "$target")/.dotfiles-instructions.XXXXXX")"
+  _TMPFILES="$_TMPFILES $tmp_file"
 
   {
     printf '%s\n\n' "$MANAGED_INSTRUCTIONS_MARKER"
@@ -231,12 +249,13 @@ assemble_agent_file() {
 
   mkdir -p "$(dirname "$target")"
   tmp_file="$(mktemp "$(dirname "$target")/.dotfiles-agent.XXXXXX")"
+  _TMPFILES="$_TMPFILES $tmp_file"
 
   {
     printf '%s\n' '---'
-    printf '%s\n' "$MANAGED_AGENT_MARKER"
     cat "$frontmatter_src"
-    printf '%s\n\n' '---'
+    printf '%s\n' '---'
+    printf '%s\n\n' "$MANAGED_AGENT_MARKER"
     cat "$body_src"
     if [ -n "$appendix_src" ] && [ -f "$appendix_src" ]; then
       printf '\n\n'
@@ -254,10 +273,10 @@ clean_dead_symlinks() {
   dir="$1"
   [ -d "$dir" ] || return 0
   for link in "$dir"/*; do
-    if [ -L "$link" ] && [ ! -e "$link" ]; then
-      echo "  Removing dead symlink: $(basename "$link")"
-      rm "$link"
-    fi
+    [ -L "$link" ] || continue
+    [ -e "$link" ] && continue
+    echo "  Removing dead symlink: $(basename "$link")"
+    rm "$link"
   done
 }
 
@@ -466,9 +485,8 @@ fi
 
 # OpenCode skills
 echo "  Setting up OpenCode skills..."
-# Note: OpenCode uses 'skill' not 'skills'. Keep the current shared + Claude
-# overlay behavior for now; Sprint 3 is only changing instruction assembly.
-sync_skill_runtime_dir "$OPENCODE_DIR/skill" "$OPENCODE_DIR/skill" "$CLAUDE_SKILLS_SRC"
+# Note: OpenCode uses 'skill' not 'skills'. It gets only portable shared skills.
+sync_skill_runtime_dir "$OPENCODE_DIR/skill" "$OPENCODE_DIR/skill" ""
 
 # OpenCode agents
 # NOTE: Claude agents use incompatible frontmatter (tools: comma string vs YAML record).
