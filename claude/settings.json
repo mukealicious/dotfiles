@@ -83,5 +83,14 @@
     "document-skills@anthropic-agent-skills": true,
     "playground@claude-plugins-official": true
   },
-  "mcpServers": {}
+  "extraKnownMarketplaces": {
+    "anthropic-agent-skills": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/skills"
+      }
+    }
+  },
+  "mcpServers": {},
+  "effortLevel": "high"
 }
