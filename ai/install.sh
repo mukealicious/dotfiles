@@ -485,9 +485,8 @@ fi
 
 # OpenCode skills
 echo "  Setting up OpenCode skills..."
-# Note: OpenCode uses 'skill' not 'skills'. Keep the current shared + Claude
-# overlay behavior for now; Sprint 3 is only changing instruction assembly.
-sync_skill_runtime_dir "$OPENCODE_DIR/skill" "$OPENCODE_DIR/skill" "$CLAUDE_SKILLS_SRC"
+# Note: OpenCode uses 'skill' not 'skills'. It gets only portable shared skills.
+sync_skill_runtime_dir "$OPENCODE_DIR/skill" "$OPENCODE_DIR/skill" ""
 
 # OpenCode agents
 # NOTE: Claude agents use incompatible frontmatter (tools: comma string vs YAML record).
