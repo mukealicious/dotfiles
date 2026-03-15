@@ -13,8 +13,9 @@ script/bootstrap   # Interactive symlink setup + initial install
 After bootstrap, use `dot` for daily updates:
 
 ```sh
-dot       # Update symlinks, macOS defaults, Homebrew, installers
-dot -e    # Open dotfiles in editor
+dot          # Update symlinks, macOS defaults, Homebrew, installers
+dot doctor   # Check environment health
+dot -e       # Open dotfiles in editor
 ```
 
 ## What's Included
@@ -69,6 +70,7 @@ Each directory is a self-contained "topic" managing one tool or concern:
 21 scripts in `bin/` added to PATH:
 
 - `dot` — Update everything
+- `dot doctor` — Check environment health
 - `e` — Launch editor
 - `coffee` — Friendly caffeinate wrapper (prevent sleep)
 - `git-*` — 14 custom git commands (amend, nuke, undo, etc.)
@@ -221,6 +223,7 @@ Everything else is installed by bootstrap.
 
 ```sh
 dot                    # Daily update (safe to run anytime)
+dot doctor             # Check environment health
 script/bootstrap       # Re-run symlinks (interactive)
 script/install         # Re-run all installers
 brew bundle cleanup    # Remove unlisted packages

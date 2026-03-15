@@ -7,36 +7,41 @@
 
 set -e
 
-parentDirectory="$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P)"
+parentDirectory="$(cd "$( dirname "${BASH_SOURCE[0]:-$0}" )" && pwd -P)"
 dotfilesDirectory="$(cd "$( dirname "$parentDirectory" )" && pwd -P)"
 
 displayUsageAndExit() {
 	echo "dot -- dotfiles management"
 	echo ""
-	echo "Usage: dot [options]"
+	echo "Usage: dot [command] [options]"
+	echo ""
+	echo "Commands:"
+	echo "  doctor      Run environment diagnostics"
 	echo ""
 	echo "Options:"
-	echo "  -e, --edit    Open dotfiles directory for editing"
-	echo "  -h, --help    Show this help message and exit"
+	echo "  -e, --edit  Open dotfiles directory for editing"
+	echo "  -h, --help  Show this help message and exit"
 	exit
 }
 
-while test $# -gt 0; do
-	case "$1" in
-		"-h"|"--help")
-			displayUsageAndExit
-			;;
-		"-e"|"--edit")
-			exec "$EDITOR" "$dotfilesDirectory"
-			exit
-			;;
-		*)
-			echo "Invalid option: $1"
-			displayUsageAndExit
-			;;
-	esac
-	shift
-done
+case "${1:-}" in
+	doctor)
+		shift
+		exec "$dotfilesDirectory/bin/dot-doctor" "$@"
+		;;
+	-e|--edit)
+		exec "$EDITOR" "$dotfilesDirectory"
+		;;
+	-h|--help)
+		displayUsageAndExit
+		;;
+	"")
+		;; # fall through to update logic
+	*)
+		echo "Unknown command: $1"
+		displayUsageAndExit
+		;;
+esac
 
 export DOTFILES=$HOME/.dotfiles
 

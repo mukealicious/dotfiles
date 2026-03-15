@@ -15,9 +15,21 @@ The `.symlink` suffix is stripped and a dot prefix added:
 
 - `gitconfig.symlink` → `~/.gitconfig`
 
+## Shared Libraries
+
+| File | Purpose |
+|------|---------|
+| `lib/symlink.sh` | Shared `ensure_symlink` (read-write) and `check_symlink` (read-only) helpers. Sourced by installers and `dot-doctor`. |
+
+## Diagnostic Commands
+
+| Command | Description |
+|---------|-------------|
+| `dot doctor` | Validates CLIs, symlinks, Fish config, AI assembly, PATH. Exit 0 = healthy, exit 1 = failures. |
+
 ## Install Scripts
 
-`install.sh` scripts should be idempotent. Called by `script/install` and `bin/dot`.
+`install.sh` scripts should be idempotent. Called by `script/install` and `bin/dot`. When adding a new topic, consider whether `dot doctor` needs a corresponding check.
 
 ```sh
 #!/bin/sh

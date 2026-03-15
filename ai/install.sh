@@ -22,6 +22,9 @@ fi
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
+# Shared symlink helpers
+. "$DOTFILES_ROOT/lib/symlink.sh"
+
 _TMPFILES=""
 _cleanup() {
   for f in $_TMPFILES; do
@@ -30,57 +33,7 @@ _cleanup() {
 }
 trap _cleanup EXIT INT TERM
 
-#
-# Helper: Create or validate a symlink
-#
-# Usage: ensure_symlink <source> <target> <description>
-#
-# Behavior:
-# - If target doesn't exist: create symlink
-# - If target is correct symlink: skip
-# - If target is broken symlink: remove and recreate
-# - If target points elsewhere: warn (or fix with --force)
-# - If target is regular file/dir: warn and skip
-#
-ensure_symlink() {
-  src="$1"
-  target="$2"
-  desc="$3"
-
-  if [ -L "$target" ]; then
-    current="$(readlink "$target")"
-    if [ ! -e "$target" ]; then
-      # Broken symlink
-      echo "  Removing dead symlink: $desc"
-      rm "$target"
-      echo "  Linking $desc"
-      ln -s "$src" "$target"
-    elif [ "$current" = "$src" ]; then
-      # Correct symlink
-      echo "  $desc already linked correctly"
-    else
-      # Points to wrong location
-      if [ "$FORCE" = "true" ]; then
-        echo "  Fixing $desc (was: $current)"
-        rm "$target"
-        ln -s "$src" "$target"
-      else
-        echo "  Warning: $desc points to wrong location"
-        echo "    Current:  $current"
-        echo "    Expected: $src"
-        echo "    Fix: rm \"$target\" && dot"
-      fi
-    fi
-  elif [ -e "$target" ]; then
-    # Regular file or directory
-    echo "  Warning: $desc exists but is not a symlink"
-    echo "    Skipping to preserve existing content"
-  else
-    # Doesn't exist
-    echo "  Linking $desc"
-    ln -s "$src" "$target"
-  fi
-}
+# ensure_symlink is provided by lib/symlink.sh (sourced above)
 
 MANAGED_INSTRUCTIONS_MARKER='<!-- Managed by ~/.dotfiles/ai/install.sh. Edit source files instead. -->'
 MANAGED_AGENT_MARKER='# Managed by ~/.dotfiles/ai/install.sh. Edit source files instead.'
