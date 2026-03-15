@@ -38,6 +38,18 @@ header() {
   printf "\n\033[1m==> %s\033[0m\n" "$1"
 }
 
+normalize_symlink_path() {
+  path="$1"
+  case "$path" in
+    /)
+      printf '/\n'
+      ;;
+    *)
+      printf '%s\n' "${path%/}"
+      ;;
+  esac
+}
+
 # Counters (initialized to 0)
 _check_pass=0
 _check_warnings=0
@@ -56,12 +68,12 @@ _check_failures=0
 # - If target is regular file/dir: warn and skip
 #
 ensure_symlink() {
-  src="$1"
+  src="$(normalize_symlink_path "$1")"
   target="$2"
   desc="$3"
 
   if [ -L "$target" ]; then
-    current="$(readlink "$target")"
+    current="$(normalize_symlink_path "$(readlink "$target")")"
     if [ ! -e "$target" ]; then
       # Broken symlink
       echo "  Removing dead symlink: $desc"
@@ -102,12 +114,12 @@ ensure_symlink() {
 # Uses pass/warn/fail counters for summary output.
 #
 check_symlink() {
-  src="$1"
+  src="$(normalize_symlink_path "$1")"
   target="$2"
   desc="$3"
 
   if [ -L "$target" ]; then
-    current="$(readlink "$target")"
+    current="$(normalize_symlink_path "$(readlink "$target")")"
     if [ ! -e "$target" ]; then
       fail "$desc is a broken symlink"
       info "Target: $current (does not exist)"

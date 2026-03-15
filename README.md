@@ -118,21 +118,23 @@ Specialized AI advisors with distinct capabilities:
 | `librarian` | Sonnet | Multi-repo exploration, library internals |
 | `review` | Sonnet | Code review (bugs, security, structure) |
 
-### Claude Skills
+### AI Skills
 
-Custom slash commands:
+Shared skills in `ai/skills/`, available to all agents (Claude, Pi, OpenCode, Codex):
 
-| Command | Purpose |
-|---------|---------|
-| `/code-review` | Parallel review with 3 agents |
-| `/index-knowledge` | Generate AGENTS.md for codebase |
-| `/session-export` | Export AI session to PR description |
-| `/opensrc` | Clone repo + generate knowledge base |
-| `/sprint-plan` | Break projects into atomic tasks |
-| `/build-skill` | Create Claude skills |
-| `/dotfiles-dev` | Guidance for this dotfiles system |
-| `/qmd` | Hybrid markdown search (BM25 + vectors) |
-| `/favicon-generator` | Generate favicons from PNG/SVG |
+| Skill | Purpose |
+|-------|---------|
+| `code-review` | Parallel review with architecture validation |
+| `spec-planner` | Dialogue-driven spec development |
+| `sprint-plan` | Break projects into atomic tasks |
+| `feedback-loop` | Self-validate work through structured loops |
+| `opensrc` | Fetch source context for packages and repos |
+| `build-skill` | Create AI agent skills |
+| `dotfiles-dev` | Guidance for this dotfiles system |
+| `qmd` | Hybrid markdown search (BM25 + vectors) |
+| `favicon-generator` | Generate favicons from PNG/SVG |
+| `librarian` | Multi-repository codebase exploration |
+| `workspace-snapshot` | Quick workspace orientation |
 
 Plus plugins: `document-skills` (PDF/XLSX/DOCX/PPTX), `playground` (interactive HTML).
 

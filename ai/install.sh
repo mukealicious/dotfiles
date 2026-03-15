@@ -78,7 +78,7 @@ write_managed_file() {
   mkdir -p "$(dirname "$target")"
 
   if [ -L "$target" ]; then
-    current="$(readlink "$target")"
+    current="$(normalize_symlink_path "$(readlink "$target")")"
     if [ "$target" = "$HOME/.AGENTS.md" ] && [ ! -e "$target" ]; then
       echo "  Replacing legacy symlink: $desc"
       rm "$target"
@@ -122,7 +122,7 @@ write_managed_agent_file() {
   mkdir -p "$(dirname "$target")"
 
   if [ -L "$target" ]; then
-    current="$(readlink "$target")"
+    current="$(normalize_symlink_path "$(readlink "$target")")"
     if [ -n "$legacy_suffix" ]; then
       case "$current" in
         *"$legacy_suffix")
@@ -292,9 +292,38 @@ sync_skill_runtime_dir() {
     for skill_dir in "$overlay_src"/*/; do
       [ -d "$skill_dir" ] || continue
       skill_name=$(basename "$skill_dir")
-      ensure_symlink "$skill_dir" "$target_dir/$skill_name" "$label/$skill_name (overlay)"
+      ensure_runtime_overlay_symlink "$skill_dir" "$target_dir/$skill_name" "$label/$skill_name (overlay)"
     done
   fi
+}
+
+#
+# Helper: Apply an overlay symlink in an installer-managed runtime directory
+#
+# Behavior:
+# - If the target is already a symlink, replace it so the overlay wins
+# - If the target is a regular file/dir, preserve it and warn via ensure_symlink
+# - If the target is missing, create it
+#
+ensure_runtime_overlay_symlink() {
+  src="$(normalize_symlink_path "$1")"
+  target="$2"
+  desc="$3"
+
+  if [ -L "$target" ]; then
+    current="$(normalize_symlink_path "$(readlink "$target")")"
+    if [ -e "$target" ] && [ "$current" = "$src" ]; then
+      echo "  $desc already linked correctly"
+      return 0
+    fi
+
+    echo "  Re-linking $desc"
+    rm "$target"
+    ln -s "$src" "$target"
+    return 0
+  fi
+
+  ensure_symlink "$src" "$target" "$desc"
 }
 
 echo "  Setting up AI instruction files..."

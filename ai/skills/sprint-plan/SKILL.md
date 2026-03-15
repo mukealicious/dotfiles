@@ -115,3 +115,7 @@ Use this structure:
 - Each sprint assumes previous sprints are complete
 - No circular dependencies
 - Foundations should unlock later visible work
+
+## See Also
+
+- **spec-planner** — Dialogue-driven spec development before sprint planning. Use when requirements need clarification or trade-off analysis before breaking into sprints.

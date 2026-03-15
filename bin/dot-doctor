@@ -197,23 +197,32 @@ SHARED_SKILLS_SRC="$DOTFILES_ROOT/ai/skills"
 CLAUDE_SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
 CLAUDE_DIR="$HOME/.claude"
 
-# Shared skills
-if [ -d "$SHARED_SKILLS_SRC" ]; then
-  for skill_dir in "$SHARED_SKILLS_SRC"/*/; do
-    [ -d "$skill_dir" ] || continue
-    skill_name="$(basename "$skill_dir")"
-    check_symlink "$skill_dir" "$CLAUDE_DIR/skills/$skill_name" "skills/$skill_name (shared)"
-  done
-fi
+check_projected_claude_skill() {
+  skill_name="$1"
 
-# Claude overlay skills
-if [ -d "$CLAUDE_SKILLS_SRC" ]; then
-  for skill_dir in "$CLAUDE_SKILLS_SRC"/*/; do
+  if [ -d "$CLAUDE_SKILLS_SRC/$skill_name" ]; then
+    check_symlink "$CLAUDE_SKILLS_SRC/$skill_name" "$CLAUDE_DIR/skills/$skill_name" "skills/$skill_name (overlay)"
+  elif [ -d "$SHARED_SKILLS_SRC/$skill_name" ]; then
+    check_symlink "$SHARED_SKILLS_SRC/$skill_name" "$CLAUDE_DIR/skills/$skill_name" "skills/$skill_name (shared)"
+  fi
+}
+
+# Validate the effective winner for each skill name once.
+checked_skill_names="|"
+for skills_root in "$SHARED_SKILLS_SRC" "$CLAUDE_SKILLS_SRC"; do
+  [ -d "$skills_root" ] || continue
+  for skill_dir in "$skills_root"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name="$(basename "$skill_dir")"
-    check_symlink "$skill_dir" "$CLAUDE_DIR/skills/$skill_name" "skills/$skill_name (overlay)"
+    case "$checked_skill_names" in
+      *"|$skill_name|"*)
+        continue
+        ;;
+    esac
+    check_projected_claude_skill "$skill_name"
+    checked_skill_names="${checked_skill_names}${skill_name}|"
   done
-fi
+done
 
 # ── AI agents ──────────────────────────────────────────────────
 
