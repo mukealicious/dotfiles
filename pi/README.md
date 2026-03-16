@@ -11,6 +11,8 @@ Run automatically by `script/install`, or manually:
 
 Requires `pi` to be installed first (`bun install -g @mariozechner/pi-coding-agent`).
 
+Run `dot doctor` to verify agents, symlinks, and skill projections are correctly installed.
+
 ## Directory Structure
 
 ```
@@ -76,8 +78,3 @@ Third-party packages installed via `pi install npm:<pkg>`:
 | `pi-interactive-shell` | Interactive shell support |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |
 
-## Known Issues
-
-### mitsupi v1.1.1 execute signature bug
-
-mitsupi v1.1.1 (latest on npm) ships with wrong `execute()` parameter order in `uv.ts`, `todos.ts`, and `loop.ts`. This causes pi to crash (`TypeError: onUpdate is not a function`) on any bash command. Fixed upstream ([commit](https://github.com/mitsuhiko/agent-stuff/commit/fix-extensions-update-tool-execute-signatures), Feb 2 2026) but not yet published to npm. `install.sh` applies a hotfix after installing mitsupi. Remove the hotfix once mitsupi >1.1.1 is released.

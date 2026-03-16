@@ -82,9 +82,8 @@ if [ "$SHELL" != "/opt/homebrew/bin/fish" ] && [ "$SHELL" != "/usr/local/bin/fis
   fi
 
   if [ -f "$FISH_PATH" ] && ! grep -q "^$FISH_PATH$" /etc/shells; then
-    echo "  Adding Fish to /etc/shells (requires sudo)..."
-    echo "$FISH_PATH" | sudo tee -a /etc/shells > /dev/null
-    echo "  Fish registered in /etc/shells"
+    echo "  Fish is not in /etc/shells"
+    echo "  Fix: echo '$FISH_PATH' | sudo tee -a /etc/shells"
   fi
 
   echo "  Currently using $current_shell. To switch to Fish: chsh -s $FISH_PATH"

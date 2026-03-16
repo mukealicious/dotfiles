@@ -224,6 +224,49 @@ for skills_root in "$SHARED_SKILLS_SRC" "$CLAUDE_SKILLS_SRC"; do
   done
 done
 
+# ── Repo-local skill projections ──────────────────────────────
+
+header "Repo-local skill projections"
+
+PROJECT_AGENTS_SKILLS_DIR="$DOTFILES_ROOT/.agents/skills"
+PROJECT_CLAUDE_SKILLS_DIR="$DOTFILES_ROOT/.claude/skills"
+
+check_projected_repo_skill() {
+  target_dir="$1"
+  label="$2"
+  overlay_src="$3"
+  skill_name="$4"
+
+  if [ -n "$overlay_src" ] && [ -d "$overlay_src/$skill_name" ]; then
+    check_symlink "$overlay_src/$skill_name" "$target_dir/$skill_name" "$label/$skill_name (overlay)"
+  elif [ -d "$SHARED_SKILLS_SRC/$skill_name" ]; then
+    check_symlink "$SHARED_SKILLS_SRC/$skill_name" "$target_dir/$skill_name" "$label/$skill_name (shared)"
+  fi
+}
+
+for runtime_pair in "$PROJECT_AGENTS_SKILLS_DIR|.agents/skills|" "$PROJECT_CLAUDE_SKILLS_DIR|.claude/skills|$CLAUDE_SKILLS_SRC"; do
+  rt_dir="${runtime_pair%%|*}"
+  rest="${runtime_pair#*|}"
+  rt_label="${rest%%|*}"
+  rt_overlay="${rest#*|}"
+
+  [ -d "$rt_dir" ] || continue
+
+  checked_repo_skills="|"
+  for skills_root in "$SHARED_SKILLS_SRC" ${rt_overlay:+"$rt_overlay"}; do
+    [ -d "$skills_root" ] || continue
+    for skill_dir in "$skills_root"/*/; do
+      [ -d "$skill_dir" ] || continue
+      sname="$(basename "$skill_dir")"
+      case "$checked_repo_skills" in
+        *"|$sname|"*) continue ;;
+      esac
+      check_projected_repo_skill "$rt_dir" "$rt_label" "$rt_overlay" "$sname"
+      checked_repo_skills="${checked_repo_skills}${sname}|"
+    done
+  done
+done
+
 # ── AI agents ──────────────────────────────────────────────────
 
 header "AI agents"
@@ -241,6 +284,20 @@ if [ -f "$CLAUDE_DIR/agents/review.md" ]; then
 else
   warn "~/.claude/agents/review.md is missing"
   info "Fix: dot"
+fi
+
+# Assembled Pi review agent
+if [ -f "$HOME/.pi/agent/agents/review.md" ]; then
+  if grep -Fq "$MANAGED_AGENT_MARKER" "$HOME/.pi/agent/agents/review.md" 2>/dev/null; then
+    pass "~/.pi/agent/agents/review.md (assembled)"
+  else
+    warn "~/.pi/agent/agents/review.md exists but is not installer-managed"
+  fi
+else
+  if command -v pi >/dev/null 2>&1; then
+    warn "~/.pi/agent/agents/review.md is missing"
+    info "Fix: dot"
+  fi
 fi
 
 # Symlinked agent files
