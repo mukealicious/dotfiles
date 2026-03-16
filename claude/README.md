@@ -53,10 +53,17 @@ Author portable skills in `ai/skills/`, keep `claude/skills/` for Claude-native 
 ai/
 ├── agents/
 │   └── review.body.md      # Shared review body
-└── skills/                 # Portable skills projected into ~/.claude/skills
-    ├── sprint-plan/        # Shared sprint planning
-    ├── qmd/                # Markdown search
+└── skills/                 # Portable skills projected into ~/.claude/skills (11 skills)
+    ├── build-skill/        # Skill authoring guide
+    ├── code-review/        # Parallel code review
+    ├── dotfiles-dev/       # Dotfiles development guide
     ├── favicon-generator/  # Favicon generation
+    ├── feedback-loop/      # Structured self-validation
+    ├── librarian/          # Multi-repo exploration
+    ├── opensrc/            # External package/repo source context
+    ├── qmd/                # Markdown search
+    ├── spec-planner/       # Dialogue-driven specs
+    ├── sprint-plan/        # Sprint planning
     └── workspace-snapshot/ # Quick workspace orientation
 
 claude/
@@ -69,14 +76,7 @@ claude/
 │   ├── oracle.md           # Legacy combined agent (Opus)
 │   ├── librarian.md        # Legacy combined agent
 │   └── review.frontmatter  # Shared-body exemplar metadata
-└── skills/                 # Claude-only overlays
-    ├── build-skill/        # /build-skill
-    ├── code-review/        # /code-review
-    ├── dotfiles-dev/       # Dotfiles guidance
-    ├── index-knowledge/    # /index-knowledge
-    ├── librarian/          # Librarian helper skill
-    ├── opensrc/            # /opensrc
-    └── session-export/     # /session-export
+└── skills/                 # Claude-only overlays (currently empty; shared skills projected here by ai/install.sh)
 ```
 
 ## Subagents
@@ -96,31 +96,25 @@ Use the librarian to explore how zod validates schemas
 Use review to check my recent changes
 ```
 
-## Slash Commands
+## Skills
 
-Skills that act as commands for automated workflows:
+Shared skills live in `ai/skills/` and are projected to `~/.claude/skills/` at install time. Claude-only overlays in `claude/skills/` remain optional and are currently empty. See `ai/README.md` for the full inventory.
 
-| Command | Purpose |
-|---------|---------|
-| `/code-review` | Parallel code review with 3 agents |
-| `/prd <feature>` | Create Product Requirements Document |
-| `/prd-task <name>` | Convert PRD to executable JSON tasks |
-| `/complete-task <name>` | Execute next task from PRD |
-| `/index-knowledge` | Generate AGENTS.md for codebase |
-| `/session-export <pr>` | Export AI session to PR description |
-| `/opensrc <repo>` | Clone repo + generate knowledge base |
-
-## Utility Skills
+Key skills available via slash command or auto-trigger:
 
 | Skill | Purpose |
 |-------|---------|
+| `code-review` | Parallel code review with architecture validation |
+| `spec-planner` | Dialogue-driven spec development |
+| `sprint-plan` | Break projects into demoable sprints |
+| `feedback-loop` | Self-validate work through structured loops |
+| `opensrc` | Fetch source context for packages and repos |
+| `build-skill` | Guidance for creating new skills |
 | `dotfiles-dev` | Guidance for working with this dotfiles repo |
-| `favicon-generator` | Generate optimized favicons from PNG/SVG |
-| `qmd` | Hybrid markdown search (BM25 + vectors + LLM) |
 
 ## Adding New Skills
 
-1. Create directory in `skills/`
+1. Create `ai/skills/<name>/` for a shared skill, or `claude/skills/<name>/` only for a Claude-only overlay.
 2. Add `SKILL.md` with YAML frontmatter:
    ```yaml
    ---
@@ -128,8 +122,10 @@ Skills that act as commands for automated workflows:
    description: Brief description of what the skill does
    ---
    ```
-3. Add supporting scripts/resources
-4. Run `bin/dot` to symlink
+3. Add supporting scripts/resources next to the skill when needed.
+4. Run `bin/dot` to refresh the runtime projections.
+
+Default to `ai/skills/`. Use `claude/skills/` only when the skill truly depends on Claude-specific features such as hooks, `$SKILL_DIR`, plugins, or subagent-specific runtime behavior.
 
 ## Adding New Agents
 

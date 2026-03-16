@@ -1,645 +1,197 @@
-# Dotfiles Comparison: mikeywills vs dmmulroy
-
-Research and analysis comparing your Holman-style dotfiles with dmmulroy's Cloudflare developer setup.
-
----
-
-## Overview
-
-| Aspect | Your Dotfiles | dmmulroy's Dotfiles |
-|--------|---------------|---------------------|
-| **Style** | Holman topic-based | Stow + topic-hybrid |
-| **Shell** | ZSH | Fish |
-| **Terminal** | WezTerm + AeroSpace | Ghostty + Tmux |
-| **Editor** | VSCode/Cursor | Neovim |
-| **Symlinking** | Custom `*.symlink` convention | GNU Stow |
-| **AI Tools** | Claude, OpenCode, Gemini, Codex | OpenCode primarily |
-
----
-
-## 1. Symlinking: Custom vs GNU Stow
-
-### Your Approach (`*.symlink` convention)
-
-**How it works:**
-- Files ending in `*.symlink` are found by `script/bootstrap`
-- Extension stripped, symlinked to `$HOME`
-- Example: `git/gitconfig.symlink` → `~/.gitconfig`
-
-**Current symlinks (10 total):**
-```
-git/gitconfig.symlink           → ~/.gitconfig
-git/gitignore.symlink           → ~/.gitignore
-git/gitconfig.local.symlink     → ~/.gitconfig.local
-ruby/gemrc.symlink              → ~/.gemrc
-ruby/irbrc.symlink              → ~/.irbrc
-starship/starship.toml.symlink  → ~/.starship.toml
-wezterm/wezterm.lua.symlink     → ~/.wezterm.lua
-zsh/zshrc.symlink               → ~/.zshrc
-vim/vimrc.symlink               → ~/.vimrc
-aerospace/aerospace.toml.symlink → ~/.aerospace.toml
-```
-
-**Bootstrap code (~50 lines):**
-```bash
-link_file () {
-  # handles skip, overwrite, backup options
-  ln -s "$1" "$2"
-}
-
-install_dotfiles () {
-  for src in $(find -H "$DOTFILES_ROOT" -maxdepth 2 -name '*.symlink' -not -path '*.git*')
-  do
-    dst="$HOME/.$(basename "${src%.*}")"
-    link_file "$src" "$dst"
-  done
-}
-```
-
-**Pros:**
-- No external dependencies
-- Explicit control over what gets linked
-- Works with topic-based organization
-
-**Cons:**
-- Custom code to maintain
-- Awkward for nested `.config/` paths
-- Each new tool needs a `*.symlink` file
-
----
-
-### dmmulroy's Approach (GNU Stow)
-
-**How it works:**
-- Single `home/` directory mirrors `~` structure exactly
-- One command: `stow -R -v -d ~/.dotfiles -t ~ home`
-- Stow creates symlinks for entire directory trees
-
-**Directory structure:**
-```
-.dotfiles/
-└── home/
-    ├── .gitconfig
-    ├── .gitignore
-    └── .config/
-        ├── fish/           → ~/.config/fish (whole dir)
-        ├── nvim/           → ~/.config/nvim
-        ├── tmux/           → ~/.config/tmux
-        ├── git/            → ~/.config/git
-        └── opencode/       → ~/.config/opencode
-```
-
-**Bootstrap code (3 lines):**
-```bash
-install_dotfiles() {
-  stow -R -v -d "$DOTFILES_ROOT" -t "$HOME" home
-}
-```
-
-**Pros:**
-- Industry standard tool
-- Handles nested directories naturally
-- Conflict detection built-in
-- Idempotent (safe to re-run)
-
-**Cons:**
-- External dependency (`brew install stow`)
-- `home/` directory is separate from topics
-
----
-
-### Migration Assessment
-
-**Effort:** ~2 hours
-
-**Steps:**
-1. Create `home/` directory mirroring `~` structure
-2. Move 11 `*.symlink` files to appropriate locations
-3. Replace bootstrap symlink logic with single `stow` command
-4. Test symlinks work correctly
-5. Remove old `*.symlink` files
+# Dotfiles Comparison: `missoula` vs `dmmulroy` (2026 refresh)
 
-**Risk:** Low (all changes reversible via git)
+This refresh replaces the older ZSH-era comparison.
 
-**Recommendation:** Migrate - simplifies future additions especially for `.config/` tools
+Your repo has moved a lot since then:
 
----
+- Fish is already your interactive shell
+- tmux is already present for session persistence
+- AI setup is now installer-managed and harness-portable
+- topic-specific installers do more than simple symlinking
 
-## 2. Shell: ZSH vs Fish
+So the question is no longer _"should I copy his architecture?"_.
 
-### Your ZSH Setup
+It is now:
 
-**Architecture:**
-- `zsh/zshrc.symlink` is the entry point
-- Loads all `**/*.zsh` files from topics
-- Special ordering: `path.zsh` first, `completion.zsh` last
-- ~62 lines of boilerplate for loading/ordering
-
-**Topic loading:**
-```bash
-# Load path files first
-for file in ${(M)config_files:#*/path.zsh}; source $file
-
-# Load everything except path and completion
-for file in ${${config_files:#*/path.zsh}:#*/completion.zsh}; source $file
+> Which targeted ideas from `dmmulroy/.dotfiles` are still a net win for this repo?
 
-# Initialize completions
-autoload -Uz compinit
-compinit
+## Quick take
 
-# Load completion files
-for file in ${(M)config_files:#*/completion.zsh}; source $file
-```
+- Keep your topic-centric layout
+- Keep your installer/projection model
+- Borrow a few workflow ergonomics
+- Do **not** migrate wholesale to Stow or a giant single-file CLI
 
-**Plugins/features:**
-- zsh-autosuggestions (plugin)
-- zsh-syntax-highlighting (plugin)
-- Starship prompt
-- Custom functions in `functions/`
+## Snapshot
 
----
+| Area | Your repo | His repo | Takeaway |
+| --- | --- | --- | --- |
+| Install model | `*.symlink` + topic installers + managed AI assembly | `home/` mirror + GNU Stow + large `dot` CLI | Keep your structure; borrow specific commands |
+| Shell | Fish + topic aliases + focused utility functions | Fish + `conf.d` + huge generated git abbreviation layer | Borrow abbreviations, not the whole shell stack |
+| Packages | Single `Brewfile` + `dot`/installers | Split `packages/bundle` + `bundle.work` + package subcommands | Consider split bundles only if you want machine profiles |
+| Tmux | Minimal, practical, already has resurrect/continuum | Heavier tmux workflow, more bindings, more polish | Borrow a few ergonomic binds if they feel good |
+| AI tooling | Shared instructions, shared skills, harness-specific appendices, runtime projections | Useful AGENTS + OpenCode-centric helpers | You are already ahead here |
+| Complexity | Many small scripts and topic folders | One very capable but very large Bash CLI | Prefer incremental additions over centralization |
 
-### dmmulroy's Fish Setup
+## What is actually worth borrowing
 
-**Architecture:**
-- `config.fish` is minimal (17 lines)
-- `conf.d/*.fish` auto-sourced (no manual loading)
-- `functions/*.fish` lazy-loaded on first call
-- Zero boilerplate for loading
+### 1. Fish git abbreviations
 
-**conf.d structure (16 files):**
-```
-conf.d/
-├── aliases.fish      # Shell aliases
-├── paths.fish        # PATH modifications
-├── git.fish          # Git abbreviation init
-├── brew.fish         # Homebrew setup
-├── starship.fish     # starship init fish | source
-├── zoxide.fish       # zoxide init fish | source
-├── fzf.fish          # FZF configuration
-├── fnm.fish          # Node version manager
-├── bun.fish          # Bun runtime
-└── ... (more)
-```
+This is the clearest day-to-day win.
 
-**Key feature: Abbreviations (180+ git shortcuts)**
-```fish
-abbr -a -g g git           # Type 'g', see it expand to 'git'
-abbr -a -g ga 'git add'
-abbr -a -g gst 'git status'
-abbr -a -g gc 'git commit -v'
-abbr -a -g gp 'git push'
-abbr -a -g fomo 'git fetch origin main && git rebase origin/main'
-```
-
-Unlike aliases, abbreviations **expand visibly** before you press enter - you see what command will run.
-
----
-
-### Comparison
+His repo has a large, well-organized git abbreviation layer driven by `__git.init.fish`.
+Your repo already has the supporting primitives and several matching helper functions:
 
-| Feature | ZSH | Fish |
-|---------|-----|------|
-| **Syntax highlighting** | Plugin needed | Built-in |
-| **Auto-suggestions** | Plugin needed | Built-in |
-| **Abbreviations** | Plugin needed | Built-in, superior |
-| **Auto-sourcing** | Manual loops | conf.d/ automatic |
-| **Lazy functions** | Manual setup | Implicit |
-| **Script ecosystem** | Massive (45 years) | Smaller |
-| **POSIX compatible** | Mostly | No |
-| **Array indexing** | 0-indexed | 1-indexed |
-
-**Migration effort:** 15-20 hours full, 5-10 hours hybrid
-
-**Hybrid approach:** Keep ZSH for scripts, use Fish interactively. They coexist.
-
----
+- `__git.default_branch`
+- `gwip`
+- `gunwip`
+- `gtest`
+- `grename`
+- `gbda`
 
-### Fish Files to Port
+What you are missing is the _interactive shorthand surface area_.
 
-From dmmulroy's setup, key files:
+The best move is **not** to port the full 180-ish abbreviation set. Instead, add a curated subset of high-frequency commands:
 
-**conf.d/git.fish** - Creates 180+ abbreviations:
-- Location: `/Users/mikeywills/Code/dmmulroy/.dotfiles/home/.config/fish/conf.d/git.fish`
-- Uses `__git.create_abbr` helper function
-- Covers: add, branch, checkout, commit, diff, fetch, log, merge, pull, push, rebase, reset, stash, status, etc.
+- `g`, `ga`, `gaa`
+- `gc`, `gca`, `gcm`
+- `gd`, `gds`
+- `gf`, `gfa`
+- `gl`, `glr`, `glog`
+- `gp`, `gp!`, `gpu`
+- `grb`, `grbi`
+- `gst`, `gsb`
+- `gco`, `gcb`
+- `gsw`, `gswc`
+- `gsta`, `gstp`
+- `gwt`, `gwta`
 
-**functions/__git.*.fish** - Helper functions:
-- `__git.default_branch` - Detects main vs master
-- `__git.create_abbr` - Creates abbreviations programmatically
+Why this is worth it:
 
-**functions/gwip.fish** - WIP commit workflow:
-```fish
-function gwip -d "git commit a work-in-progress branch"
-  git add -A
-  git rm (git ls-files --deleted) 2> /dev/null
-  git commit -m "--wip--" --no-verify
-end
-```
+- Fish abbreviations expand visibly before execution
+- They preserve readability better than opaque aliases
+- They fit your existing Fish-first workflow cleanly
 
----
+### 2. A real `dot doctor`
 
-## 3. Terminal Multiplexing: WezTerm vs Tmux
+This is the strongest structural idea to steal from his repo.
 
-### Your Setup (WezTerm + AeroSpace)
+Your setup now has more moving parts than his in a few important places:
 
-- WezTerm: GPU-accelerated terminal emulator
-- AeroSpace: i3-like tiling window manager
-- No session persistence
-- Single terminal context per window
+- symlinked top-level dotfiles
+- Fish config projections
+- tmux plugins
+- AI instruction assembly
+- shared skill runtime projections
+- multiple agent install targets
 
----
+A `dot doctor` command would pay for itself quickly.
 
-### dmmulroy's Setup (Tmux)
+It should check things that are specific to **your** architecture, not just generic Homebrew state:
 
-**Config location:** `/Users/mikeywills/Code/dmmulroy/.dotfiles/home/.config/tmux/tmux.conf`
+- required CLIs: `brew`, `fish`, `tmux`, `starship`, `bun`, `uv`
+- expected top-level symlinks like `.gitconfig`, `.tmux.conf`, `.wezterm.lua`, `.aerospace.toml`
+- Fish targets under `~/.config/fish/`
+- TPM presence under `~/.tmux/plugins/tpm`
+- assembled instruction files for Claude, Pi, OpenCode, Codex, and Gemini
+- managed agent/runtime outputs that `ai/install.sh` owns
 
-**Key settings:**
-```tmux
-# Prefix key (not default C-b)
-unbind C-b
-set -g prefix 'C-;'
+If you only borrow one big idea, borrow this one.
 
-# Extended keys for proper modifiers
-set -s extended-keys on
-set -g allow-passthrough on
-
-# Large scrollback
-set -g history-limit 50000
-
-# Mouse support
-set -g mouse on
-
-# Escape time (for vim)
-set -s escape-time 0
-```
-
-**Plugins (via TPM):**
-```tmux
-set -g @plugin 'tmux-plugins/tpm'
-set -g @plugin 'christoomey/vim-tmux-navigator'  # Seamless vim/tmux panes
-set -g @plugin 'tmux-plugins/tmux-resurrect'     # Save/restore sessions
-set -g @plugin 'tmux-plugins/tmux-continuum'     # Auto-save every 10 min
-set -g @plugin 'catppuccin/tmux'                 # Theme
-```
-
-**Resurrect settings:**
-```tmux
-set -g @resurrect-strategy-nvim 'session'
-set -g @resurrect-capture-pane-contents 'on'
-set -g @continuum-restore 'on'
-set -g @continuum-boot 'on'
-set -g @continuum-save-interval '10'
-```
-
----
-
-### Why Tmux for AI Agents?
-
-**Session persistence:**
-- Claude Code sessions survive terminal closes, SSH drops, reboots
-- Pick up conversations next day
-- Long-running builds continue in background
+### 3. Fish completions for `dot`
 
-**Parallel workflows:**
-- Multiple Claude Code instances in separate tmux windows
-- Git worktrees + tmux for isolated branch development
-- Test pane visible while coding
+This is a nice companion to `dot doctor`.
 
-**Emerging tools (2026):**
-- `claude-squad` - Manages multiple AI agents in tmux sessions
-- `workmux` - Git worktrees + tmux automation
-- `tmux-resurrect` + `continuum` - Auto-save/restore sessions
+Your repo already has `fish/completions/`, so the integration path is obvious.
+Once `dot` grows even a small subcommand surface, completions make the management flow feel much more first-class.
 
----
-
-### WezTerm + Tmux: They Work Together
+Suggested scope:
 
-- WezTerm = terminal emulator (GPU, fonts, colors)
-- Tmux = multiplexer (sessions, panes, persistence)
-- Run tmux inside WezTerm for both benefits
-- AeroSpace still manages windows; tmux manages sessions within
-
-**Setup:** Just install tmux, configure it, start using it inside WezTerm.
-
----
-
-## 4. `dot` CLI Comparison
-
-### Your `dot` Command (63 lines)
-
-**Location:** `/Users/mikeywills/.dotfiles/bin/dot`
+- `dot doctor`
+- `dot --edit`
+- any future `dot install`, `dot link`, or `dot fix` commands
 
-**Options:**
-- `dot` - Full update (defaults, brew, bundle, installers)
-- `dot -e` - Edit dotfiles in editor
-- `dot -h` - Help
+This is low-risk and very on-brand for the repo as it exists today.
 
-**What it does:**
-```bash
-$ZSH/macos/set-defaults.sh
-$ZSH/homebrew/install.sh
-brew update
-brew upgrade
-brew bundle --file="$ZSH/Brewfile"
-$ZSH/script/install
-```
-
----
-
-### dmmulroy's `dot` Command (2,482 lines)
-
-**Location:** `/Users/mikeywills/Code/dmmulroy/.dotfiles/dot`
-
-**Commands:**
-```
-dot init                    # Full setup (brew, stow, bun, ssh, font, fish)
-dot update                  # Pull + brew upgrade + restow
-dot doctor                  # 8+ health diagnostics
-dot stow                    # Resymlink only
-dot package list [bundle]   # List packages
-dot package add X [cask]    # Add + install immediately
-dot package remove X        # Remove from bundle
-dot package update [X]      # Update packages
-dot gen-ssh-key [email]     # Generate domain-specific SSH keys
-dot completions             # Generate Fish completions
-dot summary                 # AI commit summarization
-dot benchmark-shell         # Fish startup profiling
-```
-
-**Health checks (`dot doctor`):**
-- Homebrew health (`brew doctor`)
-- Expected symlinks exist
-- Required tools installed
-- Shell is Fish
-- Stow configured correctly
-- TPM installed
-- Fonts available
-
-**Failure handling:**
-- Failed packages logged to `packages/failed_packages_TIMESTAMP.txt`
-- `dot retry-failed` attempts reinstall
-- Installation continues despite individual failures
-
----
-
-### What to Adopt
-
-**Recommended additions:**
-1. `dot doctor` - Health diagnostics
-2. `dot stow` - Re-run stow (after migration)
-
-**Not needed:**
-- Package management commands (Brewfile works)
-- SSH key generation (manual is fine)
-- AI summarization (nice but complex)
-
----
-
-## 5. AI Configuration Comparison
-
-### Your Setup
-
-**Unified instructions:** `ai/instructions/base.md` plus harness appendices assembled by `ai/install.sh`
-
-Assembled into multiple tool-specific outputs:
-- `~/.AGENTS.md` (base-only compatibility output)
-- `~/.claude/CLAUDE.md` (Claude Code)
-- `~/.config/opencode/AGENTS.md` (OpenCode)
-- `~/.gemini/GEMINI.md` (Gemini)
-- `~/.codex/instructions.md` (Codex)
-- `~/.pi/agent/AGENTS.md` (Pi)
-
-**Content:**
-```markdown
-# AI Agent Instructions
-
-## Communication
-- Extremely concise, sacrifice grammar
-- Plans: list unresolved questions at end
-
-## System
-- macOS, ZSH, VSCode, WezTerm, AeroSpace
-- Tools: fd, rg, bat, eza, fzf, zoxide, git, gh, docker, jq, op
-
-## Secrets
-Never commit: ~/.localrc, ~/.gitconfig.local
-```
-
-**Strength:** Single source of truth across all AI tools
-
----
-
-### dmmulroy's Setup
-
-**OpenCode-centric:** `/Users/mikeywills/Code/dmmulroy/.dotfiles/home/.config/opencode/`
-
-**Structure:**
-```
-opencode/
-├── opencode.json           # Config (MCP, permissions, theme)
-├── AGENTS.md               # Instructions
-├── agent/                  # Subagents
-│   ├── oracle.md          # Code review, architecture (extended thinking)
-│   ├── librarian.md       # Multi-repo exploration
-│   └── review.md          # Code review
-├── command/                # Custom slash commands
-│   ├── complete-next-task.md
-│   ├── code-review.md
-│   └── opensrc.md
-├── skill/                  # Agent skills
-│   ├── librarian/
-│   ├── frontend-design/
-│   └── ~10 others
-└── tool/                   # TypeScript tools
-    └── ast-grep.ts
-```
-
-**Permission system (opencode.json):**
-```json
-{
-  "permission": {
-    "read": {
-      "*": "allow",
-      "*.env": "deny",
-      "*.env.*": "deny",
-      "*.envrc": "deny",
-      "secrets/*": "deny"
-    }
-  }
-}
-```
-
-**MCP servers:**
-```json
-{
-  "mcp": {
-    "context7": {"type": "remote", "url": "https://mcp.context7.com/mcp", "enabled": true},
-    "grep_app": {"type": "remote", "url": "https://mcp.grep.app", "enabled": true},
-    "opensrc": {"type": "local", "command": ["npx", "-y", "opensrc-mcp"], "enabled": true}
-  }
-}
-```
-
-**Subagent pattern:**
-- Oracle: Extended thinking (31999 token budget) for architecture
-- Librarian: Multi-repo exploration with GitHub links
-- Different models per agent (Opus 4.5, Sonnet 4.5)
-
----
-
-### What to Adopt
-
-**File access restrictions (add to AGENTS.md):**
-```markdown
-## File Access Restrictions
-Never read or modify:
-- `~/.localrc`, `~/.gitconfig.local`, `~/.gitconfig.work`
-- `**/secrets/**`, `**/*.env`, `**/.envrc`, `**/credentials*`
-```
-
-**Subagent patterns:** Worth researching for Claude Code custom agents
-
----
-
-## 6. Git Configuration Comparison
-
-### Your Setup
-
-**Location:** `/Users/mikeywills/.dotfiles/git/gitconfig.symlink`
-
-```gitconfig
-[include]
-    path = ~/.gitconfig.local
-[alias]
-    co = checkout
-    count = !git shortlog -sn
-[core]
-    excludesfile = ~/.gitignore
-    editor = cursor
-[pull]
-    rebase = true
-[init]
-    defaultBranch = main
-```
-
----
-
-### dmmulroy's Setup
-
-**Location:** `/Users/mikeywills/Code/dmmulroy/.dotfiles/home/.config/git/config`
-
-```gitconfig
-[user]
-    email = dillon.mulroy@gmail.com
-    name = Dillon Mulroy
-    signingKey = ~/.ssh/key.pub
-
-[commit]
-    gpgSign = true
-
-[gpg]
-    format = "ssh"              # SSH signing (not GPG)
-
-[core]
-    editor = "nvim"
-    fsmonitor = true            # Faster git status
-    untrackedCache = true
-
-[fetch]
-    prune = true                # Clean stale remotes
-    writeCommitGraph = true     # Faster log operations
-
-[rerere]
-    enabled = true              # Remember conflict resolutions
-
-[branch]
-    sort = "-committerdate"     # Recent branches first
-
-[alias]
-    fomo = "!fish -c 'git fetch origin $(__git.default_branch) && git rebase origin/$(__git.default_branch) --autostash'"
-
-[includeIf "gitdir:~/Code/work/"]
-    path = ~/.config/git/work_config   # Work-specific identity
-```
-
----
-
-### Recommended Additions
-
-```gitconfig
-[core]
-    fsmonitor = true
-    untrackedCache = true
-
-[fetch]
-    prune = true
-    writeCommitGraph = true
-
-[rerere]
-    enabled = true
-
-[branch]
-    sort = -committerdate
-
-[merge]
-    conflictstyle = zdiff3
-
-[diff]
-    algorithm = histogram
-```
-
----
-
-## 7. Key Files Reference
-
-### dmmulroy's Dotfiles
-
-| File | Purpose |
-|------|---------|
-| `/Users/mikeywills/Code/dmmulroy/.dotfiles/dot` | Main CLI (2,482 lines) |
-| `.../home/.config/fish/config.fish` | Fish entry point |
-| `.../home/.config/fish/conf.d/git.fish` | Git abbreviations |
-| `.../home/.config/fish/functions/` | Fish functions |
-| `.../home/.config/tmux/tmux.conf` | Tmux configuration |
-| `.../home/.config/git/config` | Git configuration |
-| `.../home/.config/opencode/opencode.json` | AI tool config |
-| `.../home/.config/opencode/AGENTS.md` | AI instructions |
-| `.../packages/bundle` | Brewfile |
-| `.../docs/architecture.md` | Documentation |
-
-### Your Dotfiles
-
-| File | Purpose |
-|------|---------|
-| `/Users/mikeywills/.dotfiles/bin/dot` | Main CLI (63 lines) |
-| `.../zsh/zshrc.symlink` | ZSH entry point |
-| `.../git/gitconfig.symlink` | Git configuration |
-| `.../ai/install.sh` | AI instruction and skill assembly |
-| `.../script/bootstrap` | Symlink setup |
-| `.../script/install` | Run installers |
-| `.../Brewfile` | Homebrew packages |
-
----
-
-## Decision Summary
-
-| Decision | Recommendation | Effort | Priority |
-|----------|---------------|--------|----------|
-| GNU Stow | Migrate | 2 hr | High |
-| Tmux | Add | 1-2 hr | High |
-| Fish | Experiment (hybrid) | 2-3 hr initial | Medium |
-| `dot` CLI | Add doctor/stow | 1 hr | Medium |
-| AI restrictions | Update AGENTS.md | 30 min | Low |
-| Git config | Add performance settings | 30 min | Low |
-
----
-
-## Next Steps
-
-Pick one decision at a time:
-
-1. **Start with Stow** - Foundation for everything else
-2. **Add Tmux** - Session persistence for AI workflows
-3. **Try Fish** - Better interactive experience (keep ZSH as backup)
-4. **Enhance `dot`** - Add doctor command for debugging
+### 4. Optional package profile splitting
+
+His `packages/bundle` + `bundle.work` split is a good pattern **if** you want different install surfaces across machines.
+
+That is useful when you want distinctions like:
+
+- base vs optional
+- personal vs work
+- laptop vs desktop
+
+If you are mostly targeting one main machine profile, your current single `Brewfile` is still fine.
+
+So this is worth borrowing only if you already feel pressure from package sprawl.
+
+### 5. Small tmux ergonomics
+
+You already have the main tmux win: session persistence.
+
+That means the remaining value is polish, not architecture:
+
+- richer copy-mode bindings
+- resize-pane bindings
+- maybe auto-installing TPM plugins instead of requiring manual `prefix + I`
+
+These are worth sampling, but they are lower priority than git abbreviations or `dot doctor`.
+
+## What is **not** worth borrowing
+
+### 1. Full GNU Stow migration
+
+Earlier this looked more attractive.
+It no longer does.
+
+Your repo now has topic-specific installers and installer-managed outputs that go beyond plain symlinks. A full `home/` mirror would fight that structure more than it would help it.
+
+If nested config paths become painful, solve that surgically instead of rewriting the repository layout.
+
+### 2. A giant monolithic `dot` script
+
+His `dot` script is impressive, but it centralizes many unrelated concerns into one very large Bash file.
+
+Your repo is better served by a thin command surface over smaller scripts.
+Steal the command ideas, not the implementation shape.
+
+### 3. OpenCode-specific AI summary plumbing
+
+You already have a stronger cross-harness AI architecture than his repo.
+
+If you want commit summaries or PR drafting, the better home is:
+
+- a portable skill
+- a shared helper script
+- or a harness-aware command assembled from your existing AI layer
+
+Not a tool-specific feature branch inside the dotfiles core.
+
+### 4. Taste-driven wholesale swaps
+
+Things like Ghostty, jj, Catppuccin, fnm, fisher, or Neovim plugin choices are mostly adjacent preferences.
+
+Borrow workflow improvements, not ecosystem churn.
+
+## Recommended order of operations
+
+If you want to bring over ideas incrementally, this is the sequence I would use:
+
+1. Add curated Fish git abbreviations
+2. Add `dot doctor`
+3. Add Fish completions for `dot`
+4. Revisit package profile splitting only if you still want it
+
+## Bottom line
+
+The refreshed comparison is much simpler than the old one:
+
+- your repo is already ahead on AI portability and multi-tool instruction management
+- your current architecture is worth keeping
+- the biggest wins left in his repo are interactive shell ergonomics and environment diagnostics
+
+If you want the shortest possible recommendation:
+
+> Bring in git abbreviations and a `dot doctor`. Leave the rest.

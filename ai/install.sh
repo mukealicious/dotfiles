@@ -22,6 +22,9 @@ fi
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
+# Shared symlink helpers
+. "$DOTFILES_ROOT/lib/symlink.sh"
+
 _TMPFILES=""
 _cleanup() {
   for f in $_TMPFILES; do
@@ -30,57 +33,7 @@ _cleanup() {
 }
 trap _cleanup EXIT INT TERM
 
-#
-# Helper: Create or validate a symlink
-#
-# Usage: ensure_symlink <source> <target> <description>
-#
-# Behavior:
-# - If target doesn't exist: create symlink
-# - If target is correct symlink: skip
-# - If target is broken symlink: remove and recreate
-# - If target points elsewhere: warn (or fix with --force)
-# - If target is regular file/dir: warn and skip
-#
-ensure_symlink() {
-  src="$1"
-  target="$2"
-  desc="$3"
-
-  if [ -L "$target" ]; then
-    current="$(readlink "$target")"
-    if [ ! -e "$target" ]; then
-      # Broken symlink
-      echo "  Removing dead symlink: $desc"
-      rm "$target"
-      echo "  Linking $desc"
-      ln -s "$src" "$target"
-    elif [ "$current" = "$src" ]; then
-      # Correct symlink
-      echo "  $desc already linked correctly"
-    else
-      # Points to wrong location
-      if [ "$FORCE" = "true" ]; then
-        echo "  Fixing $desc (was: $current)"
-        rm "$target"
-        ln -s "$src" "$target"
-      else
-        echo "  Warning: $desc points to wrong location"
-        echo "    Current:  $current"
-        echo "    Expected: $src"
-        echo "    Fix: rm \"$target\" && dot"
-      fi
-    fi
-  elif [ -e "$target" ]; then
-    # Regular file or directory
-    echo "  Warning: $desc exists but is not a symlink"
-    echo "    Skipping to preserve existing content"
-  else
-    # Doesn't exist
-    echo "  Linking $desc"
-    ln -s "$src" "$target"
-  fi
-}
+# ensure_symlink is provided by lib/symlink.sh (sourced above)
 
 MANAGED_INSTRUCTIONS_MARKER='<!-- Managed by ~/.dotfiles/ai/install.sh. Edit source files instead. -->'
 MANAGED_AGENT_MARKER='# Managed by ~/.dotfiles/ai/install.sh. Edit source files instead.'
@@ -125,7 +78,7 @@ write_managed_file() {
   mkdir -p "$(dirname "$target")"
 
   if [ -L "$target" ]; then
-    current="$(readlink "$target")"
+    current="$(normalize_symlink_path "$(readlink "$target")")"
     if [ "$target" = "$HOME/.AGENTS.md" ] && [ ! -e "$target" ]; then
       echo "  Replacing legacy symlink: $desc"
       rm "$target"
@@ -169,7 +122,7 @@ write_managed_agent_file() {
   mkdir -p "$(dirname "$target")"
 
   if [ -L "$target" ]; then
-    current="$(readlink "$target")"
+    current="$(normalize_symlink_path "$(readlink "$target")")"
     if [ -n "$legacy_suffix" ]; then
       case "$current" in
         *"$legacy_suffix")
@@ -339,9 +292,38 @@ sync_skill_runtime_dir() {
     for skill_dir in "$overlay_src"/*/; do
       [ -d "$skill_dir" ] || continue
       skill_name=$(basename "$skill_dir")
-      ensure_symlink "$skill_dir" "$target_dir/$skill_name" "$label/$skill_name (overlay)"
+      ensure_runtime_overlay_symlink "$skill_dir" "$target_dir/$skill_name" "$label/$skill_name (overlay)"
     done
   fi
+}
+
+#
+# Helper: Apply an overlay symlink in an installer-managed runtime directory
+#
+# Behavior:
+# - If the target is already a symlink, replace it so the overlay wins
+# - If the target is a regular file/dir, preserve it and warn via ensure_symlink
+# - If the target is missing, create it
+#
+ensure_runtime_overlay_symlink() {
+  src="$(normalize_symlink_path "$1")"
+  target="$2"
+  desc="$3"
+
+  if [ -L "$target" ]; then
+    current="$(normalize_symlink_path "$(readlink "$target")")"
+    if [ -e "$target" ] && [ "$current" = "$src" ]; then
+      echo "  $desc already linked correctly"
+      return 0
+    fi
+
+    echo "  Re-linking $desc"
+    rm "$target"
+    ln -s "$src" "$target"
+    return 0
+  fi
+
+  ensure_symlink "$src" "$target" "$desc"
 }
 
 echo "  Setting up AI instruction files..."

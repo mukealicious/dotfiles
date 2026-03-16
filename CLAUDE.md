@@ -7,6 +7,7 @@ Topic-centric dotfiles (Holman-style). Manages macOS dev environment.
 - `script/bootstrap` - initial setup, symlinks
 - `script/install` - run all installers
 - `bin/dot` - update everything
+- `bin/dot doctor` - check environment health
 
 ## Development
 
@@ -36,7 +37,7 @@ Claude Code config lives in `claude/` and is symlinked to `~/.claude/`. See `cla
 
 **Key files (edit here, not in ~/.claude/):**
 - `claude/settings.json` - permissions, hooks, MCP servers
-- `claude/skills/` - custom slash commands
+- `claude/skills/` - Claude-only overlays (currently empty; shared skills live in `ai/skills/`)
 - `claude/agents/` - subagents; `review` is split-source (`ai/agents/review.body.md` + `claude/agents/review.frontmatter`), while `oracle` and `librarian` remain combined
 - `claude/hooks/` - PreToolUse and lifecycle hooks
 
@@ -81,7 +82,7 @@ All installer scripts follow these patterns:
 - Safe file iteration: `[ -e "$file" ] || continue`
 - Provide `--force` flag for correcting misconfigurations
 
-**Symlink management** (see `ai/install.sh` for canonical implementation):
+**Symlink management** (see `lib/symlink.sh` for canonical implementation):
 - Always validate symlink targets, don't assume existing symlinks are correct
 - Handle: non-existent, correct, broken, misdirected symlinks
 - Clean dead symlinks before creating new ones
@@ -89,6 +90,7 @@ All installer scripts follow these patterns:
 
 ## Architecture Principles
 
+- **Shared libraries**: `lib/symlink.sh` provides `ensure_symlink` and `check_symlink` — reuse these instead of writing new symlink logic
 - **Single source of truth**: One script owns each config area (e.g., `ai/install.sh` for all AI tool configs)
 - **No overlapping ownership**: Avoid multiple scripts managing same directories
 - **Deterministic execution**: Explicit ordering over `find | while` when order matters

@@ -126,22 +126,21 @@ If the shared skill stands on its own, delete the wrapper instead of keeping two
 
 | Skill | Type | Description |
 |---|---|---|
+| `build-skill` | Instruction-only | Create effective skills for AI coding agents |
+| `code-review` | Instruction-only | Parallel code review with architecture validation |
+| `dotfiles-dev` | Instruction-only | Guide for working with dotfiles |
 | `favicon-generator` | Scripts | Generate optimized favicons (ImageMagick) |
+| `feedback-loop` | Instruction-only | Self-validate work through deterministic feedback loops |
+| `librarian` | Instruction-only | Multi-repository codebase exploration |
+| `opensrc` | Instruction-only | Fetch source context for external packages and repositories |
 | `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
+| `spec-planner` | Instruction-only | Dialogue-driven spec development with iterative refinement |
 | `sprint-plan` | Instruction-only | Break projects into demoable sprints with atomic, testable tasks |
 | `workspace-snapshot` | Instruction-only | Quick workspace orientation before editing |
 
 ### Claude-Specific (`claude/skills/`)
 
-| Skill | Type | Description |
-|---|---|---|
-| `build-skill` | Instruction-only | Create effective Claude Code skills |
-| `code-review` | Subagents | Parallel code review with multiple agents |
-| `dotfiles-dev` | Instruction-only | Guide for working with dotfiles |
-| `index-knowledge` | Scripts | Generate hierarchical AGENTS.md knowledge bases |
-| `librarian` | Subagents | Multi-repository codebase exploration |
-| `opensrc` | Scripts | Clone & generate knowledge base for external repos |
-| `session-export` | Scripts | Add AI session summary to GitHub PR |
+Currently empty. Shared skills are projected here at runtime by `ai/install.sh`. Use this directory only for skills that require Claude-native features (hooks, `$SKILL_DIR`, subagent delegation).
 
 ### Pi Extensions (`pi/extensions/`)
 
