@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Intercepts python3 commands and redirects to uv run python.
+# Intercepts python3 commands and redirects to uv run python3.
 # Blocks python3 -m pip and python3 -m venv with helpful error messages.
 #
 
@@ -18,7 +18,7 @@ for arg in "$@"; do
     -mpip)
       echo "Error: 'python3 -m pip' is disabled. Use uv instead:" >&2
       echo "" >&2
-      echo "  To install a package for a script: uv run --with PACKAGE python script.py" >&2
+      echo "  To install a package for a script: uv run --with PACKAGE python3 script.py" >&2
       echo "  To add a dependency to the project: uv add PACKAGE" >&2
       echo "" >&2
       exit 1
@@ -41,7 +41,7 @@ for arg in "$@"; do
       pip)
         echo "Error: 'python3 -m pip' is disabled. Use uv instead:" >&2
         echo "" >&2
-        echo "  To install a package for a script: uv run --with PACKAGE python script.py" >&2
+        echo "  To install a package for a script: uv run --with PACKAGE python3 script.py" >&2
         echo "  To add a dependency to the project: uv add PACKAGE" >&2
         echo "" >&2
         exit 1
@@ -59,4 +59,4 @@ for arg in "$@"; do
 done
 
 # Dispatch to uv run python
-exec uv run python "$@"
+exec uv run python3 "$@"

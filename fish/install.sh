@@ -3,12 +3,25 @@
 # Fish Shell Configuration
 #
 # Sets up Fish shell config by symlinking to ~/.config/fish/
+#
+# Usage:
+#   ./install.sh          # Normal install (warns about misconfigurations)
+#   ./install.sh --force  # Fix symlinks pointing to wrong locations
 
 set -e
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 FISH_SRC="$DOTFILES_ROOT/fish"
 FISH_DEST="$HOME/.config/fish"
+
+# Shared symlink helpers
+. "$DOTFILES_ROOT/lib/symlink.sh"
+
+# Parse arguments
+FORCE="${FORCE:-false}"
+if [ "$1" = "--force" ]; then
+  FORCE=true
+fi
 
 echo "  Setting up Fish shell..."
 
@@ -19,84 +32,41 @@ mkdir -p "$FISH_DEST/functions"
 mkdir -p "$FISH_DEST/completions"
 
 # Symlink config.fish
-if [ -L "$FISH_DEST/config.fish" ]; then
-  rm "$FISH_DEST/config.fish"
-fi
-if [ ! -e "$FISH_DEST/config.fish" ]; then
-  echo "  Linking config.fish"
-  ln -s "$FISH_SRC/config.fish" "$FISH_DEST/config.fish"
-else
-  echo "  config.fish exists (not a symlink), skipping"
-fi
+ensure_symlink "$FISH_SRC/config.fish" "$FISH_DEST/config.fish" "config.fish"
 
 # Symlink conf.d files from fish/conf.d/
 for file in "$FISH_SRC/conf.d"/*.fish; do
   [ -e "$file" ] || continue
   name=$(basename "$file")
-  target="$FISH_DEST/conf.d/$name"
-  if [ -L "$target" ]; then
-    rm "$target"
-  fi
-  if [ ! -e "$target" ]; then
-    echo "  Linking conf.d/$name"
-    ln -s "$file" "$target"
-  fi
+  ensure_symlink "$file" "$FISH_DEST/conf.d/$name" "conf.d/$name"
 done
 
 # Discover and symlink topic aliases (*/aliases.fish -> conf.d/<topic>-aliases.fish)
 for file in "$DOTFILES_ROOT"/*/aliases.fish; do
   [ -e "$file" ] || continue
   topic=$(basename "$(dirname "$file")")
-  target="$FISH_DEST/conf.d/${topic}-aliases.fish"
-  if [ -L "$target" ]; then
-    rm "$target"
-  fi
-  if [ ! -e "$target" ]; then
-    echo "  Linking $topic/aliases.fish"
-    ln -s "$file" "$target"
-  fi
+  ensure_symlink "$file" "$FISH_DEST/conf.d/${topic}-aliases.fish" "$topic/aliases.fish"
 done
 
 # Discover and symlink topic keybindings (*/keybindings.fish -> conf.d/<topic>-keybindings.fish)
 for file in "$DOTFILES_ROOT"/*/keybindings.fish; do
   [ -e "$file" ] || continue
   topic=$(basename "$(dirname "$file")")
-  target="$FISH_DEST/conf.d/${topic}-keybindings.fish"
-  if [ -L "$target" ]; then
-    rm "$target"
-  fi
-  if [ ! -e "$target" ]; then
-    echo "  Linking $topic/keybindings.fish"
-    ln -s "$file" "$target"
-  fi
+  ensure_symlink "$file" "$FISH_DEST/conf.d/${topic}-keybindings.fish" "$topic/keybindings.fish"
 done
 
 # Symlink functions
 for file in "$FISH_SRC/functions"/*.fish; do
   [ -e "$file" ] || continue
   name=$(basename "$file")
-  target="$FISH_DEST/functions/$name"
-  if [ -L "$target" ]; then
-    rm "$target"
-  fi
-  if [ ! -e "$target" ]; then
-    echo "  Linking functions/$name"
-    ln -s "$file" "$target"
-  fi
+  ensure_symlink "$file" "$FISH_DEST/functions/$name" "functions/$name"
 done
 
 # Symlink completions
 for file in "$FISH_SRC/completions"/*.fish; do
   [ -e "$file" ] || continue
   name=$(basename "$file")
-  target="$FISH_DEST/completions/$name"
-  if [ -L "$target" ]; then
-    rm "$target"
-  fi
-  if [ ! -e "$target" ]; then
-    echo "  Linking completions/$name"
-    ln -s "$file" "$target"
-  fi
+  ensure_symlink "$file" "$FISH_DEST/completions/$name" "completions/$name"
 done
 
 echo "  Fish configuration complete!"
@@ -112,9 +82,8 @@ if [ "$SHELL" != "/opt/homebrew/bin/fish" ] && [ "$SHELL" != "/usr/local/bin/fis
   fi
 
   if [ -f "$FISH_PATH" ] && ! grep -q "^$FISH_PATH$" /etc/shells; then
-    echo "  Adding Fish to /etc/shells (requires sudo)..."
-    echo "$FISH_PATH" | sudo tee -a /etc/shells > /dev/null
-    echo "  Fish registered in /etc/shells"
+    echo "  Fish is not in /etc/shells"
+    echo "  Fix: echo '$FISH_PATH' | sudo tee -a /etc/shells"
   fi
 
   echo "  Currently using $current_shell. To switch to Fish: chsh -s $FISH_PATH"

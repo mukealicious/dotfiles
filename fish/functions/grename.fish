@@ -4,6 +4,6 @@ function grename -d "Rename 'old' branch to 'new', including in origin remote" -
         return 1
     end
     git branch -m $old $new
-    git push origin :$old
-    and git push --set-upstream origin $new
+    git push --set-upstream origin $new
+    and git push origin :$old
 end

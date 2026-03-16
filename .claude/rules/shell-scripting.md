@@ -29,7 +29,7 @@ done
 
 ## Symlink Helper Pattern
 
-Use `ensure_symlink` from `ai/install.sh` as the canonical implementation:
+Use `ensure_symlink` from `lib/symlink.sh` as the canonical implementation:
 - Check if symlink vs regular file
 - Validate target matches expected source
 - Handle broken symlinks (remove and recreate)

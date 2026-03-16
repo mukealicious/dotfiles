@@ -1,6 +1,6 @@
 ---
 name: build-skill
-description: Create effective skills for Claude Code agents. Load FIRST before writing any SKILL.md. Provides required format, naming conventions, progressive disclosure patterns, and validation. Use when building, reviewing, or debugging skills.
+description: Create effective skills for AI coding agents. Load FIRST before writing any SKILL.md. Provides required format, naming conventions, progressive disclosure patterns, and validation. Use when building, reviewing, or debugging skills.
 ---
 
 # Building Skills
@@ -24,7 +24,7 @@ Instructions go here.
 EOF
 ```
 
-Place in `.claude/skills/` (project) or `~/.claude/skills/` (global).
+Place in your project's shared skills directory (e.g., `ai/skills/`) or an agent-specific runtime directory (e.g., `.claude/skills/`, `.opencode/skills/`, `.agents/skills/`).
 
 ## Skill Type Decision Tree
 
@@ -109,11 +109,13 @@ Run: `./scripts/validate_skill.sh ./my-skill`
 
 ## Skill Locations
 
-| Priority | Location |
-|----------|----------|
-| 1 | `.claude/skills/<name>/` (project) |
-| 2 | `~/.claude/skills/<name>/` (global) |
-| 3 | `.opencode/skills/<name>/` (OpenCode-compat) |
+Skills are discovered from project-local and global directories. Exact paths vary by agent:
+
+| Agent | Project | Global |
+|-------|---------|--------|
+| Claude Code | `.claude/skills/<name>/` | `~/.claude/skills/<name>/` |
+| OpenCode | `.opencode/skills/<name>/` | `~/.config/opencode/skill/<name>/` |
+| Generic | `.agents/skills/<name>/` | — |
 
 Discovery walks up from CWD to git root. First-wins for duplicate names.
 

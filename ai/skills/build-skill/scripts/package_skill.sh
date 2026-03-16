@@ -200,6 +200,9 @@ zip -r "$ZIP_FILE" "$SKILL_NAME" "${EXCLUDE_ARGS[@]}" -x "*.git*" > /dev/null
 
 echo -e "${GREEN}Success!${NC} Created $ZIP_FILE"
 echo ""
-echo "To install, extract to:"
-echo "  Project: .claude/skills/"
-echo "  Global:  ~/.claude/skills/"
+echo "To install, extract to an agent skill directory, for example:"
+echo "  Shared source in this repo: ai/skills/"
+echo "  Claude project runtime:   .claude/skills/"
+echo "  Claude global runtime:    ~/.claude/skills/"
+echo "  Generic project runtime:  .agents/skills/"
+echo "  OpenCode global runtime:  ~/.config/opencode/skill/"

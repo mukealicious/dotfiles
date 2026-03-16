@@ -1,0 +1,325 @@
+#!/bin/sh
+# shellcheck disable=SC1091,SC2088,SC2154
+#
+# dot-doctor — environment diagnostics for dotfiles
+#
+# Validates that the dotfiles system is healthy:
+#   - Critical CLIs are installed
+#   - Top-level *.symlink files are linked to ~/
+#   - Fish shell config is properly symlinked
+#   - Tmux plugin manager is present
+#   - Tool configs (starship, ripgrep) are linked
+#   - PATH includes expected directories
+#   - Fish is registered as login shell
+#   - AI instruction files, skills, and agents are assembled
+#
+# Exit codes:
+#   0 — all checks passed (warnings are OK)
+#   1 — one or more failures detected
+#
+# Adding new checks:
+#   Follow the section pattern: header "Section Name", then
+#   pass/warn/fail calls. Use check_symlink for symlink validation.
+
+set -e
+
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+
+# Shared helpers (pass, warn, fail, info, header, check_symlink)
+# shellcheck source=../lib/symlink.sh
+. "$DOTFILES_ROOT/lib/symlink.sh"
+
+# ── Critical CLIs ──────────────────────────────────────────────
+
+header "Critical CLIs"
+
+for cmd in brew fish tmux starship bun uv; do
+  if command -v "$cmd" >/dev/null 2>&1; then
+    pass "$cmd"
+  else
+    fail "$cmd not found"
+  fi
+done
+
+# ── Top-level symlinks ─────────────────────────────────────────
+
+header "Top-level symlinks"
+
+for src in "$DOTFILES_ROOT"/*/*.symlink; do
+  [ -e "$src" ] || continue
+  name="$(basename "${src%.*}")"
+  check_symlink "$src" "$HOME/.$name" "~/.$name"
+done
+
+# ── Fish config ────────────────────────────────────────────────
+
+header "Fish config"
+
+FISH_SRC="$DOTFILES_ROOT/fish"
+FISH_DEST="$HOME/.config/fish"
+
+check_symlink "$FISH_SRC/config.fish" "$FISH_DEST/config.fish" "config.fish"
+
+# conf.d files from fish/conf.d/
+for file in "$FISH_SRC/conf.d"/*.fish; do
+  [ -e "$file" ] || continue
+  name="$(basename "$file")"
+  check_symlink "$file" "$FISH_DEST/conf.d/$name" "conf.d/$name"
+done
+
+# Topic aliases
+for file in "$DOTFILES_ROOT"/*/aliases.fish; do
+  [ -e "$file" ] || continue
+  topic="$(basename "$(dirname "$file")")"
+  check_symlink "$file" "$FISH_DEST/conf.d/${topic}-aliases.fish" "conf.d/${topic}-aliases.fish"
+done
+
+# Topic keybindings
+for file in "$DOTFILES_ROOT"/*/keybindings.fish; do
+  [ -e "$file" ] || continue
+  topic="$(basename "$(dirname "$file")")"
+  check_symlink "$file" "$FISH_DEST/conf.d/${topic}-keybindings.fish" "conf.d/${topic}-keybindings.fish"
+done
+
+# Functions
+for file in "$FISH_SRC/functions"/*.fish; do
+  [ -e "$file" ] || continue
+  name="$(basename "$file")"
+  check_symlink "$file" "$FISH_DEST/functions/$name" "functions/$name"
+done
+
+# Completions
+for file in "$FISH_SRC/completions"/*.fish; do
+  [ -e "$file" ] || continue
+  name="$(basename "$file")"
+  check_symlink "$file" "$FISH_DEST/completions/$name" "completions/$name"
+done
+
+# ── Tmux ───────────────────────────────────────────────────────
+
+header "Tmux"
+
+if [ -d "$HOME/.tmux/plugins/tpm/.git" ]; then
+  pass "TPM installed"
+else
+  warn "TPM not found at ~/.tmux/plugins/tpm/"
+  info "Install: git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm"
+fi
+
+# ── Tool configs ───────────────────────────────────────────────
+
+header "Tool configs"
+
+check_symlink "$DOTFILES_ROOT/starship/starship.toml" "$HOME/.config/starship.toml" "starship.toml"
+
+if [ -d "$DOTFILES_ROOT/ripgrep" ]; then
+  check_symlink "$DOTFILES_ROOT/ripgrep/config" "$HOME/.config/ripgrep/config" "ripgrep/config"
+fi
+
+# ── PATH ───────────────────────────────────────────────────────
+
+header "PATH"
+
+for dir in "$HOME/.dotfiles/bin" "$HOME/.bun/bin" "$HOME/.local/bin"; do
+  case ":$PATH:" in
+    *":$dir:"*)
+      pass "$dir in PATH"
+      ;;
+    *)
+      warn "$dir not in PATH"
+      ;;
+  esac
+done
+
+# ── Shell registration ─────────────────────────────────────────
+
+header "Shell registration"
+
+FISH_PATH=""
+if [ -f "/opt/homebrew/bin/fish" ]; then
+  FISH_PATH="/opt/homebrew/bin/fish"
+elif [ -f "/usr/local/bin/fish" ]; then
+  FISH_PATH="/usr/local/bin/fish"
+fi
+
+if [ -n "$FISH_PATH" ]; then
+  if grep -q "^$FISH_PATH$" /etc/shells 2>/dev/null; then
+    pass "Fish in /etc/shells"
+  else
+    warn "Fish not in /etc/shells"
+    info "Fix: echo '$FISH_PATH' | sudo tee -a /etc/shells"
+  fi
+
+  if [ "$SHELL" = "$FISH_PATH" ]; then
+    pass "Fish is default shell"
+  else
+    warn "Default shell is $SHELL (not Fish)"
+    info "Fix: chsh -s $FISH_PATH"
+  fi
+else
+  warn "Fish binary not found"
+fi
+
+# ── AI instruction files ───────────────────────────────────────
+
+header "AI instruction files"
+
+MANAGED_MARKER='<!-- Managed by ~/.dotfiles/ai/install.sh. Edit source files instead. -->'
+
+check_managed_file() {
+  target="$1"
+  desc="$2"
+
+  if [ -f "$target" ]; then
+    if grep -Fq "$MANAGED_MARKER" "$target" 2>/dev/null; then
+      pass "$desc"
+    else
+      warn "$desc exists but is not installer-managed"
+      info "May have been manually edited"
+    fi
+  else
+    warn "$desc is missing"
+    info "Fix: dot"
+  fi
+}
+
+check_managed_file "$HOME/.claude/CLAUDE.md" "~/.claude/CLAUDE.md"
+check_managed_file "$HOME/.pi/agent/AGENTS.md" "~/.pi/agent/AGENTS.md"
+check_managed_file "$HOME/.config/opencode/AGENTS.md" "~/.config/opencode/AGENTS.md"
+check_managed_file "$HOME/.gemini/GEMINI.md" "~/.gemini/GEMINI.md"
+check_managed_file "$HOME/.codex/instructions.md" "~/.codex/instructions.md"
+
+# ── AI skill projections ───────────────────────────────────────
+
+header "AI skill projections"
+
+SHARED_SKILLS_SRC="$DOTFILES_ROOT/ai/skills"
+CLAUDE_SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
+CLAUDE_DIR="$HOME/.claude"
+
+check_projected_claude_skill() {
+  skill_name="$1"
+
+  if [ -d "$CLAUDE_SKILLS_SRC/$skill_name" ]; then
+    check_symlink "$CLAUDE_SKILLS_SRC/$skill_name" "$CLAUDE_DIR/skills/$skill_name" "skills/$skill_name (overlay)"
+  elif [ -d "$SHARED_SKILLS_SRC/$skill_name" ]; then
+    check_symlink "$SHARED_SKILLS_SRC/$skill_name" "$CLAUDE_DIR/skills/$skill_name" "skills/$skill_name (shared)"
+  fi
+}
+
+# Validate the effective winner for each skill name once.
+checked_skill_names="|"
+for skills_root in "$SHARED_SKILLS_SRC" "$CLAUDE_SKILLS_SRC"; do
+  [ -d "$skills_root" ] || continue
+  for skill_dir in "$skills_root"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name="$(basename "$skill_dir")"
+    case "$checked_skill_names" in
+      *"|$skill_name|"*)
+        continue
+        ;;
+    esac
+    check_projected_claude_skill "$skill_name"
+    checked_skill_names="${checked_skill_names}${skill_name}|"
+  done
+done
+
+# ── Repo-local skill projections ──────────────────────────────
+
+header "Repo-local skill projections"
+
+PROJECT_AGENTS_SKILLS_DIR="$DOTFILES_ROOT/.agents/skills"
+PROJECT_CLAUDE_SKILLS_DIR="$DOTFILES_ROOT/.claude/skills"
+
+check_projected_repo_skill() {
+  target_dir="$1"
+  label="$2"
+  overlay_src="$3"
+  skill_name="$4"
+
+  if [ -n "$overlay_src" ] && [ -d "$overlay_src/$skill_name" ]; then
+    check_symlink "$overlay_src/$skill_name" "$target_dir/$skill_name" "$label/$skill_name (overlay)"
+  elif [ -d "$SHARED_SKILLS_SRC/$skill_name" ]; then
+    check_symlink "$SHARED_SKILLS_SRC/$skill_name" "$target_dir/$skill_name" "$label/$skill_name (shared)"
+  fi
+}
+
+for runtime_pair in "$PROJECT_AGENTS_SKILLS_DIR|.agents/skills|" "$PROJECT_CLAUDE_SKILLS_DIR|.claude/skills|$CLAUDE_SKILLS_SRC"; do
+  rt_dir="${runtime_pair%%|*}"
+  rest="${runtime_pair#*|}"
+  rt_label="${rest%%|*}"
+  rt_overlay="${rest#*|}"
+
+  [ -d "$rt_dir" ] || continue
+
+  checked_repo_skills="|"
+  for skills_root in "$SHARED_SKILLS_SRC" ${rt_overlay:+"$rt_overlay"}; do
+    [ -d "$skills_root" ] || continue
+    for skill_dir in "$skills_root"/*/; do
+      [ -d "$skill_dir" ] || continue
+      sname="$(basename "$skill_dir")"
+      case "$checked_repo_skills" in
+        *"|$sname|"*) continue ;;
+      esac
+      check_projected_repo_skill "$rt_dir" "$rt_label" "$rt_overlay" "$sname"
+      checked_repo_skills="${checked_repo_skills}${sname}|"
+    done
+  done
+done
+
+# ── AI agents ──────────────────────────────────────────────────
+
+header "AI agents"
+
+MANAGED_AGENT_MARKER='# Managed by ~/.dotfiles/ai/install.sh. Edit source files instead.'
+CLAUDE_AGENTS_SRC="$DOTFILES_ROOT/claude/agents"
+
+# Assembled review agent
+if [ -f "$CLAUDE_DIR/agents/review.md" ]; then
+  if grep -Fq "$MANAGED_AGENT_MARKER" "$CLAUDE_DIR/agents/review.md" 2>/dev/null; then
+    pass "~/.claude/agents/review.md (assembled)"
+  else
+    warn "~/.claude/agents/review.md exists but is not installer-managed"
+  fi
+else
+  warn "~/.claude/agents/review.md is missing"
+  info "Fix: dot"
+fi
+
+# Assembled Pi review agent
+if [ -f "$HOME/.pi/agent/agents/review.md" ]; then
+  if grep -Fq "$MANAGED_AGENT_MARKER" "$HOME/.pi/agent/agents/review.md" 2>/dev/null; then
+    pass "~/.pi/agent/agents/review.md (assembled)"
+  else
+    warn "~/.pi/agent/agents/review.md exists but is not installer-managed"
+  fi
+else
+  if command -v pi >/dev/null 2>&1; then
+    warn "~/.pi/agent/agents/review.md is missing"
+    info "Fix: dot"
+  fi
+fi
+
+# Symlinked agent files
+if [ -d "$CLAUDE_AGENTS_SRC" ]; then
+  for agent_file in "$CLAUDE_AGENTS_SRC"/*.md; do
+    [ -e "$agent_file" ] || continue
+    case "$agent_file" in
+      *.appendix.md) continue ;;
+    esac
+    agent_name="$(basename "$agent_file")"
+    check_symlink "$agent_file" "$CLAUDE_DIR/agents/$agent_name" "~/.claude/agents/$agent_name"
+  done
+fi
+
+# Claude Code settings
+check_symlink "$DOTFILES_ROOT/claude/settings.json" "$CLAUDE_DIR/settings.json" "~/.claude/settings.json"
+
+# ── Summary ────────────────────────────────────────────────────
+
+printf "\n"
+printf "%s passed, %s warnings, %s failures\n" "$_check_pass" "$_check_warnings" "$_check_failures"
+
+if [ "$_check_failures" -gt 0 ]; then
+  exit 1
+fi
