@@ -116,6 +116,12 @@ if [ -d "$DOTFILES_ROOT/ripgrep" ]; then
   check_symlink "$DOTFILES_ROOT/ripgrep/config" "$HOME/.config/ripgrep/config" "ripgrep/config"
 fi
 
+if [ -d "$DOTFILES_ROOT/cmux" ]; then
+  header "cmux"
+  check_symlink "$DOTFILES_ROOT/cmux/config.ghostty" "$HOME/Library/Application Support/com.cmuxterm.app/config.ghostty" "cmux/config.ghostty"
+  check_symlink "$DOTFILES_ROOT/cmux/default-config.ghostty" "$HOME/Library/Application Support/com.mitchellh.ghostty/config.ghostty" "ghostty/config.ghostty"
+fi
+
 # ── PATH ───────────────────────────────────────────────────────
 
 header "PATH"

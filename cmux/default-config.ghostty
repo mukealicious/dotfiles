@@ -1,0 +1,2 @@
+config-file = "~/.dotfiles/cmux/config.ghostty"
+config-file = ?auto/theme.ghostty
