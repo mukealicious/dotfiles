@@ -183,6 +183,8 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 - **Provider**: OpenAI
 - **API Key**: `OPENAI_API_KEY` in `~/.config/fish/local.fish`
 - **Config**: `~/.config/opencode/.opencode.json`
+- **TUI Config**: `~/.config/opencode/tui.json` (symlinked from `opencode/tui.json`)
+- **Custom Themes**: `~/.config/opencode/themes/` (managed from `opencode/themes/`)
 - **Instruction File**: `~/.config/opencode/AGENTS.md` (assembled from shared base + OpenCode appendix)
 
 ### Gemini CLI (gemini)
