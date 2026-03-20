@@ -465,6 +465,18 @@ if [ -n "$pi_generated_agents" ]; then
     "pi/agents/review.md"
 fi
 
+# Symlink standalone Pi agent files (skip frontmatter, appendix, and body fragments)
+for agent_file in "$PI_AGENTS_SRC"/*.md; do
+  [ -e "$agent_file" ] || continue
+  case "$agent_file" in
+    *.appendix.md|*.body.md)
+      continue
+      ;;
+  esac
+  agent_name=$(basename "$agent_file")
+  ensure_symlink "$agent_file" "$PI_AGENT_DIR/$agent_name" "$PI_AGENT_DIR/$agent_name"
+done
+
 # OpenCode skills
 echo "  Setting up OpenCode skills..."
 # Note: OpenCode uses 'skill' not 'skills'. It gets only portable shared skills.

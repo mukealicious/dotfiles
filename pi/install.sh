@@ -58,20 +58,26 @@ if [ -d "$EXTENSIONS_SRC" ]; then
   done
 fi
 
-# Install Tier 1 extensions
-# Uses `pi install npm:<pkg>` — idempotent, skips if already installed
-TIER1_PACKAGES="
-  pi-subagents
-  pi-interactive-shell
-  mitsupi
+# Install packages
+# Packages are fully qualified (git: or npm: prefix)
+PACKAGES="
+  git:https://github.com/HazAT/pi-interactive-subagents
+  git:https://github.com/sasha-computer/pi-cmux
+  git:https://github.com/HazAT/pi-parallel
+  npm:pi-interactive-shell
+  npm:mitsupi
 "
 
-echo "  Installing Pi extensions..."
-for pkg in $TIER1_PACKAGES; do
-  if pi install "npm:$pkg" 2>/dev/null; then
-    echo "    Installed $pkg"
+echo "  Installing Pi packages..."
+for pkg in $PACKAGES; do
+  # Extract display name: strip git:/npm: prefix, URL path, .git suffix
+  display_name="${pkg##*/}"
+  display_name="${display_name%.git}"
+  display_name="${display_name#npm:}"
+  if pi install "$pkg" 2>/dev/null; then
+    echo "    Installed $display_name"
   else
-    echo "    Warning: Failed to install $pkg (run 'pi install npm:$pkg' manually)"
+    echo "    Warning: Failed to install $display_name (run 'pi install $pkg' manually)"
   fi
 done
 
