@@ -1,7 +1,8 @@
 {
   "theme": "gruvbox-light",
-  "model": "anthropic/claude-opus-4-6",
-  "thinkingLevel": "medium",
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-5.4",
+  "defaultThinkingLevel": "medium",
   "compaction": {
     "enabled": true,
     "reserveTokens": 16384,
@@ -21,5 +22,5 @@
     "npm:pi-interactive-shell",
     "npm:mitsupi"
   ],
-  "lastChangelogVersion": "0.58.4"
+  "lastChangelogVersion": "0.61.0"
 }

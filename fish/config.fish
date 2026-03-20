@@ -10,9 +10,7 @@ set -gx PROJECTS ~/Code
 set -gx DOTFILES ~/.dotfiles
 
 # PATH
-fish_add_path ~/.bun/bin        # bun globals (pi, etc.)
-fish_add_path ~/.local/bin      # uv tools
-fish_add_path ~/.dotfiles/bin
+fish_add_path --move ~/.dotfiles/bin ~/.bun/bin ~/.local/bin
 
 # Local secrets (not in git)
 test -f ~/.config/fish/local.fish; and source ~/.config/fish/local.fish
