@@ -56,12 +56,30 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `python/` | Python tools via uv |
 | `ruby/` | Ruby config (gemrc, irbrc) |
 
+### Ownership Model
+
+Keep install logic in the narrowest layer that owns it:
+
+| Layer | Owns | Put here when | Avoid |
+|------|------|---------------|-------|
+| `bin/dot` | Top-level user workflow | The step is part of the human-facing `dot` update flow, especially if later commands depend on it immediately | Topic-specific install details or broad auto-discovery logic |
+| `script/install` | Installer orchestration | The change affects installer ordering, global installer discovery, skip behavior, or argument forwarding | Tool-specific install logic |
+| `[topic]/install.sh` | Topic setup | The step only configures one topic/tool and can be rerun idempotently | Cross-topic orchestration or assumptions about global order unless documented in `script/install` |
+| `dot doctor` | Diagnostics | You need a health check or fix hint for a topic | Performing installation side effects |
+
+Simple rules:
+- Add topic-specific setup to `[topic]/install.sh`.
+- Add a topic to `script/install`'s `CORE_INSTALLERS` only if it has ordering requirements.
+- Touch `bin/dot` only when the top-level `dot` UX or pre/post sequencing must change.
+- If `bin/dot` handles a topic directly, keep `script/install --skip <path>` in sync.
+- When adding install behavior, consider whether `dot doctor` should also gain a check.
+
 ### File Conventions
 
 | Pattern | Behavior |
 |---------|----------|
 | `*.symlink` | Symlinked to `~/.<name>` (e.g., `gitconfig.symlink` → `~/.gitconfig`) |
-| `install.sh` | Topic-specific installer, run by `script/install` |
+| `install.sh` | Topic-specific installer, run by `script/install` in deterministic order |
 | `aliases.fish` | Auto-discovered and symlinked to Fish conf.d |
 | `keybindings.fish` | Auto-discovered and symlinked to Fish conf.d |
 
@@ -195,6 +213,7 @@ gbage  # list branches sorted by last commit date
    - `install.sh` → run during `script/install`
    - `aliases.fish` → auto-loaded by Fish
 3. Run `dot` to apply
+4. If the topic adds `install.sh` and it has ordering requirements, update `script/install`'s `CORE_INSTALLERS`; otherwise it will be picked up automatically in sorted fallback order
 
 ### Example: Adding Aliases
 
@@ -227,7 +246,8 @@ Everything else is installed by bootstrap.
 dot                    # Daily update (safe to run anytime)
 dot doctor             # Check environment health
 script/bootstrap       # Re-run symlinks (interactive)
-script/install         # Re-run all installers
+script/install         # Re-run all installers (explicit core order + sorted fallback)
+script/install --force # Re-run installers and fix managed symlinks where supported
 brew bundle cleanup    # Remove unlisted packages
 ```
 

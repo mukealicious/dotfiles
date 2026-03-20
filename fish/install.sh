@@ -23,7 +23,11 @@ if [ "$1" = "--force" ]; then
   FORCE=true
 fi
 
-echo "  Setting up Fish shell..."
+if [ "$FORCE" = "true" ]; then
+  log_force_enabled
+fi
+
+log_info "Setting up Fish shell..."
 
 # Create fish config directory
 mkdir -p "$FISH_DEST"
@@ -69,7 +73,7 @@ for file in "$FISH_SRC/completions"/*.fish; do
   ensure_symlink "$file" "$FISH_DEST/completions/$name" "completions/$name"
 done
 
-echo "  Fish configuration complete!"
+log_success "Fish configuration complete!"
 
 # Only show shell switch instruction if not already using Fish
 if [ "$SHELL" != "/opt/homebrew/bin/fish" ] && [ "$SHELL" != "/usr/local/bin/fish" ]; then
@@ -82,9 +86,9 @@ if [ "$SHELL" != "/opt/homebrew/bin/fish" ] && [ "$SHELL" != "/usr/local/bin/fis
   fi
 
   if [ -f "$FISH_PATH" ] && ! grep -q "^$FISH_PATH$" /etc/shells; then
-    echo "  Fish is not in /etc/shells"
-    echo "  Fix: echo '$FISH_PATH' | sudo tee -a /etc/shells"
+    log_warn "Fish is not in /etc/shells"
+    log_hint "Fix: echo '$FISH_PATH' | sudo tee -a /etc/shells"
   fi
 
-  echo "  Currently using $current_shell. To switch to Fish: chsh -s $FISH_PATH"
+  log_hint "Currently using $current_shell. To switch to Fish: chsh -s $FISH_PATH"
 fi

@@ -53,6 +53,24 @@ Use `build-skill` skill for detailed guidance on format and progressive disclosu
 
 Only do this when the skill uses Claude-specific features such as hooks, `$SKILL_DIR`, plugins, or subagent delegation. Prefer shared skills.
 
+## Ownership Model
+
+Keep install logic in the narrowest owning layer:
+
+| Layer | Owns | Put changes here when | Avoid |
+|-------|------|------------------------|-------|
+| `bin/dot` | Top-level `dot` workflow | The step is part of the user-facing update flow or later `dot` steps depend on it immediately | Topic-specific setup details |
+| `script/install` | Installer orchestration | You are changing installer ordering, discovery, skips, or argument forwarding | Tool-specific install logic |
+| `[topic]/install.sh` | Topic setup | The change only affects one tool/topic and can be rerun safely | Cross-topic orchestration |
+| `dot doctor` | Diagnostics | You need a health check or fix hint | Doing installation work |
+
+Rules of thumb:
+- Prefer `[topic]/install.sh` first.
+- Only add to `script/install`'s `CORE_INSTALLERS` when ordering matters.
+- Only change `bin/dot` when the top-level `dot` experience or sequencing must change.
+- If `bin/dot` directly handles a topic, keep any `script/install --skip` usage aligned.
+- When adding install behavior, consider whether `dot doctor` should gain a corresponding check.
+
 ## Common Tasks
 
 ### Add Shell Alias
@@ -81,6 +99,8 @@ Run `brew bundle` to install.
 1. Create `~/.dotfiles/[topic]/`
 2. Add files using patterns below
 3. Run `dot` to install
+4. If the topic adds `install.sh` and must run before other installers, update `script/install`'s `CORE_INSTALLERS`; otherwise it is auto-discovered in sorted fallback order
+5. If `dot` handles part of that topic directly, keep `bin/dot` and any `script/install --skip` usage in sync
 
 ### Add Custom Git Command
 
@@ -97,7 +117,7 @@ See [references/file-patterns.md](references/file-patterns.md) for complete refe
 | `*.symlink` | Symlinked to `~/.<name>` |
 | `aliases.fish` | Auto-discovered and symlinked to Fish conf.d |
 | `keybindings.fish` | Auto-discovered and symlinked to Fish conf.d |
-| `install.sh` | Topic installer |
+| `install.sh` | Topic installer, run by `script/install` in deterministic order |
 
 ## Key Commands
 

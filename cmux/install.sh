@@ -22,7 +22,11 @@ if [ "$1" = "--force" ]; then
   FORCE=true
 fi
 
-echo "  Setting up cmux..."
+if [ "$FORCE" = "true" ]; then
+  log_force_enabled
+fi
+
+log_info "Setting up cmux..."
 
 mkdir -p "$CMUX_DEST"
 mkdir -p "$GHOSTTY_DEST"
@@ -31,8 +35,8 @@ if [ -e "$CMUX_DEST/config.ghostty" ] && [ ! -L "$CMUX_DEST/config.ghostty" ]; t
   if [ "$FORCE" = "true" ]; then
     rm "$CMUX_DEST/config.ghostty"
   else
-    echo "  Warning: cmux Ghostty config exists but is not a symlink"
-    echo "    Fix: sh install.sh --force"
+    log_warn "cmux Ghostty config exists but is not a symlink"
+    log_hint "Fix: sh install.sh --force"
   fi
 fi
 
@@ -44,4 +48,4 @@ fi
 
 ensure_symlink "$CMUX_SRC/default-config.ghostty" "$GHOSTTY_DEST/config.ghostty" "Ghostty default config for cmux"
 
-echo "  cmux configuration complete!"
+log_success "cmux configuration complete!"

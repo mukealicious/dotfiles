@@ -17,13 +17,16 @@ set -e
 FORCE=false
 if [ "$1" = "--force" ]; then
   FORCE=true
-  echo "  Running in --force mode: will fix misdirected symlinks"
 fi
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
 # Shared symlink helpers
 . "$DOTFILES_ROOT/lib/symlink.sh"
+
+if [ "$FORCE" = "true" ]; then
+  log_force_enabled
+fi
 
 _TMPFILES=""
 _cleanup() {
@@ -57,15 +60,15 @@ _handle_unexpected_symlink() {
   src_tmp="$4"
 
   if [ "$FORCE" = "true" ]; then
-    echo "  Replacing symlinked $desc (was: $current)"
+    log_info "Replacing symlinked $desc (was: $current)"
     rm "$target"
     return 0
   fi
 
-  echo "  Warning: $desc is a symlink to an unexpected location"
-  echo "    Current:  $current"
-  echo "    Expected: installer-managed file"
-  echo "    Fix: rm \"$target\" && dot"
+  log_warn "$desc is a symlink to an unexpected location"
+  log_hint "Current:  $current"
+  log_hint "Expected: installer-managed file"
+  log_hint "Fix: rm \"$target\" && dot"
   rm "$src_tmp"
   return 1
 }
@@ -326,7 +329,7 @@ ensure_runtime_overlay_symlink() {
   ensure_symlink "$src" "$target" "$desc"
 }
 
-echo "  Setting up AI instruction files..."
+log_info "Setting up AI instruction files..."
 
 SHARED_INSTRUCTIONS_BASE="$DOTFILES_ROOT/ai/instructions/base.md"
 CLAUDE_INSTRUCTIONS_APPENDIX="$DOTFILES_ROOT/claude/instructions/appendix.md"
@@ -399,17 +402,17 @@ PI_REVIEW_FRONTMATTER="$PI_AGENTS_SRC/review.frontmatter"
 PI_REVIEW_APPENDIX="$PI_AGENTS_SRC/review.appendix.md"
 
 # Repo-local runtime skill projections
-echo "  Refreshing repo runtime skills..."
+log_info "Refreshing repo runtime skills..."
 sync_skill_runtime_dir "$PROJECT_AGENTS_SKILLS_DIR" ".agents/skills" ""
 sync_skill_runtime_dir "$PROJECT_CLAUDE_SKILLS_DIR" ".claude/skills" "$CLAUDE_SKILLS_SRC"
 
 # Claude Code skills
-echo "  Setting up Claude Code skills..."
+log_info "Setting up Claude Code skills..."
 sync_skill_runtime_dir "$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills" "$CLAUDE_SKILLS_SRC"
 
 # Claude Code agents
 if [ -d "$CLAUDE_AGENTS_SRC" ]; then
-  echo "  Setting up Claude Code agents..."
+  log_info "Setting up Claude Code agents..."
   mkdir -p "$CLAUDE_DIR/agents"
   clean_dead_symlinks "$CLAUDE_DIR/agents"
   claude_generated_agents=""
@@ -443,7 +446,7 @@ if [ -d "$CLAUDE_AGENTS_SRC" ]; then
 fi
 
 # Pi agents
-echo "  Setting up Pi agents..."
+log_info "Setting up Pi agents..."
 PI_AGENT_DIR="$HOME/.pi/agent/agents"
 mkdir -p "$PI_AGENT_DIR"
 clean_dead_symlinks "$PI_AGENT_DIR"
@@ -478,7 +481,7 @@ for agent_file in "$PI_AGENTS_SRC"/*.md; do
 done
 
 # OpenCode skills
-echo "  Setting up OpenCode skills..."
+log_info "Setting up OpenCode skills..."
 # Note: OpenCode uses 'skill' not 'skills'. It gets only portable shared skills.
 sync_skill_runtime_dir "$OPENCODE_DIR/skill" "$OPENCODE_DIR/skill" ""
 
@@ -503,4 +506,4 @@ if [ -d "$OPENCODE_DIR/agents" ]; then
   rmdir "$OPENCODE_DIR/agents" 2>/dev/null || true
 fi
 
-echo "  AI configuration complete!"
+log_success "AI configuration complete!"

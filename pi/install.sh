@@ -15,7 +15,7 @@ set -e
 FORCE=false
 for arg in "$@"; do
   case "$arg" in
-    --force) FORCE=true; echo "  Running in --force mode: will fix misdirected symlinks" ;;
+    --force) FORCE=true ;;
   esac
 done
 
@@ -24,26 +24,30 @@ DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 # Shared symlink helpers
 . "$DOTFILES_ROOT/lib/symlink.sh"
 
+if [ "$FORCE" = "true" ]; then
+  log_force_enabled
+fi
+
 if ! command -v pi >/dev/null 2>&1; then
-  echo "  pi not installed, skipping Pi setup"
+  log_warn "pi not installed, skipping Pi setup"
   exit 0
 fi
 
-echo "  Setting up Pi coding agent..."
+log_info "Setting up Pi coding agent..."
 
 # Create directory structure
 PI_DIR="$HOME/.pi/agent"
 mkdir -p "$PI_DIR"
 
 # Symlink settings.json
-ensure_symlink "$DOTFILES_ROOT/pi/settings.json" "$PI_DIR/settings.json" "~/.pi/agent/settings.json"
+ensure_symlink "$DOTFILES_ROOT/pi/settings.json" "$PI_DIR/settings.json" "$HOME/.pi/agent/settings.json"
 
 # Symlink themes directory
 mkdir -p "$PI_DIR/themes"
 for theme in "$DOTFILES_ROOT/pi/themes/"*.json; do
   [ -e "$theme" ] || continue
   name="$(basename "$theme")"
-  ensure_symlink "$theme" "$PI_DIR/themes/$name" "~/.pi/agent/themes/$name"
+  ensure_symlink "$theme" "$PI_DIR/themes/$name" "$HOME/.pi/agent/themes/$name"
 done
 
 # Symlink custom extensions
@@ -54,7 +58,7 @@ if [ -d "$EXTENSIONS_SRC" ]; then
   for ext in "$EXTENSIONS_SRC"/*.ts; do
     [ -e "$ext" ] || continue
     name="$(basename "$ext")"
-    ensure_symlink "$ext" "$EXTENSIONS_DIR/$name" "~/.pi/agent/extensions/$name"
+    ensure_symlink "$ext" "$EXTENSIONS_DIR/$name" "$HOME/.pi/agent/extensions/$name"
   done
 fi
 
@@ -68,17 +72,17 @@ PACKAGES="
   npm:mitsupi
 "
 
-echo "  Installing Pi packages..."
+log_info "Installing Pi packages..."
 for pkg in $PACKAGES; do
   # Extract display name: strip git:/npm: prefix, URL path, .git suffix
   display_name="${pkg##*/}"
   display_name="${display_name%.git}"
   display_name="${display_name#npm:}"
   if pi install "$pkg" 2>/dev/null; then
-    echo "    Installed $display_name"
+    log_success "Installed $display_name"
   else
-    echo "    Warning: Failed to install $display_name (run 'pi install $pkg' manually)"
+    log_warn "Failed to install $display_name (run 'pi install $pkg' manually)"
   fi
 done
 
-echo "  Pi configuration complete!"
+log_success "Pi configuration complete!"

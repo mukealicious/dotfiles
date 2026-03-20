@@ -3,18 +3,21 @@
 # Install Python tools via uv
 #
 
+set -e
+
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+
+. "$DOTFILES_ROOT/lib/log.sh"
+
 # Check if uv is installed
-if ! command -v uv &> /dev/null; then
-    echo "uv is not installed. Please install it first (brew install uv)"
+if ! command -v uv >/dev/null 2>&1; then
+    log_warn "uv is not installed. Please install it first (brew install uv)"
     exit 1
 fi
 
-# Get the dotfiles root directory
-DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-
 # Install tools from uv.reqs if it exists
 if [ -f "$DOTFILES_ROOT/uv.reqs" ]; then
-    echo "› Installing Python tools from uv.reqs"
+    log_info "Installing Python tools from uv.reqs"
     
     while IFS= read -r tool || [ -n "$tool" ]; do
         # Skip empty lines and comments
@@ -25,15 +28,15 @@ if [ -f "$DOTFILES_ROOT/uv.reqs" ]; then
         # Trim whitespace
         tool=$(echo "$tool" | xargs)
         
-        echo "  Installing $tool..."
+        log_info "Installing $tool..."
         if uv tool install "$tool" --quiet; then
-            echo "  ✓ $tool installed"
+            log_success "$tool installed"
         else
-            echo "  ✗ Failed to install $tool"
+            log_warn "Failed to install $tool"
         fi
     done < "$DOTFILES_ROOT/uv.reqs"
     
-    echo "› Python tools installation complete"
+    log_success "Python tools installation complete"
 else
-    echo "› No uv.reqs file found, skipping Python tools installation"
+    log_warn "No uv.reqs file found, skipping Python tools installation"
 fi

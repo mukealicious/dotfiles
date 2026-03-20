@@ -2,23 +2,25 @@
 #
 # Homebrew
 #
-# This installs some of the common dependencies needed (or at least desired)
-# using Homebrew.
+# Installs Homebrew when missing.
 
-# Check for Homebrew
-if test ! $(which brew)
-then
-  echo "  Installing Homebrew for you."
+set -e
 
-  # Install the correct homebrew for each OS type
-  if test "$(uname)" = "Darwin"
-  then
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  elif test "$(expr substr $(uname -s) 1 5)" = "Linux"
-  then
-    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install)"
-  fi
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
+. "$DOTFILES_ROOT/lib/log.sh"
+
+if command -v brew >/dev/null 2>&1; then
+  log_success "Homebrew already installed"
+  exit 0
 fi
 
-exit 0
+log_info "Installing Homebrew..."
+
+if [ "$(uname)" = "Darwin" ]; then
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+elif [ "$(uname -s)" = "Linux" ]; then
+  ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install)"
+else
+  log_warn "Unsupported platform for Homebrew installer: $(uname -s)"
+fi

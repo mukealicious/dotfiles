@@ -7,11 +7,15 @@
 
 set -e
 
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+
+. "$DOTFILES_ROOT/lib/log.sh"
+
 if ! command -v agent-browser >/dev/null 2>&1; then
-  echo "  agent-browser not installed, skipping Chromium setup"
+  log_warn "agent-browser not installed, skipping Chromium setup"
   exit 0
 fi
 
-echo "  Installing agent-browser Chromium..."
+log_info "Installing agent-browser Chromium..."
 agent-browser install
-echo "  agent-browser Chromium installed"
+log_success "agent-browser Chromium installed"

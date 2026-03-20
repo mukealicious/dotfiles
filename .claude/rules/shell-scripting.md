@@ -27,7 +27,17 @@ done
 - Use explicit `if` blocks when you need to handle failure cases
 - `[ -L "$link" ] && [ ! -e "$link" ] && rm "$link"` - if `[ -L ]` returns false, subsequent conditions don't run but no error occurs (`set -e` only triggers on the final command's exit code)
 
-## Symlink Helper Pattern
+## Shared Helper Patterns
+
+### Logging
+
+Use `lib/log.sh` for consistent CLI output:
+- `log_section` for major phases
+- `log_step` for commands being run
+- `log_info` / `log_success` / `log_warn` / `log_error` / `log_hint` for status lines
+- `log_force_enabled` for consistent `--force` messaging
+
+### Symlinks
 
 Use `ensure_symlink` from `lib/symlink.sh` as the canonical implementation:
 - Check if symlink vs regular file

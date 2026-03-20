@@ -14,6 +14,8 @@
 # The FORCE variable (default: false) controls ensure_symlink behavior
 # for misdirected symlinks.
 
+. "${DOTFILES_ROOT:?}/lib/log.sh"
+
 # Output helpers
 pass() {
   printf "\033[32mOK\033[0m  %s\n" "$1"
@@ -31,11 +33,11 @@ fail() {
 }
 
 info() {
-  printf "    %s\n" "$1"
+  log_info "$1"
 }
 
 header() {
-  printf "\n\033[1m==> %s\033[0m\n" "$1"
+  log_section "$1"
 }
 
 normalize_symlink_path() {
@@ -76,33 +78,33 @@ ensure_symlink() {
     current="$(normalize_symlink_path "$(readlink "$target")")"
     if [ ! -e "$target" ]; then
       # Broken symlink
-      echo "  Removing dead symlink: $desc"
+      log_info "Removing dead symlink: $desc"
       rm "$target"
-      echo "  Linking $desc"
+      log_info "Linking $desc"
       ln -s "$src" "$target"
     elif [ "$current" = "$src" ]; then
       # Correct symlink
-      echo "  $desc already linked correctly"
+      log_success "$desc already linked correctly"
     else
       # Points to wrong location
       if [ "${FORCE:-false}" = "true" ]; then
-        echo "  Fixing $desc (was: $current)"
+        log_info "Fixing $desc (was: $current)"
         rm "$target"
         ln -s "$src" "$target"
       else
-        echo "  Warning: $desc points to wrong location"
-        echo "    Current:  $current"
-        echo "    Expected: $src"
-        echo "    Fix: rm \"$target\" && dot"
+        log_warn "$desc points to wrong location"
+        log_hint "Current:  $current"
+        log_hint "Expected: $src"
+        log_hint "Fix: rm \"$target\" && dot"
       fi
     fi
   elif [ -e "$target" ]; then
     # Regular file or directory
-    echo "  Warning: $desc exists but is not a symlink"
-    echo "    Skipping to preserve existing content"
+    log_warn "$desc exists but is not a symlink"
+    log_hint "Skipping to preserve existing content"
   else
     # Doesn't exist
-    echo "  Linking $desc"
+    log_info "Linking $desc"
     ln -s "$src" "$target"
   fi
 }

@@ -8,17 +8,19 @@ set -e
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
-echo "  Setting up tmux..."
+. "$DOTFILES_ROOT/lib/log.sh"
+
+log_info "Setting up tmux..."
 
 # Install TPM (Tmux Plugin Manager) if not present
 TPM_DIR="$HOME/.tmux/plugins/tpm"
 if [ ! -d "$TPM_DIR" ]; then
-  echo "  Installing TPM (Tmux Plugin Manager)..."
+  log_info "Installing TPM (Tmux Plugin Manager)..."
   git clone https://github.com/tmux-plugins/tpm "$TPM_DIR"
 else
-  echo "  TPM already installed"
+  log_success "TPM already installed"
 fi
 
-echo "  tmux configuration complete!"
-echo "  After starting tmux, press prefix + I to install plugins"
-echo "  (prefix is Ctrl-; as configured)"
+log_success "tmux configuration complete!"
+log_hint "After starting tmux, press prefix + I to install plugins"
+log_hint "(prefix is Ctrl-; as configured)"

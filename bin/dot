@@ -10,59 +10,69 @@ set -e
 parentDirectory="$(cd "$( dirname "$0" )" && pwd -P)"
 dotfilesDirectory="$(cd "$( dirname "$parentDirectory" )" && pwd -P)"
 
+. "$dotfilesDirectory/lib/log.sh"
+
 displayUsageAndExit() {
-	echo "dot -- dotfiles management"
-	echo ""
-	echo "Usage: dot [command] [options]"
-	echo ""
-	echo "Commands:"
-	echo "  doctor      Run environment diagnostics"
-	echo ""
-	echo "Options:"
-	echo "  -e, --edit  Open dotfiles directory for editing"
-	echo "  -h, --help  Show this help message and exit"
-	exit
+  echo "dot -- dotfiles management"
+  echo ""
+  echo "Usage: dot [command] [options]"
+  echo ""
+  echo "Commands:"
+  echo "  doctor      Run environment diagnostics"
+  echo ""
+  echo "Options:"
+  echo "  -e, --edit  Open dotfiles directory for editing"
+  echo "  -h, --help  Show this help message and exit"
+  exit
+}
+
+run_step() {
+  label="$1"
+  shift
+  log_step "$label"
+  "$@"
+}
+
+open_dotfiles_for_editing() {
+  if [ -n "${EDITOR:-}" ]; then
+    exec "$EDITOR" "$dotfilesDirectory"
+  fi
+
+  exec open "$dotfilesDirectory"
 }
 
 case "${1:-}" in
-	doctor)
-		shift
-		exec "$dotfilesDirectory/bin/dot-doctor" "$@"
-		;;
-	-e|--edit)
-		exec "$EDITOR" "$dotfilesDirectory"
-		;;
-	-h|--help)
-		displayUsageAndExit
-		;;
-	"")
-		;; # fall through to update logic
-	*)
-		echo "Unknown command: $1"
-		displayUsageAndExit
-		;;
+  doctor)
+    shift
+    exec "$dotfilesDirectory/bin/dot-doctor" "$@"
+    ;;
+  -e|--edit)
+    open_dotfiles_for_editing
+    ;;
+  -h|--help)
+    displayUsageAndExit
+    ;;
+  "")
+    ;;
+  *)
+    echo "Unknown command: $1"
+    displayUsageAndExit
+    ;;
 esac
 
-# Update symlinks (non-interactive, skips conflicts)
-"$dotfilesDirectory/script/symlink"
+log_section "Symlinks"
+run_step "$dotfilesDirectory/script/symlink" "$dotfilesDirectory/script/symlink"
 
-# Set macOS defaults
-"$dotfilesDirectory/macos/set-defaults.sh"
+log_section "macOS defaults"
+run_step "$dotfilesDirectory/macos/set-defaults.sh" "$dotfilesDirectory/macos/set-defaults.sh"
 
-# Install homebrew
-"$dotfilesDirectory/homebrew/install.sh" 2>&1
+log_section "Homebrew"
+run_step "$dotfilesDirectory/homebrew/install.sh" "$dotfilesDirectory/homebrew/install.sh"
+run_step "brew update" brew update
+run_step "brew upgrade" brew upgrade
+run_step "brew bundle --file=$dotfilesDirectory/Brewfile" brew bundle --file="$dotfilesDirectory/Brewfile"
 
-# Upgrade homebrew
-echo "› brew update"
-brew update
+log_section "Topic installers"
+run_step "$dotfilesDirectory/script/install --skip ./homebrew/install.sh" "$dotfilesDirectory/script/install" --skip ./homebrew/install.sh
 
-echo "› brew upgrade"
-brew upgrade
-
-# Install from Brewfile
-echo "› brew bundle"
-brew bundle --file="$dotfilesDirectory/Brewfile"
-
-# Install software
-echo "› $dotfilesDirectory/script/install"
-"$dotfilesDirectory/script/install"
+printf '\n%sDone.%s %sDotfiles are up to date.%s\n' "$LOG_GREEN" "$LOG_RESET" "$LOG_DIM" "$LOG_RESET"

@@ -90,10 +90,20 @@ All installer scripts follow these patterns:
 
 ## Architecture Principles
 
-- **Shared libraries**: `lib/symlink.sh` provides `ensure_symlink` and `check_symlink` — reuse these instead of writing new symlink logic
+### Installer Ownership Model
+
+Keep changes in the narrowest layer that owns them:
+- `bin/dot` — top-level user workflow and sequencing needed specifically by `dot`
+- `script/install` — installer orchestration: explicit ordering, sorted fallback discovery, skip/forwarding behavior
+- `[topic]/install.sh` — idempotent topic-specific setup
+- `dot doctor` — diagnostics and fix hints
+
+Default rule: put install logic in `[topic]/install.sh`; only move upward into `script/install` or `bin/dot` when orchestration or UX requires it.
+
+- **Shared libraries**: `lib/log.sh` provides consistent shell UX helpers; `lib/symlink.sh` provides `ensure_symlink` and `check_symlink` — reuse these instead of rewriting logging or symlink logic
 - **Single source of truth**: One script owns each config area (e.g., `ai/install.sh` for all AI tool configs)
 - **No overlapping ownership**: Avoid multiple scripts managing same directories
-- **Deterministic execution**: Explicit ordering over `find | while` when order matters
+- **Deterministic execution**: `script/install` uses explicit `CORE_INSTALLERS` ordering for foundational installers, then sorted discovery for the rest. If a new installer has ordering requirements, update `script/install`.
 
 ## Secrets
 

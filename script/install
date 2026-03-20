@@ -4,7 +4,118 @@
 
 set -e
 
-cd "$(dirname $0)"/..
+cd "$(dirname "$0")/.."
 
-# find the installers and run them iteratively
-find . -name install.sh | while read installer ; do sh -c "${installer}" ; done
+. "./lib/log.sh"
+
+skip_installers=''
+installer_args=()
+
+append_skip_installer() {
+  skip_installers="$skip_installers
+$1
+"
+}
+
+installer_should_skip() {
+  case "$skip_installers" in
+    *"
+$1
+"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --skip)
+      if [ "$#" -lt 2 ]; then
+        echo "script/install: --skip requires a path" >&2
+        exit 1
+      fi
+      append_skip_installer "$2"
+      shift 2
+      ;;
+    -h|--help)
+      echo "Usage: script/install [--skip <installer>]... [installer-arg]..."
+      echo ""
+      echo "Runs core installers in explicit order, then all remaining install.sh files in sorted order."
+      echo "Additional arguments are forwarded to each installer (for example: --force)."
+      exit 0
+      ;;
+    --)
+      shift
+      while [ "$#" -gt 0 ]; do
+        installer_args+=("$1")
+        shift
+      done
+      ;;
+    *)
+      installer_args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# Foundational installers run in an explicit order. All other topic installers
+# are auto-discovered and run afterward in sorted order.
+#
+# Maintenance rule:
+# - New install.sh files do not need to be added here unless they have ordering
+#   requirements relative to other installers.
+# - If a new installer must run before the sorted fallback topics, add it to
+#   CORE_INSTALLERS.
+CORE_INSTALLERS=(
+  "./homebrew/install.sh"
+  "./macos/install.sh"
+  "./bun/install.sh"
+  "./python/install.sh"
+  "./fish/install.sh"
+  "./ai/install.sh"
+  "./claude/install.sh"
+  "./opencode/install.sh"
+  "./pi/install.sh"
+  "./agent-browser/install.sh"
+)
+
+seen_installers=''
+
+mark_installer_seen() {
+  seen_installers="$seen_installers
+$1
+"
+}
+
+installer_seen() {
+  case "$seen_installers" in
+    *"
+$1
+"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+run_installer() {
+  local installer="$1"
+
+  [ -f "$installer" ] || return 0
+  if installer_should_skip "$installer"; then
+    return 0
+  fi
+
+  mark_installer_seen "$installer"
+  log_step "$installer"
+  "$installer" "${installer_args[@]}"
+}
+
+for installer in "${CORE_INSTALLERS[@]}"; do
+  run_installer "$installer"
+done
+
+while IFS= read -r installer; do
+  if installer_seen "$installer"; then
+    continue
+  fi
+
+  run_installer "$installer"
+done < <(find . -type f -name install.sh | sort)
