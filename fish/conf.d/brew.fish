@@ -1,6 +1,14 @@
 # Homebrew
-if test -x /opt/homebrew/bin/brew
-    eval (/opt/homebrew/bin/brew shellenv)
-else if test -x /usr/local/bin/brew
-    eval (/usr/local/bin/brew shellenv)
+if test -d /opt/homebrew/bin
+    fish_add_path --move /opt/homebrew/bin /opt/homebrew/sbin
+    set -gx HOMEBREW_PREFIX /opt/homebrew
+    set -gx HOMEBREW_CELLAR /opt/homebrew/Cellar
+    set -gx HOMEBREW_REPOSITORY /opt/homebrew
+    set -gx INFOPATH /opt/homebrew/share/info $INFOPATH
+else if test -d /usr/local/bin
+    fish_add_path --move /usr/local/bin /usr/local/sbin
+    set -gx HOMEBREW_PREFIX /usr/local
+    set -gx HOMEBREW_CELLAR /usr/local/Cellar
+    set -gx HOMEBREW_REPOSITORY /usr/local
+    set -gx INFOPATH /usr/local/share/info $INFOPATH
 end

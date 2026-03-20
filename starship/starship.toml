@@ -1,7 +1,7 @@
 # Starship prompt — minimal, informative
 # Docs: https://starship.rs/config/
 
-format = "$directory$git_branch$git_status$all"
+format = "$directory$git_branch$git_status$line_break$character"
 
 [character]
 success_symbol = "[❯](bold green)"

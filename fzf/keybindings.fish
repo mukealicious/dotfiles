@@ -3,5 +3,8 @@
 # Ctrl+T - fuzzy file picker
 # Alt+C  - fuzzy cd into subdirectory
 
-source (brew --prefix)/opt/fzf/shell/key-bindings.fish
-fzf_key_bindings
+if test -f /opt/homebrew/opt/fzf/shell/key-bindings.fish
+    source /opt/homebrew/opt/fzf/shell/key-bindings.fish
+else if test -f /usr/local/opt/fzf/shell/key-bindings.fish
+    source /usr/local/opt/fzf/shell/key-bindings.fish
+end
