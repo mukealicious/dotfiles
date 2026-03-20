@@ -15,7 +15,9 @@
     "~/.dotfiles/ai/skills"
   ],
   "packages": [
-    "npm:pi-subagents",
+    "git:https://github.com/HazAT/pi-interactive-subagents",
+    "git:https://github.com/sasha-computer/pi-cmux",
+    "git:https://github.com/HazAT/pi-parallel",
     "npm:pi-interactive-shell",
     "npm:mitsupi"
   ],
