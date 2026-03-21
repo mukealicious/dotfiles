@@ -11,9 +11,8 @@ Run automatically by `script/install`, or manually:
 
 Requires `pi` to be installed first (`bun install -g @mariozechner/pi-coding-agent`).
 
-The researcher agent also depends on `parallel-cli` for `pi-parallel`:
+The researcher agent also depends on `parallel-cli` for `pi-parallel`. In this dotfiles setup it is installed via `curl -fsSL https://parallel.ai/install.sh | bash` into `~/.local/bin`; authentication is still manual:
 ```bash
-bun install -g @parallel-web/cli
 parallel-cli login
 ```
 
@@ -81,7 +80,7 @@ Third-party packages installed via `pi install npm:<pkg>`:
 | Package | Provides |
 |---|---|
 | `pi-subagents` | Subagent spawning |
-| `pi-parallel` | Parallel web research tools (requires external `parallel-cli` login) |
+| `pi-parallel` | Parallel web research tools (depends on standalone `parallel-cli`) |
 | `pi-interactive-shell` | Interactive shell support |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |
 

@@ -62,6 +62,22 @@ if [ -d "$EXTENSIONS_SRC" ]; then
   done
 fi
 
+# Install researcher support CLI required by pi-parallel.
+# Upstream documents Homebrew, but the published tap does not currently
+# resolve; use Parallel's official installer script which places the binary
+# in ~/.local/bin (already on PATH in this dotfiles setup).
+if command -v parallel-cli >/dev/null 2>&1 && parallel-cli --version >/dev/null 2>&1; then
+  log_success "parallel-cli already installed"
+else
+  log_info "Installing parallel-cli via upstream installer..."
+  if curl -fsSL https://parallel.ai/install.sh | bash >/dev/null 2>&1; then
+    log_success "Installed parallel-cli"
+  else
+    log_warn "Failed to install parallel-cli"
+    log_hint "Run manually: curl -fsSL https://parallel.ai/install.sh | bash"
+  fi
+fi
+
 # Install packages
 # Packages are fully qualified (git: or npm: prefix)
 PACKAGES="
