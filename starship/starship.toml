@@ -1,6 +1,10 @@
 # Starship prompt — minimal, informative
 # Docs: https://starship.rs/config/
 
+# Git is usually fast with fsmonitor enabled, but cold repo checks can still
+# briefly exceed Starship's 500ms default and emit noisy timeout warnings.
+command_timeout = 1500
+
 format = "$directory$git_branch$git_status$line_break$character"
 
 [character]
