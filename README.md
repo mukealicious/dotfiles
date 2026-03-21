@@ -184,6 +184,12 @@ See [claude/README.md](claude/README.md) for full documentation.
 - `read-aloud <file>` — Read file aloud via Lue TTS
 - `read-fast <file>` — Read file at 2x speed via Lue TTS
 
+Reading/media helper dependencies are tracked in Homebrew:
+- `ffmpeg` — audio/video processing used by TTS/media workflows
+- `yt-dlp` — downloader used by media-capable reading helpers and agent workflows
+
+`dot doctor` warns when these support CLIs are missing.
+
 ### Git Aliases
 
 ```sh

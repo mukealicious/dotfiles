@@ -38,6 +38,7 @@ brew "gnupg"
 brew "imagemagick"
 brew "pandoc"                    # Universal document converter (markdown -> plain text)
 brew "ffmpeg"                    # Audio/video processing (required by lue-reader TTS)
+brew "yt-dlp"                    # YouTube video/audio downloader
 brew "promptfoo"                 # LLM prompt testing and evaluation
 brew "tw93/tap/mole"             # Mac cleanup and optimization tool (mo)
 

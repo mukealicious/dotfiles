@@ -2,7 +2,9 @@
 #
 # Reading Tools Configuration
 #
-# Installs speedread (RSVP reader) and ensures dependencies.
+# Configures local reading helpers (for example speedread in bin/).
+# External support CLIs such as ffmpeg and yt-dlp are managed via Brewfile
+# and validated by dot doctor.
 #
 # Usage:
 #   ./install.sh          # Normal install

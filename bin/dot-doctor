@@ -41,6 +41,31 @@ for cmd in brew fish tmux starship bun uv; do
   fi
 done
 
+if command -v parallel-cli >/dev/null 2>&1; then
+  pass "parallel-cli"
+else
+  warn "parallel-cli not found"
+  info "Needed by the Pi researcher agent via pi-parallel"
+  info "Install: bun install -g @parallel-web/cli"
+  info "Then authenticate: parallel-cli login"
+fi
+
+if command -v ffmpeg >/dev/null 2>&1; then
+  pass "ffmpeg"
+else
+  warn "ffmpeg not found"
+  info "Used by TTS and media processing workflows"
+  info "Install: brew install ffmpeg"
+fi
+
+if command -v yt-dlp >/dev/null 2>&1; then
+  pass "yt-dlp"
+else
+  warn "yt-dlp not found"
+  info "Used by media-capable reading helpers and agent workflows"
+  info "Install: brew install yt-dlp"
+fi
+
 # ── Top-level symlinks ─────────────────────────────────────────
 
 header "Top-level symlinks"

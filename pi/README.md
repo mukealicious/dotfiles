@@ -11,6 +11,12 @@ Run automatically by `script/install`, or manually:
 
 Requires `pi` to be installed first (`bun install -g @mariozechner/pi-coding-agent`).
 
+The researcher agent also depends on `parallel-cli` for `pi-parallel`:
+```bash
+bun install -g @parallel-web/cli
+parallel-cli login
+```
+
 Run `dot doctor` to verify agents, symlinks, and skill projections are correctly installed.
 
 ## Directory Structure
@@ -75,6 +81,7 @@ Third-party packages installed via `pi install npm:<pkg>`:
 | Package | Provides |
 |---|---|
 | `pi-subagents` | Subagent spawning |
+| `pi-parallel` | Parallel web research tools (requires external `parallel-cli` login) |
 | `pi-interactive-shell` | Interactive shell support |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |
 
