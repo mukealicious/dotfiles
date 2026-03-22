@@ -1,106 +1,160 @@
 # pi-cmux
 
-> Vendored local fork of [`sasha-computer/pi-cmux`](https://github.com/sasha-computer/pi-cmux) for this dotfiles repo.
-> Loaded from `~/.dotfiles/pi/packages/pi-cmux` via `pi/settings.json`.
+> Vendored local fork of [`sasha-computer/pi-cmux`](https://github.com/sasha-computer/pi-cmux).
+> Active in this dotfiles repo via `pi/settings.json` as `/Users/mikeywills/.dotfiles/pi/packages/pi-cmux`.
 
-A [pi](https://github.com/mariozechner/pi-coding-agent) extension that talks directly to the [cmux](https://github.com/manaflow-ai/cmux) socket API.
+A [Pi](https://github.com/mariozechner/pi-coding-agent) package that gives Pi a native bridge to [cmux](https://github.com/manaflow-ai/cmux) over cmux's socket API.
 
-Replaces generic "Waiting for input" notifications with real context about what the agent did, shows agent state in the sidebar, and gives the LLM tools to drive the browser and control workspaces.
+The point is simple: instead of generic terminal notifications and shelling out to the `cmux` CLI, Pi can talk to cmux directly. That enables better notifications, sidebar status, and agent-callable browser/workspace tools.
 
-## What it does
+## Origin / inspiration
 
-**Context-aware notifications** -- when pi finishes a task inside cmux, instead of "Waiting for input", you get:
-- **"Edited 3 files"** when the agent changed code
-- **"Error: exit code 1 -- cannot find module..."** when a build failed
-- The actual last thing the agent said, truncated to fit
+The original package idea and upstream implementation came from [`sasha-computer/pi-cmux`](https://github.com/sasha-computer/pi-cmux).
 
-**Sidebar status pills** -- at a glance in the cmux sidebar:
-- Model name (e.g. `sonnet-4`)
-- Agent state (`Running` / `Idle`)
-- Thinking level (`high`, `medium`)
-- Token usage (`45k/200k`, color-coded by usage)
+Its core idea is the same one this fork keeps: **Pi should integrate with cmux natively over the socket API**.
+That means:
 
-**LLM tools** -- the agent can control cmux programmatically:
-- `cmux_browser` -- open URLs, take accessibility snapshots, click, fill forms, evaluate JS, screenshot, navigate
-- `cmux_workspace` -- list/create workspaces, split panes, focus surfaces, send text to other terminals
-- `cmux_notify` -- send targeted notifications when the agent needs your attention
+- targeted notifications for the right cmux surface
+- sidebar status pills tied to the current workspace
+- direct browser/workspace control from Pi tools
+- graceful no-op behavior when Pi is not running inside cmux
 
-**Connection management** -- keeps the cmux socket alive between prompts, reconnects on demand, and clears all state on shutdown.
+So this directory is not a brand-new concept; it is a practical local fork of that upstream package for this dotfiles setup.
 
-**Footer + widget** -- pi's TUI footer shows "cmux" when connected. A widget surfaces unread notification counts from other workspaces.
+## Why keep a local fork here?
 
-**Debug command** -- `/cmux-debug` prints the resolved cmux env IDs, connection state, and the current `system.identify` payload for troubleshooting.
+This repo vendors the package locally so it can be maintained alongside the rest of the Pi configuration.
 
-If you're not running inside cmux, the extension does nothing. No errors, no noise.
+That gives a few advantages:
 
-## Install
+- **Faster iteration** — change code here without reinstalling a git package
+- **Repo-local maintenance** — package code lives next to `pi/settings.json`, `pi/install.sh`, and related docs
+- **Small local patches** — carry repo-specific improvements while upstream evolves
+- **Easier debugging** — troubleshoot the exact package Pi is loading in this environment
 
-In this dotfiles repo, Pi loads the vendored local package above.
-The upstream install instructions below are kept for reference.
+In this repo, the active package is the local path entry in `pi/settings.json`, not a separately installed `git:github.com/sasha-computer/pi-cmux` checkout.
 
-```bash
-pi install git:github.com/sasha-computer/pi-cmux
+## Upstream vs this local fork
+
+| Topic | Upstream / original package | Local fork in this repo |
+|---|---|---|
+| Source | `git:github.com/sasha-computer/pi-cmux` | `/Users/mikeywills/.dotfiles/pi/packages/pi-cmux` |
+| Core idea | Native Pi ↔ cmux integration over the socket API | Same |
+| Packaging | Installed as a normal Pi package from git | Vendored directly into dotfiles |
+| Local additions | Upstream baseline | `/cmux-debug`, repo-local docs, path-based loading |
+| Maintenance style | Separate package lifecycle | Maintained together with this Pi setup |
+
+At the moment this is a **small pragmatic fork**, not a redesign. The goal is to keep the upstream spirit while making local maintenance easier.
+
+## What this local fork does
+
+### 1. Context-aware notifications
+
+When Pi finishes inside cmux, you get a useful notification instead of a generic “Waiting for input”.
+
+Examples:
+- file changes were made
+- a bash command failed
+- the last assistant message summarized the result
+
+Notifications are sent to the current cmux surface when possible.
+
+### 2. Sidebar status pills
+
+The cmux sidebar shows Pi session state at a glance:
+
+- model name
+- running vs idle state
+- thinking level
+- token/context usage
+
+### 3. Shell-state reporting
+
+The package reports shell activity (`running` vs `prompt`) back to cmux so workspace/panel state better reflects what Pi is doing.
+
+### 4. LLM-callable cmux tools
+
+The agent gets three cmux-aware tools:
+
+- `cmux_browser` — open pages, navigate, snapshot, click, fill, eval, screenshot, scroll, etc.
+- `cmux_workspace` — list/create workspaces, split panes, focus/flash surfaces, send text/keys, close surfaces, identify context
+- `cmux_notify` — explicitly notify the user via cmux
+
+### 5. Footer status in Pi
+
+When connected, Pi's own UI shows a `cmux` status entry in the footer.
+
+### 6. Debug command
+
+This fork adds `/cmux-debug`, which prints:
+
+- resolved cmux env vars
+- connection state before/after connect
+- the current `system.identify` payload
+
+That makes it much easier to debug “am I actually inside cmux?” problems.
+
+### 7. Graceful no-op outside cmux
+
+If `CMUX_SOCKET_PATH` is missing or the socket is unreachable, the package quietly does nothing.
+No errors, no noise.
+
+## How it works
+
+The package connects to cmux's Unix socket and uses:
+
+- **v2 JSON RPC-style requests** for notifications, browser control, workspace control, and `system.identify`
+- **v1 text commands** for sidebar status pills and shell-state reporting
+
+Large tool results such as browser snapshots are truncated before being shown back to the model.
+
+## Architecture
+
+```text
+extensions/
+  index.ts           Entry point; wires hooks, tools, and lifecycle
+  cmux-client.ts     Persistent Unix socket client (v2 JSON + v1 text)
+  notifications.ts   Context-aware notification logic
+  status.ts          Sidebar status + shell-state reporting
+  tools.ts           cmux_browser / cmux_workspace / cmux_notify
+  debug.ts           /cmux-debug command and renderer
 ```
 
-Or add to your pi settings manually:
+## Development notes
 
-```json
-{
-  "packages": ["git:github.com/sasha-computer/pi-cmux"]
-}
-```
-
-Or load locally during development:
+- No build step; Pi loads the TypeScript directly
+- This repo loads the package via local path from `pi/settings.json`
+- Use `/reload` inside Pi after changes
+- For isolated development, you can also run:
 
 ```bash
 pi -e ./extensions
 ```
 
-## How it works
+If you want the upstream package instead of this fork, see:
 
-The extension connects to cmux's Unix domain socket (`$CMUX_SOCKET_PATH`) and speaks its v2 JSON protocol plus v1 text commands (for status pills).
-
-**Notifications**: on each agent run it tracks files edited/written, bash exit codes, and error output. When the agent finishes (`agent_end`), it builds a one-line summary and fires a targeted notification via `notification.create_for_surface`.
-
-**Status pills + shell activity**: hooks into `session_start`, `model_select`, `agent_start`, `agent_end`, and `turn_end` to keep the sidebar current. It also reports shell activity (`running` / `prompt`) to cmux so the workspace/tab state follows Pi activity. All pills are cleared on `session_shutdown`.
-
-**Tools**: three tools registered via `pi.registerTool()` that route actions to the appropriate v2 socket methods. Browser snapshots and large responses are truncated to 50KB/2000 lines.
-
-The socket client stays connected between prompts and auto-reconnects if cmux restarts. If the socket is unreachable, every method returns `null` silently.
-
-## Architecture
-
-```
-extensions/
-  index.ts           Entry point -- wires hooks, tools, manages connection lifecycle
-  cmux-client.ts     Persistent Unix socket client (v2 JSON + v1 text protocol)
-  notifications.ts   Hook handlers that fire contextual notifications
-  status.ts          Sidebar status pill manager
-  tools.ts           LLM-callable tools (browser, workspace, notify)
+```bash
+pi install git:github.com/sasha-computer/pi-cmux
 ```
 
 ## Environment
 
-The extension reads these env vars (injected by cmux into every child shell):
+These env vars are provided by cmux and used by the package:
 
 | Variable | Used for |
 |---|---|
-| `CMUX_SOCKET_PATH` | Socket connection (required) |
-| `CMUX_WORKSPACE_ID` | Targeting status pills to the right workspace |
-| `CMUX_SURFACE_ID` | Targeting notifications to the right surface |
-| `PI_CMUX_DISABLE=1` | Force disable even inside cmux |
-| `PI_CMUX_VERBOSE=1` | Log socket traffic to stderr |
+| `CMUX_SOCKET_PATH` | cmux socket connection |
+| `CMUX_WORKSPACE_ID` | targeting status pills to the current workspace |
+| `CMUX_SURFACE_ID` | targeting notifications to the current surface |
+| `CMUX_TAB_ID` | fallback workspace identifier |
+| `CMUX_PANEL_ID` | fallback surface/panel identifier |
+| `PI_CMUX_DISABLE=1` | force-disable the package |
+| `PI_CMUX_VERBOSE=1` | verbose socket logging to stderr |
 
-## Roadmap
+## Notes
 
-See [TODO.md](TODO.md) for the full plan.
-
-- [x] **Phase 1** -- Context-aware notifications
-- [x] **Phase 2** -- Sidebar status pills
-- [x] **Phase 3** -- LLM-callable tools (browser, workspace, notify)
-- [ ] **Phase 4** -- cmux session-tracking integration
-- [x] **Phase 5** -- Widget + footer integration
-- [x] **Phase 6** -- Polish + packaging
+- See [TODO.md](TODO.md) for the original implementation plan and historical notes.
+- See [cmux-guide.md](cmux-guide.md) for cmux protocol/reference notes used while building this package.
 
 ## License
 
