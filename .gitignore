@@ -17,3 +17,6 @@ bin/speedread
 .DS_Store
 *.log
 *.tmp
+
+# Agent scratch / research context
+.context/
