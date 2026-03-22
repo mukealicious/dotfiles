@@ -3,7 +3,8 @@
 # Pi Coding Agent Configuration
 #
 # Sets up ~/.pi/agent/ directory structure and symlinks settings.
-# Installs Tier 1 extensions via `pi install`.
+# Installs third-party packages via `pi install`.
+# Vendored local packages are loaded directly from settings.json.
 #
 # Usage:
 #   ./install.sh          # Normal install
@@ -78,11 +79,12 @@ else
   fi
 fi
 
-# Install packages
-# Packages are fully qualified (git: or npm: prefix)
+# Install third-party packages
+# Packages are fully qualified (git: or npm: prefix).
+# The local pi-cmux fork is loaded from /Users/mikeywills/.dotfiles/pi/packages/pi-cmux
+# via settings.json, so it is not installed from git here.
 PACKAGES="
   git:https://github.com/HazAT/pi-interactive-subagents
-  git:https://github.com/sasha-computer/pi-cmux
   git:https://github.com/HazAT/pi-parallel
   npm:pi-interactive-shell
   npm:mitsupi

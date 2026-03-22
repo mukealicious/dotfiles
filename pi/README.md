@@ -29,6 +29,8 @@ pi/
 ├── aliases.fish            # Shell aliases (pi-print, pi-json)
 ├── extensions/             # Custom TypeScript extensions
 │   └── notify.ts          # Desktop notification on agent completion
+├── packages/               # Vendored local Pi packages
+│   └── pi-cmux/            # Local fork of the cmux integration
 ├── intercepted-commands/   # Shell shims for Python tooling
 │   ├── pip                # → uv add / uv run --with
 │   ├── pip3               # → uv add / uv run --with
@@ -47,7 +49,7 @@ pi/
 - **Theme**: Gruvbox Light
 - **Skills**: Discovers shared skills from `~/.dotfiles/ai/skills/` (no symlinking needed — Pi supports path-based discovery)
 - **Agents**: `ai/install.sh` assembles shared-body agent outputs into `~/.pi/agent/agents/`
-- **Packages**: pi-subagents, pi-interactive-shell, mitsupi
+- **Packages**: local `pi-cmux` fork plus pi-subagents, pi-parallel, pi-interactive-shell, mitsupi
 
 ## Extensions
 
@@ -75,7 +77,11 @@ Some shared skills (`commit`, `uv`, `web-browser`) collide with mitsupi's bundle
 
 ## Packages
 
-Third-party packages installed via `pi install npm:<pkg>`:
+Local package loaded from settings:
+
+- `pi/packages/pi-cmux` — vendored local fork of `github.com/sasha-computer/pi-cmux`
+
+Third-party packages installed via `pi install`:
 
 | Package | Provides |
 |---|---|
@@ -83,4 +89,3 @@ Third-party packages installed via `pi install npm:<pkg>`:
 | `pi-parallel` | Parallel web research tools (depends on standalone `parallel-cli`) |
 | `pi-interactive-shell` | Interactive shell support |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |
-
