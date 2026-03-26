@@ -18,5 +18,8 @@ bin/speedread
 *.log
 *.tmp
 
+# Stream Deck .app wrappers (built by install.sh via osacompile)
+streamdeck/apps/
+
 # Agent scratch / research context
 .context/
