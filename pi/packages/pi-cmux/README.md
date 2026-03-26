@@ -5,7 +5,7 @@
 
 A [Pi](https://github.com/mariozechner/pi-coding-agent) package that gives Pi a native bridge to [cmux](https://github.com/manaflow-ai/cmux) over cmux's socket API.
 
-The point is simple: instead of generic terminal notifications and shelling out to the `cmux` CLI, Pi can talk to cmux directly. That enables better notifications, sidebar status, and agent-callable browser/workspace tools.
+The point is simple: instead of generic terminal notifications and shelling out to the `cmux` CLI, Pi can talk to cmux directly. That enables better notifications, sidebar status, and agent-callable runtime browser/workspace tools.
 
 ## Origin / inspiration
 
@@ -16,7 +16,7 @@ That means:
 
 - targeted notifications for the right cmux surface
 - sidebar status pills tied to the current workspace
-- direct browser/workspace control from Pi tools
+- direct live browser/workspace control from Pi tools
 - graceful no-op behavior when Pi is not running inside cmux
 
 So this directory is not a brand-new concept; it is a practical local fork of that upstream package for this dotfiles setup.
@@ -76,9 +76,15 @@ The package reports shell activity (`running` vs `prompt`) back to cmux so works
 
 The agent gets three cmux-aware tools:
 
-- `cmux_browser` — open pages, navigate, snapshot, click, fill, eval, screenshot, scroll, etc.
+- `cmux_browser` — live browser/runtime control for localhost and authenticated pages: open, navigate, snapshot, click, fill, eval, screenshot, console/errors, scroll, etc.
 - `cmux_workspace` — list/create workspaces, split panes, focus/flash surfaces, send text/keys, close surfaces, identify context
 - `cmux_notify` — explicitly notify the user via cmux
+
+Routing notes:
+- Use `cmux_browser` for live rendered/runtime work: localhost apps, authenticated pages, visual inspection, DOM/JS debugging, and browser console/error inspection.
+- Prefer `parallel_*` tools for public web discovery, reading, and synthesis.
+- Prefer `bash` / `curl` for APIs, raw files, and exact transport.
+- Inside Pi, prefer `cmux_browser` over shelling out to `agent-browser` when you need live browser interaction.
 
 ### 5. Footer status in Pi
 
@@ -106,7 +112,8 @@ The package connects to cmux's Unix socket and uses:
 - **v2 JSON RPC-style requests** for notifications, browser control, workspace control, and `system.identify`
 - **v1 text commands** for sidebar status pills and shell-state reporting
 
-Large tool results such as browser snapshots are truncated before being shown back to the model.
+Structured cmux API failures are preserved for tool callers; only transport failures degrade to `null`.
+Large browser outputs are compacted before being shown back to the model — runtime snapshots omit raw page HTML in normal output, and screenshot output omits inline PNG base64.
 
 ## Architecture
 
@@ -125,6 +132,7 @@ extensions/
 - No build step; Pi loads the TypeScript directly
 - This repo loads the package via local path from `pi/settings.json`
 - Use `/reload` inside Pi after changes
+- Deterministic browser smoke fixtures live under `fixtures/cmux-browser/`
 - For isolated development, you can also run:
 
 ```bash

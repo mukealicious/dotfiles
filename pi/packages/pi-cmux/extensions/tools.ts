@@ -1,44 +1,296 @@
 /**
  * Custom tools exposed to the LLM for controlling cmux programmatically.
  *
- * - cmux_browser: Drive the in-app browser (open, navigate, snapshot, click, fill, eval, etc.)
- * - cmux_workspace: Control workspaces and surfaces (list, create, split, focus, flash, send text)
- * - cmux_notify: Send a notification to the user via cmux
+ * - cmux_browser: Live browser/runtime control for localhost, auth pages,
+ *   visual inspection, DOM/JS debugging, and console/error inspection.
+ * - cmux_workspace: Control workspaces and surfaces (list, create, split,
+ *   focus, flash, send text).
+ * - cmux_notify: Send a notification to the user via cmux.
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { truncateTail } from "@mariozechner/pi-coding-agent";
 import { StringEnum } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
-import type { CmuxClient } from "./cmux-client.js";
+import type { CmuxClient, CmuxErrorPayload, CmuxRequestResult } from "./cmux-client.js";
 
-/** Format a cmux response for tool output. */
-function formatResult(result: any): { text: string; details?: { truncation?: ReturnType<typeof truncateTail> } } {
-  if (result === null || result === undefined) {
-    return { text: "cmux did not respond (socket unavailable or timed out)" };
-  }
-  if (typeof result === "string") {
-    return { text: result };
-  }
+interface FormattedResult {
+  text: string;
+  details?: {
+    truncation?: ReturnType<typeof truncateTail>;
+  };
+}
 
-  const json = JSON.stringify(result, null, 2);
-  // Truncate large responses (snapshots can be huge)
-  const truncation = truncateTail(json, { maxBytes: 50_000, maxLines: 2000 });
-  let text = truncation.content;
+type ToolResponse = string | CmuxRequestResult<any> | null;
+type BrowserFormattedAction =
+  | "snapshot"
+  | "screenshot"
+  | "console_list"
+  | "console_clear"
+  | "errors_list"
+  | "eval"
+  | "get_text"
+  | "get_url"
+  | "is_visible";
+
+const TRUNCATE_OPTIONS = { maxBytes: 50_000, maxLines: 2000 } as const;
+
+function isRecord(value: unknown): value is Record<string, any> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function safeJson(value: any): string {
+  try {
+    const json = JSON.stringify(value, null, 2);
+    return json ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function truncateText(text: string): FormattedResult {
+  const truncation = truncateTail(text, TRUNCATE_OPTIONS);
+  let output = truncation.content;
 
   if (truncation.truncated) {
-    text += `\n\n[Truncated: showing ${truncation.outputLines} of ${truncation.totalLines} lines (${truncation.outputBytes} of ${truncation.totalBytes} bytes)]`;
+    output += `\n\n[Truncated: showing ${truncation.outputLines} of ${truncation.totalLines} lines (${truncation.outputBytes} of ${truncation.totalBytes} bytes)]`;
     return {
-      text,
+      text: output,
       details: { truncation },
     };
   }
 
-  return { text };
+  return { text: output };
 }
 
-function textResult(result: any) {
-  const formatted = formatResult(result);
+function pluralize(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function compactExcerpt(value: string, maxChars = 280): string | undefined {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return undefined;
+  return normalized.length > maxChars ? `${normalized.slice(0, maxChars - 1)}…` : normalized;
+}
+
+function formatBrowserValue(value: any): string {
+  if (isRecord(value) && value.__cmux_t === "undefined") {
+    return "undefined";
+  }
+
+  if (value === null) {
+    return "null";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+
+  if (typeof value === "number" || typeof value === "bigint") {
+    return String(value);
+  }
+
+  return safeJson(value);
+}
+
+function formatCmuxError(error: CmuxErrorPayload): FormattedResult {
+  const lines = [`cmux error [${error.code}]: ${error.message}`];
+  if (error.data !== undefined) {
+    lines.push("", "details:", safeJson(error.data));
+  }
+  return truncateText(lines.join("\n"));
+}
+
+function formatSnapshotResult(result: Record<string, any>): FormattedResult {
+  const refs = isRecord(result.refs) ? result.refs : null;
+  const page = isRecord(result.page) ? result.page : null;
+  const excerpt = page && typeof page.text === "string" ? compactExcerpt(page.text) : undefined;
+
+  const lines: string[] = [];
+
+  if (typeof result.title === "string" && result.title.trim()) {
+    lines.push(`title: ${result.title.trim()}`);
+  }
+  if (typeof result.url === "string" && result.url.trim()) {
+    lines.push(`url: ${result.url.trim()}`);
+  }
+  if (typeof result.ready_state === "string" && result.ready_state.trim()) {
+    lines.push(`ready_state: ${result.ready_state.trim()}`);
+  }
+  if (refs) {
+    lines.push(`refs_count: ${Object.keys(refs).length}`);
+  }
+
+  if (typeof result.snapshot === "string" && result.snapshot.trim()) {
+    if (lines.length > 0) lines.push("");
+    lines.push("snapshot:");
+    lines.push(result.snapshot);
+  }
+
+  if (excerpt) {
+    if (lines.length > 0) lines.push("");
+    lines.push("page_text_excerpt:", excerpt);
+  }
+
+  if (lines.length === 0) {
+    return truncateText(safeJson(result));
+  }
+
+  return truncateText(lines.join("\n"));
+}
+
+function formatBrowserLogItem(item: any): string {
+  if (isRecord(item)) {
+    const text = typeof item.text === "string" ? item.text.replace(/\s+/g, " ").trim() : "";
+    const level = typeof item.level === "string" && item.level.trim() ? item.level.trim() : "log";
+
+    if (text) {
+      return `[${level}] ${text}`;
+    }
+
+    const message = typeof item.message === "string" ? item.message.replace(/\s+/g, " ").trim() : "";
+    if (message) {
+      return `[error] ${message}`;
+    }
+  }
+
+  if (typeof item === "string") {
+    const normalized = item.replace(/\s+/g, " ").trim();
+    return normalized || item;
+  }
+
+  return safeJson(item);
+}
+
+function formatBrowserLogResult(
+  result: Record<string, any>,
+  action: "console_list" | "console_clear" | "errors_list",
+): FormattedResult {
+  const isErrors = action === "errors_list";
+  const key = isErrors ? "errors" : "entries";
+  const items = Array.isArray(result[key]) ? result[key] : [];
+  const count = typeof result.count === "number" ? result.count : items.length;
+
+  let header: string;
+  if (action === "console_clear") {
+    header = `Cleared ${pluralize(count, "console entry", "console entries")}`;
+  } else if (count === 0) {
+    header = isErrors ? "No browser errors" : "No console entries";
+  } else {
+    header = isErrors
+      ? pluralize(count, "browser error", "browser errors")
+      : pluralize(count, "console entry", "console entries");
+  }
+
+  const lines = [header];
+  if (items.length > 0) {
+    lines.push("", ...items.map(formatBrowserLogItem));
+  }
+
+  return truncateText(lines.join("\n"));
+}
+
+function formatScreenshotResult(result: Record<string, any>): FormattedResult {
+  const summary: Record<string, any> = {};
+
+  for (const key of ["workspace_id", "surface_id", "path", "url"] as const) {
+    if (result[key] !== undefined) {
+      summary[key] = result[key];
+    }
+  }
+
+  if (typeof result.png_base64 === "string" && result.png_base64.length > 0) {
+    summary.png_base64 = `[omitted ${result.png_base64.length} chars]`;
+  }
+
+  if (Object.keys(summary).length === 0) {
+    return truncateText("Screenshot captured");
+  }
+
+  return truncateText(safeJson(summary));
+}
+
+function formatSuccessResult(
+  result: any,
+  options?: { action?: BrowserFormattedAction },
+): FormattedResult {
+  if (options?.action === "snapshot" && isRecord(result)) {
+    return formatSnapshotResult(result);
+  }
+
+  if (options?.action === "screenshot" && isRecord(result)) {
+    return formatScreenshotResult(result);
+  }
+
+  if (
+    (options?.action === "console_list"
+      || options?.action === "console_clear"
+      || options?.action === "errors_list")
+    && isRecord(result)
+  ) {
+    return formatBrowserLogResult(result, options.action);
+  }
+
+  if (
+    (options?.action === "eval"
+      || options?.action === "get_text"
+      || options?.action === "is_visible")
+    && isRecord(result)
+    && "value" in result
+  ) {
+    return truncateText(formatBrowserValue(result.value));
+  }
+
+  if (options?.action === "get_url" && isRecord(result) && typeof result.url === "string") {
+    return truncateText(result.url);
+  }
+
+  if (result === null || result === undefined) {
+    return truncateText("OK");
+  }
+
+  if (typeof result === "string") {
+    return truncateText(result);
+  }
+
+  if (typeof result === "number" || typeof result === "boolean" || typeof result === "bigint") {
+    return truncateText(String(result));
+  }
+
+  return truncateText(safeJson(result));
+}
+
+function formatResponse(
+  response: CmuxRequestResult<any> | null,
+  options?: { action?: BrowserFormattedAction },
+): FormattedResult {
+  if (response === null) {
+    return { text: "cmux did not respond (socket unavailable or timed out)" };
+  }
+
+  if (!response.ok) {
+    return formatCmuxError(response.error);
+  }
+
+  return formatSuccessResult(response.result, options);
+}
+
+function maybeSuccessText(response: CmuxRequestResult<any> | null, successText: string): ToolResponse {
+  if (response && response.ok && (response.result === null || response.result === undefined)) {
+    return successText;
+  }
+  return response;
+}
+
+function textResult(
+  value: ToolResponse,
+  options?: { action?: BrowserFormattedAction },
+) {
+  const formatted = typeof value === "string" ? truncateText(value) : formatResponse(value, options);
   return {
     content: [{ type: "text" as const, text: formatted.text }],
     ...(formatted.details ? { details: formatted.details } : {}),
@@ -50,13 +302,17 @@ export function wireTools(pi: ExtensionAPI, client: CmuxClient): void {
   pi.registerTool({
     name: "cmux_browser",
     description: [
-      "Control the cmux in-app browser. Open URLs in a split pane, navigate, take accessibility snapshots, click elements, fill forms, evaluate JS, and more.",
+      "Control the cmux in-app browser for live rendered/runtime work.",
+      "Use this for localhost apps, authenticated/session-bound pages, visual inspection, DOM/JS/runtime debugging, and browser console/error inspection.",
+      "Prefer parallel_search / parallel_extract / parallel_research for public-web discovery, reading, and synthesis.",
+      "Prefer bash / curl for APIs, raw files, and exact transport.",
+      "Inside Pi, prefer this tool over shelling out to agent-browser when you need live browser interaction.",
       "The browser runs inside the cmux terminal app — no separate browser needed.",
       "",
       "Actions:",
       "- open: Open a URL in a new browser split pane",
       "- navigate: Navigate the current browser to a URL",
-      "- snapshot: Get the accessibility tree of the current page (LLM-readable)",
+      "- snapshot: Get a compact runtime-oriented accessibility snapshot of the current page",
       "- click: Click an element by CSS selector",
       "- fill: Fill a form field by CSS selector with text",
       "- eval: Evaluate JavaScript in the page and return the result",
@@ -71,13 +327,16 @@ export function wireTools(pi: ExtensionAPI, client: CmuxClient): void {
       "- scroll: Scroll an element (specify selector, dx, dy)",
       "- find_role: Find elements by ARIA role",
       "- is_visible: Check if an element is visible",
+      "- console_list: List captured browser console entries",
+      "- console_clear: Clear captured browser console entries",
+      "- errors_list: List captured browser page errors",
     ].join("\n"),
     parameters: Type.Object({
       action: StringEnum([
         "open", "navigate", "snapshot", "click", "fill",
         "eval", "screenshot", "get_text", "get_url", "wait",
         "back", "forward", "reload", "press", "scroll",
-        "find_role", "is_visible",
+        "find_role", "is_visible", "console_list", "console_clear", "errors_list",
       ] as const),
       url: Type.Optional(Type.String({ description: "URL for open/navigate actions" })),
       selector: Type.Optional(Type.String({ description: "CSS selector for click/fill/get_text/wait/scroll/is_visible" })),
@@ -90,75 +349,77 @@ export function wireTools(pi: ExtensionAPI, client: CmuxClient): void {
       dy: Type.Optional(Type.Number({ description: "Vertical scroll amount for scroll action" })),
     }),
     async execute(_toolCallId, params) {
-      const surfaceParams = params.surface_id ? { surface_id: params.surface_id } : {};
+      const surfaceParams: Record<string, any> = params.surface_id ? { surface_id: params.surface_id } : {};
 
       switch (params.action) {
         case "open": {
           if (!params.url) return textResult("Error: url is required for open action");
           const result = await client.request("browser.open_split", { url: params.url, ...surfaceParams });
-          return textResult(result ?? "Browser split opened");
+          return textResult(maybeSuccessText(result, "Browser split opened"));
         }
         case "navigate": {
           if (!params.url) return textResult("Error: url is required for navigate action");
           const result = await client.request("browser.navigate", { url: params.url, ...surfaceParams });
-          return textResult(result ?? "Navigated");
+          return textResult(maybeSuccessText(result, "Navigated"));
         }
         case "snapshot": {
           const result = await client.request("browser.snapshot", surfaceParams);
-          return textResult(result);
+          return textResult(result, { action: "snapshot" });
         }
         case "click": {
           if (!params.selector) return textResult("Error: selector is required for click action");
           const result = await client.request("browser.click", { selector: params.selector, ...surfaceParams });
-          return textResult(result ?? "Clicked");
+          return textResult(maybeSuccessText(result, "Clicked"));
         }
         case "fill": {
           if (!params.selector) return textResult("Error: selector is required for fill action");
           if (params.text === undefined) return textResult("Error: text is required for fill action");
           const result = await client.request("browser.fill", { selector: params.selector, text: params.text, ...surfaceParams });
-          return textResult(result ?? "Filled");
+          return textResult(maybeSuccessText(result, "Filled"));
         }
         case "eval": {
           if (!params.code) return textResult("Error: code is required for eval action");
-          const result = await client.request("browser.eval", { code: params.code, ...surfaceParams });
-          return textResult(result);
+          const result = await client.request("browser.eval", { script: params.code, ...surfaceParams });
+          return textResult(result, { action: "eval" });
         }
         case "screenshot": {
           const result = await client.request("browser.screenshot", surfaceParams);
-          return textResult(result);
+          return textResult(result, { action: "screenshot" });
         }
         case "get_text": {
           if (!params.selector) return textResult("Error: selector is required for get_text action");
-          const result = await client.request("browser.get_text", { selector: params.selector, ...surfaceParams });
-          return textResult(result);
+          const result = await client.request("browser.get.text", { selector: params.selector, ...surfaceParams });
+          return textResult(result, { action: "get_text" });
         }
         case "get_url": {
           const result = await client.request("browser.url.get", surfaceParams);
-          return textResult(result);
+          return textResult(result, { action: "get_url" });
         }
         case "wait": {
           if (!params.selector) return textResult("Error: selector is required for wait action");
           const waitParams: Record<string, any> = { selector: params.selector, ...surfaceParams };
           if (params.hidden) waitParams.hidden = true;
-          const result = await client.request("browser.wait", waitParams);
-          return textResult(result ?? "Element found");
+          // cmux browser.wait defaults to 5000ms; keep the client timeout slightly higher
+          // so structured timeout errors can arrive instead of collapsing to transport null.
+          const result = await client.request("browser.wait", waitParams, { timeoutMs: 6000 });
+          return textResult(maybeSuccessText(result, params.hidden ? "Element hidden" : "Element found"));
         }
         case "back": {
           const result = await client.request("browser.back", surfaceParams);
-          return textResult(result ?? "Navigated back");
+          return textResult(maybeSuccessText(result, "Navigated back"));
         }
         case "forward": {
           const result = await client.request("browser.forward", surfaceParams);
-          return textResult(result ?? "Navigated forward");
+          return textResult(maybeSuccessText(result, "Navigated forward"));
         }
         case "reload": {
           const result = await client.request("browser.reload", surfaceParams);
-          return textResult(result ?? "Reloaded");
+          return textResult(maybeSuccessText(result, "Reloaded"));
         }
         case "press": {
           if (!params.text) return textResult("Error: text (key name) is required for press action");
           const result = await client.request("browser.press", { key: params.text, ...surfaceParams });
-          return textResult(result ?? "Key pressed");
+          return textResult(maybeSuccessText(result, "Key pressed"));
         }
         case "scroll": {
           if (!params.selector) return textResult("Error: selector is required for scroll action");
@@ -168,7 +429,7 @@ export function wireTools(pi: ExtensionAPI, client: CmuxClient): void {
             dy: params.dy ?? 0,
             ...surfaceParams,
           });
-          return textResult(result ?? "Scrolled");
+          return textResult(maybeSuccessText(result, "Scrolled"));
         }
         case "find_role": {
           if (!params.role) return textResult("Error: role is required for find_role action");
@@ -177,8 +438,20 @@ export function wireTools(pi: ExtensionAPI, client: CmuxClient): void {
         }
         case "is_visible": {
           if (!params.selector) return textResult("Error: selector is required for is_visible action");
-          const result = await client.request("browser.is_visible", { selector: params.selector, ...surfaceParams });
-          return textResult(result);
+          const result = await client.request("browser.is.visible", { selector: params.selector, ...surfaceParams });
+          return textResult(result, { action: "is_visible" });
+        }
+        case "console_list": {
+          const result = await client.request("browser.console.list", surfaceParams);
+          return textResult(result, { action: "console_list" });
+        }
+        case "console_clear": {
+          const result = await client.request("browser.console.clear", surfaceParams);
+          return textResult(maybeSuccessText(result, "Cleared console entries"), { action: "console_clear" });
+        }
+        case "errors_list": {
+          const result = await client.request("browser.errors.list", surfaceParams);
+          return textResult(result, { action: "errors_list" });
         }
         default:
           return textResult(`Unknown action: ${params.action}`);
@@ -233,12 +506,12 @@ export function wireTools(pi: ExtensionAPI, client: CmuxClient): void {
         case "focus": {
           if (!params.surface_id) return textResult("Error: surface_id is required for focus action");
           const result = await client.request("surface.focus", { surface_id: params.surface_id });
-          return textResult(result ?? "Focused");
+          return textResult(maybeSuccessText(result, "Focused"));
         }
         case "flash": {
           if (!params.surface_id) return textResult("Error: surface_id is required for flash action");
           const result = await client.request("surface.trigger_flash", { surface_id: params.surface_id });
-          return textResult(result ?? "Flashed");
+          return textResult(maybeSuccessText(result, "Flashed"));
         }
         case "identify": {
           const result = await client.request("system.identify", {});
@@ -248,18 +521,18 @@ export function wireTools(pi: ExtensionAPI, client: CmuxClient): void {
           if (!params.surface_id) return textResult("Error: surface_id is required for send_text action");
           if (!params.text) return textResult("Error: text is required for send_text action");
           const result = await client.request("surface.send_text", { surface_id: params.surface_id, text: params.text });
-          return textResult(result ?? "Text sent");
+          return textResult(maybeSuccessText(result, "Text sent"));
         }
         case "send_key": {
           if (!params.surface_id) return textResult("Error: surface_id is required for send_key action");
           if (!params.text) return textResult("Error: text (key name) is required for send_key action");
           const result = await client.request("surface.send_key", { surface_id: params.surface_id, key: params.text });
-          return textResult(result ?? "Key sent");
+          return textResult(maybeSuccessText(result, "Key sent"));
         }
         case "close": {
           if (!params.surface_id) return textResult("Error: surface_id is required for close action");
           const result = await client.request("surface.close", { surface_id: params.surface_id });
-          return textResult(result ?? "Closed");
+          return textResult(maybeSuccessText(result, "Closed"));
         }
         default:
           return textResult(`Unknown action: ${params.action}`);
@@ -286,7 +559,7 @@ export function wireTools(pi: ExtensionAPI, client: CmuxClient): void {
           subtitle: params.subtitle ?? "",
           body: params.body ?? "",
         });
-        return textResult(result ?? "Notification sent");
+        return textResult(maybeSuccessText(result, "Notification sent"));
       }
 
       const result = await client.request("notification.create", {
@@ -294,7 +567,7 @@ export function wireTools(pi: ExtensionAPI, client: CmuxClient): void {
         subtitle: params.subtitle ?? "",
         body: params.body ?? "",
       });
-      return textResult(result ?? "Notification sent");
+      return textResult(maybeSuccessText(result, "Notification sent"));
     },
   });
 }

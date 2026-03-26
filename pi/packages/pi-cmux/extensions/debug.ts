@@ -57,13 +57,17 @@ export function wireDebug(pi: ExtensionAPI, client: CmuxClient): void {
       const connectedBefore = client.isConnected();
       const connectOk = await client.connect();
       const connectedAfter = client.isConnected();
-      const identify = connectOk ? await client.request("system.identify", {}) : null;
+      const identifyResponse = connectOk ? await client.request("system.identify", {}) : null;
+      const identify = identifyResponse && identifyResponse.ok ? identifyResponse.result : identifyResponse;
 
-      const identifyRecord = identify && typeof identify === "object"
-        ? (identify as Record<string, any>)
+      const identifyRecord = identifyResponse && identifyResponse.ok && identifyResponse.result && typeof identifyResponse.result === "object"
+        ? (identifyResponse.result as Record<string, any>)
         : null;
       const caller = identifyRecord?.caller ?? null;
       const focused = identifyRecord?.focused ?? identifyRecord?.current ?? identifyRecord?.active ?? null;
+      const identifyError = identifyResponse && !identifyResponse.ok
+        ? `${identifyResponse.error.code}: ${identifyResponse.error.message}`
+        : null;
 
       const lines = [
         `available=${client.available}`,
@@ -77,6 +81,7 @@ export function wireDebug(pi: ExtensionAPI, client: CmuxClient): void {
         `env.panel=${fmt(process.env.CMUX_PANEL_ID)}`,
         `resolved.workspace=${fmt(resolvedWorkspaceId)}`,
         `resolved.panel=${fmt(resolvedPanelId)}`,
+        `identify.error=${fmt(identifyError)}`,
         `identify.caller.workspace=${fmt(caller?.workspace_id ?? caller?.workspace_ref)}`,
         `identify.caller.surface=${fmt(caller?.surface_id ?? caller?.surface_ref)}`,
         `identify.focused.workspace=${fmt(focused?.workspace_id ?? focused?.workspace_ref)}`,

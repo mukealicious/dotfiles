@@ -2,7 +2,7 @@
 
 ## What this is
 
-A pi extension that connects to cmux's Unix domain socket to provide context-aware notifications, sidebar status pills, and LLM-callable tools for browser automation and workspace control. Pi is a coding agent TUI; cmux is a Ghostty-based terminal multiplexer with built-in AI agent support.
+A pi extension that connects to cmux's Unix domain socket to provide context-aware notifications, sidebar status pills, and LLM-callable tools for live browser/runtime control and workspace control. Pi is a coding agent TUI; cmux is a Ghostty-based terminal multiplexer with built-in AI agent support.
 
 ## Project structure
 
@@ -24,9 +24,11 @@ cmux-guide.md        cmux API reference
 - Graceful degradation everywhere. If cmux is unavailable, return null / do nothing. Never throw.
 - The socket client maintains a single persistent connection with auto-reconnect.
 - Request/response correlation uses UUID `id` fields (v2). V1 text commands use FIFO queue matching.
+- V2 requests preserve structured cmux API failures as `{ ok: false, error }`; only transport/socket failures collapse to `null`.
 - Notifications target the specific surface via `CMUX_SURFACE_ID` env var.
 - Status pills target the workspace via `CMUX_WORKSPACE_ID` env var.
-- Tool output is truncated to 50KB/2000 lines (browser snapshots can be large).
+- `cmux_browser` is runtime-focused: use it for localhost/authenticated pages, visual inspection, DOM/JS debugging, and console/error inspection. Prefer `parallel_*` for public-web reading/synthesis and `bash`/`curl` for APIs/raw files.
+- Tool output is truncated to 50KB/2000 lines. Browser snapshots are formatted compactly, and normal tool output omits raw snapshot HTML and screenshot base64.
 
 ## Testing
 

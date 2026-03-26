@@ -228,6 +228,42 @@ Examples:
 | Manual negative smoke | Error truthfulness | Verify missing/nonexistent selector cases for `click`, `fill`, `wait`; verify broken-action regressions for `eval`, `get_text`, `is_visible` |
 | Low-level contract probe | cmux request/response semantics when behavior is ambiguous | Use a tiny direct socket script (`uv run python` or equivalent) against `CMUX_SOCKET_PATH` to inspect raw `ok/error` payloads |
 
+## Checked-in fixture flow
+
+Fixture files now live at:
+
+- `pi/packages/pi-cmux/fixtures/cmux-browser/index.html`
+- `pi/packages/pi-cmux/fixtures/cmux-browser/page-2.html`
+
+Suggested manual smoke flow from the repo root:
+
+1. Resolve fixture URLs:
+
+   ```bash
+   FIXTURE_ROOT="$(pwd)/pi/packages/pi-cmux/fixtures/cmux-browser"
+   INDEX_URL="file://${FIXTURE_ROOT}/index.html"
+   PAGE_TWO_URL="file://${FIXTURE_ROOT}/page-2.html"
+   ```
+
+2. Open `INDEX_URL` in a fresh browser surface.
+3. Run the core repaired checks:
+   - `fill(#name, hello)`
+   - `click(#btn)`
+   - `get_text(#status)` ⇒ `hello`
+   - `eval(document.title)` ⇒ `cmux-browser-fixture`
+   - `is_visible(#visible)` ⇒ `true`
+   - `is_visible(#hidden)` ⇒ `false`
+4. Run the runtime/debug checks:
+   - `snapshot` returns compact metadata + accessibility tree without dumping raw HTML
+   - `eval(window.emitLogs())`
+   - `console_list` includes `cmux-console-entry`
+   - `errors_list` includes `cmux-browser-boom`
+   - `console_clear` resets console entries to zero
+5. Run navigation/history checks:
+   - `navigate(PAGE_TWO_URL)` or click `#next`
+   - `wait(#second)`
+   - `back`, `forward`, `reload`
+
 ## Risks & mitigations
 
 | Risk | Likelihood | Impact | Mitigation |

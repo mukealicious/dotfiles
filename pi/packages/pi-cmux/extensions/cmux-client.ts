@@ -3,21 +3,54 @@
  * Speaks v2 newline-delimited JSON protocol.
  *
  * Gracefully degrades: if CMUX_SOCKET_PATH is unset or the socket is
- * unreachable, every method returns null. No errors, no noise.
+ * unreachable, v2 requests return null. Structured cmux API failures are
+ * preserved as `{ ok: false, error }` responses instead of being flattened.
  */
 
 import * as net from "node:net";
 import * as crypto from "node:crypto";
 
+export interface CmuxErrorPayload {
+  code: string;
+  message: string;
+  data?: any;
+}
+
+export type CmuxRequestResult<T = any> =
+  | { ok: true; result: T }
+  | { ok: false; error: CmuxErrorPayload };
+
+interface RequestOptions {
+  timeoutMs?: number;
+}
+
 interface PendingRequest {
-  resolve: (value: any) => void;
-  reject: (reason: any) => void;
+  resolve: (value: CmuxRequestResult | null) => void;
   timer: ReturnType<typeof setTimeout>;
 }
 
 interface PendingV1 {
   resolve: (value: string | null) => void;
   timer: ReturnType<typeof setTimeout>;
+}
+
+function normalizeCmuxError(error: any): CmuxErrorPayload {
+  if (typeof error === "string") {
+    return { code: "cmux_error", message: error };
+  }
+
+  const code = typeof error?.code === "string" && error.code.trim()
+    ? error.code
+    : "cmux_error";
+  const message = typeof error?.message === "string" && error.message.trim()
+    ? error.message
+    : "unknown error";
+
+  const normalized: CmuxErrorPayload = { code, message };
+  if (error && typeof error === "object" && "data" in error && error.data !== undefined) {
+    normalized.data = error.data;
+  }
+  return normalized;
 }
 
 export class CmuxClient {
@@ -92,8 +125,12 @@ export class CmuxClient {
     }
   }
 
-  /** Send a v2 JSON request. Returns the result or null on failure. */
-  async request(method: string, params?: Record<string, any>): Promise<any | null> {
+  /** Send a v2 JSON request. Returns a structured response or null on transport failure. */
+  async request(
+    method: string,
+    params?: Record<string, any>,
+    options?: RequestOptions,
+  ): Promise<CmuxRequestResult | null> {
     // Auto-reconnect
     if (!this.isConnected()) {
       const ok = await this.connect();
@@ -105,24 +142,19 @@ export class CmuxClient {
 
     if (this.verbose) console.error("[pi-cmux] ->", payload);
 
-    return new Promise<any | null>((resolve) => {
+    return new Promise<CmuxRequestResult | null>((resolve) => {
+      const timeoutMs = Math.max(1, options?.timeoutMs ?? 5000);
       const timer = setTimeout(() => {
         this.pending.delete(id);
         if (this.verbose) console.error("[pi-cmux] request timeout:", method);
         resolve(null);
-      }, 5000);
+      }, timeoutMs);
 
       this.pending.set(id, {
         resolve: (value) => {
           clearTimeout(timer);
           this.pending.delete(id);
           resolve(value);
-        },
-        reject: (reason) => {
-          clearTimeout(timer);
-          this.pending.delete(id);
-          if (this.verbose) console.error("[pi-cmux] request error:", reason);
-          resolve(null);
         },
         timer,
       });
@@ -204,9 +236,11 @@ export class CmuxClient {
           const pending = this.pending.get(msg.id);
           if (pending) {
             if (msg.ok === false) {
-              pending.reject(msg.error?.message ?? "unknown error");
+              const error = normalizeCmuxError(msg.error);
+              if (this.verbose) console.error("[pi-cmux] request error:", error);
+              pending.resolve({ ok: false, error });
             } else {
-              pending.resolve(msg.result ?? null);
+              pending.resolve({ ok: true, result: msg.result ?? null });
             }
           }
           continue;
