@@ -26,17 +26,7 @@ Topic-based dotfiles at `~/.dotfiles`. Each directory = one topic (tool/app).
 └── [topic]/      # Tool-specific config
 ```
 
-## AI Skill Architecture
-
-Three-layer system serving multiple agents (Claude Code, Pi, OpenCode, Codex):
-
-| Layer | Location | Scope |
-|-------|----------|-------|
-| Shared skills | `ai/skills/` | All agents — portable, tool-agnostic |
-| Claude overlay | `claude/skills/` | Claude Code only |
-| Pi extensions | `pi/extensions/` | Pi only |
-
-**Projection**: `ai/install.sh` symlinks shared skills to each agent's runtime directory. Claude overlay skills take precedence over shared when both exist.
+> For skill architecture, ownership model, key commands, secrets, and common shell/Homebrew tasks, see `CLAUDE.md` and `ai/instructions/base.md`.
 
 ### Add a Shared Skill
 
@@ -53,46 +43,7 @@ Use `build-skill` skill for detailed guidance on format and progressive disclosu
 
 Only do this when the skill uses Claude-specific features such as hooks, `$SKILL_DIR`, plugins, or subagent delegation. Prefer shared skills.
 
-## Ownership Model
-
-Keep install logic in the narrowest owning layer:
-
-| Layer | Owns | Put changes here when | Avoid |
-|-------|------|------------------------|-------|
-| `bin/dot` | Top-level `dot` workflow | The step is part of the user-facing update flow or later `dot` steps depend on it immediately | Topic-specific setup details |
-| `script/install` | Installer orchestration | You are changing installer ordering, discovery, skips, or argument forwarding | Tool-specific install logic |
-| `[topic]/install.sh` | Topic setup | The change only affects one tool/topic and can be rerun safely | Cross-topic orchestration |
-| `dot doctor` | Diagnostics | You need a health check or fix hint | Doing installation work |
-
-Rules of thumb:
-- Prefer `[topic]/install.sh` first.
-- Only add to `script/install`'s `CORE_INSTALLERS` when ordering matters.
-- Only change `bin/dot` when the top-level `dot` experience or sequencing must change.
-- If `bin/dot` directly handles a topic, keep any `script/install --skip` usage aligned.
-- When adding install behavior, consider whether `dot doctor` should gain a corresponding check.
-
 ## Common Tasks
-
-### Add Shell Alias
-
-Edit or create `~/.dotfiles/[topic]/aliases.fish`:
-
-```fish
-alias myalias='command'
-```
-
-Run `dot` to symlink to Fish conf.d.
-
-### Add Homebrew Package
-
-Edit `~/.dotfiles/homebrew/Brewfile`:
-
-```ruby
-brew "package-name"
-cask "app-name"
-```
-
-Run `brew bundle` to install.
 
 ### Add New Topic
 
@@ -118,13 +69,3 @@ See [references/file-patterns.md](references/file-patterns.md) for complete refe
 | `aliases.fish` | Auto-discovered and symlinked to Fish conf.d |
 | `keybindings.fish` | Auto-discovered and symlinked to Fish conf.d |
 | `install.sh` | Topic installer, run by `script/install` in deterministic order |
-
-## Key Commands
-
-- `dot` - Update everything (defaults, brew, installers)
-- `dot doctor` - Run environment diagnostics
-- `dot -e` - Edit dotfiles in editor
-
-## Secrets
-
-Never commit: `~/.localrc`, `~/.gitconfig.local`

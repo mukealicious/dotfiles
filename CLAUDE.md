@@ -9,6 +9,27 @@ Topic-centric dotfiles (Holman-style). Manages macOS dev environment.
 - `bin/dot` - update everything
 - `bin/dot doctor` - check environment health
 
+## Where to Look
+
+| Task | Start here |
+|------|-----------|
+| Add shell alias/abbr | `[topic]/aliases.fish` |
+| Add fish function | `fish/functions/` |
+| Add Homebrew package | `Brewfile` |
+| New topic/tool | Create `[topic]/` dir, add `install.sh` |
+| Custom git command | `bin/git-<name>` (executable) |
+| Git config | `git/gitconfig.symlink` |
+| Fish shell config | `fish/config.fish`, `fish/conf.d/` |
+| Shared AI skill | `ai/skills/[name]/SKILL.md` |
+| Claude-only skill | `claude/skills/[name]/SKILL.md` |
+| Agent instructions (shared) | `ai/instructions/base.md` |
+| Agent instructions (Claude) | `claude/instructions/appendix.md` |
+| Claude settings/hooks | `claude/settings.json`, `claude/hooks/` |
+| Subagent definition | `claude/agents/` (or `ai/agents/` for shared body) |
+| Installer ordering | `script/install` (`CORE_INSTALLERS`) |
+| Symlink/logging helpers | `lib/symlink.sh`, `lib/log.sh` |
+| Environment diagnostics | `bin/dot-doctor` |
+
 ## Development
 
 Use the `dotfiles-dev` skill for detailed guidance on:
@@ -104,6 +125,17 @@ Default rule: put install logic in `[topic]/install.sh`; only move upward into `
 - **Single source of truth**: One script owns each config area (e.g., `ai/install.sh` for all AI tool configs)
 - **No overlapping ownership**: Avoid multiple scripts managing same directories
 - **Deterministic execution**: `script/install` uses explicit `CORE_INSTALLERS` ordering for foundational installers, then sorted discovery for the rest. If a new installer has ordering requirements, update `script/install`.
+
+## Anti-Patterns
+
+- Edit files under `~/.claude/`, `~/.pi/agent/`, or `~/.config/opencode/` directly — edit source files in this repo, run `dot` to install
+- Author shared skills in `.agents/skills/` or `.claude/skills/` — these are installer-managed runtime outputs
+- Add topic-specific logic to `script/install` or `bin/dot` unless orchestration requires it
+- Create multiple scripts that manage the same config directory
+- Assume existing symlinks point to the correct target — always validate
+- Use `find | while` for order-dependent operations
+- Skip dead symlink cleanup before creating new ones
+- Commit `~/.localrc`, `~/.gitconfig.local`, or any `.env*` files
 
 ## Secrets
 

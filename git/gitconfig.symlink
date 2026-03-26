@@ -54,5 +54,7 @@
 	writeCommitGraph = true
 [branch]
 	sort = -committerdate
+[column]
+	ui = auto
 [init]
 	defaultBranch = main
