@@ -1,7 +1,7 @@
 # Bun global packages to install
 # Add packages here, one per line
 # Supports: package names, npm: prefix, or GitHub URLs
-https://github.com/tobi/qmd
+@tobilu/qmd
 opensrc
 agent-browser
 @mariozechner/pi-coding-agent

@@ -1,3 +1,7 @@
 .DS_Store
 *~
 *.swp
+
+# QMD - per-project index databases (config is checked in)
+.qmd/*
+!.qmd/index.yml
