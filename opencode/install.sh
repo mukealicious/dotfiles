@@ -30,6 +30,7 @@ log_info "Setting up OpenCode..."
 mkdir -p "$OPENCODE_DEST"
 mkdir -p "$OPENCODE_DEST/themes"
 
+ensure_symlink "$OPENCODE_SRC/opencode.json" "$OPENCODE_DEST/opencode.json" "OpenCode config"
 ensure_symlink "$OPENCODE_SRC/tui.json" "$OPENCODE_DEST/tui.json" "OpenCode TUI config"
 ensure_symlink "$OPENCODE_SRC/themes/gruvbox-light.json" "$OPENCODE_DEST/themes/gruvbox-light.json" "OpenCode Gruvbox Light theme"
 
