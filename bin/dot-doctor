@@ -24,10 +24,34 @@
 set -e
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+NPM_MIN_RELEASE_AGE="7"
+UV_EXCLUDE_NEWER='exclude-newer = "7 days"'
+BUN_MIN_RELEASE_AGE='minimumReleaseAge = 604800'
 
 # Shared helpers (pass, warn, fail, info, header, check_symlink)
 # shellcheck source=../lib/symlink.sh
 . "$DOTFILES_ROOT/lib/symlink.sh"
+
+check_file_contains_literal() {
+  target="$1"
+  expected="$2"
+  desc="$3"
+
+  if [ ! -f "$target" ]; then
+    fail "$desc is missing"
+    info "Expected file: $target"
+    info "Fix: dot"
+    return
+  fi
+
+  if grep -Fq "$expected" "$target" 2>/dev/null; then
+    pass "$desc"
+  else
+    fail "$desc is not set"
+    info "Expected: $expected"
+    info "Fix: update dotfiles config and run dot"
+  fi
+}
 
 # ── Critical CLIs ──────────────────────────────────────────────
 
@@ -146,6 +170,15 @@ if [ -d "$DOTFILES_ROOT/cmux" ]; then
   check_symlink "$DOTFILES_ROOT/cmux/config.ghostty" "$HOME/Library/Application Support/com.cmuxterm.app/config.ghostty" "cmux/config.ghostty"
   check_symlink "$DOTFILES_ROOT/cmux/default-config.ghostty" "$HOME/Library/Application Support/com.mitchellh.ghostty/config.ghostty" "ghostty/config.ghostty"
 fi
+
+# ── Supply chain protections ────────────────────────────────────
+
+header "Supply chain protections"
+
+check_symlink "$DOTFILES_ROOT/python/uv.toml" "$HOME/.config/uv/uv.toml" "uv/uv.toml"
+check_file_contains_literal "$HOME/.npmrc" "min-release-age=$NPM_MIN_RELEASE_AGE" "~/.npmrc min-release-age"
+check_file_contains_literal "$HOME/.config/uv/uv.toml" "$UV_EXCLUDE_NEWER" "~/.config/uv/uv.toml exclude-newer"
+check_file_contains_literal "$HOME/.bunfig.toml" "$BUN_MIN_RELEASE_AGE" "~/.bunfig.toml minimumReleaseAge"
 
 # ── PATH ───────────────────────────────────────────────────────
 
