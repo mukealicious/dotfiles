@@ -11,11 +11,8 @@ brew "git-lfs"
 brew "coreutils"
 brew "wget"
 brew "tlrc"                      # Simplified man pages (tldr client in Rust)
-cask "codex"                     # OpenAI's coding agent
 brew "opencode"                  # AI coding agent for terminal
 brew "gemini-cli"                # Google Gemini AI CLI
-cask "cmux"                      # Ghostty-based terminal for AI coding agents
-cask "ollama-app"                # Local LLM runner for QMD embeddings
 
 # Languages & Version Management
 brew "asdf"
@@ -62,12 +59,13 @@ brew "libyaml"                   # YAML parsing library (fast PyYAML backend)
 brew "b2-tools"                  # Backblaze B2 command-line tool
 
 # Casks
+cask "codex"                     # OpenAI's coding agent
+cask "claude-code"               # Claude AI coding assistant CLI
+cask "cmux"                      # Ghostty-based terminal for AI coding agents
+cask "ollama-app"                # Local LLM runner for QMD embeddings
 cask "wezterm"                   # GPU-accelerated terminal emulator
 cask "1password-cli"             # 1Password CLI for secrets management
-cask "deskpad"
 cask "docker-desktop"            # Docker Desktop with CLI tools
 cask "gcloud-cli"                # Google Cloud CLI
 cask "jordanbaird-ice"           # Menu bar manager for macOS
 cask "nikitabobko/tap/aerospace" # i3-like tiling window manager for macOS
-cask "claude-code"               # Claude AI coding assistant CLI
-cask "cmux"                      # Native macOS terminal with agent orchestration
