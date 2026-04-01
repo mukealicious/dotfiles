@@ -28,6 +28,56 @@ Portable skills are authored once in `ai/skills/`. `ai/install.sh` refreshes the
 
 Do not author shared skills in `.agents/skills/` or `.claude/skills/`; they are installer-managed runtime outputs.
 
+### Watch Workflow
+
+This repo now supports a portable upstream review loop:
+
+`watch -> review -> adopt`
+
+- `ai/watchlist.toml` defines which GitHub repos and paths are worth watching
+- `bin/ai-watch` collects read-only upstream facts and links them to local artifacts via `metadata.watch-sources` when present
+- `ai/skills/watch-review/` interprets the report and ranks whether upstream changes are worth adopting or adapting
+
+The Watch system is intentionally manual in v1: no auto-install, no auto-sync, no background polling.
+
+#### Adding a watched source
+
+Edit `ai/watchlist.toml` and add one `[[sources]]` entry.
+
+Minimal checklist:
+
+- choose a stable `id` for CLI filtering
+- set `repo` to `owner/repo`
+- set `path` to the specific upstream subpath you care about, or `""` for repo root
+- use `branch = "main"` unless the upstream uses something else
+- choose `kind` from `skill`, `repo`, `docs`, `topic`, `package`, or `other`
+- add a short `notes` line explaining why this source matters here
+
+Example:
+
+```toml
+[[sources]]
+id = "example-skill"
+repo = "owner/repo"
+path = "skills/example-skill"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Candidate upstream skill to compare against a local shared skill"
+```
+
+Guidance:
+
+- prefer the narrowest useful `path`; smaller scopes produce less review noise
+- use `kind = "skill"` for a reusable skill or instruction package, `kind = "repo"` for broad inspiration sources
+- if a local `SKILL.md` should compare directly to upstream later, add `metadata.watch-sources` in that skill frontmatter
+
+Verify a new entry with:
+
+```bash
+bin/ai-watch --source <id>
+```
+
 The same rule now applies to assembled agent runtime files under `~/.claude/agents/` and `~/.pi/agent/agents/`: edit the split source files in the repo, not the installed outputs.
 
 ### Shared Instructions
@@ -136,6 +186,7 @@ If the shared skill stands on its own, delete the wrapper instead of keeping two
 | `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
 | `spec-planner` | Instruction-only | Dialogue-driven spec development with iterative refinement |
 | `sprint-plan` | Instruction-only | Break projects into demoable sprints with atomic, testable tasks |
+| `watch-review` | Instruction-only | Review watched upstream sources against local artifacts |
 | `workspace-snapshot` | Instruction-only | Quick workspace orientation before editing |
 
 ### Claude-Specific (`claude/skills/`)

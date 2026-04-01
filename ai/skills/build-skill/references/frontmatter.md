@@ -111,9 +111,19 @@ metadata:
   author: dmmulroy
   version: "1.0"
   team: platform
+  watch-sources: walterra/agent-tools/packages/post-mortem@ef2ef41
 ```
 
 String-to-string map. Arbitrary key-value pairs.
+
+Use `metadata.watch-sources` when a local skill should stay associated with an upstream repo path for Watch reviews. The value is a compact locator in `owner/repo/path@ref` form. For multiple sources, use a block scalar:
+
+```yaml
+metadata:
+  watch-sources: |
+    walterra/agent-tools/packages/post-mortem@ef2ef41
+    openai/skills@main
+```
 
 ### references
 

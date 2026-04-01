@@ -1,0 +1,5 @@
+#!/usr/bin/env bun
+
+import { runAiWatch } from "../ai/watch.ts";
+
+await runAiWatch({ argv: process.argv.slice(2) });

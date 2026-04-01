@@ -1,0 +1,30 @@
+# Portable Watch manifest.
+# Add one [[sources]] entry per upstream repo or subpath you want to review manually.
+# Verify new entries with: bin/ai-watch --source <id>
+
+version = 1
+
+[[sources]]
+# id: stable local identifier used by --source
+# repo: GitHub owner/repo
+# path: watched subpath within the repo; use "" for the repo root
+# branch: branch to inspect, usually main
+# kind: skill | repo | docs | topic | package | other
+# review: optional hint for later review, usually semantic-diff or pattern-scan
+# notes: short reason this source is watched
+id = "post-mortem"
+repo = "walterra/agent-tools"
+path = "packages/post-mortem"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Shared retrospective skill source for ai/skills/post-mortem/SKILL.md"
+
+[[sources]]
+id = "openai-skills"
+repo = "openai/skills"
+path = ""
+branch = "main"
+kind = "repo"
+review = "pattern-scan"
+notes = "General upstream inspiration source for portable skill patterns"
