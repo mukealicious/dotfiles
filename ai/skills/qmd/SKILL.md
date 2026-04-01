@@ -53,6 +53,18 @@ Then index: `qmd update && qmd embed`
 
 When `$PWD/.qmd/` exists, the Fish wrapper sets `QMD_CONFIG_DIR` and `INDEX_PATH` to use the local config and index. Without `.qmd/`, QMD falls back to the global index at `~/.cache/qmd/`.
 
+### Non-Fish shells (Bash, Zsh, Claude Code subagents)
+
+The Fish wrapper doesn't apply in non-Fish contexts. For **search**, prefer the MCP server (`qmd mcp`) — configure it in `.mcp.json` with `INDEX_PATH` and `QMD_CONFIG_DIR` env vars baked in. Agents then use `mcp__qmd__query` etc. without any shell workarounds.
+
+For **maintenance commands** (`qmd update`, `qmd embed`) that aren't in MCP, prefix with env vars:
+
+```bash
+QMD_CONFIG_DIR="$PWD/.qmd" INDEX_PATH="$PWD/.qmd/index.sqlite" qmd update
+```
+
+Without env vars or MCP, QMD silently falls back to the global index, which may be empty or stale.
+
 ## Indexing
 
 ```bash
