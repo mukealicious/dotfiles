@@ -13,7 +13,7 @@
     "maxRetries": 5
   },
   "skills": [
-    "~/.dotfiles/ai/skills"
+    "~/.dotfiles/.ai-runtime/pi/skills"
   ],
   "packages": [
     "git:https://github.com/HazAT/pi-interactive-subagents",

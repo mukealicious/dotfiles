@@ -154,9 +154,14 @@ Shared skills in `ai/skills/`, available to all agents (Claude, Pi, OpenCode, Co
 | `librarian` | Multi-repository codebase exploration |
 | `workspace-snapshot` | Quick workspace orientation |
 
+Also includes an imported frontend design pack:
+
+- `emil-design-eng` from Emil Kowalski
+- the Impeccable skill family from Paul Bakaus, including `frontend-design`, `audit`, `critique`, `polish`, `animate`, `typeset`, and related design helpers
+
 Plus plugins: `document-skills` (PDF/XLSX/DOCX/PPTX), `playground` (interactive HTML).
 
-See [claude/README.md](claude/README.md) for full documentation.
+See [ai/README.md](ai/README.md) for the full AI capability inventory and projection model.
 
 ## Shell Features
 

@@ -271,23 +271,24 @@ clean_stale_managed_markdown_files() {
 # Usage: sync_skill_runtime_dir <target_dir> <label> [overlay_source_dir]
 #
 # Behavior:
-# - Portable skills from ai/skills/ are always the baseline projection
+# - A provider-aware projected shared-skill source is always the baseline
 # - Optional harness-specific overlays are applied second
 # - Target directories are runtime outputs, not authoring sources
 #
 sync_skill_runtime_dir() {
-  target_dir="$1"
-  label="$2"
-  overlay_src="$3"
+  baseline_src="$1"
+  target_dir="$2"
+  label="$3"
+  overlay_src="$4"
 
   mkdir -p "$target_dir"
   clean_dead_symlinks "$target_dir"
 
-  if [ -d "$SHARED_SKILLS_SRC" ]; then
-    for skill_dir in "$SHARED_SKILLS_SRC"/*/; do
+  if [ -d "$baseline_src" ]; then
+    for skill_dir in "$baseline_src"/*/; do
       [ -d "$skill_dir" ] || continue
       skill_name=$(basename "$skill_dir")
-      ensure_symlink "$skill_dir" "$target_dir/$skill_name" "$label/$skill_name (shared)"
+      ensure_runtime_overlay_symlink "$skill_dir" "$target_dir/$skill_name" "$label/$skill_name (shared)"
     done
   fi
 
@@ -301,10 +302,10 @@ sync_skill_runtime_dir() {
 }
 
 #
-# Helper: Apply an overlay symlink in an installer-managed runtime directory
+# Helper: Apply a managed symlink in an installer-managed runtime directory
 #
 # Behavior:
-# - If the target is already a symlink, replace it so the overlay wins
+# - If the target is already a symlink, replace it so managed runtime output wins
 # - If the target is a regular file/dir, preserve it and warn via ensure_symlink
 # - If the target is missing, create it
 #
@@ -380,7 +381,8 @@ assemble_instruction_file "$HOME/.pi/agent/AGENTS.md" "$HOME/.pi/agent/AGENTS.md
 #
 # Skills and Agents (single source of truth for all AI tools)
 #
-# Portable skills are authored once in ai/skills/.
+# Portable skills are authored once in ai/skills/ and projected into
+# provider-aware runtime sources under .ai-runtime/.
 # Runtime directories such as .agents/skills/ and .claude/skills/ are generated
 # outputs, not authoring homes. Claude-specific skills in claude/skills/ remain
 # optional overlays that each runtime can opt into explicitly.
@@ -393,6 +395,11 @@ SHARED_AGENTS_SRC="$DOTFILES_ROOT/ai/agents"
 CLAUDE_AGENTS_SRC="$DOTFILES_ROOT/claude/agents"
 PI_AGENTS_SRC="$DOTFILES_ROOT/pi/agents"
 OPENCODE_DIR="$HOME/.config/opencode"
+PROJECTED_SKILLS_ROOT="$DOTFILES_ROOT/.ai-runtime"
+PROJECTED_CODEX_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/codex/skills"
+PROJECTED_CLAUDE_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/claude-code/skills"
+PROJECTED_OPENCODE_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/opencode/skills"
+PROJECTED_PI_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/pi/skills"
 PROJECT_AGENTS_SKILLS_DIR="$DOTFILES_ROOT/.agents/skills"
 PROJECT_CLAUDE_SKILLS_DIR="$DOTFILES_ROOT/.claude/skills"
 REVIEW_BODY_SRC="$SHARED_AGENTS_SRC/review.body.md"
@@ -401,14 +408,25 @@ CLAUDE_REVIEW_APPENDIX="$CLAUDE_AGENTS_SRC/review.appendix.md"
 PI_REVIEW_FRONTMATTER="$PI_AGENTS_SRC/review.frontmatter"
 PI_REVIEW_APPENDIX="$PI_AGENTS_SRC/review.appendix.md"
 
+if ! command -v node >/dev/null 2>&1; then
+  echo "  ERROR: node is required to project shared skills"
+  exit 1
+fi
+
+log_info "Refreshing projected shared skill sources..."
+node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" codex "$SHARED_SKILLS_SRC" "$PROJECTED_CODEX_SKILLS_SRC"
+node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" claude-code "$SHARED_SKILLS_SRC" "$PROJECTED_CLAUDE_SKILLS_SRC"
+node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" opencode "$SHARED_SKILLS_SRC" "$PROJECTED_OPENCODE_SKILLS_SRC"
+node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" pi "$SHARED_SKILLS_SRC" "$PROJECTED_PI_SKILLS_SRC"
+
 # Repo-local runtime skill projections
 log_info "Refreshing repo runtime skills..."
-sync_skill_runtime_dir "$PROJECT_AGENTS_SKILLS_DIR" ".agents/skills" ""
-sync_skill_runtime_dir "$PROJECT_CLAUDE_SKILLS_DIR" ".claude/skills" "$CLAUDE_SKILLS_SRC"
+sync_skill_runtime_dir "$PROJECTED_CODEX_SKILLS_SRC" "$PROJECT_AGENTS_SKILLS_DIR" ".agents/skills" ""
+sync_skill_runtime_dir "$PROJECTED_CLAUDE_SKILLS_SRC" "$PROJECT_CLAUDE_SKILLS_DIR" ".claude/skills" "$CLAUDE_SKILLS_SRC"
 
 # Claude Code skills
 log_info "Setting up Claude Code skills..."
-sync_skill_runtime_dir "$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills" "$CLAUDE_SKILLS_SRC"
+sync_skill_runtime_dir "$PROJECTED_CLAUDE_SKILLS_SRC" "$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills" "$CLAUDE_SKILLS_SRC"
 
 # Claude Code agents
 if [ -d "$CLAUDE_AGENTS_SRC" ]; then
@@ -483,7 +501,7 @@ done
 # OpenCode skills
 log_info "Setting up OpenCode skills..."
 # Note: OpenCode uses 'skill' not 'skills'. It gets only portable shared skills.
-sync_skill_runtime_dir "$OPENCODE_DIR/skill" "$OPENCODE_DIR/skill" ""
+sync_skill_runtime_dir "$PROJECTED_OPENCODE_SKILLS_SRC" "$OPENCODE_DIR/skill" "$OPENCODE_DIR/skill" ""
 
 # OpenCode agents
 # NOTE: Claude agents use incompatible frontmatter (tools: comma string vs YAML record).

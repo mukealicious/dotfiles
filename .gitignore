@@ -10,6 +10,7 @@
 bin/speedread
 
 # Installer-created runtime skill projections
+.ai-runtime/
 .agents/skills/
 .claude/skills/
 

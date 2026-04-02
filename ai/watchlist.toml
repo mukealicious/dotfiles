@@ -21,6 +21,204 @@ review = "semantic-diff"
 notes = "Shared retrospective skill source for ai/skills/post-mortem/SKILL.md"
 
 [[sources]]
+id = "emil-design-eng"
+repo = "emilkowalski/skill"
+path = "skills/emil-design-eng"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Emil design skill source for ai/skills/emil-design-eng/SKILL.md"
+
+[[sources]]
+id = "adapt"
+repo = "pbakaus/impeccable"
+path = "source/skills/adapt"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/adapt/SKILL.md"
+
+[[sources]]
+id = "animate"
+repo = "pbakaus/impeccable"
+path = "source/skills/animate"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/animate/SKILL.md"
+
+[[sources]]
+id = "arrange"
+repo = "pbakaus/impeccable"
+path = "source/skills/arrange"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/arrange/SKILL.md"
+
+[[sources]]
+id = "audit"
+repo = "pbakaus/impeccable"
+path = "source/skills/audit"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/audit/SKILL.md"
+
+[[sources]]
+id = "bolder"
+repo = "pbakaus/impeccable"
+path = "source/skills/bolder"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/bolder/SKILL.md"
+
+[[sources]]
+id = "clarify"
+repo = "pbakaus/impeccable"
+path = "source/skills/clarify"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/clarify/SKILL.md"
+
+[[sources]]
+id = "colorize"
+repo = "pbakaus/impeccable"
+path = "source/skills/colorize"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/colorize/SKILL.md"
+
+[[sources]]
+id = "critique"
+repo = "pbakaus/impeccable"
+path = "source/skills/critique"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/critique/SKILL.md"
+
+[[sources]]
+id = "delight"
+repo = "pbakaus/impeccable"
+path = "source/skills/delight"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/delight/SKILL.md"
+
+[[sources]]
+id = "distill"
+repo = "pbakaus/impeccable"
+path = "source/skills/distill"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/distill/SKILL.md"
+
+[[sources]]
+id = "extract"
+repo = "pbakaus/impeccable"
+path = "source/skills/extract"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/extract/SKILL.md"
+
+[[sources]]
+id = "frontend-design"
+repo = "pbakaus/impeccable"
+path = "source/skills/frontend-design"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream frontend-design skill source for ai/skills/frontend-design/SKILL.md"
+
+[[sources]]
+id = "harden"
+repo = "pbakaus/impeccable"
+path = "source/skills/harden"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/harden/SKILL.md"
+
+[[sources]]
+id = "normalize"
+repo = "pbakaus/impeccable"
+path = "source/skills/normalize"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/normalize/SKILL.md"
+
+[[sources]]
+id = "onboard"
+repo = "pbakaus/impeccable"
+path = "source/skills/onboard"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/onboard/SKILL.md"
+
+[[sources]]
+id = "optimize"
+repo = "pbakaus/impeccable"
+path = "source/skills/optimize"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/optimize/SKILL.md"
+
+[[sources]]
+id = "overdrive"
+repo = "pbakaus/impeccable"
+path = "source/skills/overdrive"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/overdrive/SKILL.md"
+
+[[sources]]
+id = "polish"
+repo = "pbakaus/impeccable"
+path = "source/skills/polish"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/polish/SKILL.md"
+
+[[sources]]
+id = "quieter"
+repo = "pbakaus/impeccable"
+path = "source/skills/quieter"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/quieter/SKILL.md"
+
+[[sources]]
+id = "teach-impeccable"
+repo = "pbakaus/impeccable"
+path = "source/skills/teach-impeccable"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/teach-impeccable/SKILL.md"
+
+[[sources]]
+id = "typeset"
+repo = "pbakaus/impeccable"
+path = "source/skills/typeset"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Impeccable skill source for ai/skills/typeset/SKILL.md"
+
+[[sources]]
 id = "openai-skills"
 repo = "openai/skills"
 path = ""

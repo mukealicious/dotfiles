@@ -47,7 +47,7 @@ pi/
 
 - **Model**: Claude Opus 4.6 via Anthropic
 - **Theme**: Gruvbox Light
-- **Skills**: Discovers shared skills from `~/.dotfiles/ai/skills/` (no symlinking needed — Pi supports path-based discovery)
+- **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` (no user-level symlinking needed — Pi supports path-based discovery)
 - **Agents**: `ai/install.sh` assembles shared-body agent outputs into `~/.pi/agent/agents/`
 - **Packages**: local `pi-cmux` fork plus pi-subagents, pi-parallel, pi-interactive-shell, mitsupi
 
@@ -73,7 +73,7 @@ Shell shims in `pi/intercepted-commands/` that print helpful error messages redi
 
 ## Skill Collisions
 
-Some shared skills (`commit`, `uv`, `web-browser`) collide with mitsupi's bundled copies. Pi prefers mitsupi's versions — this is expected. The shared copies in `ai/skills/` still serve Claude Code, OpenCode, Codex, and Gemini.
+Some shared skills (`commit`, `uv`, `web-browser`) collide with mitsupi's bundled copies. Pi prefers mitsupi's versions — this is expected. The canonical shared sources remain in `ai/skills/`, while Pi reads the provider-aware runtime projection in `.ai-runtime/pi/skills/`.
 
 ## Packages
 

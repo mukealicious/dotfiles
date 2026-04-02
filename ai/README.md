@@ -20,13 +20,18 @@ Skills live in three source locations based on portability:
 
 Portable skills are authored once in `ai/skills/`. `ai/install.sh` refreshes the runtime-facing directories that consume that source:
 
-- `.agents/skills/` — repo-local Codex-style runtime projection of portable skills
-- `.claude/skills/` — repo-local Claude-style runtime projection of portable skills plus Claude-only overlays
+- `.ai-runtime/codex/skills/` — repo-local Codex-style projected shared skills
+- `.ai-runtime/claude-code/skills/` — repo-local Claude-projected shared skills
+- `.ai-runtime/opencode/skills/` — repo-local OpenCode-projected shared skills
+- `.ai-runtime/pi/skills/` — repo-local Pi-projected shared skills
+- `.agents/skills/` — repo-local Codex-style runtime symlink projection of portable skills
+- `.claude/skills/` — repo-local Claude-style runtime symlink projection of portable skills plus Claude-only overlays
 - `~/.claude/skills/` — user-level Claude install
 - `~/.config/opencode/skill/` — user-level OpenCode install
-- Pi discovers `ai/skills/` directly via `pi/settings.json`
+- Pi discovers `.ai-runtime/pi/skills/` via `pi/settings.json`
 
 Do not author shared skills in `.agents/skills/` or `.claude/skills/`; they are installer-managed runtime outputs.
+Do not author projected files under `.ai-runtime/`; they are rebuilt by `ai/install.sh`.
 
 ### Watch Workflow
 
@@ -39,6 +44,22 @@ This repo now supports a portable upstream review loop:
 - `ai/skills/watch-review/` interprets the report and ranks whether upstream changes are worth adopting or adapting
 
 The Watch system is intentionally manual in v1: no auto-install, no auto-sync, no background polling.
+
+### Imported Upstreams
+
+Some shared skills are intentionally vendored from upstream sources instead of being repo-authored from scratch.
+
+| Upstream | Local scope | Why it is here |
+|---|---|---|
+| `emilkowalski/skill` | `ai/skills/emil-design-eng/` | Preserve Emil Kowalski's design-engineering guidance as an exact upstream skill we can experiment with and review over time |
+| `pbakaus/impeccable` | `ai/skills/frontend-design/` and related design helpers | Experiment with a full family of design-specific skills before deciding what deserves local adaptation |
+
+Rules for imported upstreams:
+
+- keep the shared source in `ai/skills/` as close to upstream as practical
+- use `metadata.watch-sources` plus `ai/watchlist.toml` to pin provenance and review drift
+- resolve provider-specific placeholders during projection into `.ai-runtime/`, not by editing the vendored source to one harness
+- prefer exact-copy-first adoption; adapt later only after real usage teaches us what is worth changing
 
 #### Adding a watched source
 
@@ -128,7 +149,7 @@ Follow the [Agent Skills Standard](https://agentskills.io):
 - Validated with `skills-ref validate <path>`
 - Authored once in `ai/skills/`, then projected into runtime directories as needed
 
-`ai/install.sh` refreshes `.agents/skills/` and `.claude/skills/` inside the repo, installs the resulting skill sources into `~/.claude/skills/` and `~/.config/opencode/skill/`, and leaves Pi to discover shared skills directly via the `"skills"` path in `settings.json`.
+`ai/install.sh` projects shared `ai/skills/` sources into provider-aware runtime outputs under `.ai-runtime/`, refreshes `.agents/skills/` and `.claude/skills/` inside the repo from those projections, installs the resulting skill sources into `~/.claude/skills/` and `~/.config/opencode/skill/`, and points Pi at `.ai-runtime/pi/skills/` via the `"skills"` path in `settings.json`.
 
 ### Claude-Specific Skills (`claude/skills/`)
 
@@ -174,6 +195,15 @@ If the shared skill stands on its own, delete the wrapper instead of keeping two
 
 ### Shared (`ai/skills/`)
 
+Most shared skills are repo-authored portable workflows. The design pack is different:
+
+- `emil-design-eng` is vendored from `emilkowalski/skill`
+- the Impeccable pack is vendored exact-copy-first from `pbakaus/impeccable/source/skills/`
+- provider-specific placeholders stay in `ai/skills/` source and are resolved during projection into `.ai-runtime/`
+- upstream sources stay pinned through `metadata.watch-sources` and `ai/watchlist.toml`
+
+### Repo-Authored Shared Skills
+
 | Skill | Type | Description |
 |---|---|---|
 | `build-skill` | Instruction-only | Create effective skills for AI coding agents |
@@ -188,6 +218,41 @@ If the shared skill stands on its own, delete the wrapper instead of keeping two
 | `sprint-plan` | Instruction-only | Break projects into demoable sprints with atomic, testable tasks |
 | `watch-review` | Instruction-only | Review watched upstream sources against local artifacts |
 | `workspace-snapshot` | Instruction-only | Quick workspace orientation before editing |
+
+### Imported Design Skills
+
+| Skill | Upstream | Description |
+|---|---|---|
+| `emil-design-eng` | `emilkowalski/skill` | Emil Kowalski's design engineering philosophy for UI polish and motion |
+| `frontend-design` | `pbakaus/impeccable` | Main design direction skill; other Impeccable skills build on its context protocol |
+| `teach-impeccable` | `pbakaus/impeccable` | Gather and persist project design context |
+| `audit` | `pbakaus/impeccable` | Audit frontend quality across accessibility, performance, theming, and anti-patterns |
+| `critique` | `pbakaus/impeccable` | Evaluate UX quality with scoring, personas, and actionable feedback |
+| `polish` | `pbakaus/impeccable` | Perform a final quality pass before shipping |
+| `normalize` | `pbakaus/impeccable` | Bring features back in line with the design system |
+| `distill` | `pbakaus/impeccable` | Simplify and declutter designs to their essence |
+| `clarify` | `pbakaus/impeccable` | Improve UX copy, labels, messages, and instructions |
+| `optimize` | `pbakaus/impeccable` | Diagnose and fix frontend performance issues |
+| `harden` | `pbakaus/impeccable` | Strengthen interfaces against edge cases, i18n, and failures |
+| `animate` | `pbakaus/impeccable` | Add purposeful animation and motion to interfaces |
+| `colorize` | `pbakaus/impeccable` | Add strategic color and expressive palette choices |
+| `bolder` | `pbakaus/impeccable` | Increase visual impact and personality in safe designs |
+| `quieter` | `pbakaus/impeccable` | Tone down overly aggressive or overstimulating designs |
+| `delight` | `pbakaus/impeccable` | Add joy, personality, and memorable interaction details |
+| `extract` | `pbakaus/impeccable` | Extract reusable components, tokens, and design patterns |
+| `adapt` | `pbakaus/impeccable` | Adapt designs across devices, contexts, and platforms |
+| `onboard` | `pbakaus/impeccable` | Design and improve onboarding and first-run flows |
+| `typeset` | `pbakaus/impeccable` | Improve typography, hierarchy, and readability |
+| `arrange` | `pbakaus/impeccable` | Improve layout, spacing, and visual rhythm |
+| `overdrive` | `pbakaus/impeccable` | Push interfaces into technically ambitious territory |
+
+Suggested mental model:
+
+- start with `frontend-design` for context and direction
+- use `teach-impeccable` when the project lacks design context
+- use `audit` or `critique` to diagnose before changing code
+- use focused follow-up skills like `animate`, `typeset`, `colorize`, or `harden`
+- finish with `polish`
 
 ### Claude-Specific (`claude/skills/`)
 
