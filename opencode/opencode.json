@@ -13,6 +13,10 @@
     "grep_app": {
       "type": "remote",
       "url": "https://mcp.grep.app"
+    },
+    "paper": {
+      "type": "remote",
+      "url": "http://127.0.0.1:29979/mcp"
     }
   }
 }
