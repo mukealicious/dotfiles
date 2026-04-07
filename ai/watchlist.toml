@@ -192,6 +192,15 @@ review = "semantic-diff"
 notes = "Upstream Impeccable skill source for ai/skills/polish/SKILL.md"
 
 [[sources]]
+id = "prompt-master"
+repo = "nidhinjs/prompt-master"
+path = ""
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Imported prompt-engineering skill source for ai/skills/prompt-master/ with Midjourney-focused utility"
+
+[[sources]]
 id = "quieter"
 repo = "pbakaus/impeccable"
 path = "source/skills/quieter"
