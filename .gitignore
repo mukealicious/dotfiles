@@ -18,6 +18,7 @@ bin/speedread
 .DS_Store
 *.log
 *.tmp
+test-results/
 
 # Stream Deck .app wrappers (built by install.sh via osacompile)
 streamdeck/apps/

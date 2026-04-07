@@ -81,7 +81,8 @@
   },
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true,
-    "playground@claude-plugins-official": true
+    "playground@claude-plugins-official": true,
+    "figma@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "anthropic-agent-skills": {
@@ -92,5 +93,12 @@
     }
   },
   "effortLevel": "high",
-  "mcpServers": {}
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
 }
