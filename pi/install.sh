@@ -63,8 +63,8 @@ setup_pi_profile() {
   fi
 }
 
-# Maintain a legacy/default profile for direct ~/.bun/bin/pi usage,
-# plus explicit work/personal profiles used by wrapper commands.
+# Shared backing store for global Pi resources (assembled AGENTS.md, agents/).
+# Not a user-facing profile — pi dispatches to work or personal.
 setup_pi_profile "$HOME/.pi/agent" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/agent"
 setup_pi_profile "$HOME/.pi/work" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/work"
 setup_pi_profile "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/settings.personal.json" "$HOME/.pi/personal"

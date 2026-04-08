@@ -28,7 +28,7 @@ Portable skills are authored once in `ai/skills/`. `ai/install.sh` refreshes the
 - `.claude/skills/` — repo-local Claude-style runtime symlink projection of portable skills plus Claude-only overlays
 - `~/.claude/skills/` — user-level Claude install
 - `~/.config/opencode/skill/` — user-level OpenCode install
-- Pi discovers `.ai-runtime/pi/skills/` via `pi/settings.json`
+- Pi discovers `.ai-runtime/pi/skills/` via per-profile `settings.json`
 
 Do not author shared skills in `.agents/skills/` or `.claude/skills/`; they are installer-managed runtime outputs.
 Do not author projected files under `.ai-runtime/`; they are rebuilt by `ai/install.sh`.
@@ -116,6 +116,8 @@ Current install targets:
 |---|---|
 | `~/.claude/CLAUDE.md` | `ai/instructions/base.md` + `claude/instructions/appendix.md` |
 | `~/.pi/agent/AGENTS.md` | `ai/instructions/base.md` + `pi/instructions/appendix.md` |
+| `~/.pi/work/AGENTS.md` | symlink → `~/.pi/agent/AGENTS.md` |
+| `~/.pi/personal/AGENTS.md` | symlink → `~/.pi/agent/AGENTS.md` |
 | `~/.config/opencode/AGENTS.md` | `ai/instructions/base.md` + `opencode/instructions/appendix.md` |
 | `~/.codex/instructions.md` | `ai/instructions/base.md` |
 | `~/.gemini/GEMINI.md` | `ai/instructions/base.md` |
@@ -316,9 +318,11 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 
 ### Pi Coding Agent (pi)
 - **Provider**: Anthropic (via @mariozechner/pi-coding-agent)
-- **Config**: `~/.pi/agent/settings.json` (symlinked from `pi/settings.json`)
-- **Instruction File**: `~/.pi/agent/AGENTS.md` (assembled from shared base + Pi appendix)
-- **Aliases**: `pi-print` (single-shot), `pi-json` (JSON output)
+- **Profiles**: `pi-work` and `pi-personal` — `pi` dispatches based on `PI_DEFAULT_PROFILE`
+- **Config**: `pi/settings.work.json` → `~/.pi/work/settings.json`, `pi/settings.personal.json` → `~/.pi/personal/settings.json`
+- **Instruction File**: `~/.pi/agent/AGENTS.md` (assembled), symlinked into both profiles
+- **Agents**: `~/.pi/agent/agents/` (assembled), symlinked into both profiles
+- **Aliases**: `pi-work-print`, `pi-personal-print`
 
 ## Instruction Composition
 

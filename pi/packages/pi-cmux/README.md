@@ -1,7 +1,7 @@
 # pi-cmux
 
 > Vendored local fork of [`sasha-computer/pi-cmux`](https://github.com/sasha-computer/pi-cmux).
-> Active in this dotfiles repo via `pi/settings.json` as `/Users/mikeywills/.dotfiles/pi/packages/pi-cmux`.
+> Active in this dotfiles repo via per-profile `settings.json` as `/Users/mikeywills/.dotfiles/pi/packages/pi-cmux`.
 
 A [Pi](https://github.com/mariozechner/pi-coding-agent) package that gives Pi a native bridge to [cmux](https://github.com/manaflow-ai/cmux) over cmux's socket API.
 
@@ -28,11 +28,11 @@ This repo vendors the package locally so it can be maintained alongside the rest
 That gives a few advantages:
 
 - **Faster iteration** — change code here without reinstalling a git package
-- **Repo-local maintenance** — package code lives next to `pi/settings.json`, `pi/install.sh`, and related docs
+- **Repo-local maintenance** — package code lives next to `pi/settings.*.json`, `pi/install.sh`, and related docs
 - **Small local patches** — carry repo-specific improvements while upstream evolves
 - **Easier debugging** — troubleshoot the exact package Pi is loading in this environment
 
-In this repo, the active package is the local path entry in `pi/settings.json`, not a separately installed `git:github.com/sasha-computer/pi-cmux` checkout.
+In this repo, the active package is the local path entry in each profile's `settings.json`, not a separately installed `git:github.com/sasha-computer/pi-cmux` checkout.
 
 ## Upstream vs this local fork
 
@@ -130,7 +130,7 @@ extensions/
 ## Development notes
 
 - No build step; Pi loads the TypeScript directly
-- This repo loads the package via local path from `pi/settings.json`
+- This repo loads the package via local path from each profile's `settings.json`
 - Use `/reload` inside Pi after changes
 - Deterministic browser smoke fixtures live under `fixtures/cmux-browser/`
 - For isolated development, you can also run:
