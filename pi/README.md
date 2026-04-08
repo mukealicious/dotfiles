@@ -73,7 +73,9 @@ Shell shims in `pi/intercepted-commands/` that print helpful error messages redi
 
 ## Skill Collisions
 
-Some shared skills (`commit`, `uv`, `web-browser`) collide with mitsupi's bundled copies. Pi prefers mitsupi's versions — this is expected. The canonical shared sources remain in `ai/skills/`, while Pi reads the provider-aware runtime projection in `.ai-runtime/pi/skills/`.
+Some shared skills (`commit`, `uv`, `web-browser`) intentionally collide with mitsupi's bundled copies. Pi prefers mitsupi's versions for those names.
+
+Two other mitsupi collisions (`frontend-design`, `librarian`) are intentionally filtered out in `pi/settings.json` so Pi loads this repo's projected Pi-specific variants from `.ai-runtime/pi/skills/` instead.
 
 ## Packages
 

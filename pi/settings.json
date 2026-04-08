@@ -20,7 +20,13 @@
     "/Users/mikeywills/.dotfiles/pi/packages/pi-cmux",
     "git:https://github.com/HazAT/pi-parallel",
     "npm:pi-interactive-shell",
-    "npm:mitsupi"
+    {
+      "source": "npm:mitsupi",
+      "skills": [
+        "-skills/frontend-design/SKILL.md",
+        "-skills/librarian/SKILL.md"
+      ]
+    }
   ],
   "lastChangelogVersion": "0.62.0"
 }
