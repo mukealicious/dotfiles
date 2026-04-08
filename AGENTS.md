@@ -28,6 +28,7 @@ Topic-centric dotfiles (Holman-style). Manages macOS dev environment.
 | Subagent definition | `Codex/agents/` (or `ai/agents/` for shared body) |
 | Installer ordering | `script/install` (`CORE_INSTALLERS`) |
 | Symlink/logging helpers | `lib/symlink.sh`, `lib/log.sh` |
+| Stream Deck layout/buttons | `streamdeck/layouts/`, `streamdeck/bin/sync-profile` |
 | Environment diagnostics | `bin/dot-doctor` |
 
 ## Development

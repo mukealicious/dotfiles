@@ -1,0 +1,300 @@
+#!/usr/bin/env python3
+"""Sync the repo-managed Stream Deck page into Elgato's live profile directory."""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import json
+import shutil
+import uuid
+from pathlib import Path
+
+STREAMDECK_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_LAYOUT = STREAMDECK_DIR / "layouts" / "workspaces.json"
+PROFILES_ROOT = Path.home() / "Library" / "Application Support" / "com.elgato.StreamDeck" / "ProfilesV3"
+PAGE_NAMESPACE = uuid.UUID("4fd2bbef-53b8-4cbf-98f3-db44d30df642")
+ACTION_NAMESPACE = uuid.UUID("1ae48da5-8578-4e98-b0c5-9b5fa4f93e3a")
+
+
+def load_json(path: Path) -> dict:
+    return json.loads(path.read_text())
+
+
+def save_json(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, separators=(",", ":")))
+
+
+def resolve_repo_path(raw: str) -> Path:
+    path = Path(raw).expanduser()
+    if not path.is_absolute():
+        path = STREAMDECK_DIR / raw
+    return path.resolve()
+
+
+def icon_filename(position: str, source: Path) -> str:
+    stem = source.stem.upper().replace("-", "_")
+    pos = position.replace(",", "_")
+    return f"DOTFILES_{pos}_{stem}{source.suffix.lower()}"
+
+
+def default_state(title: str, image_path: str) -> dict:
+    return {
+        "FontFamily": "",
+        "FontSize": 12,
+        "FontStyle": "",
+        "FontUnderline": False,
+        "Image": image_path,
+        "OutlineThickness": 2,
+        "ShowTitle": False,
+        "Title": title,
+        "TitleAlignment": "bottom",
+        "TitleColor": "#ffffff",
+    }
+
+
+def build_open_action(page_name: str, position: str, entry: dict) -> tuple[dict, tuple[Path, str]]:
+    target = resolve_repo_path(entry["path"])
+    icon_source = resolve_repo_path(entry["icon"])
+    image_name = icon_filename(position, icon_source)
+    image_path = f"Images/{image_name}"
+    action = {
+        "ActionID": str(uuid.uuid5(ACTION_NAMESPACE, f"{page_name}:{position}:{entry['title']}")),
+        "LinkedTitle": True,
+        "Name": "Open",
+        "Plugin": {
+            "Name": "Open",
+            "UUID": "com.elgato.streamdeck.system.open",
+            "Version": "1.0",
+        },
+        "Resources": None,
+        "Settings": {
+            "path": json.dumps(str(target)),
+        },
+        "State": 0,
+        "States": [default_state(entry["title"], image_path)],
+        "UUID": "com.elgato.streamdeck.system.open",
+    }
+    return action, (icon_source, image_name)
+
+
+def build_hotkey_action(page_name: str, position: str, entry: dict) -> tuple[dict, tuple[Path, str]]:
+    icon_source = resolve_repo_path(entry["icon"])
+    image_name = icon_filename(position, icon_source)
+    image_path = f"Images/{image_name}"
+    action = {
+        "ActionID": str(uuid.uuid5(ACTION_NAMESPACE, f"{page_name}:{position}:{entry['title']}")),
+        "LinkedTitle": True,
+        "Name": "Hotkey",
+        "Plugin": {
+            "Name": "Activate a Key Command",
+            "UUID": "com.elgato.streamdeck.system.hotkey",
+            "Version": "1.0",
+        },
+        "Resources": None,
+        "Settings": entry["settings"],
+        "State": 0,
+        "States": [default_state(entry["title"], image_path)],
+        "UUID": "com.elgato.streamdeck.system.hotkey",
+    }
+    return action, (icon_source, image_name)
+
+
+def build_actions(layout: dict) -> tuple[dict, list[tuple[Path, str]]]:
+    page_name = layout["pageName"]
+    actions = {}
+    images = []
+    for position, entry in sorted(layout["keys"].items()):
+        kind = entry["type"]
+        if kind == "open":
+            action, image = build_open_action(page_name, position, entry)
+        elif kind == "hotkey":
+            action, image = build_hotkey_action(page_name, position, entry)
+        else:
+            raise SystemExit(f"Unsupported key type: {kind}")
+        actions[position] = action
+        images.append(image)
+    return actions, images
+
+
+def page_manifest_path(profile_dir: Path, page_id: str) -> Path:
+    return profile_dir / "Profiles" / page_id.upper() / "manifest.json"
+
+
+def page_contains_targets(page: dict, target_paths: set[str]) -> bool:
+    for controller in page.get("Controllers", []):
+        actions = controller.get("Actions") or {}
+        for action in actions.values():
+            path = (action.get("Settings") or {}).get("path")
+            if path in target_paths:
+                return True
+    return False
+
+
+def choose_profile(profile_name: str | None, allow_single_fallback: bool) -> tuple[Path, dict]:
+    candidates = []
+    for profile_dir in sorted(PROFILES_ROOT.glob("*.sdProfile")):
+        manifest = profile_dir / "manifest.json"
+        if not manifest.exists():
+            continue
+        data = load_json(manifest)
+        candidates.append((profile_dir, data))
+
+    if not candidates:
+        raise SystemExit(f"No Stream Deck profiles found under {PROFILES_ROOT}")
+
+    if profile_name is not None:
+        named = [(path, data) for path, data in candidates if data.get("Name") == profile_name]
+        if len(named) == 1:
+            return named[0]
+        if len(named) > 1:
+            raise SystemExit(f"Multiple Stream Deck profiles named {profile_name!r}")
+
+        available = ", ".join(sorted({data.get('Name', '<unnamed>') for _, data in candidates}))
+        raise SystemExit(
+            f"Could not find Stream Deck profile {profile_name!r}. Available profiles: {available}"
+        )
+
+    if allow_single_fallback and len(candidates) == 1:
+        return candidates[0]
+
+    available = ", ".join(sorted({data.get('Name', '<unnamed>') for _, data in candidates}))
+    raise SystemExit(
+        "No Stream Deck profile name was provided and automatic selection is unsafe. "
+        f"Available profiles: {available}"
+    )
+
+
+def choose_page(profile_dir: Path, profile_manifest: dict, layout: dict) -> tuple[str, dict | None, bool]:
+    page_name = layout["pageName"]
+    target_paths = {
+        json.dumps(str(resolve_repo_path(entry["path"])))
+        for entry in layout["keys"].values()
+        if entry["type"] == "open"
+    }
+    page_ids = list(profile_manifest.get("Pages", {}).get("Pages", []))
+
+    page_manifests = {}
+    for page_id in page_ids:
+        manifest_path = page_manifest_path(profile_dir, page_id)
+        if manifest_path.exists():
+            page_manifests[page_id.lower()] = load_json(manifest_path)
+
+    for page_id, page in page_manifests.items():
+        if page.get("Name") == page_name:
+            return page_id, page, False
+
+    for page_id, page in page_manifests.items():
+        if page_contains_targets(page, target_paths):
+            return page_id, page, False
+
+    page_id = str(uuid.uuid5(PAGE_NAMESPACE, f"{profile_dir}:{page_name}")).lower()
+    return page_id, None, True
+
+
+def template_page(profile_dir: Path, profile_manifest: dict, current_page: dict | None) -> dict:
+    if current_page:
+        return copy.deepcopy(current_page)
+
+    current_id = (profile_manifest.get("Pages", {}) or {}).get("Current")
+    if current_id:
+        manifest_path = page_manifest_path(profile_dir, current_id)
+        if manifest_path.exists():
+            return copy.deepcopy(load_json(manifest_path))
+
+    for page_id in profile_manifest.get("Pages", {}).get("Pages", []):
+        manifest_path = page_manifest_path(profile_dir, page_id)
+        if manifest_path.exists():
+            return copy.deepcopy(load_json(manifest_path))
+
+    return {
+        "Controllers": [
+            {"Actions": None, "Type": "Keypad"},
+            {"Actions": None, "Type": "Neo"},
+        ],
+        "Icon": "",
+        "Name": "",
+    }
+
+
+def rewrite_page(page: dict, page_name: str, actions: dict) -> dict:
+    updated = copy.deepcopy(page)
+    controllers = updated.get("Controllers") or []
+
+    keypad_found = False
+    for controller in controllers:
+        if controller.get("Type") == "Keypad":
+            controller["Actions"] = actions
+            keypad_found = True
+            break
+
+    if not keypad_found:
+        controllers.insert(0, {"Actions": actions, "Type": "Keypad"})
+
+    updated["Controllers"] = controllers
+    updated["Name"] = page_name
+    updated["Icon"] = updated.get("Icon", "")
+    return updated
+
+
+def backup_file(path: Path) -> None:
+    if not path.exists():
+        return
+    backup = path.with_suffix(path.suffix + ".bak")
+    shutil.copy2(path, backup)
+
+
+def sync(layout_path: Path, profile_name_override: str | None = None) -> None:
+    layout = load_json(layout_path)
+    layout_profile_name = layout.get("profileName")
+    profile_name = profile_name_override or layout_profile_name
+    profile_dir, profile_manifest = choose_profile(
+        profile_name,
+        allow_single_fallback=profile_name is None,
+    )
+    page_id, current_page, created = choose_page(profile_dir, profile_manifest, layout)
+    actions, images = build_actions(layout)
+
+    new_page = rewrite_page(template_page(profile_dir, profile_manifest, current_page), layout["pageName"], actions)
+
+    manifest_path = page_manifest_path(profile_dir, page_id)
+    backup_file(manifest_path)
+    save_json(manifest_path, new_page)
+
+    images_dir = manifest_path.parent / "Images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+    for source, image_name in images:
+        if not source.exists():
+            raise SystemExit(f"Missing icon source: {source}")
+        shutil.copy2(source, images_dir / image_name)
+
+    root_manifest_path = profile_dir / "manifest.json"
+    updated_root = copy.deepcopy(profile_manifest)
+    pages = updated_root.setdefault("Pages", {})
+    page_ids = [page.lower() for page in pages.setdefault("Pages", [])]
+    if page_id not in page_ids:
+        page_ids.insert(0, page_id)
+    pages["Pages"] = page_ids
+    if created:
+        pages["Default"] = page_id
+    backup_file(root_manifest_path)
+    save_json(root_manifest_path, updated_root)
+
+    print(f"Synced Stream Deck page '{layout['pageName']}' into profile '{profile_name}'")
+    print(f"Profile: {profile_dir}")
+    print(f"Page: {page_id}")
+    print("Managed keys:", ", ".join(sorted(actions.keys())))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--layout", default=str(DEFAULT_LAYOUT), help="Path to repo-managed Stream Deck layout JSON")
+    parser.add_argument("--profile-name", help="Override the target Stream Deck profile name")
+    args = parser.parse_args()
+    sync(Path(args.layout).expanduser().resolve(), profile_name_override=args.profile_name)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

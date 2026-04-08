@@ -6,13 +6,14 @@
 # (it opens them in a text editor). So we wrap each script in a tiny .app
 # bundle using osacompile. The Stream Deck points to the .app instead.
 
-source "$(dirname "$0")/../lib/log.sh"
+. "$(dirname "$0")/../lib/log.sh"
 
 log_section "Stream Deck"
 
 TOPIC_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS_DIR="$TOPIC_DIR/scripts"
 APPS_DIR="$TOPIC_DIR/apps"
+SYNC_PROFILE_SCRIPT="$TOPIC_DIR/bin/sync-profile"
 
 mkdir -p "$APPS_DIR"
 
@@ -35,5 +36,14 @@ for script in "$SCRIPTS_DIR"/*.sh; do
   log_step "$script_name -> $app_name.app"
 done
 
-log_success "Stream Deck scripts and .app wrappers ready"
-log_hint "Point Stream Deck 'Open' actions to: $APPS_DIR/<Name>.app"
+if [ -x "$SYNC_PROFILE_SCRIPT" ]; then
+  if "$SYNC_PROFILE_SCRIPT"; then
+    log_step "synced repo-managed Stream Deck page"
+  else
+    log_warn "failed to sync repo-managed Stream Deck page"
+    exit 1
+  fi
+fi
+
+log_success "Stream Deck scripts, .app wrappers, and managed page ready"
+log_hint "Restart Stream Deck if the layout does not refresh immediately"

@@ -1,0 +1,124 @@
+{
+  "profileName": "Default Profile",
+  "pageName": "Dotfiles Workspaces",
+  "keys": {
+    "0,0": {
+      "type": "open",
+      "title": "Notes",
+      "icon": "icons/notes.png",
+      "path": "apps/WorkspaceNotes.app"
+    },
+    "0,1": {
+      "type": "open",
+      "title": "Conductor",
+      "icon": "icons/conductor.png",
+      "path": "apps/WorkspaceConductor.app"
+    },
+    "1,1": {
+      "type": "open",
+      "title": "Terminal",
+      "icon": "icons/terminal.png",
+      "path": "apps/WorkspaceWezterm.app"
+    },
+    "2,0": {
+      "type": "hotkey",
+      "title": "SW Mode",
+      "icon": "icons/sw-mode-labeled.png",
+      "settings": {
+        "Coalesce": true,
+        "Hotkeys": [
+          {
+            "KeyCmd": true,
+            "KeyCtrl": true,
+            "KeyModifiers": 10,
+            "KeyOption": false,
+            "KeyShift": false,
+            "NativeCode": 40,
+            "QTKeyCode": 75,
+            "VKeyCode": 40
+          },
+          {
+            "KeyCmd": false,
+            "KeyCtrl": false,
+            "KeyModifiers": 0,
+            "KeyOption": false,
+            "KeyShift": false,
+            "NativeCode": -1,
+            "QTKeyCode": 33554431,
+            "VKeyCode": -1
+          },
+          {
+            "KeyCmd": false,
+            "KeyCtrl": false,
+            "KeyModifiers": 0,
+            "KeyOption": false,
+            "KeyShift": false,
+            "NativeCode": -1,
+            "QTKeyCode": 33554431,
+            "VKeyCode": -1
+          },
+          {
+            "KeyCmd": false,
+            "KeyCtrl": false,
+            "KeyModifiers": 0,
+            "KeyOption": false,
+            "KeyShift": false,
+            "NativeCode": -1,
+            "QTKeyCode": 33554431,
+            "VKeyCode": -1
+          }
+        ]
+      }
+    },
+    "2,1": {
+      "type": "hotkey",
+      "title": "SW Rec",
+      "icon": "icons/sw-rec-labeled.png",
+      "settings": {
+        "Coalesce": true,
+        "Hotkeys": [
+          {
+            "KeyCmd": false,
+            "KeyCtrl": true,
+            "KeyModifiers": 2,
+            "KeyOption": false,
+            "KeyShift": false,
+            "NativeCode": 49,
+            "QTKeyCode": 32,
+            "VKeyCode": 49
+          },
+          {
+            "KeyCmd": false,
+            "KeyCtrl": false,
+            "KeyModifiers": 0,
+            "KeyOption": false,
+            "KeyShift": false,
+            "NativeCode": -1,
+            "QTKeyCode": 33554431,
+            "VKeyCode": -1
+          },
+          {
+            "KeyCmd": false,
+            "KeyCtrl": false,
+            "KeyModifiers": 0,
+            "KeyOption": false,
+            "KeyShift": false,
+            "NativeCode": -1,
+            "QTKeyCode": 33554431,
+            "VKeyCode": -1
+          },
+          {
+            "KeyCmd": false,
+            "KeyCtrl": false,
+            "KeyModifiers": 0,
+            "KeyOption": false,
+            "KeyShift": false,
+            "NativeCode": -1,
+            "QTKeyCode": 33554431,
+            "VKeyCode": -1
+          }
+        ]
+      }
+    }
+  }
+}
