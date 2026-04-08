@@ -1,23 +1,18 @@
 # Pi coding agent aliases
 
-if set -q OPENAI_OP_REF
-    function pi --wraps pi
-        set -l openai_api_key (op read "$OPENAI_OP_REF")
-
-        if test $status -ne 0
-            printf "pi: failed to load OPENAI_API_KEY from 1Password via OPENAI_OP_REF\n" >&2
-            return 1
-        end
-
-        if test -z "$openai_api_key"
-            printf "pi: OPENAI_OP_REF returned an empty secret\n" >&2
-            return 1
-        end
-
-        set -lx OPENAI_API_KEY "$openai_api_key"
-        command pi $argv
+function pi --wraps pi
+    switch "$PI_DEFAULT_PROFILE"
+        case personal
+            command pi-personal $argv
+        case '*'
+            command pi-work $argv
     end
 end
 
-alias pi-print 'pi --print'   # Single-shot mode
-alias pi-json 'pi --json'     # JSON output mode
+# Explicit auth-mode entry points.
+# Set PI_DEFAULT_PROFILE=personal or work in ~/.config/fish/local.fish.
+# - pi: dispatches to the machine's default profile
+# - pi-work: work mode via API key injection
+# - pi-personal: personal mode via OAuth/login-capable raw pi binary
+alias pi-work-print 'pi-work --print'
+alias pi-personal-print 'pi-personal --print'

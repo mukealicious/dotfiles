@@ -1,0 +1,32 @@
+{
+  "theme": "gruvbox-light",
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-5.4",
+  "defaultThinkingLevel": "medium",
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 16384,
+    "keepRecentTokens": 20000
+  },
+  "retry": {
+    "enabled": true,
+    "maxRetries": 5
+  },
+  "skills": [
+    "~/.dotfiles/.ai-runtime/pi/skills"
+  ],
+  "packages": [
+    "git:https://github.com/HazAT/pi-interactive-subagents",
+    "/Users/mikeywills/.dotfiles/pi/packages/pi-cmux",
+    "git:https://github.com/HazAT/pi-parallel",
+    "npm:pi-interactive-shell",
+    {
+      "source": "npm:mitsupi",
+      "skills": [
+        "-skills/frontend-design/SKILL.md",
+        "-skills/librarian/SKILL.md"
+      ]
+    }
+  ],
+  "lastChangelogVersion": "0.64.0"
+}

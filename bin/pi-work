@@ -1,0 +1,40 @@
+#!/bin/sh
+
+set -e
+
+PI_BIN="$HOME/.bun/bin/pi"
+
+export PI_CODING_AGENT_DIR="$HOME/.pi/work"
+
+if [ ! -x "$PI_BIN" ]; then
+  echo "pi-work: expected binary at $PI_BIN" >&2
+  exit 1
+fi
+
+if [ -n "${OPENAI_API_KEY:-}" ]; then
+  export OPENAI_API_KEY
+  exec "$PI_BIN" "$@"
+fi
+
+if [ -z "${OPENAI_OP_REF:-}" ]; then
+  echo "pi-work: set OPENAI_API_KEY or OPENAI_OP_REF for work mode" >&2
+  exit 1
+fi
+
+if ! command -v op >/dev/null 2>&1; then
+  echo "pi-work: 1Password CLI 'op' is not installed" >&2
+  exit 1
+fi
+
+OPENAI_API_KEY="$(op read "$OPENAI_OP_REF")" || {
+  echo "pi-work: failed to load OPENAI_API_KEY from 1Password via OPENAI_OP_REF" >&2
+  exit 1
+}
+
+if [ -z "$OPENAI_API_KEY" ]; then
+  echo "pi-work: OPENAI_OP_REF returned an empty secret" >&2
+  exit 1
+fi
+
+export OPENAI_API_KEY
+exec "$PI_BIN" "$@"

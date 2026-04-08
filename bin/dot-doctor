@@ -249,6 +249,8 @@ check_managed_file() {
 
 check_managed_file "$HOME/.claude/CLAUDE.md" "~/.claude/CLAUDE.md"
 check_managed_file "$HOME/.pi/agent/AGENTS.md" "~/.pi/agent/AGENTS.md"
+check_symlink "$HOME/.pi/agent/AGENTS.md" "$HOME/.pi/work/AGENTS.md" "~/.pi/work/AGENTS.md"
+check_symlink "$HOME/.pi/agent/AGENTS.md" "$HOME/.pi/personal/AGENTS.md" "~/.pi/personal/AGENTS.md"
 check_managed_file "$HOME/.config/opencode/AGENTS.md" "~/.config/opencode/AGENTS.md"
 check_managed_file "$HOME/.gemini/GEMINI.md" "~/.gemini/GEMINI.md"
 check_managed_file "$HOME/.codex/instructions.md" "~/.codex/instructions.md"
@@ -363,6 +365,9 @@ else
     info "Fix: dot"
   fi
 fi
+
+check_symlink "$HOME/.pi/agent/agents" "$HOME/.pi/work/agents" "~/.pi/work/agents"
+check_symlink "$HOME/.pi/agent/agents" "$HOME/.pi/personal/agents" "~/.pi/personal/agents"
 
 # Symlinked agent files
 if [ -d "$CLAUDE_AGENTS_SRC" ]; then

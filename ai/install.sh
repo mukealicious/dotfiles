@@ -374,9 +374,12 @@ assemble_instruction_file "$HOME/.gemini/GEMINI.md" "$HOME/.gemini/GEMINI.md" ""
 mkdir -p "$HOME/.codex"
 assemble_instruction_file "$HOME/.codex/instructions.md" "$HOME/.codex/instructions.md" ""
 
-# Pi: AGENTS.md in ~/.pi/agent/
-mkdir -p "$HOME/.pi/agent"
+# Pi: shared AGENTS.md projected once to ~/.pi/agent/, then shared into the
+# active work/personal profile roots.
+mkdir -p "$HOME/.pi/agent" "$HOME/.pi/work" "$HOME/.pi/personal"
 assemble_instruction_file "$HOME/.pi/agent/AGENTS.md" "$HOME/.pi/agent/AGENTS.md" "$PI_INSTRUCTIONS_APPENDIX"
+ensure_symlink "$HOME/.pi/agent/AGENTS.md" "$HOME/.pi/work/AGENTS.md" "$HOME/.pi/work/AGENTS.md"
+ensure_symlink "$HOME/.pi/agent/AGENTS.md" "$HOME/.pi/personal/AGENTS.md" "$HOME/.pi/personal/AGENTS.md"
 
 #
 # Skills and Agents (single source of truth for all AI tools)
@@ -497,6 +500,11 @@ for agent_file in "$PI_AGENTS_SRC"/*.md; do
   agent_name=$(basename "$agent_file")
   ensure_symlink "$agent_file" "$PI_AGENT_DIR/$agent_name" "$PI_AGENT_DIR/$agent_name"
 done
+
+# Share the same global Pi agents into both active profile roots.
+mkdir -p "$HOME/.pi/work" "$HOME/.pi/personal"
+ensure_symlink "$PI_AGENT_DIR" "$HOME/.pi/work/agents" "$HOME/.pi/work/agents"
+ensure_symlink "$PI_AGENT_DIR" "$HOME/.pi/personal/agents" "$HOME/.pi/personal/agents"
 
 # OpenCode skills
 log_info "Setting up OpenCode skills..."
