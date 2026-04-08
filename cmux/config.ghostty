@@ -1,6 +1,0 @@
-font-family = "Berkeley Mono"
-font-size = 14
-
-# cmux themes start
-theme = light:Gruvbox Light,dark:Gruvbox Light
-# cmux themes end

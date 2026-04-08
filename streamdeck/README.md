@@ -25,7 +25,6 @@ The `install.sh` rebuilds all `.app` wrappers from scripts automatically.
 |----------|-------|--------|-------------|
 | 0,0 | Notes | `workspace-notes.sh` — VSCode + moya-glava | N |
 | 0,1 | Conductor | `workspace-conductor.sh` | C |
-| 1,0 | Cmux | `workspace-cmux.sh` | C |
 | 1,1 | Terminal | `workspace-wezterm.sh` | T |
 | 2,0 | SW Mode | hotkey (Ctrl+Cmd+K) | — |
 | 2,1 | SW Rec | hotkey (Ctrl+Space) | — |

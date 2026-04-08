@@ -61,7 +61,6 @@ brew "b2-tools"                  # Backblaze B2 command-line tool
 # Casks
 cask "codex"                     # OpenAI's coding agent
 cask "claude-code"               # Claude AI coding assistant CLI
-cask "cmux"                      # Ghostty-based terminal for AI coding agents
 cask "ollama-app"                # Local LLM runner for QMD embeddings
 cask "wezterm"                   # GPU-accelerated terminal emulator
 cask "1password-cli"             # 1Password CLI for secrets management

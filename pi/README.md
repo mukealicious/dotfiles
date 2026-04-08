@@ -39,8 +39,6 @@ pi/
 ├── aliases.fish            # Shell aliases / profile dispatch
 ├── extensions/             # Custom TypeScript extensions
 │   └── notify.ts          # Desktop notification on agent completion
-├── packages/               # Vendored local Pi packages
-│   └── pi-cmux/            # Local fork of the cmux integration
 ├── intercepted-commands/   # Shell shims for Python tooling
 │   ├── pip                # → uv add / uv run --with
 │   ├── pip3               # → uv add / uv run --with
@@ -77,7 +75,7 @@ Current defaults:
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` (no user-level symlinking needed — Pi supports path-based discovery)
 - **Instructions**: `ai/install.sh` assembles one shared Pi instruction file, then symlinks it into both profiles
 - **Agents**: `ai/install.sh` assembles one shared Pi agent dir, then symlinks it into both profiles
-- **Packages**: local `pi-cmux` fork plus pi-subagents, pi-parallel, pi-interactive-shell, mitsupi
+- **Packages**: pi-parallel and mitsupi
 
 In normal use there is no standalone user-facing top-level Pi profile: `pi` dispatches to
 either `pi-work` or `pi-personal`. The `~/.pi/agent/` tree is kept as the shared backing
@@ -113,15 +111,9 @@ Two other mitsupi collisions (`frontend-design`, `librarian`) are intentionally 
 
 ## Packages
 
-Local package loaded from settings:
-
-- `pi/packages/pi-cmux` — vendored local fork of `github.com/sasha-computer/pi-cmux`
-
 Third-party packages installed via `pi install`:
 
 | Package | Provides |
 |---|---|
-| `pi-subagents` | Subagent spawning |
 | `pi-parallel` | Parallel web research tools (depends on standalone `parallel-cli`) |
-| `pi-interactive-shell` | Interactive shell support |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |

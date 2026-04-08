@@ -4,7 +4,6 @@
 #
 # Sets up Pi profile directories and symlinks per-profile settings.
 # Installs third-party packages via `pi install`.
-# Vendored local packages are loaded directly from profile settings files.
 #
 # Usage:
 #   ./install.sh          # Normal install
@@ -96,12 +95,8 @@ fi
 
 # Install third-party packages
 # Packages are fully qualified (git: or npm: prefix).
-# The local pi-cmux fork is loaded from /Users/mikeywills/.dotfiles/pi/packages/pi-cmux
-# via settings.json, so it is not installed from git here.
 PACKAGES="
-  git:https://github.com/HazAT/pi-interactive-subagents
   git:https://github.com/HazAT/pi-parallel
-  npm:pi-interactive-shell
   npm:mitsupi
 "
 

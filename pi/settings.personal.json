@@ -16,10 +16,7 @@
     "~/.dotfiles/.ai-runtime/pi/skills"
   ],
   "packages": [
-    "git:https://github.com/HazAT/pi-interactive-subagents",
-    "/Users/mikeywills/.dotfiles/pi/packages/pi-cmux",
     "git:https://github.com/HazAT/pi-parallel",
-    "npm:pi-interactive-shell",
     {
       "source": "npm:mitsupi",
       "skills": [
