@@ -75,7 +75,7 @@ Current defaults:
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` (no user-level symlinking needed — Pi supports path-based discovery)
 - **Instructions**: `ai/install.sh` assembles one shared Pi instruction file, then symlinks it into both profiles
 - **Agents**: `ai/install.sh` assembles one shared Pi agent dir, then symlinks it into both profiles
-- **Packages**: pi-parallel and mitsupi
+- **Packages**: pi-parallel, vendored pi-openai-fast, and mitsupi
 
 In normal use there is no standalone user-facing top-level Pi profile: `pi` dispatches to
 either `pi-work` or `pi-personal`. The `~/.pi/agent/` tree is kept as the shared backing
@@ -111,9 +111,10 @@ Two other mitsupi collisions (`frontend-design`, `librarian`) are intentionally 
 
 ## Packages
 
-Third-party packages installed via `pi install`:
+Pi packages loaded by this setup:
 
 | Package | Provides |
 |---|---|
 | `pi-parallel` | Parallel web research tools (depends on standalone `parallel-cli`) |
+| `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4 models |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |

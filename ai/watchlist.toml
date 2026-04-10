@@ -235,3 +235,12 @@ branch = "main"
 kind = "repo"
 review = "pattern-scan"
 notes = "General upstream inspiration source for portable skill patterns"
+
+[[sources]]
+id = "pi-openai-fast"
+repo = "ben-vargas/pi-packages"
+path = "packages/pi-openai-fast"
+branch = "main"
+kind = "package"
+review = "semantic-diff"
+notes = "Upstream source for locally vendored pi/packages/pi-openai-fast"

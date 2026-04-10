@@ -3,7 +3,7 @@
 # Pi Coding Agent Configuration
 #
 # Sets up Pi profile directories and symlinks per-profile settings.
-# Installs third-party packages via `pi install`.
+# Installs Pi packages via `pi install`.
 #
 # Usage:
 #   ./install.sh          # Normal install
@@ -93,10 +93,12 @@ else
   fi
 fi
 
-# Install third-party packages
-# Packages are fully qualified (git: or npm: prefix).
+# Install Pi packages.
+# Remote packages use fully qualified sources (git: or npm: prefix).
+# Local vendored packages are installed from repo paths for tighter supply-chain control.
 PACKAGES="
   git:https://github.com/HazAT/pi-parallel
+  $DOTFILES_ROOT/pi/packages/pi-openai-fast
   npm:mitsupi
 "
 
