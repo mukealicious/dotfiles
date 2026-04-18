@@ -294,7 +294,7 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 
 ### Claude CLI (claude)
 - **Provider**: Anthropic
-- **Usage**: Primary AI assistant for complex tasks
+- **Usage**: Anthropic-native coding assistant when Claude-specific hooks, subagents, or MCP workflows are the best fit
 - **Aliases**: cl, clc, clr, yolo, ask
 - **Instruction File**: `~/.claude/CLAUDE.md` (assembled from shared base + Claude appendix)
 - **Project Skills**: `.claude/skills/` (installer-managed runtime projection)
@@ -302,6 +302,7 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 
 ### Codex CLI (codex)
 - **Provider**: OpenAI
+- **Usage**: OpenAI-native coding assistant with projected shared skills and model-neutral repo guidance
 - **Instruction File**: `~/.codex/instructions.md` (assembled from shared base)
 - **Project Skills**: `.agents/skills/` (installer-managed runtime projection)
 

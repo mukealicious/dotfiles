@@ -73,7 +73,7 @@ claude/
 │   ├── safety-rm.sh        # PreToolUse: rewrites rm to trash
 │   └── notify-idle.sh      # Stop/Notification: sound + macOS alert
 ├── agents/                 # Subagents (specialized AI advisors)
-│   ├── oracle.md           # Legacy combined agent (Opus)
+│   ├── oracle.md           # Legacy combined agent
 │   ├── librarian.md        # Legacy combined agent
 │   └── review.frontmatter  # Shared-body exemplar metadata
 └── skills/                 # Claude-only overlays (currently empty; shared skills projected here by ai/install.sh)
@@ -81,13 +81,13 @@ claude/
 
 ## Subagents
 
-Specialized AI advisors invoked via natural language:
+Specialized AI advisors invoked via natural language. The role names below are the canonical capability labels; Claude-specific model pins live in the agent frontmatter, not in the shared architecture:
 
-| Agent | Model | Purpose |
-|-------|-------|---------|
-| **oracle** | Opus | Senior advisor for architecture, planning, complex debugging |
-| **librarian** | Sonnet | Multi-repo explorer for external libraries |
-| **review** | Sonnet | Code reviewer focused on bugs, security |
+| Agent | Purpose |
+|-------|---------|
+| **oracle** | Senior advisor for architecture, planning, complex debugging |
+| **librarian** | Multi-repo explorer for external libraries |
+| **review** | Code reviewer focused on bugs, security |
 
 **Usage:**
 ```

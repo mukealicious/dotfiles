@@ -1,5 +1,17 @@
 # Tool Routing
 
+## Core Rule
+
+Separate **discovery** from **investigation**.
+
+- **Discovery** = identify the right package/repo or scan the ecosystem for candidate implementations.
+- **Investigation** = once a concrete target is known, fetch source and answer from repo files.
+
+Current repo mapping:
+
+- **GitHub-wide discovery** -> `grep_app`
+- **Source fetch / local inspection** -> `opensrc`
+
 ## Decision Flowchart
 
 ```mermaid
@@ -10,100 +22,116 @@ graph TD
     T -->|Explore/Architecture| E[EXPLORE]
     T -->|Compare| C[COMPARE]
 
-    U --> U1{Known library?}
-    U1 -->|Yes| U2[context7.resolve-library-id]
-    U2 --> U3[context7.query-docs]
-    U3 --> U4{Need source?}
-    U4 -->|Yes| U5[opensrc.fetch -> read]
-    U1 -->|No| U6[grep_app -> opensrc.fetch]
+    U --> U1{Concrete target known?}
+    U1 -->|Yes| U2[Fetch source context]
+    U2 --> U3[Read README / package metadata / entrypoints]
+    U3 --> U4[Trace implementation]
+    U4 --> U5[Answer with evidence]
+    U1 -->|No| U6[GitHub-wide discovery]
+    U6 --> U7[Choose target]
+    U7 --> U2
 
     F --> F1{Specific repo?}
-    F1 -->|Yes| F2[opensrc.fetch -> grep -> read]
-    F1 -->|No| F3[grep_app broad search]
-    F3 --> F4[opensrc.fetch interesting repos]
+    F1 -->|Yes| F2[Fetch source -> grep/read matches]
+    F1 -->|No| F3[GitHub-wide search]
+    F3 --> F4[Choose promising repos]
+    F4 --> F5[Fetch source -> compare]
 
-    E --> E1[opensrc.fetch]
-    E1 --> E2[opensrc.files]
-    E2 --> E3[Read entry points]
+    E --> E1[Fetch source]
+    E1 --> E2[Inspect tree and entrypoints]
+    E2 --> E3[Read key subsystems]
     E3 --> E4[Create diagram]
 
-    C --> C1["opensrc.fetch([X, Y])"]
-    C1 --> C2[grep same pattern]
-    C2 --> C3[Read comparable files]
-    C3 --> C4[Synthesize comparison]
+    C --> C1[Fetch all targets]
+    C1 --> C2[Read comparable files]
+    C2 --> C3{Need broader examples?}
+    C3 -->|Yes| C4[GitHub-wide discovery]
+    C3 -->|No| C5[Synthesize comparison]
+    C4 --> C5
 ```
 
 ## Query Type Detection
 
 | Keywords | Query Type | Start With |
 |----------|------------|------------|
-| "how does", "why does", "explain", "purpose of" | UNDERSTAND | context7 |
-| "find", "where is", "implementations of", "examples of" | FIND | grep_app |
-| "explore", "walk through", "architecture", "structure" | EXPLORE | opensrc |
-| "compare", "vs", "difference between" | COMPARE | opensrc |
+| "how does", "why does", "explain", "purpose of" | UNDERSTAND | Source fetch if target is known; discovery if not |
+| "find", "where is", "implementations of", "examples of" | FIND | GitHub-wide discovery unless repo is already known |
+| "explore", "walk through", "architecture", "structure" | EXPLORE | Source fetch |
+| "compare", "vs", "difference between" | COMPARE | Source fetch |
 
 ## UNDERSTAND Queries
 
 ```
-Known library? -> context7.resolve-library-id -> context7.query-docs
-                 \- Need source? -> opensrc.fetch -> read
+Concrete target known? -> fetch source -> read README/package metadata/entrypoints
+                        -> trace implementation -> answer with evidence
 
-Unknown?      -> grep_app search -> opensrc.fetch top result -> read
+Target unclear?       -> GitHub-wide discovery -> choose target -> fetch source -> investigate
 ```
 
-**When to transition context7 -> opensrc:**
-- Need implementation details (not just API docs)
-- Question about internals/private methods
-- Tracing code flow through library
+**First source-backed stops for quick answers:**
+- README
+- package metadata / exports
+- examples
+- tests
+
+Do not route known-library questions to a generic docs layer first.
 
 ## FIND Queries
 
 ```
-Specific repo? -> opensrc.fetch -> opensrc.grep -> read matches
+Specific repo? -> fetch source -> grep/read matches
 
-Broad search?  -> grep_app -> analyze -> opensrc.fetch interesting repos
+Broad search?  -> GitHub-wide discovery -> shortlist repos -> fetch source -> compare real implementations
 ```
 
-**grep_app query tips:**
-- Use literal code patterns: `useState(` not "react hooks"
-- Filter by language: `language: ["TypeScript"]`
-- Narrow by repo: `repo: "vercel/"` for org
+**GitHub-wide discovery tips:**
+- Search for literal code patterns when possible
+- Add language filters when they narrow the field meaningfully
+- Fetch shortlisted repos before making strong implementation claims
 
 ## EXPLORE Queries
 
 ```
-1. opensrc.fetch(target)
-2. opensrc.files -> understand structure
-3. Identify entry points: README, package.json, src/index.*
-4. Read entry -> internals
+1. Fetch source
+2. Inspect tree to understand structure
+3. Identify entry points: README, package metadata, src/index.*, exports
+4. Read entry points -> internals
 5. Create architecture diagram
 ```
 
 ## COMPARE Queries
 
 ```
-1. opensrc.fetch([X, Y])
-2. Extract source.name from each result
-3. opensrc.grep same pattern in both
-4. Read comparable files
-5. Synthesize -> comparison table
+1. Fetch all target libraries/repos
+2. Read comparable entrypoints and implementation files
+3. Use broader discovery only if extra examples materially improve the answer
+4. Synthesize -> comparison table with citations
 ```
 
-## Tool Capabilities
+## Evidence Standard
 
-| Tool | Best For | Not For |
-|------|----------|---------|
-| **grep_app** | Broad search, unknown scope, finding repos | Semantic queries |
-| **context7** | Library APIs, best practices, common patterns | Library internals |
-| **opensrc** | Deep exploration, reading internals, tracing flow | Initial discovery |
+For investigative answers, include when available:
+
+- package/repo identity
+- version or ref
+- cited files for key claims
+- code snippets for non-obvious behavior
+- explicit provenance for README/examples/tests vs implementation
+
+## Capability Mapping
+
+| Capability | Best For | Not For |
+|------------|----------|---------|
+| **GitHub-wide discovery** | Broad search, unknown scope, finding candidate repos | Final implementation claims without source follow-up |
+| **Source fetch / local inspection** | Deep exploration, reading internals, tracing flow | Initial ecosystem discovery when the target is unclear |
 
 ## Anti-patterns
 
 | Don't | Do |
 |-------|-----|
-| grep_app for known library docs | context7 first |
-| opensrc.fetch before knowing target | grep_app to discover |
-| Multiple small reads | opensrc.readMany batch |
-| Describe without linking | Link every file ref |
-| Text for complex relationships | Mermaid diagram |
-| Use tool names in responses | "I'll search..." not "I'll use opensrc" |
+| Start with docs-first lookup for a known concrete target | Fetch source and read repo materials first |
+| Fetch source before you know what repo/package you need | Use GitHub-wide discovery to narrow candidates |
+| Make architectural claims from search results alone | Verify in fetched source |
+| Describe evidence without linking files | Link every file ref |
+| Use text only for complex relationships | Add a Mermaid diagram |
+| Use tool names in user-facing responses | Say "I'll inspect the source" or "I'll search for implementations" |

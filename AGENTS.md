@@ -63,17 +63,26 @@ Codex config lives in `Codex/` and is symlinked to `~/.Codex/`. See `Codex/READM
 - `Codex/agents/` - subagents; `review` is split-source (`ai/agents/review.body.md` + `Codex/agents/review.frontmatter`), while `oracle` and `librarian` remain combined
 - `Codex/hooks/` - PreToolUse and lifecycle hooks
 
-**Subagents** — invoke via natural language (e.g., "use the oracle to review this"):
+**Subagents** — invoke via natural language (e.g., "use the oracle to review this"). Treat the agent names as stable capability labels; any model selection is a harness-specific implementation detail, not the canonical identity of the agent:
 
 | Agent | When to invoke | Can write files? |
 |-------|----------------|------------------|
-| **oracle** (Opus) | Architecture decisions, complex debugging, planning, second opinions. | No (read-only) |
-| **librarian** (Sonnet) | Understanding 3rd-party libraries, exploring remote repositories, tracing code flow. | No (read-only) |
-| **review** (Sonnet) | Code review after changes. Focused on bugs, security, and structural fit. | No (read-only) |
+| **oracle** | Architecture decisions, complex debugging, planning, second opinions. | No (read-only) |
+| **librarian** | Understanding 3rd-party libraries, exploring remote repositories, tracing code flow. | No (read-only) |
+| **review** | Code review after changes. Focused on bugs, security, and structural fit. | No (read-only) |
 
 **Important: subagent routing for implementation work.** Oracle, librarian, and review are **read-only advisors** — they cannot Edit or Write files. For parallelized implementation tasks (writing code, editing files, running builds), use `subagent_type: "general-purpose"` which has full tool access. Never route implementation work to oracle/librarian/review — it will fail.
 
-Oracle and librarian are the primary users of `context7` and `grep_app` MCP tools for documentation lookup and GitHub-wide code search. These are configured at user scope in `~/.Codex.json` (globally available — per-agent MCP scoping is not yet supported by Codex).
+Oracle and librarian should separate **discovery** from **investigation** for external-library questions: use GitHub-wide code search to find targets, then inspect fetched source for implementation details. In this repo today, discovery maps to `grep_app`, while source-backed investigation should use the shared `opensrc` workflow. `grep_app` is configured at user scope in `~/.Codex.json` (globally available — per-agent MCP scoping is not yet supported by Codex).
+
+**Evidence standard for external investigations:** include repo/package identity, version or ref when known, file citations for key claims, and note whether a conclusion comes from README/examples/tests or core implementation.
+
+**Migration cleanup:** if `context7` was previously installed locally, remove it once with:
+
+```bash
+claude mcp remove --scope user context7
+codex mcp remove context7
+```
 
 **Safety Hook**: PreToolUse hook intercepts `rm -rf/-r/-f` commands and rewrites to `trash` (macOS built-in). User confirms the modified command.
 
@@ -81,7 +90,6 @@ Oracle and librarian are the primary users of `context7` and `grep_app` MCP tool
 
 **MCP Servers**:
 - Linear - project management via OAuth (auth on first use)
-- context7 - library documentation lookup (user scope, globally available)
 - grep_app - GitHub-wide code search (user scope, globally available)
 
 ## Pi Coding Agent
