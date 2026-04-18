@@ -34,11 +34,13 @@ ensure_symlink "$DOTFILES_ROOT/claude/settings.json" "$HOME/.claude/settings.jso
 if command -v claude >/dev/null 2>&1; then
   log_info "Setting up Claude Code plugins..."
 
+  # Migration cleanup for legacy / unused MCPs
+  claude mcp remove --scope user context7 2>/dev/null || true
+
   # Ensure user-scope MCP servers (idempotent - won't overwrite existing)
-  claude mcp add --transport stdio --scope user context7 -- npx -y @upstash/context7-mcp@latest 2>/dev/null || true
   claude mcp add --transport http --scope user grep_app https://mcp.grep.app 2>/dev/null || true
-  claude mcp add --transport http --scope user paper http://127.0.0.1:29979/mcp 2>/dev/null || true
   claude mcp add --transport http --scope user figma https://mcp.figma.com/mcp 2>/dev/null || true
+  claude mcp add --transport http --scope user cloudflare https://mcp.cloudflare.com/mcp 2>/dev/null || true
 
   # Add marketplaces (idempotent - won't duplicate)
   claude plugin marketplace add anthropics/skills 2>/dev/null || true

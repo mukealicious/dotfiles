@@ -162,6 +162,7 @@ Also includes an imported frontend design pack:
 Plus plugins: `document-skills` (PDF/XLSX/DOCX/PPTX), `playground` (interactive HTML).
 
 See [ai/README.md](ai/README.md) for the full AI capability inventory and projection model.
+See [docs/mcp-policy.md](docs/mcp-policy.md) for harness-specific MCP ownership.
 
 ## Shell Features
 
