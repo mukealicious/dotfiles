@@ -9,6 +9,8 @@
  * global `~/.pi/agent/extensions/pi-openai-fast.json`.
  *
  * `supportedModels` controls which `provider/model-id` pairs receive the flag.
+ * Legacy generated configs are upgraded when their supported model list still
+ * matches a previous default.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -20,7 +22,15 @@ const FAST_FLAG = "fast";
 const FAST_CONFIG_BASENAME = "pi-openai-fast.json";
 const FAST_COMMAND_ARGS = ["on", "off", "status"] as const;
 const FAST_SERVICE_TIER = "priority";
-const DEFAULT_SUPPORTED_MODEL_KEYS = ["openai/gpt-5.4", "openai-codex/gpt-5.4"] as const;
+const DEFAULT_SUPPORTED_MODEL_KEYS = [
+	"openai/gpt-5.4",
+	"openai-codex/gpt-5.4",
+	"openai/gpt-5.5",
+	"openai-codex/gpt-5.5",
+] as const;
+const LEGACY_DEFAULT_SUPPORTED_MODEL_KEY_SETS = [
+	["openai/gpt-5.4", "openai-codex/gpt-5.4"],
+] as const;
 
 interface FastModeState {
 	active: boolean;
@@ -132,6 +142,17 @@ function parseSupportedModels(value: unknown): FastSupportedModel[] | undefined 
 	return models;
 }
 
+function modelKeysEqual(actual: readonly string[] | undefined, expected: readonly string[]): boolean {
+	if (!actual || actual.length !== expected.length) {
+		return false;
+	}
+	return actual.every((value, index) => value === expected[index]);
+}
+
+function isLegacyDefaultSupportedModels(supportedModels: readonly string[] | undefined): boolean {
+	return LEGACY_DEFAULT_SUPPORTED_MODEL_KEY_SETS.some((legacyKeys) => modelKeysEqual(supportedModels, legacyKeys));
+}
+
 function readConfigFile(filePath: string): FastConfigFile | null {
 	if (!existsSync(filePath)) {
 		return null;
@@ -178,12 +199,24 @@ function ensureDefaultConfigFile(projectConfigPath: string, globalConfigPath: st
 	writeConfigFile(globalConfigPath, DEFAULT_CONFIG_FILE);
 }
 
+function upgradeLegacyDefaultConfig(filePath: string, config: FastConfigFile | null): FastConfigFile | null {
+	if (!config || !isLegacyDefaultSupportedModels(config.supportedModels)) {
+		return config;
+	}
+	const upgradedConfig: FastConfigFile = {
+		...config,
+		supportedModels: [...DEFAULT_SUPPORTED_MODEL_KEYS],
+	};
+	writeConfigFile(filePath, upgradedConfig);
+	return upgradedConfig;
+}
+
 function resolveFastConfig(cwd: string, homeDir: string = homedir()): ResolvedFastConfig {
 	const { projectConfigPath, globalConfigPath } = getConfigPaths(cwd, homeDir);
 	ensureDefaultConfigFile(projectConfigPath, globalConfigPath);
 
-	const globalConfig = readConfigFile(globalConfigPath) ?? {};
-	const projectConfig = readConfigFile(projectConfigPath) ?? {};
+	const globalConfig = upgradeLegacyDefaultConfig(globalConfigPath, readConfigFile(globalConfigPath)) ?? {};
+	const projectConfig = upgradeLegacyDefaultConfig(projectConfigPath, readConfigFile(projectConfigPath)) ?? {};
 	const selectedConfigPath = existsSync(projectConfigPath) ? projectConfigPath : globalConfigPath;
 	const merged = { ...globalConfig, ...projectConfig };
 	const supportedModels =

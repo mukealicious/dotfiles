@@ -1,7 +1,7 @@
 {
   "name": "@benvargas/pi-openai-fast",
   "version": "1.0.2",
-  "description": "OpenAI fast mode toggle for pi - Enables priority service tier on supported GPT-5.4 models",
+  "description": "OpenAI fast mode toggle for pi - Enables priority service tier on supported GPT-5.x models",
   "keywords": [
     "pi",
     "pi-package",
@@ -10,6 +10,7 @@
     "openai",
     "codex",
     "gpt-5.4",
+    "gpt-5.5",
     "fast",
     "priority",
     "service-tier"

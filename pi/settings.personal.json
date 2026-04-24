@@ -1,7 +1,7 @@
 {
   "theme": "gruvbox-light",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.4",
+  "defaultModel": "gpt-5.5",
   "defaultThinkingLevel": "high",
   "compaction": {
     "enabled": true,
@@ -26,6 +26,6 @@
       ]
     }
   ],
-  "lastChangelogVersion": "0.66.1",
+  "lastChangelogVersion": "0.70.0",
   "hideThinkingBlock": false
 }

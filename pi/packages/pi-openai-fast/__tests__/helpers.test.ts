@@ -28,7 +28,7 @@ function createTempConfigPaths(): { cwd: string; homeDir: string; cleanup: () =>
 
 describe("pi-openai-fast helpers", () => {
 	it("parses supported model keys and recognizes supported fast models", () => {
-		const supportedModels = _test.parseSupportedModels(["openai/gpt-5.4", "openai-codex/gpt-5.4"]) ?? [];
+		const supportedModels = _test.parseSupportedModels(_test.DEFAULT_SUPPORTED_MODEL_KEYS) ?? [];
 		expect(_test.parseSupportedModelKey("openai/gpt-5.4")).toEqual({ provider: "openai", id: "gpt-5.4" });
 		expect(_test.parseSupportedModelKey("invalid-model")).toBeUndefined();
 		expect(
@@ -37,6 +37,12 @@ describe("pi-openai-fast helpers", () => {
 		expect(
 			_test.isFastSupportedModel(
 				{ provider: "openai-codex", id: "gpt-5.4" } as ExtensionContext["model"],
+				supportedModels,
+			),
+		).toBe(true);
+		expect(
+			_test.isFastSupportedModel(
+				{ provider: "openai-codex", id: "gpt-5.5" } as ExtensionContext["model"],
 				supportedModels,
 			),
 		).toBe(true);
@@ -59,6 +65,8 @@ describe("pi-openai-fast helpers", () => {
 			expect(defaultConfig.supportedModels).toEqual([
 				{ provider: "openai", id: "gpt-5.4" },
 				{ provider: "openai-codex", id: "gpt-5.4" },
+				{ provider: "openai", id: "gpt-5.5" },
+				{ provider: "openai-codex", id: "gpt-5.5" },
 			]);
 
 			const { projectConfigPath, globalConfigPath } = _test.getConfigPaths(cwd, homeDir);
@@ -79,6 +87,47 @@ describe("pi-openai-fast helpers", () => {
 			expect(_test.readConfigFile(projectConfigPath)).toEqual({
 				persistState: false,
 				supportedModels: ["openai/gpt-5.5"],
+			});
+		} finally {
+			cleanup();
+		}
+	});
+
+	it("upgrades generated legacy default supported model lists", () => {
+		const { cwd, homeDir, cleanup } = createTempConfigPaths();
+		try {
+			const { globalConfigPath } = _test.getConfigPaths(cwd, homeDir);
+			mkdirSync(join(homeDir, ".pi", "agent", "extensions"), { recursive: true });
+			writeFileSync(
+				globalConfigPath,
+				`${JSON.stringify(
+					{
+						persistState: true,
+						active: true,
+						supportedModels: ["openai/gpt-5.4", "openai-codex/gpt-5.4"],
+					},
+					null,
+					2,
+				)}\n`,
+				"utf-8",
+			);
+
+			const config = _test.resolveFastConfig(cwd, homeDir);
+			expect(config.supportedModels).toEqual([
+				{ provider: "openai", id: "gpt-5.4" },
+				{ provider: "openai-codex", id: "gpt-5.4" },
+				{ provider: "openai", id: "gpt-5.5" },
+				{ provider: "openai-codex", id: "gpt-5.5" },
+			]);
+			expect(_test.readConfigFile(globalConfigPath)).toEqual({
+				persistState: true,
+				active: true,
+				supportedModels: [
+					"openai/gpt-5.4",
+					"openai-codex/gpt-5.4",
+					"openai/gpt-5.5",
+					"openai-codex/gpt-5.5",
+				],
 			});
 		} finally {
 			cleanup();

@@ -116,5 +116,5 @@ Pi packages loaded by this setup:
 | Package | Provides |
 |---|---|
 | `pi-parallel` | Parallel web research tools (depends on standalone `parallel-cli`) |
-| `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4 models |
+| `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4/GPT-5.5 models |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |
