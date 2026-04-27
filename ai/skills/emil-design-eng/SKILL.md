@@ -1,6 +1,6 @@
 ---
 name: emil-design-eng
-description: This skill encodes Emil Kowalski's philosophy on UI polish, component design, animation decisions, and the invisible details that make software feel great.
+description: Use only when explicitly asked for Emil Kowalski's design engineering philosophy, animation critique, micro-interaction polish, or interfaces that feel right. Do not use as the default frontend design workflow; prefer impeccable for general UI design, redesign, audit, critique, polish, typography, layout, color, and frontend implementation.
 metadata:
   watch-sources: emilkowalski/skill/skills/emil-design-eng@ecf66bbd1fb33c25332b6b0e454d08049978284c
 ---
