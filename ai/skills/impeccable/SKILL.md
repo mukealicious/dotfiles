@@ -5,7 +5,7 @@ argument-hint: "[{{command_hint}}] [target]"
 user-invocable: true
 version: 3.0.0
 metadata:
-  watch-sources: pbakaus/impeccable/source/skills/impeccable@f5e8216
+  watch-sources: pbakaus/impeccable/source/skills/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759
 allowed-tools:
   - Bash(npx impeccable *)
 license: Apache 2.0. Based on Anthropic's frontend-design skill. See NOTICE.md for attribution.
