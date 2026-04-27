@@ -3,34 +3,41 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+const IMPECCABLE_COMMAND_HINT =
+  'craft|shape · audit|critique · animate|bolder|colorize|delight|layout|overdrive|quieter|typeset · adapt|clarify|distill · harden|onboard|optimize|polish · teach|document|extract|live';
+
 const PROVIDER_PLACEHOLDERS = {
   'claude-code': {
     model: 'Claude',
     config_file: 'CLAUDE.md',
     ask_instruction: 'STOP and call the AskUserQuestion tool to clarify.',
     command_prefix: '/',
+    command_hint: IMPECCABLE_COMMAND_HINT,
   },
   codex: {
     model: 'GPT',
     config_file: 'AGENTS.md',
     ask_instruction: 'ask the user directly to clarify what you cannot infer.',
     command_prefix: '$',
+    command_hint: IMPECCABLE_COMMAND_HINT,
   },
   opencode: {
     model: 'Claude',
     config_file: 'AGENTS.md',
     ask_instruction: 'STOP and call the `question` tool to clarify.',
     command_prefix: '/',
+    command_hint: IMPECCABLE_COMMAND_HINT,
   },
   pi: {
     model: 'the model',
     config_file: 'AGENTS.md',
     ask_instruction: 'ask the user directly to clarify what you cannot infer.',
     command_prefix: '/',
+    command_hint: IMPECCABLE_COMMAND_HINT,
   },
 };
 
-const EXCLUDED_FROM_SUGGESTIONS = new Set(['teach-impeccable', 'i-teach-impeccable']);
+const EXCLUDED_FROM_SUGGESTIONS = new Set();
 
 function usage() {
   console.error('Usage: project-skills.mjs <provider> <source-dir> <target-dir>');
@@ -71,10 +78,10 @@ function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function replacePlaceholders(content, provider, commandNames, allSkillNames) {
+function replacePlaceholders(content, provider, commandNames, allSkillNames, extra = {}) {
   const placeholders = PROVIDER_PLACEHOLDERS[provider];
   const commandPrefix = placeholders.command_prefix;
-  const availableCommands = commandNames
+  const availableCommands = extra.availableCommands || commandNames
     .filter((name) => !EXCLUDED_FROM_SUGGESTIONS.has(name))
     .map((name) => `${commandPrefix}${name}`)
     .join(', ');
@@ -84,6 +91,7 @@ function replacePlaceholders(content, provider, commandNames, allSkillNames) {
     .replace(/\{\{config_file\}\}/g, placeholders.config_file)
     .replace(/\{\{ask_instruction\}\}/g, placeholders.ask_instruction)
     .replace(/\{\{command_prefix\}\}/g, commandPrefix)
+    .replace(/\{\{command_hint\}\}/g, placeholders.command_hint || '')
     .replace(/\{\{available_commands\}\}/g, availableCommands);
 
   if (commandPrefix !== '/') {
@@ -96,10 +104,12 @@ function replacePlaceholders(content, provider, commandNames, allSkillNames) {
     }
   }
 
+  result = result.replace(/\{\{scripts_path\}\}/g, extra.scriptsPath || '{{scripts_path}}');
+
   return result;
 }
 
-function copyDirectoryRecursive(sourceDir, targetDir, transformMarkdown) {
+function copyDirectoryRecursive(sourceDir, targetDir, transformText) {
   fs.mkdirSync(targetDir, { recursive: true });
 
   for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
@@ -107,13 +117,13 @@ function copyDirectoryRecursive(sourceDir, targetDir, transformMarkdown) {
     const targetPath = path.join(targetDir, entry.name);
 
     if (entry.isDirectory()) {
-      copyDirectoryRecursive(sourcePath, targetPath, transformMarkdown);
+      copyDirectoryRecursive(sourcePath, targetPath, transformText);
       continue;
     }
 
-    if (entry.isFile() && entry.name.endsWith('.md')) {
+    if (entry.isFile() && (entry.name.endsWith('.md') || entry.name.endsWith('.mjs'))) {
       const content = fs.readFileSync(sourcePath, 'utf8');
-      fs.writeFileSync(targetPath, transformMarkdown(content), 'utf8');
+      fs.writeFileSync(targetPath, transformText(content), 'utf8');
       continue;
     }
 
@@ -154,13 +164,31 @@ const skillInfo = skillDirs.map((skillName) => {
 const allSkillNames = skillInfo.map((skill) => skill.name);
 const commandNames = skillInfo.filter((skill) => skill.userInvocable).map((skill) => skill.name);
 
+function impeccableSubcommands(skillSourceDir, provider) {
+  const metadataPath = path.join(skillSourceDir, 'scripts', 'command-metadata.json');
+  if (!fs.existsSync(metadataPath)) {
+    return null;
+  }
+
+  const commandPrefix = PROVIDER_PLACEHOLDERS[provider].command_prefix;
+  const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+  return Object.keys(metadata)
+    .map((command) => `${commandPrefix}impeccable ${command}`)
+    .join(', ');
+}
+
 fs.rmSync(targetDir, { recursive: true, force: true });
 fs.mkdirSync(targetDir, { recursive: true });
 
 for (const skill of skillInfo) {
+  const projectedSkillDir = path.join(targetDir, skill.dirName);
+  const sourceSkillDir = path.join(sourceDir, skill.dirName);
   copyDirectoryRecursive(
-    path.join(sourceDir, skill.dirName),
-    path.join(targetDir, skill.dirName),
-    (content) => replacePlaceholders(content, provider, commandNames, allSkillNames),
+    sourceSkillDir,
+    projectedSkillDir,
+    (content) => replacePlaceholders(content, provider, commandNames, allSkillNames, {
+      availableCommands: skill.name === 'impeccable' ? impeccableSubcommands(sourceSkillDir, provider) : undefined,
+      scriptsPath: path.resolve(projectedSkillDir, 'scripts'),
+    }),
   );
 }

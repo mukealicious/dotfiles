@@ -107,7 +107,7 @@ Shell shims in `pi/intercepted-commands/` that print helpful error messages redi
 
 Some shared skills (`commit`, `uv`, `web-browser`) intentionally collide with mitsupi's bundled copies. Pi prefers mitsupi's versions for those names.
 
-Two other mitsupi collisions (`frontend-design`, `librarian`) are intentionally filtered out in both profile settings files so Pi loads this repo's projected Pi-specific variants from `.ai-runtime/pi/skills/` instead.
+Two other mitsupi collisions are intentionally filtered out in both profile settings files: `librarian` so Pi loads this repo's projected Pi-specific variant, and `frontend-design` so the older bundled design skill does not compete with the canonical `/impeccable` 3.x workflow.
 
 ## Packages
 

@@ -53,7 +53,7 @@ Some shared skills are intentionally vendored from upstream sources instead of b
 |---|---|---|
 | `emilkowalski/skill` | `ai/skills/emil-design-eng/` | Preserve Emil Kowalski's design-engineering guidance as an exact upstream skill we can experiment with and review over time |
 | `nidhinjs/prompt-master` | `ai/skills/prompt-master/` | Keep a portable prompt-optimization skill in-repo, especially for Midjourney and other AI prompt-writing workflows, while tracking upstream drift |
-| `pbakaus/impeccable` | `ai/skills/frontend-design/` and related design helpers | Experiment with a full family of design-specific skills before deciding what deserves local adaptation |
+| `pbakaus/impeccable` | `ai/skills/impeccable/` | Use Impeccable 3.x as the consolidated design-command router for PRODUCT.md + DESIGN.md workflows |
 
 Rules for imported upstreams:
 
@@ -171,14 +171,14 @@ TypeScript extensions using Pi's TUI API:
 
 ### Dependencies in Shared Skills
 
-**Strategy: Bun-native, zero external dependencies.**
+**Strategy: zero install-time dependencies; prefer built-in runtimes.**
 
-Skills with scripts must use only Bun built-in APIs (WebSocket, fs, path, child_process, etc.) or shell commands. No `package.json` or `npm install` required.
+Skills with scripts should use Node/Bun built-in APIs (WebSocket, fs, path, child_process, etc.) or shell commands. No per-skill `package.json` or install step unless explicitly documented.
 
-- **Bun** is already a toolchain prerequisite (installed via Homebrew)
-- Bun provides built-in WebSocket, HTTP server, file I/O — covers most needs
-- Scripts use `#!/usr/bin/env bun` shebang for direct execution
-- If a skill truly needs npm packages, add `bun install` to `ai/install.sh` for that skill dir
+- **Node and Bun** are already toolchain prerequisites
+- Bun provides built-in WebSocket, HTTP server, file I/O — covers most local tooling needs
+- Vendored upstream skills may use `node` scripts when that is how upstream ships them
+- If a skill truly needs npm packages, add an explicit install step to `ai/install.sh` for that skill dir
 
 ### Decision Framework
 
@@ -201,7 +201,7 @@ If the shared skill stands on its own, delete the wrapper instead of keeping two
 Most shared skills are repo-authored portable workflows. The design pack is different:
 
 - `emil-design-eng` is vendored from `emilkowalski/skill`
-- the Impeccable pack is vendored exact-copy-first from `pbakaus/impeccable/source/skills/`
+- Impeccable 3.x is vendored exact-copy-first from `pbakaus/impeccable/source/skills/impeccable/`
 - provider-specific placeholders stay in `ai/skills/` source and are resolved during projection into `.ai-runtime/`
 - upstream sources stay pinned through `metadata.watch-sources` and `ai/watchlist.toml`
 
@@ -234,35 +234,17 @@ Most shared skills are repo-authored portable workflows. The design pack is diff
 | Skill | Upstream | Description |
 |---|---|---|
 | `emil-design-eng` | `emilkowalski/skill` | Emil Kowalski's design engineering philosophy for UI polish and motion |
-| `frontend-design` | `pbakaus/impeccable` | Main design direction skill; other Impeccable skills build on its context protocol |
-| `teach-impeccable` | `pbakaus/impeccable` | Gather and persist project design context |
-| `audit` | `pbakaus/impeccable` | Audit frontend quality across accessibility, performance, theming, and anti-patterns |
-| `critique` | `pbakaus/impeccable` | Evaluate UX quality with scoring, personas, and actionable feedback |
-| `polish` | `pbakaus/impeccable` | Perform a final quality pass before shipping |
-| `normalize` | `pbakaus/impeccable` | Bring features back in line with the design system |
-| `distill` | `pbakaus/impeccable` | Simplify and declutter designs to their essence |
-| `clarify` | `pbakaus/impeccable` | Improve UX copy, labels, messages, and instructions |
-| `optimize` | `pbakaus/impeccable` | Diagnose and fix frontend performance issues |
-| `harden` | `pbakaus/impeccable` | Strengthen interfaces against edge cases, i18n, and failures |
-| `animate` | `pbakaus/impeccable` | Add purposeful animation and motion to interfaces |
-| `colorize` | `pbakaus/impeccable` | Add strategic color and expressive palette choices |
-| `bolder` | `pbakaus/impeccable` | Increase visual impact and personality in safe designs |
-| `quieter` | `pbakaus/impeccable` | Tone down overly aggressive or overstimulating designs |
-| `delight` | `pbakaus/impeccable` | Add joy, personality, and memorable interaction details |
-| `extract` | `pbakaus/impeccable` | Extract reusable components, tokens, and design patterns |
-| `adapt` | `pbakaus/impeccable` | Adapt designs across devices, contexts, and platforms |
-| `onboard` | `pbakaus/impeccable` | Design and improve onboarding and first-run flows |
-| `typeset` | `pbakaus/impeccable` | Improve typography, hierarchy, and readability |
-| `arrange` | `pbakaus/impeccable` | Improve layout, spacing, and visual rhythm |
-| `overdrive` | `pbakaus/impeccable` | Push interfaces into technically ambitious territory |
+| `impeccable` | `pbakaus/impeccable` | Consolidated 3.x design-command router: PRODUCT.md + DESIGN.md setup, document, shape, craft, live browser iteration, critique, audit, polish, and focused refinements |
 
 Suggested mental model:
 
-- start with `frontend-design` for context and direction
-- use `teach-impeccable` when the project lacks design context
-- use `audit` or `critique` to diagnose before changing code
-- use focused follow-up skills like `animate`, `typeset`, `colorize`, or `harden`
-- finish with `polish`
+- use `/impeccable teach` when a project lacks PRODUCT.md / DESIGN.md context
+- use `/impeccable document` to reverse-engineer DESIGN.md from an existing codebase
+- use `/impeccable shape` before building ambiguous UI, or `/impeccable craft` for shape-then-build
+- use `/impeccable live` for browser-picked visual iteration against source code
+- use `/impeccable critique` or `/impeccable audit` to diagnose before changing code
+- use focused subcommands like `animate`, `typeset`, `colorize`, `harden`, `bolder`, `quieter`, or `distill`
+- finish with `/impeccable polish`
 
 ### Claude-Specific (`claude/skills/`)
 

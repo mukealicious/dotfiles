@@ -100,5 +100,6 @@
         "@playwright/mcp@latest"
       ]
     }
-  }
+  },
+  "theme": "light"
 }

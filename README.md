@@ -154,10 +154,10 @@ Shared skills in `ai/skills/`, available to all agents (Claude, Pi, OpenCode, Co
 | `librarian` | Multi-repository codebase exploration |
 | `workspace-snapshot` | Quick workspace orientation |
 
-Also includes an imported frontend design pack:
+Also includes imported design skills:
 
 - `emil-design-eng` from Emil Kowalski
-- the Impeccable skill family from Paul Bakaus, including `frontend-design`, `audit`, `critique`, `polish`, `animate`, `typeset`, and related design helpers
+- `impeccable` 3.x from Paul Bakaus as the consolidated PRODUCT.md + DESIGN.md design-command router (`/impeccable teach`, `document`, `shape`, `craft`, `live`, `critique`, `audit`, `polish`, and refinements)
 
 Plus plugins: `document-skills` (PDF/XLSX/DOCX/PPTX), `playground` (interactive HTML).
 

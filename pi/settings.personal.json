@@ -2,7 +2,7 @@
   "theme": "gruvbox-light",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "medium",
   "compaction": {
     "enabled": true,
     "reserveTokens": 16384,
@@ -26,6 +26,6 @@
       ]
     }
   ],
-  "lastChangelogVersion": "0.70.0",
+  "lastChangelogVersion": "0.70.5",
   "hideThinkingBlock": false
 }
