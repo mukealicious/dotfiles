@@ -96,9 +96,20 @@ fi
 # Install Pi packages.
 # Remote packages use fully qualified sources (git: or npm: prefix).
 # Local vendored packages are installed from repo paths for tighter supply-chain control.
+if [ -f "$DOTFILES_ROOT/pi/packages/pi-subagents/package-lock.json" ]; then
+  log_info "Installing pi-subagents runtime dependencies..."
+  if (cd "$DOTFILES_ROOT/pi/packages/pi-subagents" && npm_config_legacy_peer_deps=true npm ci --omit=dev --ignore-scripts >/dev/null 2>&1); then
+    log_success "Installed pi-subagents dependencies"
+  else
+    log_warn "Failed to install pi-subagents dependencies"
+    log_hint "Run manually: cd $DOTFILES_ROOT/pi/packages/pi-subagents && npm_config_legacy_peer_deps=true npm ci --omit=dev --ignore-scripts"
+  fi
+fi
+
 PACKAGES="
   git:https://github.com/HazAT/pi-parallel
   $DOTFILES_ROOT/pi/packages/pi-openai-fast
+  $DOTFILES_ROOT/pi/packages/pi-subagents
   npm:mitsupi
 "
 

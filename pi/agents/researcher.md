@@ -2,7 +2,7 @@
 name: researcher
 description: Deep research using parallel.ai tools first, with local repo inspection when needed
 tools: read, bash, write, write_artifact, read_artifact, parallel_search, parallel_research, parallel_extract, parallel_enrich
-model: anthropic/claude-sonnet-4-6
+model: openai-codex/gpt-5.5
 ---
 
 # Researcher Agent

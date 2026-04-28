@@ -64,3 +64,12 @@ branch = "main"
 kind = "package"
 review = "semantic-diff"
 notes = "Upstream source for locally vendored pi/packages/pi-openai-fast"
+
+[[sources]]
+id = "pi-subagents"
+repo = "nicobailon/pi-subagents"
+path = ""
+branch = "main"
+kind = "package"
+review = "semantic-diff"
+notes = "Upstream source for locally vendored pi/packages/pi-subagents"

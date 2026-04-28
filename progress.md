@@ -1,0 +1,3 @@
+- Repo purpose: Personal macOS development environment dotfiles, organized by Holman-style top-level topics for shell, terminal, runtimes, packages, AI tooling, window management, and CLI tools.
+- Key entrypoint: `script/bootstrap` for initial setup; `bin/dot` / `dot` for daily updates, installs, symlinks, macOS defaults, and `dot doctor` diagnostics.
+- Safe next subagent test: Ask a read-only scout to inspect only top-level `README.md` and `AGENTS.md` and report where a new Fish alias should be added.
