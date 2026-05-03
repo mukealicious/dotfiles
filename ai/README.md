@@ -221,7 +221,6 @@ Most shared skills are repo-authored portable workflows. The design pack is diff
 | `spec-planner` | Instruction-only | Dialogue-driven spec development with iterative refinement |
 | `sprint-plan` | Instruction-only | Break projects into demoable sprints with atomic, testable tasks |
 | `watch-review` | Instruction-only | Review watched upstream sources against local artifacts |
-| `workspace-snapshot` | Instruction-only | Quick workspace orientation before editing |
 
 ### Imported Utility Skills
 

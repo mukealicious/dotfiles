@@ -53,7 +53,7 @@ Author portable skills in `ai/skills/`, keep `claude/skills/` for Claude-native 
 ai/
 ├── agents/
 │   └── review.body.md      # Shared review body
-└── skills/                 # Portable skills projected into ~/.claude/skills (11 skills)
+└── skills/                 # Portable skills projected into ~/.claude/skills (10 skills)
     ├── build-skill/        # Skill authoring guide
     ├── code-review/        # Parallel code review
     ├── dotfiles-dev/       # Dotfiles development guide
@@ -63,8 +63,7 @@ ai/
     ├── opensrc/            # External package/repo source context
     ├── qmd/                # Markdown search
     ├── spec-planner/       # Dialogue-driven specs
-    ├── sprint-plan/        # Sprint planning
-    └── workspace-snapshot/ # Quick workspace orientation
+    └── sprint-plan/        # Sprint planning
 
 claude/
 ├── install.sh              # Symlinks settings.json + installs plugins

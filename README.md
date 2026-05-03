@@ -152,7 +152,6 @@ Shared skills in `ai/skills/`, available to all agents (Claude, Pi, OpenCode, Co
 | `qmd` | Hybrid markdown search (BM25 + vectors) |
 | `favicon-generator` | Generate favicons from PNG/SVG |
 | `librarian` | Multi-repository codebase exploration |
-| `workspace-snapshot` | Quick workspace orientation |
 
 Also includes imported design skills:
 
