@@ -30,6 +30,24 @@ review = "semantic-diff"
 notes = "Upstream Emil design skill source for ai/skills/emil-design-eng/SKILL.md"
 
 [[sources]]
+id = "grill-me"
+repo = "mattpocock/skills"
+path = "skills/productivity/grill-me"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Grill Me skill source for ai/skills/grill-me/SKILL.md"
+
+[[sources]]
+id = "improve-codebase-architecture"
+repo = "mattpocock/skills"
+path = "skills/engineering/improve-codebase-architecture"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Improve Codebase Architecture skill source for ai/skills/improve-codebase-architecture/"
+
+[[sources]]
 id = "impeccable"
 repo = "pbakaus/impeccable"
 path = "source/skills/impeccable"
