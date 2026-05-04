@@ -21,6 +21,7 @@ displayUsageAndExit() {
   echo "  doctor      Run environment diagnostics"
   echo ""
   echo "Options:"
+  echo "  --force     Back up and replace managed symlink conflicts"
   echo "  -e, --edit  Open dotfiles directory for editing"
   echo "  -h, --help  Show this help message and exit"
   exit
@@ -33,6 +34,26 @@ run_step() {
   "$@"
 }
 
+ensure_brew_available() {
+  if command -v brew >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  elif [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  fi
+
+  if ! command -v brew >/dev/null 2>&1; then
+    log_error "Homebrew installed but brew is not available on PATH"
+    log_hint "Open a new shell or add Homebrew's shellenv to your shell config, then re-run dot"
+    exit 1
+  fi
+}
+
 open_dotfiles_for_editing() {
   if [ -n "${EDITOR:-}" ]; then
     exec "$EDITOR" "$dotfilesDirectory"
@@ -41,6 +62,8 @@ open_dotfiles_for_editing() {
   exec open "$dotfilesDirectory"
 }
 
+force_symlinks=false
+
 case "${1:-}" in
   doctor)
     shift
@@ -48,6 +71,10 @@ case "${1:-}" in
     ;;
   -e|--edit)
     open_dotfiles_for_editing
+    ;;
+  --force)
+    force_symlinks=true
+    shift
     ;;
   -h|--help)
     displayUsageAndExit
@@ -60,19 +87,33 @@ case "${1:-}" in
     ;;
 esac
 
+if [ "$#" -gt 0 ]; then
+  echo "Unknown argument: $1"
+  displayUsageAndExit
+fi
+
 log_section "Symlinks"
-run_step "$dotfilesDirectory/script/symlink" "$dotfilesDirectory/script/symlink"
+if [ "$force_symlinks" = "true" ]; then
+  run_step "$dotfilesDirectory/script/symlink --force --non-interactive" env FORCE=true "$dotfilesDirectory/script/symlink" --force --non-interactive
+else
+  run_step "$dotfilesDirectory/script/symlink --non-interactive" env FORCE=false "$dotfilesDirectory/script/symlink" --non-interactive
+fi
 
 log_section "macOS defaults"
 run_step "$dotfilesDirectory/macos/set-defaults.sh" "$dotfilesDirectory/macos/set-defaults.sh"
 
 log_section "Homebrew"
 run_step "$dotfilesDirectory/homebrew/install.sh" "$dotfilesDirectory/homebrew/install.sh"
+ensure_brew_available
 run_step "brew update" brew update
 run_step "brew upgrade" brew upgrade
 run_step "brew bundle --file=$dotfilesDirectory/Brewfile" brew bundle --file="$dotfilesDirectory/Brewfile"
 
 log_section "Topic installers"
-run_step "$dotfilesDirectory/script/install --skip ./homebrew/install.sh" "$dotfilesDirectory/script/install" --skip ./homebrew/install.sh
+if [ "$force_symlinks" = "true" ]; then
+  run_step "$dotfilesDirectory/script/install --skip ./homebrew/install.sh --force" env FORCE=true "$dotfilesDirectory/script/install" --skip ./homebrew/install.sh --force
+else
+  run_step "$dotfilesDirectory/script/install --skip ./homebrew/install.sh" env FORCE=false "$dotfilesDirectory/script/install" --skip ./homebrew/install.sh
+fi
 
 printf '\n%sDone.%s %sDotfiles are up to date.%s\n' "$LOG_GREEN" "$LOG_RESET" "$LOG_DIM" "$LOG_RESET"

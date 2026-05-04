@@ -100,8 +100,27 @@ ensure_symlink() {
     fi
   elif [ -e "$target" ]; then
     # Regular file or directory
-    log_warn "$desc exists but is not a symlink"
-    log_hint "Skipping to preserve existing content"
+    if [ "${FORCE:-false}" = "true" ]; then
+      backup="$target.backup"
+      suffix=1
+      while [ -e "$backup" ] || [ -L "$backup" ]; do
+        backup="$target.backup.$suffix"
+        suffix=$((suffix + 1))
+      done
+      log_info "Backing up existing $desc to $backup"
+      mv "$target" "$backup"
+      log_info "Linking $desc"
+      ln -s "$src" "$target"
+      log_success "$desc linked (previous version backed up)"
+    else
+      log_warn "$desc exists but is not a symlink"
+      log_hint "Skipping to preserve existing content"
+      if [ -n "${FORCE:-}" ]; then
+        log_hint "Re-run with --force to back up and replace it"
+      else
+        log_hint "Fix: rm \"$target\" && dot"
+      fi
+    fi
   else
     # Doesn't exist
     log_info "Linking $desc"

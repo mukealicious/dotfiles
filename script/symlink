@@ -10,106 +10,156 @@ DOTFILES_ROOT=$(pwd -P)
 
 set -e
 
+FORCE=false
+SYMLINK_INTERACTIVE=${SYMLINK_INTERACTIVE:-false}
+
+usage() {
+  cat <<'USAGE'
+Usage: script/symlink [--force] [--interactive|--non-interactive]
+
+Options:
+  --force            Back up and replace conflicting files automatically
+  --interactive      Prompt before overwriting (default when bootstrapping)
+  --non-interactive  Do not prompt (default for dot)
+  -h, --help         Show this help message
+USAGE
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --force)
+      FORCE=true
+      ;;
+    --interactive)
+      SYMLINK_INTERACTIVE=true
+      ;;
+    --non-interactive)
+      SYMLINK_INTERACTIVE=false
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
 . "$DOTFILES_ROOT/lib/log.sh"
+. "$DOTFILES_ROOT/lib/symlink.sh"
 
-info () {
-  log_info "$1"
+if [ "$FORCE" = "true" ]; then
+  log_force_enabled
+fi
+
+describe_target() {
+  target="$1"
+  case "$target" in
+    "$HOME"/*)
+      printf '%s/%s\n' '~' "${target#"$HOME"/}"
+      ;;
+    *)
+      printf '%s\n' "$target"
+      ;;
+  esac
 }
 
-success () {
-  log_success "$1"
-}
+link_file_interactive() {
+  local src="$1" dst="$2" desc="$3"
 
-link_file () {
-  local src=$1 dst=$2
+  if [ "$FORCE" = "true" ]; then
+    ensure_symlink "$src" "$dst" "$desc"
+    return
+  fi
 
-  local overwrite='' backup='' skip=''
-  local action=''
+  local overwrite='' backup='' skip='' action='' currentSrc=''
 
-  if [ -f "$dst" ] || [ -d "$dst" ] || [ -L "$dst" ]
-  then
-
-    if [ "$overwrite_all" = "false" ] && [ "$backup_all" = "false" ] && [ "$skip_all" = "false" ]
-    then
-
-      local currentSrc
-      currentSrc="$(readlink "$dst")"
-
-      if [ "$currentSrc" = "$src" ]
-      then
-
-        skip=true;
-
-      else
-
-        # In non-interactive mode (dot), default to skip
-        if [ "$SYMLINK_INTERACTIVE" != "true" ]; then
-          info "skipped $src (destination exists, run bootstrap to change)"
-          skip=true
-        else
-          printf "\r  [ \033[0;33m??\033[0m ] File already exists: %s (%s), what do you want to do?\n          [s]kip, [S]kip all, [o]verwrite, [O]verwrite all, [b]ackup, [B]ackup all? " "$dst" "$(basename "$src")"
-          read -r -n 1 action
-          echo
-
-          case "$action" in
-            o )
-              overwrite=true;;
-            O )
-              overwrite_all=true;;
-            b )
-              backup=true;;
-            B )
-              backup_all=true;;
-            s )
-              skip=true;;
-            S )
-              skip_all=true;;
-            * )
-              ;;
-          esac
-        fi
-
+  if [ -e "$dst" ] || [ -L "$dst" ]; then
+    if [ "$overwrite_all" = "false" ] && [ "$backup_all" = "false" ] && [ "$skip_all" = "false" ]; then
+      if [ -L "$dst" ]; then
+        currentSrc="$(readlink "$dst" 2>/dev/null || true)"
       fi
 
+      if [ "$currentSrc" = "$src" ]; then
+        skip=true
+      else
+        printf "\r  [ \033[0;33m??\033[0m ] %s exists (%s). Action? [s]kip, [S]kip all, [o]verwrite, [O]verwrite all, [b]ackup, [B]ackup all: " "$desc" "$(basename "$src")"
+        read -r -n 1 action
+        echo
+
+        case "$action" in
+          o )
+            overwrite=true;;
+          O )
+            overwrite_all=true;;
+          b )
+            backup=true;;
+          B )
+            backup_all=true;;
+          s|'' )
+            skip=true;;
+          S )
+            skip_all=true;;
+          * )
+            log_warn "Invalid choice; skipping $desc"
+            skip=true;;
+        esac
+      fi
     fi
 
     overwrite=${overwrite:-$overwrite_all}
     backup=${backup:-$backup_all}
     skip=${skip:-$skip_all}
 
-    if [ "$overwrite" = "true" ]
-    then
+    if [ "$overwrite" = "true" ]; then
       rm -rf "$dst"
-      success "removed $dst"
+      log_success "removed $desc"
     fi
 
-    if [ "$backup" = "true" ]
-    then
-      mv "$dst" "${dst}.backup"
-      success "moved $dst to ${dst}.backup"
+    if [ "$backup" = "true" ]; then
+      local backup_path="$dst.backup"
+      local suffix=1
+      while [ -e "$backup_path" ] || [ -L "$backup_path" ]; do
+        backup_path="$dst.backup.$suffix"
+        suffix=$((suffix + 1))
+      done
+      mv "$dst" "$backup_path"
+      log_success "moved $desc to $(describe_target "$backup_path")"
     fi
 
-    if [ "$skip" = "true" ]
-    then
-      success "skipped $src"
+    if [ "$skip" = "true" ]; then
+      log_success "skipped $desc"
     fi
   fi
 
-  if [ "$skip" != "true" ]  # "false" or empty
-  then
-    ln -s "$1" "$2"
-    success "linked $1 to $2"
+  if [ "$skip" != "true" ]; then
+    ln -s "$src" "$dst"
+    log_success "linked $desc"
   fi
 }
 
-install_dotfiles () {
+install_dotfiles() {
   log_section 'Installing dotfiles'
 
-  local overwrite_all=false backup_all=false skip_all=false
+  if [ "$SYMLINK_INTERACTIVE" = "true" ]; then
+    overwrite_all=false
+    backup_all=false
+    skip_all=false
+  fi
 
   while IFS= read -r src; do
     dst="$HOME/.$(basename "${src%.*}")"
-    link_file "$src" "$dst"
+    desc="$(describe_target "$dst")"
+
+    if [ "$SYMLINK_INTERACTIVE" = "true" ]; then
+      link_file_interactive "$src" "$dst" "$desc"
+    else
+      ensure_symlink "$src" "$dst" "$desc"
+    fi
   done < <(find -H "$DOTFILES_ROOT" -maxdepth 2 -name '*.symlink' -not -path '*.git*' | sort)
 }
 
