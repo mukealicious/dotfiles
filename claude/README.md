@@ -53,12 +53,11 @@ Author portable skills in `ai/skills/`, keep `claude/skills/` for Claude-native 
 ai/
 ├── agents/
 │   └── review.body.md      # Shared review body
-└── skills/                 # Portable skills projected into ~/.claude/skills (10 skills)
+└── skills/                 # Portable skills projected into ~/.claude/skills
     ├── build-skill/        # Skill authoring guide
     ├── code-review/        # Parallel code review
     ├── dotfiles-dev/       # Dotfiles development guide
     ├── favicon-generator/  # Favicon generation
-    ├── feedback-loop/      # Structured self-validation
     ├── librarian/          # Multi-repo exploration
     ├── opensrc/            # External package/repo source context
     ├── qmd/                # Markdown search
@@ -106,7 +105,6 @@ Key skills available via slash command or auto-trigger:
 | `code-review` | Parallel code review with architecture validation |
 | `spec-planner` | Dialogue-driven spec development |
 | `sprint-plan` | Break projects into demoable sprints |
-| `feedback-loop` | Self-validate work through structured loops |
 | `opensrc` | Fetch source context for packages and repos |
 | `build-skill` | Guidance for creating new skills |
 | `dotfiles-dev` | Guidance for working with this dotfiles repo |

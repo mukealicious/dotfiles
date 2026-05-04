@@ -213,7 +213,6 @@ Most shared skills are repo-authored portable workflows. The design pack is diff
 | `deslop` | Instruction-only | Focused pre-commit cleanup pass for removing AI-shaped slop from nearly finished changes |
 | `dotfiles-dev` | Instruction-only | Guide for working with dotfiles |
 | `favicon-generator` | Scripts | Generate optimized favicons (ImageMagick) |
-| `feedback-loop` | Instruction-only | Self-validate work through deterministic feedback loops |
 | `librarian` | Instruction-only | Multi-repository codebase exploration |
 | `opensrc` | Instruction-only | Fetch source context for external packages and repositories |
 | `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
