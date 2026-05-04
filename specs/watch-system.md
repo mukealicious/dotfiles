@@ -1,13 +1,13 @@
-# Watch System - Implementation Spec
+# Upstream Review System - Historical Implementation Spec
 
-**Status:** Ready for task breakdown
+**Status:** Implemented v1; historical design record
 **Type:** Feature plan / workflow architecture
 **Effort:** L
 **Date:** 2026-03-31
 
 ## Problem Statement
 
-This repo increasingly benefits from selectively learning from external repositories, especially agent-skill repos, dotfiles repos, and adjacent tooling experiments.
+This repo increasingly benefits from selectively learning from external repositories, especially agent-skill repos, dotfiles repos, and adjacent tooling experiments. The implemented v1 is now framed as upstream provenance plus optional review: `provenance -> optional review -> manual adopt`.
 
 Today that workflow is mostly manual and memory-based:
 
@@ -22,9 +22,9 @@ That creates three recurring problems:
 - **Comparison is shallow** - once a local skill exists, it is easy to ask "is upstream useful?" but harder to ask "what changed relative to our adapted version?"
 - **Provenance drifts** - local artifacts lose the lightweight link back to the external sources that informed them.
 
-The Watch system solves this by introducing a portable workflow:
+The implemented system solves this by preserving provenance first, then making review optional:
 
-`watch -> review -> adopt`
+`provenance -> optional review -> manual adopt`
 
 Where:
 
@@ -35,7 +35,7 @@ Where:
 ## Discovery
 
 - Explored `ai/README.md`, `ai/install.sh`, `bin/dot`, `bin/dot-doctor`, and `specs/ai-skill-runtime-and-opensrc-fixes.md`.
-- Shared skills are already projected across runtimes from `ai/skills/`, so Watch should prefer repo-authored shared workflows over harness-specific logic.
+- Shared skills are already projected across runtimes from `ai/skills/`, so upstream review should prefer repo-authored shared workflows over harness-specific logic.
 - The repo prefers vendoring and adaptation over installation when supply-chain risk is avoidable.
 - Existing repo conventions favor deterministic scripts for system behavior and documented human judgment for higher-level choices.
 - The user explicitly prefers:
@@ -47,14 +47,14 @@ Where:
 
 ## Recommendation
 
-Implement Watch as a two-layer portable system:
+Implement upstream review as a two-layer portable system:
 
 1. **Deterministic collection layer**
    - A tracked watchlist manifest defines which external sources matter.
    - A read-only script fetches structured facts about those sources and links them to local artifacts via `watch-sources` when present.
 
 2. **Agent interpretation layer**
-   - A shared `watch-review` skill runs the script, reads local artifacts and upstream source context, and produces ranked recommendations.
+   - A shared `upstream-review` skill runs the script, reads local artifacts and upstream source context, and produces ranked recommendations.
    - The skill never auto-installs or auto-adopts anything.
    - Adoption remains a manual, explicit follow-up action.
 
@@ -64,11 +64,11 @@ This keeps the system safe and automatable without pretending that source releva
 
 | Deliverable | Effort | Depends On |
 |-------------|--------|------------|
-| D1. Define portable Watch manifest and source locator format | S | - |
+| D1. Define portable upstream review manifest and source locator format | S | - |
 | D2. Add `watch-sources` metadata contract for local artifacts that support inline metadata | S | D1 |
 | D3. Implement `bin/ai-watch` read-only source collection and report generation | M | D1, D2 |
-| D4. Create shared `ai/skills/watch-review/SKILL.md` to interpret watch reports | M | D3 |
-| D5. Document `watch -> review -> adopt` in repo docs and skill-authoring guidance | S | D1, D4 |
+| D4. Create shared `ai/skills/upstream-review/SKILL.md` to interpret watch reports | M | D3 |
+| D5. Document `provenance -> optional review -> manual adopt` in repo docs and skill-authoring guidance | S | D1, D4 |
 
 ## Non-Goals
 
@@ -133,7 +133,7 @@ notes = "General inspiration source"
 
 ### 2. Local Artifact Association Metadata
 
-Local artifacts may opt into direct Watch comparison with one metadata field when their file format supports lightweight inline metadata cleanly.
+Local artifacts may opt into direct upstream comparison with one metadata field when their file format supports lightweight inline metadata cleanly.
 
 Example:
 
@@ -154,11 +154,12 @@ metadata:
 ### `watch-sources` semantics
 
 - It is an association field, not a provenance classification.
-- It tells Watch review which external sources should be compared directly against this local artifact.
+- It tells upstream review which external sources should be compared directly against this local artifact.
 - It allows drift: a local artifact may evolve beyond upstream while still remaining meaningfully associated with it.
 - If multiple entries exist, the first entry is treated as the primary comparison source.
-- In v1, direct inline association is only required for frontmatter-friendly artifacts such as `SKILL.md`.
-- Non-frontmatter artifacts can still be watched via `ai/watchlist.toml` even if they do not yet support direct file-level association.
+- In v1, inline association is used for frontmatter-friendly artifacts such as `SKILL.md`.
+- Vendored directories use `VENDORED_FROM.md` as an explicit sidecar carrying the same metadata.
+- Other non-frontmatter artifacts can still be watched via `ai/watchlist.toml` even if they do not yet support direct artifact-level association.
 
 ### 3. Source Locator Format
 
@@ -183,7 +184,7 @@ Parsing rule:
 - `@ref` is required in `watch-sources`
 - manifest entries use structured fields instead of the compact locator
 
-### 4. Watch Report
+### 4. Upstream Review Report
 
 Generated by `bin/ai-watch`.
 
@@ -254,7 +255,7 @@ bin/ai-watch --kind skill
 ### CLI behavior
 
 - default output is concise markdown for humans
-- `--json` outputs a structured report for `watch-review`
+- `--json` outputs a structured report for `upstream-review`
 - `--source <id>` narrows to one watched source
 - `--kind <kind>` filters by source kind
 - exits non-zero only for true failures:
@@ -277,11 +278,11 @@ For each manifest source:
    - compute changed files between pinned ref and current head when possible
 5. include enough context for an LLM to review relevance without doing redundant discovery
 
-### `watch-review` skill
+### `upstream-review` skill
 
 Path:
 
-- `ai/skills/watch-review/SKILL.md`
+- `ai/skills/upstream-review/SKILL.md`
 
 Purpose:
 
@@ -289,7 +290,7 @@ Purpose:
 - compare upstream watched sources to local repo artifacts
 - rank recommendations for human review
 
-### `watch-review` workflow contract
+### `upstream-review` workflow contract
 
 1. read `ai/watchlist.toml`
 2. run `bin/ai-watch --json`
@@ -318,15 +319,15 @@ The review should not stop at "this is useful." It should compare implementation
 
 ## Acceptance Criteria
 
-- [ ] `ai/watchlist.toml` defines watched sources in a human-editable, portable format.
-- [ ] A local artifact can associate itself to one or more upstream sources with exactly one metadata field: `watch-sources`.
-- [ ] `watch-sources` works as either a single string or multiline string.
-- [ ] `bin/ai-watch --json` emits a report that links watched sources to matching local artifacts based on `watch-sources` when direct associations exist.
-- [ ] For a watched source that maps to a pinned local source ref, the report includes current upstream head and changed file paths between pinned ref and current head when GitHub can provide them.
-- [ ] For a watched source with no local mapping, the report still includes enough upstream context for high-level usefulness review.
-- [ ] `ai/skills/watch-review/SKILL.md` consumes the watch report and returns ranked recommendations without editing files.
-- [ ] The repo documents the workflow as `watch -> review -> adopt`.
-- [ ] No part of the v1 system auto-installs, auto-vendors, auto-commits, or schedules background checks.
+- [x] `ai/watchlist.toml` defines watched sources in a human-editable, portable format.
+- [x] A local artifact can associate itself to one or more upstream sources with exactly one metadata field: `watch-sources`.
+- [x] `watch-sources` works as either a single string or multiline string.
+- [x] `bin/ai-watch --json` emits a report that links watched sources to matching local artifacts based on `watch-sources` when direct associations exist.
+- [x] For a watched source that maps to a pinned local source ref, the report includes current upstream head and changed file paths between pinned ref and current head when GitHub can provide them.
+- [x] For a watched source with no local mapping, the report still includes enough upstream context for high-level usefulness review.
+- [x] `ai/skills/upstream-review/SKILL.md` consumes the watch report and returns ranked recommendations without editing files.
+- [x] The repo documents the workflow as `provenance -> optional review -> manual adopt`.
+- [x] No part of the v1 system auto-installs, auto-vendors, auto-commits, or schedules background checks.
 
 ## Test Strategy
 
@@ -337,8 +338,8 @@ The review should not stop at "this is useful." It should compare implementation
 | Integration | GitHub source inspection | Run `bin/ai-watch --json` against a small sample manifest and verify report shape |
 | Integration | Source-to-artifact linking | Add fixture metadata and verify local match resolution |
 | Integration | Comparison range | For pinned refs behind upstream head, verify changed file list is populated |
-| Skill smoke | `watch-review` output contract | Run the skill on a sample report and verify rubric sections are present |
-| Docs review | Workflow consistency | Search repo docs for `watch -> review -> adopt` and `watch-sources` references |
+| Skill smoke | `upstream-review` output contract | Run the skill on a sample report and verify rubric sections are present |
+| Docs review | Workflow consistency | Search repo docs for `provenance -> optional review -> manual adopt` and `watch-sources` references |
 
 ## Risks & Mitigations
 
@@ -355,7 +356,7 @@ The review should not stop at "this is useful." It should compare implementation
 
 | Chose | Over | Because |
 |-------|------|---------|
-| Portable-first Watch model | Dotfiles-only naming and structure | The pattern is strong enough to reuse across projects later |
+| Portable-first upstream review model | Dotfiles-only naming and structure | The pattern is strong enough to reuse across projects later |
 | One association field `watch-sources` | Fine-grained provenance taxonomy | Association is what review needs most; provenance nuance can wait |
 | Manual invocation in v1 | Scheduled checks from day one | Lower complexity, lower noise, and safer adoption |
 | GitHub + `gh` in v1 | Host-agnostic fetch layer in v1 | This repo already relies on GitHub and `gh`; optimize for reality first |
@@ -368,8 +369,8 @@ The review should not stop at "this is useful." It should compare implementation
 
 ## Success Metrics
 
-- Adding a watched source takes less than five minutes and requires editing only `ai/watchlist.toml`.
+- Adding upstream provenance or a watched source takes less than five minutes and requires editing one local metadata surface: `metadata.watch-sources`, `VENDORED_FROM.md`, or `ai/watchlist.toml`.
 - A local shared skill can express upstream comparison context with one metadata field.
-- A manual Watch review identifies meaningful upstream changes without suggesting unsafe auto-adoption.
+- A manual upstream review identifies meaningful upstream changes without suggesting unsafe auto-adoption.
 - Reviewing a small watchlist produces a concise ranked recommendation set instead of a raw change dump.
-- The Watch pattern remains generic enough to reuse in another project with minimal renaming.
+- The upstream review pattern remains generic enough to reuse in another project with minimal renaming.

@@ -1,31 +1,40 @@
 ---
-name: watch-review
-description: Interpret watched upstream sources against this repo's local artifacts and rank whether they should be adopted or adapted. Use when reviewing `ai/watchlist.toml`, running `bin/ai-watch`, or deciding whether upstream changes are worth bringing in.
+name: upstream-review
+description: Compare local artifacts with their upstream inspiration sources. Use when reviewing metadata.watch-sources, VENDORED_FROM.md, ai/watchlist.toml, bin/ai-watch output, or deciding whether upstream changes are worth adopting.
 ---
 
-# Watch Review
+# Upstream Review
 
-Review watched upstream sources in the context of this repo's local artifacts.
+Review upstream provenance and drift in the context of this repo.
 
-## Goal
+## Mental Model
 
-Use the portable Watch workflow:
+`provenance -> optional review -> manual adopt`
 
-`watch -> review -> adopt`
+- `metadata.watch-sources` and `VENDORED_FROM.md` preserve where a local artifact came from or what inspired it.
+- `ai/watchlist.toml` is the optional batch list of upstream sources worth checking periodically.
+- `bin/ai-watch` collects read-only upstream facts and links them to local artifacts.
+- Adoption stays manual and explicit.
 
-- `watch` collects structured upstream facts
-- `review` evaluates relevance and drift
-- `adopt` stays manual and explicit
-
-Do not edit files, install dependencies, or vendor code as part of this skill.
+Do not edit files, install dependencies, vendor code, or sync upstream content as part of this skill.
 
 ## Workflow
+
+### If the user names a local artifact
+
+1. Inspect the artifact first.
+2. If it is a directory, read its `VENDORED_FROM.md` when present.
+3. If it is a frontmatter file, read `metadata.watch-sources` when present.
+4. If no direct metadata exists, search nearby docs for upstream/source notes before using the watchlist.
+5. Review only the relevant upstream source unless the user asks for a full watchlist pass.
+
+### If the user asks for a full watchlist pass
 
 1. Read `ai/watchlist.toml`.
 2. Run `bin/ai-watch --json`.
 3. Read the local artifacts referenced by `localMatches`.
 4. For each watched source:
-   - if linked via `metadata.watch-sources`, do semantic plus diff review
+   - if linked via `metadata.watch-sources` or `VENDORED_FROM.md`, do semantic plus diff review
    - if unlinked, do high-level fit review
 5. Return ranked recommendations for human review.
 
@@ -57,10 +66,9 @@ Return a ranked list using these labels:
 - `Skip`
 - `Risk notes`
 
-For each watched source include:
+For each relevant source include:
 
-- source id
-- upstream locator or URL
+- source id, locator, or URL
 - local artifact match, if any
 - recommendation label
 - concise rationale tied to this repo
@@ -76,4 +84,4 @@ Keep the output concise. Prioritize decisions and risk over raw diff narration.
 - Prefer repo-authored shared workflows over harness-specific wrappers
 - Flag supply-chain or setup burden increases clearly
 
-This skill is intentionally instruction-only in v1.
+This skill is intentionally instruction-only.

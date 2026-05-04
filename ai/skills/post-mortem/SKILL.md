@@ -77,7 +77,7 @@ Check whether the outcome was shaped by:
 - Explain why that file is the right owner for the fix
 - Prefer concrete wording or workflow changes over vague advice
 - Prefer narrow edits over broad repo rewrites
-- Keep Watch integration lightweight; `metadata.watch-sources` is for future comparison, not a reason to add Watch-only dependencies
+- Keep upstream review integration lightweight; `metadata.watch-sources` is for future comparison, not a reason to add review-only dependencies
 
 ## Required Output
 

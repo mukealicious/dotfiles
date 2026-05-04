@@ -14,7 +14,7 @@ An upstream version already exists at `walterra/agent-tools/packages/post-mortem
 1. it points at Cursor-specific configuration surfaces such as `.cursorrules` and `.cursor/skills/`
 2. it does not reflect this repo's shared instruction architecture in `ai/instructions/` and `ai/skills/`
 3. it does not acknowledge adjacent local artifacts such as Pi extensions and packages that may also be valid improvement targets
-4. it has no linkage to the new Watch model for future upstream comparison
+4. it has no linkage to the upstream review model for future upstream comparison
 
 Without a repo-adapted version, agents doing retrospectives will recommend the wrong files, miss local architecture boundaries, and fail to improve the places this dotfiles repo actually uses to shape agent behavior.
 
@@ -26,7 +26,7 @@ Without a repo-adapted version, agents doing retrospectives will recommend the w
   - `ai/skills/` for portable skills
   - `ai/instructions/base.md` plus harness appendices for shared instructions
   - `claude/skills/` and `pi/extensions/` only when runtime-specific behavior is required
-- Confirmed the user wants light Watch integration and wants Pi extensions and related agent-facing artifacts to remain in scope for recommendations when relevant.
+- Confirmed the user wants light upstream review integration and wants Pi extensions and related agent-facing artifacts to remain in scope for recommendations when relevant.
 - Confirmed input modes should all be first-class in v1:
   - current session
   - local export file
@@ -46,7 +46,7 @@ The adapted skill should stay instruction-only in v1, with no scripts or extra d
 - produce concrete recommendations tied to real files in this repo
 - stop for approval before editing
 - apply approved changes directly after approval
-- include `metadata.watch-sources` so future Watch reviews can compare the local skill to its upstream inspiration
+- include `metadata.watch-sources` so future upstream reviews can compare the local skill to its upstream inspiration
 
 This is the right balance of reuse and adaptation: the upstream concept is strong, but the repo-specific guidance needs to be local.
 
@@ -57,12 +57,12 @@ This is the right balance of reuse and adaptation: the upstream concept is stron
 | D1. Create `ai/skills/post-mortem/SKILL.md` with adapted frontmatter and repo-specific instructions | S | - |
 | D2. Replace Cursor-centric references with this repo's actual authoring surfaces and decision rules | S | D1 |
 | D3. Define the output and approval workflow for recommendations and approved edits | S | D1 |
-| D4. Add lightweight Watch linkage via `metadata.watch-sources` | S | D1 |
+| D4. Add lightweight upstream linkage via `metadata.watch-sources` | S | D1 |
 | D5. Validate wording against existing shared-skill conventions and install flow docs | S | D1, D2, D4 |
 
 ## Non-Goals
 
-- Creating the `watch-review` skill in this slice
+- Creating the `upstream-review` skill in this slice
 - Implementing `ai/watchlist.toml` or `bin/ai-watch` in this slice
 - Adding scripts, packages, or runtime-specific dependencies to `post-mortem`
 - Turning `post-mortem` into a Pi-only or Claude-only skill
@@ -213,7 +213,7 @@ The recommendations should be specific enough that an implementation agent can i
 | Content review | Repo targeting | Read the finished skill and confirm it references `ai/instructions/`, `ai/skills/`, and relevant Pi surfaces instead of Cursor-specific files |
 | Behavior smoke | Approval step | Run a post-mortem request and confirm the agent stops before editing |
 | Behavior smoke | Approved edit flow | Approve recommendations and confirm the resulting workflow allows direct edits without re-specifying the plan |
-| Watch linkage | Upstream association | Confirm `metadata.watch-sources` is present and uses the agreed locator format |
+| Upstream linkage | Upstream association | Confirm `metadata.watch-sources` is present and uses the agreed locator format |
 
 ## Risks & Mitigations
 
@@ -222,7 +222,7 @@ The recommendations should be specific enough that an implementation agent can i
 | The adapted skill remains too Cursor-shaped | Medium | Medium | Rewrite examples and target surfaces around this repo's actual architecture |
 | The skill becomes too broad and recommends edits everywhere | Medium | Medium | Instruct it to choose the narrowest authoring surface that owns the fix |
 | Pi-specific issues get ignored because the skill stays too AI-skill-centric | Medium | Medium | Explicitly include Pi extensions and packages as valid recommendation targets when causal |
-| The skill over-couples to Watch before Watch exists | Low | Low | Keep Watch integration limited to `metadata.watch-sources` and future-facing awareness |
+| The skill over-couples to upstream review before it exists | Low | Low | Keep review integration limited to `metadata.watch-sources` and future-facing awareness |
 | Approval behavior becomes ambiguous | Medium | High | Make the stop-for-approval phase explicit and mandatory in the instructions |
 
 ## Trade-offs Made
@@ -232,7 +232,7 @@ The recommendations should be specific enough that an implementation agent can i
 | Shared portable skill | Harness-specific implementations | The core workflow should work across Claude, Pi, OpenCode, Codex, and similar tools |
 | Direct edit flow after approval | Analysis-only output | The user wants approved recommendations to be actionable immediately |
 | AI-facing repo scope plus relevant Pi surfaces | Shared AI files only | Some failures may be rooted in Pi extensions or packages, not just skill text |
-| Light Watch linkage | Deep Watch dependency now | The skill should stand on its own before the broader Watch system exists |
+| Light upstream linkage | Deep review dependency now | The skill should stand on its own before the broader upstream review system exists |
 
 ## Open Questions
 
@@ -245,4 +245,4 @@ The recommendations should be specific enough that an implementation agent can i
 - The skill can analyze live sessions and external exports with the same overall workflow.
 - Approved recommendations can be applied in the same conversation without re-planning the task.
 - The skill remains small, portable, and dependency-free.
-- Future Watch reviews can recognize the local skill's upstream association through `watch-sources`.
+- Future upstream reviews can recognize the local skill's upstream association through `watch-sources`.

@@ -116,7 +116,7 @@ metadata:
 
 String-to-string map. Arbitrary key-value pairs.
 
-Use `metadata.watch-sources` when a local skill should stay associated with an upstream repo path for Watch reviews. The value is a compact locator in `owner/repo/path@ref` form. For multiple sources, use a block scalar:
+Use `metadata.watch-sources` when a local skill should stay associated with an upstream repo path for upstream review or one-off provenance lookup. The value is a compact locator in `owner/repo/path@ref` form. For multiple sources, use a block scalar:
 
 ```yaml
 metadata:

@@ -1,5 +1,5 @@
-# Portable Watch manifest.
-# Add one [[sources]] entry per upstream repo or subpath you want to review manually.
+# Optional upstream review manifest.
+# Add one [[sources]] entry per upstream repo or subpath you want to batch-review manually.
 # Verify new entries with: bin/ai-watch --source <id>
 
 version = 1

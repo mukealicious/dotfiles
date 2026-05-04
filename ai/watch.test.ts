@@ -1,14 +1,30 @@
 import { describe, expect, test } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
+  createGitHubClient,
   createWatchReport,
   filterChangedFilesForSource,
+  loadLocalArtifacts,
+  parseArgs,
   parseManifestText,
   parseWatchSourcesFromFrontmatter,
   type GitHubClient,
   type ManifestSource,
 } from "./watch";
 
+const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+
 describe("parseManifestText", () => {
+  test("parses the checked-in watchlist manifest", async () => {
+    const sources = parseManifestText(await Bun.file(join(repoRoot, "ai", "watchlist.toml")).text());
+
+    expect(sources.map((source) => source.id)).toContain("pi-subagents");
+    expect(sources.map((source) => source.id)).toContain("pi-openai-fast");
+  });
+
   test("rejects a source missing path", () => {
     const text = `version = 1
 
@@ -20,6 +36,16 @@ kind = "skill"
 `;
 
     expect(() => parseManifestText(text)).toThrow("manifest source missing-path is missing path");
+  });
+});
+
+describe("parseArgs", () => {
+  test("rejects option-looking source values", () => {
+    expect(() => parseArgs(["--source", "--json"])).toThrow("--source requires an id");
+  });
+
+  test("rejects option-looking kind values", () => {
+    expect(() => parseArgs(["--kind", "--json"])).toThrow("--kind requires a kind");
   });
 });
 
@@ -64,6 +90,42 @@ metadata:
         ref: "main",
       },
     ]);
+  });
+});
+
+describe("loadLocalArtifacts", () => {
+  test("loads VENDORED_FROM sidecars as package artifacts", async () => {
+    const root = mkdtempSync(join(tmpdir(), "ai-watch-"));
+
+    try {
+      mkdirSync(join(root, "pi", "packages", "pi-subagents"), { recursive: true });
+      writeFileSync(
+        join(root, "pi", "packages", "pi-subagents", "VENDORED_FROM.md"),
+        `---
+metadata:
+  watch-sources: nicobailon/pi-subagents@abc1234
+---
+
+# Vendored from upstream
+`,
+      );
+
+      await expect(loadLocalArtifacts(root)).resolves.toEqual([
+        {
+          artifact: "pi/packages/pi-subagents",
+          watchSources: [
+            {
+              locator: "nicobailon/pi-subagents@abc1234",
+              repo: "nicobailon/pi-subagents",
+              path: "",
+              ref: "abc1234",
+            },
+          ],
+        },
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 
@@ -191,9 +253,46 @@ describe("createWatchReport", () => {
   });
 });
 
-describe("watch-review skill", () => {
+describe("createGitHubClient", () => {
+  test("encodes branch-like refs in compare URLs", () => {
+    const mutableBun = Bun as typeof Bun & { spawnSync: typeof Bun.spawnSync };
+    const originalSpawnSync = mutableBun.spawnSync;
+    const calls: string[][] = [];
+
+    mutableBun.spawnSync = ((args: string[]) => {
+      calls.push(args);
+      return {
+        exitCode: 0,
+        stdout: Buffer.from(JSON.stringify({ files: [] })),
+        stderr: Buffer.from(""),
+      };
+    }) as typeof Bun.spawnSync;
+
+    try {
+      createGitHubClient(".").compareRefs(
+        {
+          id: "example",
+          repo: "owner/repo",
+          path: "",
+          branch: "main",
+          kind: "repo",
+          review: "semantic-diff",
+          notes: "Example",
+        },
+        "feature/foo",
+        "release/bar",
+      );
+    } finally {
+      mutableBun.spawnSync = originalSpawnSync;
+    }
+
+    expect(calls[0]?.[2]).toBe("repos/owner/repo/compare/feature%2Ffoo...release%2Fbar");
+  });
+});
+
+describe("upstream-review skill", () => {
   test("documents the required rubric and read-only workflow", async () => {
-    const text = await Bun.file(new URL("./skills/watch-review/SKILL.md", import.meta.url)).text();
+    const text = await Bun.file(new URL("./skills/upstream-review/SKILL.md", import.meta.url)).text();
 
     expect(text).toContain("bin/ai-watch --json");
     expect(text).toContain("Adopt now");

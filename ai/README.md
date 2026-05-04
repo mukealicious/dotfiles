@@ -33,17 +33,19 @@ Portable skills are authored once in `ai/skills/`. `ai/install.sh` refreshes the
 Do not author shared skills in `.agents/skills/` or `.claude/skills/`; they are installer-managed runtime outputs.
 Do not author projected files under `.ai-runtime/`; they are rebuilt by `ai/install.sh`.
 
-### Watch Workflow
+### Upstream Provenance and Review
 
-This repo now supports a portable upstream review loop:
+This repo keeps upstream context close to the local artifact, then uses an optional batch review when needed:
 
-`watch -> review -> adopt`
+`provenance -> optional review -> manual adopt`
 
-- `ai/watchlist.toml` defines which GitHub repos and paths are worth watching
-- `bin/ai-watch` collects read-only upstream facts and links them to local artifacts via `metadata.watch-sources` when present
-- `ai/skills/watch-review/` interprets the report and ranks whether upstream changes are worth adopting or adapting
+- `metadata.watch-sources` links frontmatter-friendly files to upstream inspiration or pinned source refs
+- `VENDORED_FROM.md` links vendored directories and packages to their upstream source
+- `ai/watchlist.toml` defines which GitHub repos and paths are worth checking as a batch
+- `bin/ai-watch` collects read-only upstream facts and links them to local artifacts
+- `ai/skills/upstream-review/` interprets direct provenance or watchlist reports and ranks whether upstream changes are worth adopting or adapting
 
-The Watch system is intentionally manual in v1: no auto-install, no auto-sync, no background polling.
+The review system is intentionally manual: no auto-install, no auto-sync, no background polling.
 
 ### Imported Upstreams
 
@@ -57,13 +59,15 @@ Some shared skills are intentionally vendored from upstream sources instead of b
 Rules for imported upstreams:
 
 - keep the shared source in `ai/skills/` as close to upstream as practical
-- use `metadata.watch-sources` plus `ai/watchlist.toml` to pin provenance and review drift
+- use `metadata.watch-sources` for skill/file provenance, `VENDORED_FROM.md` for vendored directories, and `ai/watchlist.toml` for optional batch drift review
 - resolve provider-specific placeholders during projection into `.ai-runtime/`, not by editing the vendored source to one harness
 - prefer exact-copy-first adoption; adapt later only after real usage teaches us what is worth changing
 
-#### Adding a watched source
+#### Adding upstream provenance or a watched source
 
-Edit `ai/watchlist.toml` and add one `[[sources]]` entry.
+If the source maps to one local file, add `metadata.watch-sources` to that file's frontmatter. If it maps to a vendored directory, add or update that directory's `VENDORED_FROM.md`.
+
+If the upstream should be checked as part of batch review, edit `ai/watchlist.toml` and add one `[[sources]]` entry.
 
 Minimal checklist:
 
@@ -92,6 +96,7 @@ Guidance:
 - prefer the narrowest useful `path`; smaller scopes produce less review noise
 - use `kind = "skill"` for a reusable skill or instruction package, `kind = "repo"` for broad inspiration sources
 - if a local `SKILL.md` should compare directly to upstream later, add `metadata.watch-sources` in that skill frontmatter
+- if a vendored directory should compare directly to upstream later, add `metadata.watch-sources` in `VENDORED_FROM.md`
 
 Verify a new entry with:
 
@@ -203,7 +208,7 @@ Most shared skills are repo-authored portable workflows. Imported skills are dif
 - `emil-design-eng` is vendored from `emilkowalski/skill`
 - Impeccable 3.x is vendored exact-copy-first from `pbakaus/impeccable/source/skills/impeccable/`
 - provider-specific placeholders stay in `ai/skills/` source and are resolved during projection into `.ai-runtime/`
-- upstream sources stay pinned through `metadata.watch-sources` and `ai/watchlist.toml`
+- upstream sources stay pinned through `metadata.watch-sources`, `VENDORED_FROM.md`, and `ai/watchlist.toml`
 
 ### Repo-Authored Shared Skills
 
@@ -218,7 +223,7 @@ Most shared skills are repo-authored portable workflows. Imported skills are dif
 | `opensrc` | Instruction-only | Fetch source context for external packages and repositories |
 | `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
 | `spec-planner` | Instruction-only | Dialogue-driven spec development with iterative refinement |
-| `watch-review` | Instruction-only | Review watched upstream sources against local artifacts |
+| `upstream-review` | Instruction-only | Review upstream provenance and watched sources against local artifacts |
 
 ### Imported Skills
 

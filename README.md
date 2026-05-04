@@ -85,10 +85,11 @@ Simple rules:
 
 ### Custom Commands
 
-21 scripts in `bin/` added to PATH:
+Scripts in `bin/` added to PATH include:
 
 - `dot` — Update everything
 - `dot doctor` — Check environment health
+- `ai-watch` — Generate upstream watchlist/review reports
 - `e` — Launch editor
 - `coffee` — Friendly caffeinate wrapper (prevent sleep)
 - `git-*` — 14 custom git commands (amend, nuke, undo, etc.)

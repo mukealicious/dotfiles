@@ -278,8 +278,14 @@ export function parseManifestText(text: string) {
   });
 }
 
-function walkSkillFiles(rootDir: string) {
-  const skillFiles: string[] = [];
+type ArtifactSearchRoot = {
+  directory: string;
+  fileName: string;
+  artifactFrom: "file" | "parent-directory";
+};
+
+function walkNamedFiles(rootDir: string, fileName: string) {
+  const files: string[] = [];
 
   function walk(currentDir: string) {
     for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
@@ -289,23 +295,35 @@ function walkSkillFiles(rootDir: string) {
         continue;
       }
 
-      if (entry.isFile() && entry.name === "SKILL.md") {
-        skillFiles.push(absolutePath);
+      if (entry.isFile() && entry.name === fileName) {
+        files.push(absolutePath);
       }
     }
   }
 
   walk(rootDir);
-  return skillFiles.sort();
+  return files.sort();
 }
 
-export async function loadLocalArtifacts(dotfilesRoot: string, directories?: string[]) {
-  const artifactFiles: string[] = [];
-  const searchDirectories = directories || [join(dotfilesRoot, "ai", "skills"), join(dotfilesRoot, "claude", "skills")];
+function defaultArtifactSearchRoots(dotfilesRoot: string): ArtifactSearchRoot[] {
+  return [
+    { directory: join(dotfilesRoot, "ai", "skills"), fileName: "SKILL.md", artifactFrom: "file" },
+    { directory: join(dotfilesRoot, "claude", "skills"), fileName: "SKILL.md", artifactFrom: "file" },
+    { directory: join(dotfilesRoot, "pi", "packages"), fileName: "VENDORED_FROM.md", artifactFrom: "parent-directory" },
+  ];
+}
 
-  for (const directory of searchDirectories) {
+export async function loadLocalArtifacts(dotfilesRoot: string) {
+  const artifactCandidates: Array<{ metadataFile: string; artifact: string }> = [];
+
+  for (const root of defaultArtifactSearchRoots(dotfilesRoot)) {
     try {
-      artifactFiles.push(...walkSkillFiles(directory));
+      for (const metadataFile of walkNamedFiles(root.directory, root.fileName)) {
+        artifactCandidates.push({
+          metadataFile,
+          artifact: relative(dotfilesRoot, root.artifactFrom === "parent-directory" ? dirname(metadataFile) : metadataFile),
+        });
+      }
     } catch (error) {
       if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") {
         throw error;
@@ -314,17 +332,17 @@ export async function loadLocalArtifacts(dotfilesRoot: string, directories?: str
   }
 
   const artifacts: Artifact[] = [];
-  for (const artifactFile of artifactFiles) {
-    const text = await Bun.file(artifactFile).text();
+  for (const candidate of artifactCandidates.sort((a, b) => a.artifact.localeCompare(b.artifact))) {
+    const text = await Bun.file(candidate.metadataFile).text();
     const frontmatter = extractFrontmatter(text);
     if (!frontmatter) {
       continue;
     }
 
-    const artifactPath = relative(dotfilesRoot, artifactFile);
-    const watchSources = parseWatchSourcesFromFrontmatter(frontmatter, artifactPath);
+    const metadataPath = relative(dotfilesRoot, candidate.metadataFile);
+    const watchSources = parseWatchSourcesFromFrontmatter(frontmatter, metadataPath);
     if (watchSources.length > 0) {
-      artifacts.push({ artifact: artifactPath, watchSources });
+      artifacts.push({ artifact: candidate.artifact, watchSources });
     }
   }
 
@@ -351,6 +369,19 @@ export function filterChangedFilesForSource(files: Array<{ filename: string }>, 
     .filter((filename) => !prefix || filename === source.path || filename.startsWith(prefix))
     .map((filename) => (prefix && filename.startsWith(prefix) ? filename.slice(prefix.length) : filename))
     .sort();
+}
+
+function formatChangedFiles(changedFiles: string[], maxFiles = 20) {
+  if (changedFiles.length === 0) {
+    return "none";
+  }
+
+  if (changedFiles.length <= maxFiles) {
+    return changedFiles.join(", ");
+  }
+
+  const shown = changedFiles.slice(0, maxFiles).join(", ");
+  return `${changedFiles.length} files (${shown}, … +${changedFiles.length - maxFiles} more)`;
 }
 
 export function findLocalMatches(source: ManifestSource, artifacts: Artifact[]) {
@@ -449,7 +480,7 @@ export function createGitHubClient(dotfilesRoot: string): GitHubClient {
     compareRefs(source, fromRef, toRef) {
       const compare = runJsonCommand(
         dotfilesRoot,
-        ["gh", "api", `repos/${source.repo}/compare/${fromRef}...${toRef}`],
+        ["gh", "api", `repos/${source.repo}/compare/${encodeURIComponent(fromRef)}...${encodeURIComponent(toRef)}`],
         `${source.id}: failed to compare ${fromRef}...${toRef}`,
       );
 
@@ -467,6 +498,14 @@ export function parseArgs(argv: string[]): WatchOptions {
     kind: null,
   };
 
+  function requireOptionValue(option: string, value: string | undefined, description: string) {
+    if (!value || value.startsWith("-")) {
+      throw new Error(`${option} requires ${description}`);
+    }
+
+    return value;
+  }
+
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
 
@@ -475,19 +514,13 @@ export function parseArgs(argv: string[]): WatchOptions {
         options.json = true;
         break;
       case "--source": {
-        const value = argv[index + 1];
-        if (!value) {
-          throw new Error("--source requires an id");
-        }
+        const value = requireOptionValue("--source", argv[index + 1], "an id");
         options.sourceId = value;
         index += 1;
         break;
       }
       case "--kind": {
-        const value = argv[index + 1];
-        if (!value) {
-          throw new Error("--kind requires a kind");
-        }
+        const value = requireOptionValue("--kind", argv[index + 1], "a kind");
         options.kind = value;
         index += 1;
         break;
@@ -568,7 +601,7 @@ export function createWatchReport({
 
 export function renderMarkdown(report: WatchReport) {
   const lines = [
-    "# Watch Report",
+    "# Upstream Review Report",
     "",
     `Generated: ${report.generatedAt}`,
     `Manifest: \`${report.manifest}\``,
@@ -604,7 +637,7 @@ export function renderMarkdown(report: WatchReport) {
     lines.push(`- Local matches: ${source.localMatches.length}`);
 
     for (const comparison of source.comparisons) {
-      const changedFiles = comparison.changedFiles.length > 0 ? comparison.changedFiles.join(", ") : "none";
+      const changedFiles = formatChangedFiles(comparison.changedFiles);
       lines.push(`- ${comparison.artifact} pinned to \`${comparison.fromRef}\`; relevant changed files: ${changedFiles}`);
     }
   }
