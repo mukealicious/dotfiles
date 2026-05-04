@@ -88,7 +88,8 @@ ai/
   instructions/
     base.md                     # Shared baseline instructions for all harnesses
   skills/
-    sprint-plan/
+    spec-planner/
+    grill-me/
     commit/
     uv/
     web-browser/
@@ -253,7 +254,7 @@ The right model for skills is:
 In practice:
 
 - `ai/skills/commit/` remains shared because the workflow is portable.
-- `ai/skills/sprint-plan/` is shared because clarification, sprint shaping, task atomicity, validation, and markdown output are portable.
+- `ai/skills/spec-planner/` and `ai/skills/grill-me/` are shared because clarification, trade-off analysis, skeptical questioning, and markdown output are portable.
 - `pi/extensions/notify.ts` stays Pi-native because it uses Pi's extension API, not the skill standard.
 
 **Important distinction**:
@@ -349,11 +350,10 @@ No extra adapter needed.
 ### Example C: a migrated shared skill
 
 ```text
-Capability: `sprint-plan`
-Location: `ai/skills/sprint-plan/`
-Reason: the core planning workflow is portable; the old Claude-only slash-command,
-subagent-review, and TaskCreate steps were optional glue and were removed instead
-of preserved as a permanent wrapper
+Capability: `spec-planner` + `grill-me`
+Location: `ai/skills/spec-planner/`, `ai/skills/grill-me/`
+Reason: planning is better split between dialogue-driven spec development and
+explicit stress-testing than preserved as a narrow sprint-only wrapper
 
 Installed/discovered by:
 - Claude Code

@@ -191,14 +191,15 @@ Skills with scripts should use Node/Bun built-in APIs (WebSocket, fs, path, chil
 
 Keep the skill in `ai/skills/` when the core workflow works without harness-native primitives. Add a harness-specific overlay only when it contributes small, optional runtime glue rather than a second copy of the core instructions.
 
-If the shared skill stands on its own, delete the wrapper instead of keeping two near-duplicate skills. `sprint-plan` is the canonical example: the shared skill keeps the clarification, sprint shaping, atomic-task, validation, and markdown output rules, while the old Claude-only slash-command, subagent-review, and task-conversion steps were removed instead of preserved as permanent wrapper logic.
+If the shared skill stands on its own, delete the wrapper instead of keeping two near-duplicate skills. Planning is the canonical example: keep durable planning workflows in shared skills such as `spec-planner` and `grill-me` instead of preserving narrow, overlapping wrappers.
 
 ## Skill Inventory
 
 ### Shared (`ai/skills/`)
 
-Most shared skills are repo-authored portable workflows. The design pack is different:
+Most shared skills are repo-authored portable workflows. Imported skills are different:
 
+- `grill-me` is vendored from `mattpocock/skills`
 - `emil-design-eng` is vendored from `emilkowalski/skill`
 - Impeccable 3.x is vendored exact-copy-first from `pbakaus/impeccable/source/skills/impeccable/`
 - provider-specific placeholders stay in `ai/skills/` source and are resolved during projection into `.ai-runtime/`
@@ -217,13 +218,13 @@ Most shared skills are repo-authored portable workflows. The design pack is diff
 | `opensrc` | Instruction-only | Fetch source context for external packages and repositories |
 | `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
 | `spec-planner` | Instruction-only | Dialogue-driven spec development with iterative refinement |
-| `sprint-plan` | Instruction-only | Break projects into demoable sprints with atomic, testable tasks |
 | `watch-review` | Instruction-only | Review watched upstream sources against local artifacts |
 
-### Imported Design Skills
+### Imported Skills
 
 | Skill | Upstream | Description |
 |---|---|---|
+| `grill-me` | `mattpocock/skills` | Stress-test plans and designs through relentless questioning |
 | `emil-design-eng` | `emilkowalski/skill` | Emil Kowalski's design engineering philosophy for UI polish and motion |
 | `impeccable` | `pbakaus/impeccable` | Consolidated 3.x design-command router: PRODUCT.md + DESIGN.md setup, document, shape, craft, live browser iteration, critique, audit, polish, and focused refinements |
 

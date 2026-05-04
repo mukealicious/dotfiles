@@ -178,10 +178,6 @@ When scope creeps:
 
 **Hard rule:** If scope changes, re-estimate and flag explicitly.
 
-## See Also
-
-- **sprint-plan** — Break specs into demoable sprints with atomic, testable tasks. Use after spec is approved to plan implementation.
-
 ## References
 
 | File | When to Read |

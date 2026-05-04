@@ -144,7 +144,7 @@ Shared skills in `ai/skills/`, available to all agents (Claude, Pi, OpenCode, Co
 |-------|---------|
 | `code-review` | Parallel review with architecture validation |
 | `spec-planner` | Dialogue-driven spec development |
-| `sprint-plan` | Break projects into atomic tasks |
+| `grill-me` | Stress-test plans through relentless questioning |
 | `opensrc` | Fetch source context for packages and repos |
 | `build-skill` | Create AI agent skills |
 | `dotfiles-dev` | Guidance for this dotfiles system |
