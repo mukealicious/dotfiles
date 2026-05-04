@@ -57,15 +57,6 @@ review = "semantic-diff"
 notes = "Upstream Impeccable 3.x consolidated skill source for ai/skills/impeccable/"
 
 [[sources]]
-id = "prompt-master"
-repo = "nidhinjs/prompt-master"
-path = ""
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Imported prompt-engineering skill source for ai/skills/prompt-master/ with Midjourney-focused utility"
-
-[[sources]]
 id = "openai-skills"
 repo = "openai/skills"
 path = ""

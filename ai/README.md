@@ -52,7 +52,6 @@ Some shared skills are intentionally vendored from upstream sources instead of b
 | Upstream | Local scope | Why it is here |
 |---|---|---|
 | `emilkowalski/skill` | `ai/skills/emil-design-eng/` | Preserve Emil Kowalski's design-engineering guidance as an exact upstream skill we can experiment with and review over time |
-| `nidhinjs/prompt-master` | `ai/skills/prompt-master/` | Keep a portable prompt-optimization skill in-repo, especially for Midjourney and other AI prompt-writing workflows, while tracking upstream drift |
 | `pbakaus/impeccable` | `ai/skills/impeccable/` | Use Impeccable 3.x as the consolidated design-command router for PRODUCT.md + DESIGN.md workflows |
 
 Rules for imported upstreams:
@@ -221,12 +220,6 @@ Most shared skills are repo-authored portable workflows. The design pack is diff
 | `spec-planner` | Instruction-only | Dialogue-driven spec development with iterative refinement |
 | `sprint-plan` | Instruction-only | Break projects into demoable sprints with atomic, testable tasks |
 | `watch-review` | Instruction-only | Review watched upstream sources against local artifacts |
-
-### Imported Utility Skills
-
-| Skill | Upstream | Description |
-|---|---|---|
-| `prompt-master` | `nidhinjs/prompt-master` | General prompt-engineering skill for sharpening prompts across tools, with especially strong Midjourney and image-AI routing |
 
 ### Imported Design Skills
 
