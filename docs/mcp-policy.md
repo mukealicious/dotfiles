@@ -19,7 +19,7 @@ MCPs are owned per harness so each agent gets only the integrations that fit its
 | `figma` | yes | no | no | Design workflow is Claude-only for now |
 | `playwright` | yes | no | no | Browser automation stays Claude-native for now |
 | `grep_app` | yes | yes | no | Useful in Claude/OpenCode; Pi does not use MCP right now |
-| `cloudflare` | yes | yes | no | Shared platform integration; Pi MCP removed for now |
+| `cloudflare` | project | project | no | Broad production platform; add only in projects that need it |
 | `linear` | no | yes | no | OpenCode-only today |
 
 ## Rules
@@ -34,7 +34,7 @@ MCPs are owned per harness so each agent gets only the integrations that fit its
    Pi has no built-in MCP layer. If Pi needs MCP access, add it intentionally through a Pi-native adapter/package and configure only the servers Pi should see.
 
 4. **Prefer the smallest useful surface.**
-   Especially for large platforms like Cloudflare, start with a narrow config and proxy-style access rather than exposing every tool directly.
+   Especially for large platforms like Cloudflare, avoid user-scope/global MCPs. Add them at project scope only when the repository needs them.
 
 5. **Document exceptions.**
    If the same MCP is enabled in multiple harnesses, there should be a clear workflow reason.
@@ -51,5 +51,5 @@ When adding or changing an MCP:
 ## Examples
 
 - **Figma Claude-only**: add to Claude config, omit from OpenCode and Pi
-- **Cloudflare across tools**: keep in Claude/OpenCode if useful there; add to Pi only when Pi-side auth and runtime ergonomics are good enough to justify it
+- **Cloudflare project-only**: add to Claude/OpenCode at project scope in Cloudflare-backed repositories; do not configure it globally
 - **One-off local MCP**: keep it in the harness where it is used instead of promoting it repo-wide
