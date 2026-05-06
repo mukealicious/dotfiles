@@ -15,11 +15,10 @@ brew "opencode"                  # AI coding agent for terminal
 brew "gemini-cli"                # Google Gemini AI CLI
 
 # Languages & Version Management
-brew "asdf"
 brew "mise"
 brew "node"
 brew "bun"
-brew "yarn"  # Install globally via Homebrew (faster than asdf)
+brew "yarn"  # Install globally via Homebrew
 brew "pnpm"  # Fast Node.js package manager
 
 # Databases & Services

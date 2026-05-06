@@ -57,13 +57,27 @@ check_file_contains_literal() {
 
 header "Critical CLIs"
 
-for cmd in brew fish tmux starship bun uv; do
+for cmd in brew fish tmux starship mise bun uv qmd; do
   if command -v "$cmd" >/dev/null 2>&1; then
     pass "$cmd"
   else
     fail "$cmd not found"
   fi
 done
+
+if command -v qmd >/dev/null 2>&1; then
+  qmd_path="$(command -v qmd)"
+  case "$qmd_path" in
+    "$HOME/.bun/"*)
+      warn "qmd resolves from Bun global packages"
+      info "Native deps like better-sqlite3 are more stable under mise-managed Node"
+      info "Fix: dot, then ensure qmd resolves from the mise Node install"
+      ;;
+    *)
+      pass "qmd runtime path: $qmd_path"
+      ;;
+  esac
+fi
 
 if command -v parallel-cli >/dev/null 2>&1 && parallel-cli --version >/dev/null 2>&1; then
   pass "parallel-cli"
@@ -160,6 +174,12 @@ fi
 header "Tool configs"
 
 check_symlink "$DOTFILES_ROOT/starship/starship.toml" "$HOME/.config/starship.toml" "starship.toml"
+check_symlink "$DOTFILES_ROOT/mise/config.toml" "$HOME/.config/mise/config.toml" "mise/config.toml"
+
+if [ -e "$HOME/.tool-versions" ]; then
+  warn "legacy ~/.tool-versions exists"
+  info "mise supports it, but this dotfiles setup now uses ~/.config/mise/config.toml"
+fi
 
 if [ -d "$DOTFILES_ROOT/ripgrep" ]; then
   check_symlink "$DOTFILES_ROOT/ripgrep/config" "$HOME/.config/ripgrep/config" "ripgrep/config"

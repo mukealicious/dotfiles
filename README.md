@@ -24,7 +24,7 @@ dot -e       # Open dotfiles in editor
 |----------|-------|
 | **Shell** | Fish with fzf |
 | **Terminal** | WezTerm, tmux |
-| **Runtimes** | asdf (Node.js), uv (Python), Bun |
+| **Runtimes** | mise (Node.js), uv (Python), Bun |
 | **Packages** | Homebrew (Brewfile) |
 | **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex, Pi |
 | **Window Mgmt** | AeroSpace (i3-like tiling), Ice (menu bar) |
@@ -49,7 +49,8 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `wezterm/` | WezTerm terminal config |
 | `aerospace/` | Window manager config |
 | `fzf/` | Fuzzy finder keybindings |
-| `bun/` | Bun global packages |
+| `bun/` | Bun global packages that do not need native Node ABI stability |
+| `mise/` | mise-managed runtimes and native Node CLIs such as QMD |
 | `pi/` | Pi coding agent config, extensions |
 | `agent-browser/` | Headless browser automation for AI agents |
 | `ripgrep/` | Ripgrep config and environment setup |
