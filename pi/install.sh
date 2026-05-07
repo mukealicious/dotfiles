@@ -28,7 +28,7 @@ if [ "$FORCE" = "true" ]; then
   log_force_enabled
 fi
 
-PI_PACKAGE="@earendil-works/pi-coding-agent@0.74.0"
+PI_PACKAGE="@earendil-works/pi-coding-agent"
 
 if ! command -v pi >/dev/null 2>&1; then
   log_info "Installing Pi coding agent ($PI_PACKAGE)..."

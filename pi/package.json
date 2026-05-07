@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "npm install --package-lock=false --ignore-scripts >/dev/null && tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "*",

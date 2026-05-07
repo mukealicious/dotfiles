@@ -9,13 +9,13 @@ Run automatically by `script/install`, or manually:
 ~/.dotfiles/pi/install.sh
 ```
 
-Requires `pi` to be installed first. Pi moved to `earendil-works/pi`; `0.74.0` is the first release under the `@earendil-works` npm scope:
+Requires `pi` to be installed first. Pi moved to `earendil-works/pi`; use the current package under the `@earendil-works` npm scope:
 
 ```bash
-bun install -g @earendil-works/pi-coding-agent@0.74.0 --minimum-release-age=0
+bun install -g @earendil-works/pi-coding-agent
 ```
 
-Official migration path is `pi update` from old installs; if the old install is before `0.73.1`, run it twice because `0.73.1` is the final `@mariozechner/*` release and contains the updater handoff.
+Official migration path for old installs is `pi update`; run it again if it first updates only to the final old-scope handoff release.
 
 The researcher agent also depends on `parallel-cli` for `pi-parallel`. In this dotfiles setup it is installed via `curl -fsSL https://parallel.ai/install.sh | bash` into `~/.local/bin`; authentication is still manual:
 ```bash
@@ -23,6 +23,13 @@ parallel-cli login
 ```
 
 Run `dot doctor` to verify agents, symlinks, and skill projections are correctly installed.
+
+For local editor/typecheck support of custom Pi extensions, install transient dev dependencies without committing a lockfile:
+
+```bash
+npm --prefix pi install --package-lock=false --ignore-scripts
+npm --prefix pi run typecheck
+```
 
 To choose the default Pi profile per machine, copy the pattern from `fish/local.fish.example`
 into `~/.config/fish/local.fish` and set:
