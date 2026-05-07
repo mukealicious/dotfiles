@@ -1,5 +1,5 @@
 #!/bin/sh
-# Open Moya Glava in VSCode and switch to AeroSpace workspace N
+# Open Moja Glava in VSCode and switch to AeroSpace workspace N
 #
 # Stream Deck: Page 1, Position 0,0 — "Notes"
 
@@ -7,12 +7,12 @@ set -e
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
-PROJECT="$HOME/Code/moya-glava"
+PROJECT="$HOME/Code/moja-glava"
 WORKSPACE="N"
 
 # Check if the window already exists in AeroSpace
 WINDOW_ID=$(aerospace list-windows --all 2>/dev/null \
-  | grep -i "moya-glava" \
+  | grep -i "moja-glava" \
   | head -1 \
   | awk '{print $1}')
 
@@ -31,7 +31,7 @@ i=0
 while [ $i -lt 10 ]; do
   sleep 0.5
   WINDOW_ID=$(aerospace list-windows --all 2>/dev/null \
-    | grep -i "moya-glava" \
+    | grep -i "moja-glava" \
     | head -1 \
     | awk '{print $1}')
   if [ -n "$WINDOW_ID" ]; then
