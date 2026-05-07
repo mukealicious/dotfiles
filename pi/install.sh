@@ -28,9 +28,17 @@ if [ "$FORCE" = "true" ]; then
   log_force_enabled
 fi
 
+PI_PACKAGE="@earendil-works/pi-coding-agent@0.74.0"
+
 if ! command -v pi >/dev/null 2>&1; then
-  log_warn "pi not installed, skipping Pi setup"
-  exit 0
+  log_info "Installing Pi coding agent ($PI_PACKAGE)..."
+  if command -v bun >/dev/null 2>&1 && bun install -g "$PI_PACKAGE" --minimum-release-age=0 >/dev/null 2>&1; then
+    log_success "Installed pi"
+  else
+    log_warn "pi not installed, skipping Pi setup"
+    log_hint "Run manually: bun install -g $PI_PACKAGE --minimum-release-age=0"
+    exit 0
+  fi
 fi
 
 log_info "Setting up Pi coding agent..."

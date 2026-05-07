@@ -298,7 +298,7 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 - **Instruction File**: `~/.gemini/GEMINI.md` (assembled from shared base)
 
 ### Pi Coding Agent (pi)
-- **Provider**: Anthropic (via @mariozechner/pi-coding-agent)
+- **Provider**: Anthropic (via @earendil-works/pi-coding-agent)
 - **Profiles**: `pi-work` and `pi-personal` — `pi` dispatches based on `PI_DEFAULT_PROFILE`
 - **Config**: `pi/settings.work.json` → `~/.pi/work/settings.json`, `pi/settings.personal.json` → `~/.pi/personal/settings.json`
 - **Instruction File**: `~/.pi/agent/AGENTS.md` (assembled), symlinked into both profiles

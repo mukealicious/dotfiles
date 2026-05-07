@@ -2,7 +2,7 @@
  * Subagent completion notifications.
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { buildCompletionKey, getGlobalSeenMap, markSeenWithTtl } from "./completion-dedupe.ts";
 import { SUBAGENT_ASYNC_COMPLETE_EVENT } from "./types.ts";
 

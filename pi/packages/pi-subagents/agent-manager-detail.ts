@@ -1,5 +1,5 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
-import { matchesKey, truncateToWidth } from "@mariozechner/pi-tui";
+import type { Theme } from "@earendil-works/pi-coding-agent";
+import { matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
 import type { AgentConfig } from "./agents.ts";
 import { formatDuration } from "./formatters.ts";
 import type { RunEntry } from "./run-history.ts";

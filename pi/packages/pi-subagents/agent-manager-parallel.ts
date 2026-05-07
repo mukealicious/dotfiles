@@ -1,5 +1,5 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
-import { matchesKey, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
+import type { Theme } from "@earendil-works/pi-coding-agent";
+import { matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { TextEditorState } from "./text-editor.ts";
 import { createEditorState, handleEditorInput, renderEditor, wrapText, getCursorDisplayPos, ensureCursorVisible } from "./text-editor.ts";
 import { pad, row, renderHeader, renderFooter, fuzzyFilter } from "./render-helpers.ts";

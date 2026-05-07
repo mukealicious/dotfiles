@@ -12,7 +12,7 @@
  * Adapted from HazAT/pi-config.
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 interface JudgeResult {
   action: "continue" | "nudge" | "abort";
@@ -291,13 +291,18 @@ export default function (pi: ExtensionAPI) {
     description:
       "Toggle watchdog or set interval in minutes (e.g., /watchdog off, /watchdog on, /watchdog 3)",
     handler: async (args, ctx) => {
+      const notify = (message: string, type: "info" | "warning" = "info") => {
+        ctx.ui.notify(message, type);
+      };
+
       sessionCtx = ctx;
       const arg = (args ?? "").trim().toLowerCase();
 
       if (arg === "off") {
         enabled = false;
         updateStatusBar();
-        return "Watchdog disabled.";
+        notify("Watchdog disabled.");
+        return;
       }
 
       if (arg === "on") {
@@ -306,7 +311,8 @@ export default function (pi: ExtensionAPI) {
         lastActivityTimestamp = Date.now();
         updateStatusBar();
         startTimer(ctx);
-        return `Watchdog enabled (${getIntervalMinutes()}m).`;
+        notify(`Watchdog enabled (${getIntervalMinutes()}m).`);
+        return;
       }
 
       if (arg === "") {
@@ -317,9 +323,12 @@ export default function (pi: ExtensionAPI) {
           startTimer(ctx);
         }
         updateStatusBar();
-        return enabled
-          ? `Watchdog enabled (${getIntervalMinutes()}m).`
-          : "Watchdog disabled.";
+        notify(
+          enabled
+            ? `Watchdog enabled (${getIntervalMinutes()}m).`
+            : "Watchdog disabled."
+        );
+        return;
       }
 
       const minutes = parseInt(arg, 10);
@@ -329,10 +338,11 @@ export default function (pi: ExtensionAPI) {
         enabled = true;
         updateStatusBar();
         startTimer(ctx);
-        return `Watchdog set to ${minutes}m interval.`;
+        notify(`Watchdog set to ${minutes}m interval.`);
+        return;
       }
 
-      return `Unknown argument: "${arg}". Usage: /watchdog [off|on|<minutes>]`;
+      notify(`Unknown argument: "${arg}". Usage: /watchdog [off|on|<minutes>]`, "warning");
     },
   });
 }

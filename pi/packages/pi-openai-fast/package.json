@@ -27,7 +27,7 @@
     ]
   },
   "peerDependencies": {
-    "@mariozechner/pi-coding-agent": ">=0.57.0"
+    "@earendil-works/pi-coding-agent": ">=0.74.0"
   },
   "repository": {
     "type": "git",

@@ -4,9 +4,9 @@
 
 import * as os from "node:os";
 import * as path from "node:path";
-import type { Message } from "@mariozechner/pi-ai";
+import type { Message } from "@earendil-works/pi-ai";
 import type { FSWatcher } from "node:fs";
-import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 // ============================================================================
 // Basic Types
@@ -354,7 +354,7 @@ export interface RunSyncOptions {
 	interruptSignal?: AbortSignal;
 	allowIntercomDetach?: boolean;
 	intercomEvents?: IntercomEventBus;
-	onUpdate?: (r: import("@mariozechner/pi-agent-core").AgentToolResult<Details>) => void;
+	onUpdate?: (r: import("@earendil-works/pi-agent-core").AgentToolResult<Details>) => void;
 	onControlEvent?: (event: ControlEvent) => void;
 	controlConfig?: ResolvedControlConfig;
 	intercomSessionName?: string;

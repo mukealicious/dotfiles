@@ -1,6 +1,6 @@
 # Pi Coding Agent
 
-Configuration for [Pi](https://github.com/mariozechner/pi-coding-agent), Armin Ronacher's terminal AI coding agent.
+Configuration for [Pi](https://github.com/earendil-works/pi), Armin Ronacher's terminal AI coding agent.
 
 ## Setup
 
@@ -9,7 +9,13 @@ Run automatically by `script/install`, or manually:
 ~/.dotfiles/pi/install.sh
 ```
 
-Requires `pi` to be installed first (`bun install -g @mariozechner/pi-coding-agent`).
+Requires `pi` to be installed first. Pi moved to `earendil-works/pi`; `0.74.0` is the first release under the `@earendil-works` npm scope:
+
+```bash
+bun install -g @earendil-works/pi-coding-agent@0.74.0 --minimum-release-age=0
+```
+
+Official migration path is `pi update` from old installs; if the old install is before `0.73.1`, run it twice because `0.73.1` is the final `@mariozechner/*` release and contains the updater handoff.
 
 The researcher agent also depends on `parallel-cli` for `pi-parallel`. In this dotfiles setup it is installed via `curl -fsSL https://parallel.ai/install.sh | bash` into `~/.local/bin`; authentication is still manual:
 ```bash

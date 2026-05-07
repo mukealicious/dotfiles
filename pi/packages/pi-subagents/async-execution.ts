@@ -8,7 +8,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AgentConfig } from "./agents.ts";
 import { applyThinkingSuffix } from "./pi-args.ts";
 import { injectSingleOutputInstruction, resolveSingleOutputPath } from "./single-output.ts";
@@ -37,11 +37,11 @@ const piPackageRoot = resolvePiPackageRoot();
 const jitiCliPath: string | undefined = (() => {
 	const candidates: Array<() => string> = [
 		() => path.join(path.dirname(require.resolve("jiti/package.json")), "lib/jiti-cli.mjs"),
-		() => path.join(path.dirname(require.resolve("@mariozechner/jiti/package.json")), "lib/jiti-cli.mjs"),
+		() => path.join(path.dirname(require.resolve("jiti/package.json")), "lib/jiti-cli.mjs"),
 		() => {
 			const piEntry = fs.realpathSync(process.argv[1]);
 			const piRequire = createRequire(piEntry);
-			return path.join(path.dirname(piRequire.resolve("@mariozechner/jiti/package.json")), "lib/jiti-cli.mjs");
+			return path.join(path.dirname(piRequire.resolve("jiti/package.json")), "lib/jiti-cli.mjs");
 		},
 	];
 	for (const candidate of candidates) {

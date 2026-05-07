@@ -1,5 +1,5 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
-import { matchesKey, truncateToWidth } from "@mariozechner/pi-tui";
+import type { Theme } from "@earendil-works/pi-coding-agent";
+import { matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
 import { defaultSystemPromptMode, type AgentConfig, type BuiltinAgentOverrideBase } from "./agents.ts";
 import { createEditorState, ensureCursorVisible, getCursorDisplayPos, handleEditorInput, renderEditor, wrapText } from "./text-editor.ts";
 import type { TextEditorState } from "./text-editor.ts";

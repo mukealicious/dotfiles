@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { Key, matchesKey } from "@mariozechner/pi-tui";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { Key, matchesKey } from "@earendil-works/pi-tui";
 import { discoverAgents, discoverAgentsAll, type ChainConfig } from "./agents.ts";
 import { AgentManagerComponent, type ManagerResult } from "./agent-manager.ts";
 import { SubagentsStatusComponent } from "./subagents-status.ts";

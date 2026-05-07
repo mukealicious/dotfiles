@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { Theme } from "@mariozechner/pi-coding-agent";
-import type { Component, TUI } from "@mariozechner/pi-tui";
-import { matchesKey, truncateToWidth } from "@mariozechner/pi-tui";
+import type { Theme } from "@earendil-works/pi-coding-agent";
+import type { Component, TUI } from "@earendil-works/pi-tui";
+import { matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
 import { type AsyncRunOverlayData, type AsyncRunSummary, listAsyncRunsForOverlay } from "./async-status.ts";
 import { ASYNC_DIR } from "./types.ts";
 import { formatDuration, formatTokens, shortenPath } from "./formatters.ts";

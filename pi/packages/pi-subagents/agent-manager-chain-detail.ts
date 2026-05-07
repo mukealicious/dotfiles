@@ -1,5 +1,5 @@
-import type { Theme } from "@mariozechner/pi-coding-agent";
-import { matchesKey, truncateToWidth } from "@mariozechner/pi-tui";
+import type { Theme } from "@earendil-works/pi-coding-agent";
+import { matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
 import type { ChainConfig, ChainStepConfig } from "./agents.ts";
 import { row, renderFooter, renderHeader, formatPath, formatScrollInfo } from "./render-helpers.ts";
 import { isParallelStep, type ChainStep } from "./settings.ts";

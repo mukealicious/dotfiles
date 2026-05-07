@@ -79,10 +79,10 @@ function asDataModule(source) {
 
 export function resolve(specifier, context, nextResolve) {
   if (context.parentURL?.endsWith("/render.ts")) {
-    if (specifier === "@mariozechner/pi-coding-agent") {
+    if (specifier === "@earendil-works/pi-coding-agent") {
       return { url: asDataModule(renderPiCodingAgentShim), shortCircuit: true };
     }
-    if (specifier === "@mariozechner/pi-tui") {
+    if (specifier === "@earendil-works/pi-tui") {
       return { url: asDataModule(renderPiTuiShim), shortCircuit: true };
     }
   }

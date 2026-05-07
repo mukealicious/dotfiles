@@ -4,8 +4,8 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { AgentToolResult } from "@earendil-works/pi-agent-core";
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { AgentConfig } from "./agents.ts";
 import { ChainClarifyComponent, type ChainClarifyResult, type BehaviorOverride, type ModelInfo } from "./chain-clarify.ts";
 import {

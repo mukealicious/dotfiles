@@ -4,7 +4,7 @@
 
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import type { Message } from "@mariozechner/pi-ai";
+import type { Message } from "@earendil-works/pi-ai";
 import type { AgentConfig } from "./agents.ts";
 import {
 	ensureArtifactsDir,

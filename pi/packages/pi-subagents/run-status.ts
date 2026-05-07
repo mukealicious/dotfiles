@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import type { AgentToolResult } from "@earendil-works/pi-agent-core";
 import { formatAsyncRunList, listAsyncRuns } from "./async-status.ts";
 import { ASYNC_DIR, RESULTS_DIR, type Details } from "./types.ts";
 import { findByPrefix, readStatus } from "./utils.ts";
