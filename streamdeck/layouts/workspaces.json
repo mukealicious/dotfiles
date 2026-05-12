@@ -10,9 +10,9 @@
     },
     "0,1": {
       "type": "open",
-      "title": "Conductor",
-      "icon": "icons/conductor.png",
-      "path": "apps/WorkspaceConductor.app"
+      "title": "Codex",
+      "icon": "icons/codex.png",
+      "path": "apps/WorkspaceCodex.app"
     },
     "1,1": {
       "type": "open",
