@@ -34,6 +34,19 @@ run_step() {
   "$@"
 }
 
+optional_failures=""
+
+run_optional_step() {
+  label="$1"
+  shift
+  log_step "$label"
+  if ! "$@"; then
+    log_warn "$label failed; continuing with remaining installers"
+    optional_failures="${optional_failures}
+$label"
+  fi
+}
+
 ensure_brew_available() {
   if command -v brew >/dev/null 2>&1; then
     return 0
@@ -106,7 +119,7 @@ log_section "Homebrew"
 run_step "$dotfilesDirectory/homebrew/install.sh" "$dotfilesDirectory/homebrew/install.sh"
 ensure_brew_available
 run_step "brew update" brew update
-run_step "brew upgrade" brew upgrade
+run_optional_step "brew upgrade" brew upgrade
 run_step "brew bundle --file=$dotfilesDirectory/Brewfile" brew bundle --file="$dotfilesDirectory/Brewfile"
 
 log_section "Topic installers"
@@ -116,4 +129,8 @@ else
   run_step "$dotfilesDirectory/script/install --skip ./homebrew/install.sh" env FORCE=false "$dotfilesDirectory/script/install" --skip ./homebrew/install.sh
 fi
 
-printf '\n%sDone.%s %sDotfiles are up to date.%s\n' "$LOG_GREEN" "$LOG_RESET" "$LOG_DIM" "$LOG_RESET"
+if [ -n "$optional_failures" ]; then
+  log_warn "Completed with non-blocking failures:${optional_failures}"
+else
+  printf '\n%sDone.%s %sDotfiles are up to date.%s\n' "$LOG_GREEN" "$LOG_RESET" "$LOG_DIM" "$LOG_RESET"
+fi
