@@ -53,6 +53,7 @@ Some shared skills are intentionally vendored from upstream sources instead of b
 
 | Upstream | Local scope | Why it is here |
 |---|---|---|
+| `mattpocock/skills` | `ai/skills/grill-me/`, `ai/skills/grill-with-docs/`, `ai/skills/improve-codebase-architecture/` | Preserve compact planning, domain-model, and architecture-review workflows as portable shared skills |
 | `emilkowalski/skill` | `ai/skills/emil-design-eng/` | Preserve Emil Kowalski's design-engineering guidance as an exact upstream skill we can experiment with and review over time |
 | `pbakaus/impeccable` | `ai/skills/impeccable/` | Use Impeccable 3.x as the consolidated design-command router for PRODUCT.md + DESIGN.md workflows |
 
@@ -204,7 +205,7 @@ If the shared skill stands on its own, delete the wrapper instead of keeping two
 
 Most shared skills are repo-authored portable workflows. Imported skills are different:
 
-- `grill-me` is vendored from `mattpocock/skills`
+- `grill-me`, `grill-with-docs`, and `improve-codebase-architecture` are vendored from `mattpocock/skills`
 - `emil-design-eng` is vendored from `emilkowalski/skill`
 - Impeccable 3.x is vendored exact-copy-first from `pbakaus/impeccable/source/skills/impeccable/`
 - provider-specific placeholders stay in `ai/skills/` source and are resolved during projection into `.ai-runtime/`
@@ -230,6 +231,8 @@ Most shared skills are repo-authored portable workflows. Imported skills are dif
 | Skill | Upstream | Description |
 |---|---|---|
 | `grill-me` | `mattpocock/skills` | Stress-test plans and designs through relentless questioning |
+| `grill-with-docs` | `mattpocock/skills` | Stress-test plans against project language and documented decisions while updating `CONTEXT.md`/ADRs |
+| `improve-codebase-architecture` | `mattpocock/skills` | Find architecture deepening opportunities using domain language and ADRs |
 | `emil-design-eng` | `emilkowalski/skill` | Emil Kowalski's design engineering philosophy for UI polish and motion |
 | `impeccable` | `pbakaus/impeccable` | Consolidated 3.x design-command router: PRODUCT.md + DESIGN.md setup, document, shape, craft, live browser iteration, critique, audit, polish, and focused refinements |
 

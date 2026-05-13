@@ -39,6 +39,15 @@ review = "semantic-diff"
 notes = "Upstream Grill Me skill source for ai/skills/grill-me/SKILL.md"
 
 [[sources]]
+id = "grill-with-docs"
+repo = "mattpocock/skills"
+path = "skills/engineering/grill-with-docs"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream Grill With Docs skill source for ai/skills/grill-with-docs/"
+
+[[sources]]
 id = "improve-codebase-architecture"
 repo = "mattpocock/skills"
 path = "skills/engineering/improve-codebase-architecture"
