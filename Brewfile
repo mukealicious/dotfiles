@@ -34,6 +34,7 @@ brew "httpie"                    # Modern curl alternative
 brew "gnupg"
 brew "imagemagick"
 brew "pandoc"                    # Universal document converter (markdown -> plain text)
+brew "typst"                     # Document compiler for rendering generated .typ files
 brew "ffmpeg"                    # Audio/video processing (required by lue-reader TTS)
 brew "yt-dlp"                    # YouTube video/audio downloader
 brew "promptfoo"                 # LLM prompt testing and evaluation
