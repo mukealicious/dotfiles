@@ -1,0 +1,83 @@
+#!/bin/sh
+# Toggle or set the WezTerm Gruvbox light/dark preference.
+
+set -e
+
+THEME_DIR="$HOME/.config/wezterm"
+THEME_FILE="$THEME_DIR/theme"
+
+usage() {
+  cat <<'EOF'
+Usage: wezterm-theme [light|dark|system|toggle|status]
+
+Controls the Gruvbox variant used by ~/.dotfiles/wezterm/wezterm.lua.symlink.
+
+  light   Persist GruvboxLight
+  dark    Persist GruvboxDark
+  system  Remove the override and follow macOS appearance
+  toggle  Toggle between persisted light/dark. If unset, toggles to dark.
+  status  Print the current persisted preference
+
+Shortcut: Cmd+Shift+T in WezTerm also toggles light/dark.
+EOF
+}
+
+current_preference() {
+  if [ -f "$THEME_FILE" ]; then
+    preference="$(head -n 1 "$THEME_FILE")"
+    case "$preference" in
+      light|dark) printf '%s\n' "$preference"; return ;;
+    esac
+  fi
+  printf '%s\n' system
+}
+
+reload_wezterm_config() {
+  # WezTerm watches its config path, not this sidecar preference file. ~/.wezterm.lua
+  # is a symlink in this dotfiles setup, so touch both the link itself and the
+  # target. Different file watchers notice different sides of that relationship.
+  if [ -L "$HOME/.wezterm.lua" ]; then
+    touch -h "$HOME/.wezterm.lua" 2>/dev/null || true
+  fi
+  if [ -e "$HOME/.wezterm.lua" ]; then
+    touch "$HOME/.wezterm.lua"
+  fi
+}
+
+set_preference() {
+  mkdir -p "$THEME_DIR"
+  printf '%s\n' "$1" > "$THEME_FILE"
+  reload_wezterm_config
+  printf 'WezTerm theme preference: %s\n' "$1"
+  printf 'Running WezTerm windows should reload automatically; use Cmd+R if not.\n'
+}
+
+command="${1:-toggle}"
+
+case "$command" in
+  light|dark)
+    set_preference "$command"
+    ;;
+  system)
+    rm -f "$THEME_FILE"
+    reload_wezterm_config
+    printf 'WezTerm theme preference: system\n'
+    printf 'Running WezTerm windows should reload automatically; use Cmd+R if not.\n'
+    ;;
+  toggle)
+    case "$(current_preference)" in
+      dark) set_preference light ;;
+      *) set_preference dark ;;
+    esac
+    ;;
+  status)
+    printf '%s\n' "$(current_preference)"
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

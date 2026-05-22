@@ -64,6 +64,7 @@ cask "codex"                     # OpenAI's coding agent
 cask "claude-code"               # Claude AI coding assistant CLI
 cask "ollama-app"                # Local LLM runner for QMD embeddings
 cask "wezterm"                   # GPU-accelerated terminal emulator
+cask "cmux"                      # AI coding terminal with vertical tabs and notifications
 cask "1password-cli"             # 1Password CLI for secrets management
 cask "docker-desktop"            # Docker Desktop with CLI tools
 cask "gcloud-cli"                # Google Cloud CLI

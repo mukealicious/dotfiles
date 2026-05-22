@@ -19,8 +19,79 @@ config.window_background_opacity = 0.92
 config.macos_window_background_blur = 20
 config.hide_tab_bar_if_only_one_tab = true
 
--- Use built-in light color scheme
-config.color_scheme = 'GruvboxLight'
+-- Gruvbox theme support. Defaults to macOS appearance, but can be pinned by
+-- writing "light" or "dark" to ~/.config/wezterm/theme.
+local theme_preference_path = wezterm.home_dir .. '/.config/wezterm/theme'
+
+local function read_theme_preference()
+  local file = io.open(theme_preference_path, 'r')
+  if not file then
+    return 'system'
+  end
+
+  local value = file:read('*l') or 'system'
+  file:close()
+
+  if value == 'light' or value == 'dark' then
+    return value
+  end
+  return 'system'
+end
+
+local function gruvbox_scheme_for_preference(preference)
+  if preference == 'dark' then
+    return 'GruvboxDark'
+  end
+  if preference == 'light' then
+    return 'GruvboxLight'
+  end
+  if wezterm.gui.get_appearance():find('Dark') then
+    return 'GruvboxDark'
+  end
+  return 'GruvboxLight'
+end
+
+config.color_scheme = gruvbox_scheme_for_preference(read_theme_preference())
+
+-- Persistently toggle Gruvbox light/dark with Cmd+Shift+T.
+config.keys = {
+  {
+    key = 'r',
+    mods = 'CMD',
+    action = wezterm.action.ReloadConfiguration,
+  },
+  {
+    key = 'R',
+    mods = 'CMD|SHIFT',
+    action = wezterm.action.ReloadConfiguration,
+  },
+  {
+    key = 'T',
+    mods = 'CMD|SHIFT',
+    action = wezterm.action_callback(function(window, _pane)
+      local current = window:effective_config().color_scheme
+      local next_preference = 'dark'
+      local next_scheme = 'GruvboxDark'
+
+      if current == 'GruvboxDark' then
+        next_preference = 'light'
+        next_scheme = 'GruvboxLight'
+      end
+
+      os.execute('mkdir -p ' .. wezterm.shell_quote_arg(wezterm.home_dir .. '/.config/wezterm'))
+      os.execute('touch -h ' .. wezterm.shell_quote_arg(wezterm.home_dir .. '/.wezterm.lua') .. ' 2>/dev/null || true')
+      local file = io.open(theme_preference_path, 'w')
+      if file then
+        file:write(next_preference .. '\n')
+        file:close()
+      end
+
+      local overrides = window:get_config_overrides() or {}
+      overrides.color_scheme = next_scheme
+      window:set_config_overrides(overrides)
+    end),
+  },
+}
 
 -- Performance: native Metal on Apple Silicon (default OpenGL goes through ANGLE)
 config.front_end = "WebGpu"
