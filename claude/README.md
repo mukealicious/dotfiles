@@ -34,7 +34,7 @@ graph LR
 ```
 
 **Key files:**
-- `settings.json` → `~/.claude/settings.json` - Global permissions, hooks, plugins, MCP servers
+- `settings.json` → `~/.claude/settings.json` - Global permissions, hooks, and MCP servers
 - `ai/skills/*` + `claude/skills/*` → `~/.claude/skills/*` - Portable skills plus Claude-specific overlays
 - `ai/agents/review.body.md` + `claude/agents/review.frontmatter` → `~/.claude/agents/review.md` - Shared-body exemplar agent
 - `agents/{oracle,librarian}.md` → `~/.claude/agents/{oracle,librarian}.md` - Legacy combined subagents pending migration
@@ -42,7 +42,7 @@ graph LR
 
 **Installation flow:**
 1. `script/bootstrap` or `bin/dot` runs all `*/install.sh` scripts
-2. `claude/install.sh` symlinks settings.json and installs plugins
+2. `claude/install.sh` symlinks settings.json and configures MCP servers
 3. `ai/install.sh` projects shared skills from `ai/skills/`, applies `claude/skills/` overlays, assembles `review`, and symlinks the remaining legacy agents
 
 Author portable skills in `ai/skills/`, keep `claude/skills/` for Claude-native overlays, and edit repo files rather than `~/.claude/`.
@@ -65,7 +65,7 @@ ai/
     └── sprint-plan/        # Sprint planning
 
 claude/
-├── install.sh              # Symlinks settings.json + installs plugins
+├── install.sh              # Symlinks settings.json + configures MCP servers
 ├── settings.json           # Global config (permissions, hooks, MCP)
 ├── hooks/                  # Lifecycle hooks
 │   ├── safety-rm.sh        # PreToolUse: rewrites rm to trash
@@ -122,7 +122,7 @@ Key skills available via slash command or auto-trigger:
 3. Add supporting scripts/resources next to the skill when needed.
 4. Run `bin/dot` to refresh the runtime projections.
 
-Default to `ai/skills/`. Use `claude/skills/` only when the skill truly depends on Claude-specific features such as hooks, `$SKILL_DIR`, plugins, or subagent-specific runtime behavior.
+Default to `ai/skills/`. Use `claude/skills/` only when the skill truly depends on Claude-specific features such as hooks, `$SKILL_DIR`, or subagent-specific runtime behavior.
 
 ## Adding New Agents
 
@@ -152,18 +152,7 @@ Skills are invoked automatically by Claude when the user's request matches the s
 
 ## Plugins
 
-Installed from official marketplaces:
-
-| Plugin | Source | Purpose |
-|--------|--------|---------|
-| **document-skills** | anthropic-agent-skills | PDF, XLSX, PPTX, DOCX creation/editing |
-| **playground** | claude-plugins-official | Interactive HTML playgrounds for visual collaboration |
-
-The playground plugin generates standalone HTML files for:
-- Visualizing codebase architecture
-- Adjusting component design
-- Brainstorming layouts
-- Tweaking interactive parameters
+No Claude marketplace plugins are installed by this repo. Prefer vendored/shared skills under `ai/skills/` and Claude-specific overlays under `claude/skills/` to keep behavior reviewable and reduce supply-chain risk.
 
 ## Installation
 

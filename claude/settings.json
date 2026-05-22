@@ -79,19 +79,6 @@
       }
     ]
   },
-  "enabledPlugins": {
-    "document-skills@anthropic-agent-skills": true,
-    "playground@claude-plugins-official": true,
-    "figma@claude-plugins-official": true
-  },
-  "extraKnownMarketplaces": {
-    "anthropic-agent-skills": {
-      "source": {
-        "source": "github",
-        "repo": "anthropics/skills"
-      }
-    }
-  },
   "effortLevel": "high",
   "mcpServers": {
     "playwright": {
