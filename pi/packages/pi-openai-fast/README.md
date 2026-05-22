@@ -25,6 +25,7 @@ pi -e npm:@benvargas/pi-openai-fast
 - `/fast off` explicitly disables fast mode.
 - `/fast status` reports the current fast-mode state.
 - `--fast` starts the session with fast mode enabled.
+- When fast mode is enabled, the footer status bar shows `⚡ fast`.
 - By default, fast mode persists across new pi sessions via a JSON config file.
 - Startup state comes from the selected config file, not from resumed session/thread history.
 

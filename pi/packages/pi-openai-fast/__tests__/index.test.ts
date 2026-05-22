@@ -32,6 +32,7 @@ type MockPi = {
 
 type MockUi = {
 	notify: ReturnType<typeof vi.fn>;
+	setStatus: ReturnType<typeof vi.fn>;
 	theme: {
 		fg: (color: string, text: string) => string;
 	};
@@ -83,6 +84,7 @@ function createMockContext(
 ): { ctx: ExtensionCommandContext; ui: MockUi } {
 	const ui: MockUi = {
 		notify: vi.fn(),
+		setStatus: vi.fn(),
 		theme: {
 			fg: (color, text) => `${color}:${text}`,
 		},
@@ -146,6 +148,31 @@ describe("pi-openai-fast", () => {
 		});
 		expect(mockPi.handlers.has("before_provider_request")).toBe(true);
 		expect(mockPi.handlers.has("session_start")).toBe(true);
+	});
+
+	it("updates the footer status when fast mode changes", async () => {
+		const { cwd, homeDir, cleanup } = createTempWorkspace();
+		try {
+			vi.stubEnv("HOME", homeDir);
+
+			const mockPi = createMockPi();
+			piOpenAIFast(mockPi as unknown as ExtensionAPI);
+
+			const command = getRegisteredCommand(mockPi, "fast");
+			const { ctx, ui } = createMockContext(
+				{ provider: "openai", id: "gpt-5.4" } as ExtensionContext["model"],
+				[],
+				cwd,
+			);
+
+			await command.handler("on", ctx);
+			expect(ui.setStatus).toHaveBeenLastCalledWith(_test.FAST_STATUS_KEY, "warning:⚡ fast");
+
+			await command.handler("off", ctx);
+			expect(ui.setStatus).toHaveBeenLastCalledWith(_test.FAST_STATUS_KEY, undefined);
+		} finally {
+			cleanup();
+		}
 	});
 
 	it("enables fast mode for supported models and injects the priority service tier", async () => {
