@@ -1,6 +1,6 @@
 ---
 name: favicon-generator
-description: Generate optimized favicons from a source PNG or SVG. Use when user needs favicons, website icons, browser icons, apple-touch-icon, android-chrome icons, favicon.ico, favicon.svg, or web manifest icons. Follows 2025 best practices with minimal file set.
+description: Generate optimized favicons from PNG/SVG. Use for favicon.ico/svg, apple-touch-icon, android-chrome, browser/website icons, or web manifest icon sets.
 ---
 
 # Favicon Generator

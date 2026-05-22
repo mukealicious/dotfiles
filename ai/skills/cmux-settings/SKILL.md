@@ -1,6 +1,6 @@
 ---
 name: cmux-settings
-description: "View and edit cmux settings in ~/.config/cmux/cmux.json. Use when the user wants to change cmux preferences (appearance, sidebar, notifications, automation, browser, shortcuts), set a value by JSON path, validate the file, open it in an editor, or look up which keys cmux recognizes. Triggers on '/cmux-settings', 'change cmux setting', 'set a cmux setting', 'cmux config', 'cmux.json', or 'rebind a cmux shortcut'."
+description: "View/edit ~/.config/cmux/cmux.json. Use for cmux preferences, JSON-path updates, validation, schema/key lookup, config editor requests, or shortcut rebinding."
 ---
 
 # cmux-settings

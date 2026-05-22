@@ -1,6 +1,6 @@
 ---
 name: post-mortem
-description: Analyze a session to identify successes, failures, and improvement opportunities in this repo's agent instructions, skills, and related AI-facing configuration. Use when the user asks for a post-mortem, retrospective, session analysis, or wants to improve agent behavior based on past interactions.
+description: Analyze a session/post-mortem. Use to find successes, failures, and improvements for this repo's agent instructions, skills, and AI-facing config.
 metadata:
   watch-sources: walterra/agent-tools/packages/post-mortem@f5d822b92b2610c9f1acc01c8d102cad1ca1c081
 ---

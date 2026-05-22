@@ -1,6 +1,6 @@
 ---
 name: cmux-keyboard-shortcuts
-description: "Guide and apply cmux keyboard shortcut customization. Use when the user asks to customize, rebind, unbind, reset, audit, or create shortcut templates for cmux, including tmux-style, Vim-style, terminal-first, browser-heavy, iTerm/Terminal-like, or agent-triage layouts."
+description: "Customize cmux keyboard shortcuts. Use to rebind, unbind, reset, audit, or create shortcut templates such as tmux/Vim, terminal-first, browser-heavy, or agent-triage layouts."
 ---
 
 # cmux-keyboard-shortcuts

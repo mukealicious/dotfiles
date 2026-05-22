@@ -1,6 +1,6 @@
 ---
 name: opensrc
-description: Fetch source context for external packages and repositories. Use when you need implementation details beyond docs or types, or want a local source snapshot for a dependency or GitHub repo. Supports project mode and scratch mode via `--cwd`, and can optionally update `AGENTS.md`.
+description: Fetch local source snapshots for external packages/repos. Use when docs/types are insufficient, for dependency or GitHub implementation details, project/scratch mode, or AGENTS.md updates.
 ---
 
 # OpenSrc

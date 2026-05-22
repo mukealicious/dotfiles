@@ -1,6 +1,6 @@
 ---
 name: upstream-review
-description: Compare local artifacts with their upstream inspiration sources. Use when reviewing metadata.watch-sources, VENDORED_FROM.md, ai/watchlist.toml, bin/ai-watch output, or deciding whether upstream changes are worth adopting.
+description: Compare local artifacts with upstream sources. Use for metadata.watch-sources, VENDORED_FROM.md, ai/watchlist.toml, bin/ai-watch, or adoption decisions.
 ---
 
 # Upstream Review

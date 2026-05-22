@@ -1,6 +1,6 @@
 ---
 name: qmd
-description: Search markdown files, Obsidian vaults, documentation, and knowledge bases using QMD hybrid search. Use when grep/ripgrep miss semantic matches or when searching large document collections. Combines BM25 keyword search, vector embeddings, and LLM re-ranking.
+description: Search markdown/docs/Obsidian with QMD hybrid search. Use when ripgrep misses semantic matches or for large knowledge bases.
 ---
 
 # QMD - Quick Markdown Search

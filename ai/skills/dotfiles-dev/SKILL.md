@@ -1,6 +1,6 @@
 ---
 name: dotfiles-dev
-description: Guide for working with the dotfiles system at ~/.dotfiles. Use when adding new topics/tools, creating shell aliases, adding Homebrew packages to Brewfile, creating custom git commands, adding AI skills, modifying Fish shell configuration, or understanding the topic-based (Holman-style) dotfiles architecture.
+description: "Work on ~/.dotfiles: topics/installers, aliases/functions, Brewfile, git commands/config, Fish, AI skills/agents/instructions, or Holman-style architecture."
 references:
   - references/file-patterns.md
   - references/git-commands.md

@@ -1,6 +1,6 @@
 ---
 name: build-skill
-description: Create effective skills for AI coding agents. Load FIRST before writing any SKILL.md. Provides required format, naming conventions, progressive disclosure patterns, and validation. Use when building, reviewing, or debugging skills.
+description: Load FIRST when creating, reviewing, optimizing, or debugging SKILL.md files. Covers skill format, naming, progressive disclosure, and validation.
 ---
 
 # Building Skills

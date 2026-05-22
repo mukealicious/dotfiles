@@ -1,6 +1,6 @@
 ---
 name: librarian
-description: Multi-repository codebase exploration. Research library internals, find code patterns, understand architecture, compare implementations across GitHub/npm/PyPI/crates. Use when needing deep understanding of how libraries work, finding implementations across open source, or exploring remote repository structure.
+description: Explore external/open-source codebases. Use for library internals, remote repo structure, implementation patterns, or comparing GitHub/npm/PyPI/crates projects.
 references:
   - references/tool-routing.md
   - references/opensrc-api.md
