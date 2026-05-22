@@ -51,6 +51,7 @@ pi/
 ├── install.sh              # Symlinks config, installs packages
 ├── aliases.fish            # Shell aliases / profile dispatch
 ├── extensions/             # Custom TypeScript extensions
+│   ├── cmux-session.ts    # cmux lifecycle/session restore bridge
 │   └── notify.ts          # Desktop notification on agent completion
 ├── intercepted-commands/   # Shell shims for Python tooling
 │   ├── pip                # → uv add / uv run --with
@@ -100,9 +101,13 @@ usage.
 Extensions are TypeScript files using Pi's `ExtensionAPI`. Symlinked into each active
 profile's `extensions/` directory by `install.sh`.
 
+### cmux-session.ts — cmux Lifecycle Bridge
+
+Source-managed adaptation of `cmux hooks pi install`. When Pi runs inside cmux, it sends session start, prompt submit, and completion events to cmux so cmux can show in-app notifications and restore Pi sessions after relaunch.
+
 ### notify.ts — Desktop Notifications
 
-Sends OSC 777 escape sequence on `agent_end` event. Shows a desktop notification with the last assistant message summary when Pi finishes a turn.
+Sends OSC 777 escape sequence on `agent_end` event. Shows a desktop notification with the last assistant message summary when Pi finishes a turn. It skips OSC notifications inside cmux because `cmux-session.ts` provides richer native cmux notifications there.
 
 **Supported terminals**: WezTerm, Ghostty, iTerm2
 
