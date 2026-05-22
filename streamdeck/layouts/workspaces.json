@@ -4,23 +4,17 @@
   "keys": {
     "0,0": {
       "type": "open",
-      "title": "Notes",
+      "title": "Obsidian",
       "icon": "icons/notes.png",
       "path": "apps/WorkspaceNotes.app"
     },
-    "0,1": {
+    "1,0": {
       "type": "open",
       "title": "Codex",
       "icon": "icons/codex.png",
       "path": "apps/WorkspaceCodex.app"
     },
-    "1,1": {
-      "type": "open",
-      "title": "Terminal",
-      "icon": "icons/terminal.png",
-      "path": "apps/WorkspaceWezterm.app"
-    },
-    "2,0": {
+    "3,0": {
       "type": "hotkey",
       "title": "SW Mode",
       "icon": "icons/sw-mode-labeled.png",
@@ -70,7 +64,19 @@
         ]
       }
     },
-    "2,1": {
+    "0,1": {
+      "type": "open",
+      "title": "WezTerm",
+      "icon": "icons/terminal.png",
+      "path": "apps/WorkspaceWezterm.app"
+    },
+    "1,1": {
+      "type": "open",
+      "title": "Cmux",
+      "icon": "icons/cmux.png",
+      "path": "apps/WorkspaceCmux.app"
+    },
+    "3,1": {
       "type": "hotkey",
       "title": "SW Rec",
       "icon": "icons/sw-rec-labeled.png",

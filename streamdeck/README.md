@@ -41,11 +41,14 @@ Current layout:
 
 | Position | Label | Type | Target |
 |---|---|---|---|
-| 0,0 | Notes | Open | `apps/WorkspaceNotes.app` |
-| 0,1 | Codex | Open | `apps/WorkspaceCodex.app` |
-| 1,1 | Terminal | Open | `apps/WorkspaceWezterm.app` |
-| 2,0 | SW Mode | Hotkey | `Ctrl+Cmd+K` |
-| 2,1 | SW Rec | Hotkey | `Ctrl+Space` |
+| 0,0 | Obsidian | Open | `apps/WorkspaceNotes.app` (`moja-glava`) |
+| 1,0 | Codex | Open | `apps/WorkspaceCodex.app` |
+| 2,0 | Blank | — | — |
+| 3,0 | SW Mode | Hotkey | `Ctrl+Cmd+K` |
+| 0,1 | WezTerm | Open | `apps/WorkspaceWezterm.app` |
+| 1,1 | Cmux | Open | `apps/WorkspaceCmux.app` |
+| 2,1 | Blank | — | — |
+| 3,1 | SW Rec | Hotkey | `Ctrl+Space` |
 
 The sync script names the managed page:
 
