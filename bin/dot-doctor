@@ -25,7 +25,7 @@ set -e
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 NPM_MIN_RELEASE_AGE="7"
-UV_EXCLUDE_NEWER='exclude-newer = "7 days"'
+UV_EXCLUDE_NEWER='exclude-newer = "P7D"'
 BUN_MIN_RELEASE_AGE='minimumReleaseAge = 604800'
 
 # Shared helpers (pass, warn, fail, info, header, check_symlink)

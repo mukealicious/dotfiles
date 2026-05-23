@@ -1,8 +1,8 @@
 {
-  "theme": "gruvbox-light",
+  "theme": "gruvbox-dark",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
-  "defaultThinkingLevel": "low",
+  "defaultThinkingLevel": "medium",
   "compaction": {
     "enabled": true,
     "reserveTokens": 16384,
