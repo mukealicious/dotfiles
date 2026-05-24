@@ -17,7 +17,7 @@ bun install -g @earendil-works/pi-coding-agent
 
 Official migration path for old installs is `pi update`; run it again if it first updates only to the final old-scope handoff release.
 
-The researcher agent also depends on `parallel-cli` for `pi-parallel`. In this dotfiles setup it is installed via `curl -fsSL https://parallel.ai/install.sh | bash` into `~/.local/bin`; authentication is still manual:
+The Parallel tools currently come from `pi-parallel`, a Pi-native CLI wrapper. It exposes `web_search`, `web_fetch`, `deep_research`, and `batch_enrich` directly without MCP. In this dotfiles setup `parallel-cli` is installed via `curl -fsSL https://parallel.ai/install.sh | bash` into `~/.local/bin`; authentication is still manual:
 ```bash
 parallel-cli login
 ```
@@ -133,7 +133,7 @@ Pi packages loaded by this setup:
 
 | Package | Provides |
 |---|---|
-| `pi-parallel` | Parallel web research tools (depends on standalone `parallel-cli`) |
+| `pi-parallel` | Parallel web research tools (`web_search`, `web_fetch`, `deep_research`, `batch_enrich`; depends on standalone `parallel-cli`) |
 | `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4/GPT-5.5 models |
 | `pi/packages/pi-subagents` | Local vendored subagent delegation tools, builtin child agents, chains, and parallel runs |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |

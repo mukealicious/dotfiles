@@ -386,11 +386,7 @@ Project discovery also reads legacy `.agents/{name}.md` files. If both `.agents/
 
 Builtin agents load at the lowest priority, so a user or project agent with the same name overrides them. `oracle` is an advisory reviewer that critiques direction and proposes an execution prompt without editing files. `worker` is the implementation agent for normal tasks and approved oracle handoffs.
 
-The `researcher` builtin uses `web_search`, `fetch_content`, and `get_search_content`; those require [pi-web-access](https://github.com/nicobailon/pi-web-access):
-
-```bash
-pi install npm:pi-web-access
-```
+In this dotfiles fork, the `researcher` builtin is wired to the Parallel tools from `pi-parallel`: `web_search`, `web_fetch`, `deep_research`, and `batch_enrich`. Those tools require `parallel-cli` plus `parallel-cli login`; see `pi/README.md` in this repo.
 
 ### Builtin overrides
 
