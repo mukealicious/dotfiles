@@ -75,6 +75,42 @@ review = "pattern-scan"
 notes = "General upstream inspiration source for portable skill patterns"
 
 [[sources]]
+id = "shaping-framing-doc"
+repo = "rjs/shaping-skills"
+path = "framing-doc"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream inspiration source for adapted ai/skills/framing-doc/"
+
+[[sources]]
+id = "shaping-kickoff-doc"
+repo = "rjs/shaping-skills"
+path = "kickoff-doc"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream inspiration source for adapted ai/skills/kickoff-doc/"
+
+[[sources]]
+id = "shaping-breadboarding"
+repo = "rjs/shaping-skills"
+path = "breadboarding"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream inspiration source for adapted ai/skills/breadboarding/"
+
+[[sources]]
+id = "shaping-breadboard-reflection"
+repo = "rjs/shaping-skills"
+path = "breadboard-reflection"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream reflection source folded into adapted ai/skills/breadboarding/"
+
+[[sources]]
 id = "pi-openai-fast"
 repo = "ben-vargas/pi-packages"
 path = "packages/pi-openai-fast"
