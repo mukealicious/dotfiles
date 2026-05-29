@@ -28,6 +28,17 @@ For new feature development. **Complete enough for task decomposition.**
 ### Proposed Solution
 [High-level approach in 2-3 paragraphs]
 
+### First Vertical Slice
+**Slice:** [smallest end-to-end path]
+**Risk proven:** [riskiest assumption or integration]
+**Includes:** [entry point, core logic, persistence/I/O, verification]
+**Defers:** [breadth and polish intentionally out of first slice]
+
+### Module Interfaces
+| Module | Interface | What it hides |
+|--------|-----------|---------------|
+| [Name] | [caller-facing contract] | [implementation knowledge hidden behind it] |
+
 ### Scope & Deliverables
 | Deliverable | Effort | Depends On |
 |-------------|--------|------------|

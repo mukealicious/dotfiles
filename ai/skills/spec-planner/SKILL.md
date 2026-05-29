@@ -6,6 +6,8 @@ references:
   - references/estimation.md
   - references/technical-debt.md
   - references/templates.md
+  - ../engineering-patterns/references/vertical-slices.md
+  - ../engineering-patterns/references/deep-modules.md
 ---
 
 # Spec Planner
@@ -17,6 +19,10 @@ Produce implementation-ready specs through rigorous dialogue and honest trade-of
 - **Dialogue over deliverables** — Plans emerge from discussion, not assumption
 - **Skeptical by default** — Requirements are incomplete until proven otherwise
 - **Second-order thinking** — Consider downstream effects and maintenance burden
+- **Thin slice first** — Prefer the smallest end-to-end slice that validates the
+  riskiest assumption before broadening scope
+- **Deep modules by default** — Plans should identify stable interfaces that
+  hide complexity and reduce future reasoning load
 
 ## Workflow Phases
 
@@ -87,9 +93,18 @@ Apply planning framework from [decision-frameworks.md](./references/decision-fra
 
 1. **Problem Definition** — What are we solving? For whom? Cost of not solving?
 2. **Constraints Inventory** — Time, system, knowledge, scope ceiling
-3. **Solution Space** — Simplest → Balanced → Full engineering solution
-4. **Trade-off Analysis** — See table format in references
-5. **Recommendation** — One clear choice with reasoning
+3. **Risk and Slice** — Identify the riskiest assumption and the first thin
+   vertical slice that proves it end to end
+4. **Solution Space** — Simplest → Balanced → Full engineering solution
+5. **Trade-off Analysis** — See table format in references
+6. **Recommendation** — One clear choice with reasoning
+
+For implementation plans, include:
+
+- first vertical slice;
+- no-gos and rabbit holes to avoid;
+- stable module interfaces or seams that matter;
+- what breadth is deferred until the first slice works.
 
 Use appropriate template from [templates.md](./references/templates.md):
 - **Quick Decision** — Scoped technical choices

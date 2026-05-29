@@ -1,6 +1,10 @@
 ---
 name: code-review
-description: Review code changes using parallel review agents. Use when reviewing PRs, recent commits, or uncommitted changes. Invoke with /code-review or when asked to review code.
+description: Review code changes using parallel review agents. Use when reviewing PRs, recent commits, or uncommitted changes. Invoke with /code-review or when asked to review code. Use engineering-patterns for structural/module-depth findings and production-readiness for service/reliability risks.
+references:
+  - ../engineering-patterns/references/deep-modules.md
+  - ../engineering-patterns/references/final-pass.md
+  - ../production-readiness/references/resilience-checklist.md
 ---
 
 # Code Review
@@ -24,7 +28,12 @@ Review code changes by running three independent reviews in parallel, correlatin
 
 4. **Architecture validation** — Send correlated findings to an architecture-level reviewer for a deep accuracy/correctness review. The reviewer evaluates each finding against surrounding code, subsystems, abstractions, and overall architecture. Apply any recommendations (upgrade, downgrade, or dismiss findings). **NEVER SKIP ARCHITECTURE REVIEW.**
 
-5. **Output unified report** — deduplicated, grouped by severity, with file paths, line numbers, and suggested fixes.
+5. **Structural and production lenses** — For structural concerns, use
+   `engineering-patterns` vocabulary: module, interface, depth, shallow module,
+   seam, adapter, locality, leverage, deletion test. For service, data, async,
+   external dependency, or deployment concerns, use `production-readiness`.
+
+6. **Output unified report** — deduplicated, grouped by severity, with file paths, line numbers, and suggested fixes.
 
 ## Usage
 
@@ -65,3 +74,7 @@ Review code changes by running three independent reviews in parallel, correlatin
 - **No style zealotry** — Focus on bugs, not preferences
 - **Realistic scenarios** — Don't invent hypothetical edge cases
 - **Matter-of-fact** — No flattery, no hedging
+- **Structural clarity** — When structure is the issue, explain how it affects
+  locality, leverage, test surface, or blast radius
+- **Production behavior** — When code crosses a boundary, check timeout, retry,
+  idempotency, observability, migration, and rollback behavior

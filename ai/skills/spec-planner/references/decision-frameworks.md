@@ -68,6 +68,22 @@ Good: User can create → User can edit → User can share
 
 Each slice is deployable and testable independently.
 
+### Thin First Slice
+
+The first slice should be narrow but real. It should cross the risky integration
+path and prove one meaningful behavior end to end.
+
+| Include | Defer |
+|---|---|
+| one entry point | all entry points |
+| one happy path | every edge case |
+| one important failure path | exhaustive validation |
+| real persistence/I/O when that is the risk | mock-only demos |
+| verification through the slice | broad polish |
+
+Use the first slice to learn. If it works, subsequent slices broaden the same
+interface. If it fails, reshape before building breadth.
+
 ### Risk-First Ordering
 
 Address highest-uncertainty assumptions before dependent work:

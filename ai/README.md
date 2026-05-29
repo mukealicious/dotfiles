@@ -208,6 +208,7 @@ Most shared skills are repo-authored portable workflows. Imported skills are dif
 - `grill-me`, `grill-with-docs`, and `improve-codebase-architecture` are vendored from `mattpocock/skills`
 - `emil-design-eng` is vendored from `emilkowalski/skill`
 - Impeccable 3.x is vendored exact-copy-first from `pbakaus/impeccable/source/skills/impeccable/`
+- `engineering-patterns`, `production-readiness`, and `tufte-data-viz` are locally curated skills adapted from pinned upstream sources
 - provider-specific placeholders stay in `ai/skills/` source and are resolved during projection into `.ai-runtime/`
 - upstream sources stay pinned through `metadata.watch-sources`, `VENDORED_FROM.md`, and `ai/watchlist.toml`
 
@@ -217,13 +218,15 @@ Most shared skills are repo-authored portable workflows. Imported skills are dif
 |---|---|---|
 | `build-skill` | Instruction-only | Create effective skills for AI coding agents |
 | `code-review` | Instruction-only | Parallel code review with architecture validation |
-| `deslop` | Instruction-only | Focused pre-commit cleanup pass for removing AI-shaped slop from nearly finished changes |
 | `dotfiles-dev` | Instruction-only | Guide for working with dotfiles |
+| `engineering-patterns` | Instruction-only | Agent-native engineering doctrine: deep modules, vertical slices, safe refactoring, final cleanup, production boundaries |
 | `favicon-generator` | Scripts | Generate optimized favicons (ImageMagick) |
 | `librarian` | Instruction-only | Multi-repository codebase exploration |
 | `opensrc` | Instruction-only | Fetch source context for external packages and repositories |
+| `production-readiness` | Instruction-only | Review services and integrations for resilience, observability, migrations, capacity, and rollback |
 | `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
 | `spec-planner` | Instruction-only | Dialogue-driven spec development with iterative refinement |
+| `tufte-data-viz` | Instruction-only | Tufte-style data visualization design and review |
 | `upstream-review` | Instruction-only | Review upstream provenance and watched sources against local artifacts |
 
 ### Imported Skills

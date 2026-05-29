@@ -1,14 +1,23 @@
 ---
 name: improve-codebase-architecture
-description: Find architecture/refactoring opportunities. Use to deepen modules, consolidate coupling, improve testability/AI navigation, and align code with CONTEXT.md or ADRs.
+description: Explore an existing codebase to find architecture/refactoring opportunities. Use for architecture discovery passes that identify deepening candidates, module-shape friction, CONTEXT.md vocabulary gaps, or ADR-worthy decisions. For everyday implementation/refactoring doctrine, use engineering-patterns.
 license: MIT. Copyright (c) 2026 Matt Pocock.
 metadata:
   watch-sources: mattpocock/skills/skills/engineering/improve-codebase-architecture@b843cb5ea74b1fe5e58a0fc23cddef9e66076fb8
+references:
+  - ../engineering-patterns/SKILL.md
+  - ../engineering-patterns/references/deep-modules.md
+  - LANGUAGE.md
+  - DEEPENING.md
 ---
 
 # Improve Codebase Architecture
 
 Surface architectural friction and propose **deepening opportunities** — refactors that turn shallow modules into deep ones. The aim is testability and AI-navigability.
+
+This skill is now the **exploration workflow**. Use
+`engineering-patterns` for the canonical day-to-day doctrine and vocabulary
+when implementing, refactoring, reviewing, or doing final cleanup.
 
 ## Glossary
 
