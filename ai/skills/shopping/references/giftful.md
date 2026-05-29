@@ -18,10 +18,11 @@ Do not require a stored Giftful URL before trying browser-session discovery.
 4. Discover visible wishlists from the authenticated UI. Treat the UI as the source of truth for names, defaults, and available lists.
 5. Pick the target list only when confidence is high: explicit user instruction, a single available list, or a clearly labeled default/main wishlist. If multiple plausible lists exist, ask the user to choose.
 6. Find the UI for adding an item to the selected wishlist.
-7. Enter the product URL first when Giftful supports URL import; otherwise enter title, URL, price, image, and notes manually.
-8. Verify imported metadata. Correct obvious title/variant problems before saving.
-9. Save the item.
-10. Confirm by checking the item appears on the wishlist page.
+7. Enter the product URL first when Giftful supports URL import. Use real browser input semantics: focus the field and paste/type the URL as a user would, then trigger Next with a click/Enter. In CDP automation, prefer `Input.insertText` after focusing the field. Do **not** set React-controlled input values by direct JavaScript property assignment; Giftful may reject those as invalid even when the same URL works for a human.
+8. Wait for Giftful to import metadata from the URL. Verify title, image, price, and target wishlist before saving. A successful import should populate the Wish Details form (title/price/etc.) before Save Wish.
+9. If URL import fails after real paste/type input, stop and report the exact validation/error state. Do not silently switch to manual add unless the user explicitly approves that fallback.
+10. Save the item.
+11. Confirm by checking the item appears on the wishlist page.
 
 ## Product Resolution
 
