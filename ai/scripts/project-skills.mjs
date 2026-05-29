@@ -98,7 +98,7 @@ function replacePlaceholders(content, provider, commandNames, allSkillNames, ext
     const sortedSkillNames = [...allSkillNames].sort((left, right) => right.length - left.length);
     for (const skillName of sortedSkillNames) {
       result = result.replace(
-        new RegExp(`\\/(?=${escapeRegex(skillName)}(?:[^a-zA-Z0-9_-]|$))`, 'g'),
+        new RegExp(`(?<![a-zA-Z0-9_.-])\\/(?=${escapeRegex(skillName)}(?:[^a-zA-Z0-9_-]|$))`, 'g'),
         commandPrefix,
       );
     }
