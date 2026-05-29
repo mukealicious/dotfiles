@@ -51,6 +51,13 @@ setup_pi_profile() {
   mkdir -p "$profile_dir"
   ensure_symlink "$settings_src" "$profile_dir/settings.json" "$profile_name/settings.json"
 
+  if [ -d "$DOTFILES_ROOT/pi/node_modules" ]; then
+    ensure_symlink "$DOTFILES_ROOT/pi/node_modules" "$profile_dir/node_modules" "$profile_name/node_modules"
+  else
+    log_warn "Pi extension dependencies are missing"
+    log_hint "Run manually: cd $DOTFILES_ROOT/pi && npm install"
+  fi
+
   mkdir -p "$profile_dir/themes"
   for theme in "$DOTFILES_ROOT/pi/themes/"*.json; do
     [ -e "$theme" ] || continue
