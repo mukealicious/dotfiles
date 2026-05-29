@@ -20,7 +20,7 @@
         ui = true
 [core]
         excludesfile = ~/.gitignore
-	editor = code --wait
+	editor = editor --wait
 	fsmonitor = true
 [apply]
         whitespace = nowarn

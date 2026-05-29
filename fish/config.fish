@@ -5,7 +5,9 @@
 set fish_greeting
 
 # Environment
-set -gx EDITOR code
+set -gx EDITOR editor
+set -gx VISUAL editor
+set -gx GIT_EDITOR "editor --wait"
 set -gx PROJECTS ~/Code
 set -gx DOTFILES ~/.dotfiles
 

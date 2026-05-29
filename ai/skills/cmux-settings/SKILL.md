@@ -35,7 +35,7 @@ Subcommands:
 | `cmux-settings unset <a.b.c>` | Delete key, reverting to the in-app default. |
 | `cmux-settings list-supported` | List every settings JSON path the app recognizes. |
 | `cmux-settings validate` | Parse the file and flag any unknown settings keys. |
-| `cmux-settings open` | Open `cmux.json` in `$EDITOR`, VS Code, Cursor, or TextEdit. |
+| `cmux-settings open` | Open `cmux.json` in `$EDITOR`, Zed, VS Code, or TextEdit. |
 
 `--file <path>` overrides the target file (useful for `--file ~/.config/cmux/settings.json` when the user keeps things in the legacy file).
 

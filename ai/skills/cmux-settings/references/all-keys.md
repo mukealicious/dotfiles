@@ -109,7 +109,6 @@ Socket control and automation settings from Settings > Automation.
 | `automation.socketPassword` | string or null | `""` | Password for password-mode socket access. Use null or an empty string to clear it. |
 | `automation.claudeCodeIntegration` | boolean | `true` | Enable cmux integration hooks for Claude Code. |
 | `automation.claudeBinaryPath` | string | `""` | Custom path to the claude binary. |
-| `automation.cursorIntegration` | boolean | `true` | Enable cmux integration hooks for Cursor. |
 | `automation.geminiIntegration` | boolean | `true` | Enable cmux integration hooks for Gemini. |
 | `automation.portBase` | integer | `9100` | Starting value for workspace CMUX_PORT assignments. |
 | `automation.portRange` | integer | `10` | Number of ports reserved per workspace. |

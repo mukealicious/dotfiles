@@ -62,6 +62,8 @@ brew "b2-tools"                  # Backblaze B2 command-line tool
 # Casks
 cask "codex"                     # OpenAI's coding agent
 cask "claude-code"               # Claude AI coding assistant CLI
+cask "zed"                       # Primary code editor
+cask "visual-studio-code"        # Fallback code editor
 cask "ollama-app"                # Local LLM runner for QMD embeddings
 cask "wezterm"                   # GPU-accelerated terminal emulator
 cask "cmux"                      # AI coding terminal with vertical tabs and notifications

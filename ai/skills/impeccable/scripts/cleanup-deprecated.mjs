@@ -10,7 +10,7 @@
  *
  * What it does:
  *   1. Finds every harness-specific skills directory (.claude/skills,
- *      .cursor/skills, .agents/skills, etc.).
+ *      .agents/skills, etc.).
  *   2. For each deprecated skill name (with and without i- prefix),
  *      checks if the directory exists and its SKILL.md mentions
  *      "impeccable" (to avoid deleting unrelated user skills).
@@ -53,7 +53,7 @@ const DEPRECATED_NAMES = [
 
 // All known harness directories that may contain a skills/ subfolder.
 const HARNESS_DIRS = [
-  '.claude', '.cursor', '.gemini', '.codex', '.agents',
+  '.claude', '.gemini', '.codex', '.agents',
   '.trae', '.trae-cn', '.pi', '.opencode', '.kiro', '.rovodev',
 ];
 

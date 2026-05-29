@@ -14,7 +14,7 @@ Usage:
   cmux-settings unset <dotted.path>     remove value at path
   cmux-settings list-supported          print every settings path the schema recognizes
   cmux-settings validate                check JSON parses and all set keys are recognized
-  cmux-settings open                    open the file in $EDITOR (or VS Code, then TextEdit)
+  cmux-settings open                    open the file in $EDITOR (or Zed, VS Code, then TextEdit)
 
 Examples:
   cmux-settings set app.appearance dark
@@ -398,14 +398,14 @@ def cmd_open(args: argparse.Namespace) -> int:
         except FileNotFoundError:
             print(f"error: editor not found: {editor_args[0]}", file=sys.stderr)
             return 1
-    for app in (["code", "--wait"], ["cursor", "--wait"], ["open", "-e"], ["xdg-open"]):
+    for app in (["zed", "--wait"], ["code", "--wait"], ["open", "-e"], ["xdg-open"]):
         if shutil.which(app[0]):
             try:
                 return subprocess.call([*app, str(path)])
             except FileNotFoundError:
                 continue
     print(
-        "error: no suitable editor found; set $EDITOR or install code, cursor, open, or xdg-open",
+        "error: no suitable editor found; set $EDITOR or install zed, code, open, or xdg-open",
         file=sys.stderr,
     )
     return 1
