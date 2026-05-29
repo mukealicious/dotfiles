@@ -11,7 +11,7 @@ This repo wants a shared `post-mortem` skill that helps agents analyze conversat
 
 An upstream version already exists at `walterra/agent-tools/packages/post-mortem`, but using it unchanged would leave several gaps:
 
-1. it points at Cursor-specific configuration surfaces such as `.cursorrules` and `.cursor/skills/`
+1. it points at editor-specific configuration surfaces this repo does not own
 2. it does not reflect this repo's shared instruction architecture in `ai/instructions/` and `ai/skills/`
 3. it does not acknowledge adjacent local artifacts such as Pi extensions and packages that may also be valid improvement targets
 4. it has no linkage to the upstream review model for future upstream comparison
@@ -55,7 +55,7 @@ This is the right balance of reuse and adaptation: the upstream concept is stron
 | Deliverable | Effort | Depends On |
 |-------------|--------|------------|
 | D1. Create `ai/skills/post-mortem/SKILL.md` with adapted frontmatter and repo-specific instructions | S | - |
-| D2. Replace Cursor-centric references with this repo's actual authoring surfaces and decision rules | S | D1 |
+| D2. Replace editor-centric references with this repo's actual authoring surfaces and decision rules | S | D1 |
 | D3. Define the output and approval workflow for recommendations and approved edits | S | D1 |
 | D4. Add lightweight upstream linkage via `metadata.watch-sources` | S | D1 |
 | D5. Validate wording against existing shared-skill conventions and install flow docs | S | D1, D2, D4 |
@@ -196,7 +196,7 @@ The recommendations should be specific enough that an implementation agent can i
 ## Acceptance Criteria
 
 - [ ] `ai/skills/post-mortem/SKILL.md` exists as a shared skill with valid frontmatter.
-- [ ] The skill targets this repo's real authoring surfaces rather than `.cursorrules` or `.cursor/skills/`.
+- [ ] The skill targets this repo's real authoring surfaces rather than editor-specific surfaces this repo does not own.
 - [ ] The skill supports current-session, local-file, and remote-URL analysis.
 - [ ] The skill allows recommendations to include Pi extensions and related Pi package surfaces when those are the correct fix location.
 - [ ] The skill instructs the agent to stop for approval before editing files.
@@ -210,7 +210,7 @@ The recommendations should be specific enough that an implementation agent can i
 |-------|------|-----|
 | Frontmatter | Skill validity | Validate `ai/skills/post-mortem/SKILL.md` against the Agent Skills frontmatter rules |
 | Activation | Trigger wording | Review description and examples to ensure the skill should trigger on post-mortem and retrospective requests |
-| Content review | Repo targeting | Read the finished skill and confirm it references `ai/instructions/`, `ai/skills/`, and relevant Pi surfaces instead of Cursor-specific files |
+| Content review | Repo targeting | Read the finished skill and confirm it references `ai/instructions/`, `ai/skills/`, and relevant Pi surfaces instead of unrelated editor-specific files |
 | Behavior smoke | Approval step | Run a post-mortem request and confirm the agent stops before editing |
 | Behavior smoke | Approved edit flow | Approve recommendations and confirm the resulting workflow allows direct edits without re-specifying the plan |
 | Upstream linkage | Upstream association | Confirm `metadata.watch-sources` is present and uses the agreed locator format |
@@ -219,7 +219,7 @@ The recommendations should be specific enough that an implementation agent can i
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
-| The adapted skill remains too Cursor-shaped | Medium | Medium | Rewrite examples and target surfaces around this repo's actual architecture |
+| The adapted skill remains too editor-shaped | Medium | Medium | Rewrite examples and target surfaces around this repo's actual architecture |
 | The skill becomes too broad and recommends edits everywhere | Medium | Medium | Instruct it to choose the narrowest authoring surface that owns the fix |
 | Pi-specific issues get ignored because the skill stays too AI-skill-centric | Medium | Medium | Explicitly include Pi extensions and packages as valid recommendation targets when causal |
 | The skill over-couples to upstream review before it exists | Low | Low | Keep review integration limited to `metadata.watch-sources` and future-facing awareness |

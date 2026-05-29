@@ -119,7 +119,7 @@ Once the user explicitly approves, apply the approved changes directly in the sa
 
 ## Guardrails
 
-- Do not recommend Cursor-specific files such as `.cursorrules` or `.cursor/skills/`
+- Do not recommend editor-specific config surfaces unless this repo already owns them
 - Do not broaden scope to arbitrary repo history outside the provided session or export
 - Do not make edits without explicit approval
 - Do not assume every issue belongs in a skill; sometimes the fix belongs in shared instructions, docs, or Pi runtime surfaces
