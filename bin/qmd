@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Run QMD through the dotfiles-pinned mise Node runtime so native deps such as
+# better-sqlite3 are loaded by the same Node ABI they were built against.
+# Also provides per-project .qmd detection for Bash/Zsh/Pi contexts.
+
+set -euo pipefail
+
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+NODE_VERSION="$(awk -F= '/^[[:space:]]*node[[:space:]]*=/{gsub(/[ \"'"'"']/, "", $2); print $2; exit}' "$DOTFILES_ROOT/mise.toml")"
+
+if ! command -v mise >/dev/null 2>&1; then
+  echo "qmd wrapper requires mise on PATH" >&2
+  exit 127
+fi
+
+if [ -z "$NODE_VERSION" ]; then
+  echo "qmd wrapper could not find a Node version in $DOTFILES_ROOT/mise.toml" >&2
+  exit 127
+fi
+
+project_dir="$PWD"
+while [ "$project_dir" != "/" ]; do
+  if [ -d "$project_dir/.qmd" ]; then
+    export QMD_CONFIG_DIR="${QMD_CONFIG_DIR:-$project_dir/.qmd}"
+    export INDEX_PATH="${INDEX_PATH:-$project_dir/.qmd/index.sqlite}"
+    break
+  fi
+  project_dir="$(dirname "$project_dir")"
+done
+
+npm_prefix="$(mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- npm prefix -g 2>/dev/null || true)"
+qmd_bin="$npm_prefix/bin/qmd"
+
+if [ -z "$npm_prefix" ] || [ ! -x "$qmd_bin" ]; then
+  echo "qmd is not installed under mise-managed Node $NODE_VERSION" >&2
+  echo "Fix: run ~/.dotfiles/mise/install.sh" >&2
+  exit 127
+fi
+
+# shellcheck disable=SC2016 # Inner bash expands $1/$@ after mise has loaded the pinned Node env.
+exec mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- bash -c 'cd "$1" || exit 1; shift; exec "$@"' _ "$PWD" "$qmd_bin" "$@"

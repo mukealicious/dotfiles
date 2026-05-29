@@ -75,6 +75,20 @@ Simple rules:
 - If `bin/dot` handles a topic directly, keep `script/install --skip <path>` in sync.
 - When adding install behavior, consider whether `dot doctor` should also gain a check.
 
+### CLI Installer Boundaries
+
+Use the installer that owns the tool's runtime and failure modes:
+
+| Tool type | Owner | Use when |
+|-----------|-------|----------|
+| System/native macOS CLIs and apps | `Brewfile` | Homebrew has a stable package/cask |
+| Python CLIs | `uv.reqs` | Installed with `uv tool install` |
+| Simple JS CLIs | `bun.reqs` | Bun-friendly packages without native Node ABI sensitivity |
+| Native-sensitive Node CLIs | `mise/node-globals.reqs` | npm CLIs with native deps or Node ABI sensitivity, installed under the pinned mise Node runtime |
+| Behavior wrappers | `bin/` | Dotfiles needs to add policy/behavior around an underlying tool; wrappers should win on PATH |
+
+Example: QMD lives in `mise/node-globals.reqs` because it uses native Node dependencies, while `bin/qmd` owns per-project `.qmd` detection.
+
 ### File Conventions
 
 | Pattern | Behavior |
@@ -83,6 +97,9 @@ Simple rules:
 | `install.sh` | Topic-specific installer, run by `script/install` in deterministic order |
 | `aliases.fish` | Auto-discovered and symlinked to Fish conf.d |
 | `keybindings.fish` | Auto-discovered and symlinked to Fish conf.d |
+| `bun.reqs` | Simple Bun-friendly JS CLIs |
+| `mise/node-globals.reqs` | Native-sensitive Node CLIs installed with mise-managed npm |
+| `uv.reqs` | Python CLI tools installed with uv |
 
 ### Custom Commands
 

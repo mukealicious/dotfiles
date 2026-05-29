@@ -9,12 +9,12 @@ Local hybrid search for markdown files. Three search modes: keyword (BM25), sema
 
 ## Prerequisites
 
-- **Bun**: Already installed
-- **QMD**: `bun install -g @tobilu/qmd`
+- **mise-managed Node**: QMD is installed by `mise/install.sh` from `mise/node-globals.reqs`.
+- **Do not install QMD with Bun**: QMD uses native Node dependencies such as `better-sqlite3`, so it should run under the same mise-pinned Node runtime that installed it.
 
 ## Per-Project Config
 
-Projects with a `.qmd/` directory get their own local index. The Fish shell wrapper auto-detects this and routes QMD to the local config + SQLite index.
+Projects with a `.qmd/` directory get their own local index. The dotfiles `qmd` wrapper auto-detects this and routes QMD to the local config + SQLite index.
 
 ### Setup
 
@@ -51,19 +51,29 @@ Then index: `qmd update && qmd embed`
 
 ### How the wrapper works
 
-When `$PWD/.qmd/` exists, the Fish wrapper sets `QMD_CONFIG_DIR` and `INDEX_PATH` to use the local config and index. Without `.qmd/`, QMD falls back to the global index at `~/.cache/qmd/`.
+`~/.dotfiles/bin/qmd` runs the real QMD binary through the mise-managed Node runtime and sets `QMD_CONFIG_DIR` / `INDEX_PATH` when it finds `.qmd/` in the current directory or an ancestor. Without `.qmd/`, QMD falls back to the global index at `~/.cache/qmd/`.
 
-### Non-Fish shells (Bash, Zsh, Claude Code subagents)
+`~/.dotfiles/bin` should be first on PATH so plain `qmd` uses this wrapper in Fish, Bash, Zsh, and agent contexts. Run `dot doctor` if plain `qmd` appears to ignore a project index.
 
-The Fish wrapper doesn't apply in non-Fish contexts. For **search**, prefer the MCP server (`qmd mcp`) — configure it in `.mcp.json` with `INDEX_PATH` and `QMD_CONFIG_DIR` env vars baked in. Agents then use `mcp__qmd__query` etc. without any shell workarounds.
+### Agent and MCP contexts
 
-For **maintenance commands** (`qmd update`, `qmd embed`) that aren't in MCP, prefix with env vars:
+For **search**, prefer the MCP server (`qmd mcp`) when a project config provides it — configure it in `.mcp.json` with `INDEX_PATH` and `QMD_CONFIG_DIR` env vars baked in. Agents then use `mcp__qmd__query` etc. without shell PATH dependence.
+
+For **maintenance commands** (`qmd update`, `qmd embed`) that aren't in MCP, plain `qmd` is safe when the dotfiles wrapper is first on PATH:
+
+```bash
+qmd update
+qmd embed
+```
+
+Use explicit env vars as a fallback when running in a constrained environment that does not load the dotfiles PATH:
 
 ```bash
 QMD_CONFIG_DIR="$PWD/.qmd" INDEX_PATH="$PWD/.qmd/index.sqlite" qmd update
+QMD_CONFIG_DIR="$PWD/.qmd" INDEX_PATH="$PWD/.qmd/index.sqlite" qmd embed
 ```
 
-Without env vars or MCP, QMD silently falls back to the global index, which may be empty or stale.
+Without env vars, MCP, or the wrapper, QMD silently falls back to the global index, which may be empty or stale.
 
 ## Indexing
 

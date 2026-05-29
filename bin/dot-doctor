@@ -67,16 +67,56 @@ done
 
 if command -v qmd >/dev/null 2>&1; then
   qmd_path="$(command -v qmd)"
+  expected_qmd_wrapper="$DOTFILES_ROOT/bin/qmd"
+  node_version="$(awk -F= '/^[[:space:]]*node[[:space:]]*=/{gsub(/[ \"'"'"']/, "", $2); print $2; exit}' "$DOTFILES_ROOT/mise.toml")"
+  mise_qmd_bin=""
+  if command -v mise >/dev/null 2>&1 && [ -n "$node_version" ]; then
+    mise_prefix="$(mise exec -C "$DOTFILES_ROOT" "node@$node_version" -- npm prefix -g 2>/dev/null || true)"
+    if [ -n "$mise_prefix" ]; then
+      mise_qmd_bin="$mise_prefix/bin/qmd"
+    fi
+  fi
+
   case "$qmd_path" in
+    "$expected_qmd_wrapper")
+      pass "qmd runtime path: $qmd_path (dotfiles wrapper)"
+      ;;
     "$HOME/.bun/"*)
       warn "qmd resolves from Bun global packages"
       info "Native deps like better-sqlite3 are more stable under mise-managed Node"
-      info "Fix: dot, then ensure qmd resolves from the mise Node install"
+      info "Fix: run dot and ensure $DOTFILES_ROOT/bin precedes Bun and mise runtime bins on PATH"
+      ;;
+    "$mise_qmd_bin")
+      warn "qmd resolves directly to the mise Node binary, bypassing the dotfiles wrapper"
+      info "Per-project .qmd auto-detection in Bash/Zsh/Pi requires: $expected_qmd_wrapper"
+      info "Fix: run dot, open a new shell, and ensure $DOTFILES_ROOT/bin precedes mise runtime bins on PATH"
       ;;
     *)
-      pass "qmd runtime path: $qmd_path"
+      warn "qmd resolves from unexpected path: $qmd_path"
+      info "Expected wrapper: $expected_qmd_wrapper"
       ;;
   esac
+
+  if [ -n "$mise_qmd_bin" ] && [ -x "$mise_qmd_bin" ]; then
+    pass "qmd mise runtime binary: $mise_qmd_bin"
+  else
+    warn "qmd is not installed under the mise-managed Node runtime"
+    info "Fix: run $DOTFILES_ROOT/mise/install.sh"
+  fi
+
+  if [ -x "$expected_qmd_wrapper" ] && "$expected_qmd_wrapper" --version >/dev/null 2>&1; then
+    pass "qmd wrapper executes"
+  else
+    warn "qmd wrapper does not execute cleanly"
+    info "Fix: run $DOTFILES_ROOT/mise/install.sh"
+  fi
+
+  if qmd --version >/dev/null 2>&1; then
+    pass "qmd command executes"
+  else
+    warn "qmd command does not execute cleanly"
+    info "Fix: dot, then rerun mise/install.sh to rebuild QMD under the pinned Node runtime"
+  fi
 fi
 
 if command -v parallel-cli >/dev/null 2>&1 && parallel-cli --version >/dev/null 2>&1; then

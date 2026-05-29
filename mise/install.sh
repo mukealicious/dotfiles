@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Install mise-managed runtime tools and native Node CLIs.
+# Install mise-managed runtime tools and native-sensitive Node CLIs.
 #
 # Keep native Node packages (for example better-sqlite3 via qmd) out of Bun's
 # global install so they are compiled against the mise-pinned Node runtime.
@@ -31,10 +31,33 @@ log_info "Installing mise tools from $DOTFILES_ROOT/mise.toml"
     mise install
 )
 
-log_info "Installing qmd with the mise-managed Node runtime"
-(
-    cd "$DOTFILES_ROOT"
-    mise exec -- npm install -g @tobilu/qmd@2.1.0
-)
+NODE_GLOBALS_FILE="$DOTFILES_ROOT/mise/node-globals.reqs"
+NODE_VERSION="$(awk -F= '/^[[:space:]]*node[[:space:]]*=/{gsub(/[ \"'"'"']/, "", $2); print $2; exit}' "$DOTFILES_ROOT/mise.toml")"
+
+if [ -z "$NODE_VERSION" ]; then
+    log_warn "No Node version found in mise.toml; skipping Node globals installation"
+    exit 1
+fi
+
+if [ -f "$NODE_GLOBALS_FILE" ]; then
+    log_info "Installing Node globals with mise-managed Node $NODE_VERSION"
+
+    while IFS= read -r package || [ -n "$package" ]; do
+        # Skip empty lines and comments.
+        if [ -z "$package" ] || [[ "$package" =~ ^[[:space:]]*# ]]; then
+            continue
+        fi
+
+        package=$(echo "$package" | xargs)
+
+        log_info "Installing $package..."
+        mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- npm install -g "$package"
+        log_success "$package installed"
+    done < "$NODE_GLOBALS_FILE"
+
+    log_success "mise-managed Node globals complete"
+else
+    log_warn "No mise/node-globals.reqs file found, skipping Node globals installation"
+fi
 
 log_success "mise runtime tools complete"
