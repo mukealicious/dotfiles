@@ -6,4 +6,4 @@ check_for_updates = false
 update_prompt_seen = true
 show_in_menu_bar = true
 
-[devices]
+[devices.0b034]

@@ -128,74 +128,12 @@ kind = "package"
 review = "semantic-diff"
 notes = "Upstream source for locally vendored pi/packages/pi-subagents"
 
-[[sources]]
-id = "cmux-skill-core"
-repo = "manaflow-ai/cmux"
-path = "skills/cmux"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Upstream source for locally vendored ai/skills/cmux/ at e43ac6dd308eeb8e3eb395786dd325a91c209686"
 
 [[sources]]
-id = "cmux-skill-workspace"
-repo = "manaflow-ai/cmux"
-path = "skills/cmux-workspace"
-branch = "main"
+id = "herdr-skill"
+repo = "ogulcancelik/herdr"
+path = "SKILL.md"
+branch = "master"
 kind = "skill"
 review = "semantic-diff"
-notes = "Upstream source for locally vendored ai/skills/cmux-workspace/ at e43ac6dd308eeb8e3eb395786dd325a91c209686"
-
-[[sources]]
-id = "cmux-skill-browser"
-repo = "manaflow-ai/cmux"
-path = "skills/cmux-browser"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Upstream source for locally vendored ai/skills/cmux-browser/ at e43ac6dd308eeb8e3eb395786dd325a91c209686"
-
-[[sources]]
-id = "cmux-skill-markdown"
-repo = "manaflow-ai/cmux"
-path = "skills/cmux-markdown"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Upstream source for locally vendored ai/skills/cmux-markdown/ at e43ac6dd308eeb8e3eb395786dd325a91c209686"
-
-[[sources]]
-id = "cmux-skill-settings"
-repo = "manaflow-ai/cmux"
-path = "skills/cmux-settings"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Upstream source for locally vendored ai/skills/cmux-settings/ at e43ac6dd308eeb8e3eb395786dd325a91c209686"
-
-[[sources]]
-id = "cmux-skill-customization"
-repo = "manaflow-ai/cmux"
-path = "skills/cmux-customization"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Upstream source for locally vendored ai/skills/cmux-customization/ at e43ac6dd308eeb8e3eb395786dd325a91c209686"
-
-[[sources]]
-id = "cmux-skill-diagnostics"
-repo = "manaflow-ai/cmux"
-path = "skills/cmux-diagnostics"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Upstream source for locally vendored ai/skills/cmux-diagnostics/ at e43ac6dd308eeb8e3eb395786dd325a91c209686"
-
-[[sources]]
-id = "cmux-skill-keyboard-shortcuts"
-repo = "manaflow-ai/cmux"
-path = "skills/cmux-keyboard-shortcuts"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Upstream source for locally vendored ai/skills/cmux-keyboard-shortcuts/ at e43ac6dd308eeb8e3eb395786dd325a91c209686"
+notes = "Upstream source for locally vendored ai/skills/herdr/"

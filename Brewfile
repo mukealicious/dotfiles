@@ -2,7 +2,7 @@ tap "aprilnea/tap"                 # OpenLogi cask
 
 # Shell
 brew "fish"                      # Modern shell with built-in features
-brew "tmux"                      # Terminal multiplexer for session persistence
+brew "herdr"                     # Terminal-native agent multiplexer and persistent panes
 brew "starship"                  # Cross-shell prompt with git, language detection
 
 # Core Development Tools
@@ -68,7 +68,6 @@ cask "zed"                       # Primary code editor
 cask "visual-studio-code"        # Fallback code editor
 cask "ollama-app"                # Local LLM runner for QMD embeddings
 cask "wezterm"                   # GPU-accelerated terminal emulator
-cask "cmux"                      # AI coding terminal with vertical tabs and notifications
 cask "openlogi"                  # Local-first Logitech mouse configuration (Options+ replacement)
 cask "1password-cli"             # 1Password CLI for secrets management
 cask "docker-desktop"            # Docker Desktop with CLI tools

@@ -46,7 +46,7 @@ Current layout:
 | 2,0 | Blank | — | — |
 | 3,0 | SW Mode | Hotkey | `Ctrl+Cmd+K` |
 | 0,1 | WezTerm | Open | `apps/WorkspaceWezterm.app` |
-| 1,1 | Cmux | Open | `apps/WorkspaceCmux.app` |
+| 1,1 | Herdr | Open | `apps/WorkspaceHerdr.app` |
 | 2,1 | Blank | — | — |
 | 3,1 | SW Rec | Hotkey | `Ctrl+Space` |
 

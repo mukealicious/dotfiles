@@ -23,7 +23,7 @@ dot -e       # Open dotfiles in editor
 | Category | Tools |
 |----------|-------|
 | **Shell** | Fish with fzf |
-| **Terminal** | WezTerm, tmux |
+| **Terminal** | WezTerm, Herdr |
 | **Runtimes** | mise (Node.js), uv (Python), Bun |
 | **Packages** | Homebrew (Brewfile) |
 | **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex, Pi |
@@ -45,7 +45,7 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `ai/` | Unified AI instructions (shared across tools) |
 | `homebrew/` | Brewfile and installer |
 | `macos/` | macOS system preferences |
-| `tmux/` | Tmux configuration |
+| `herdr/` | Herdr agent multiplexer notes |
 | `wezterm/` | WezTerm terminal config |
 | `aerospace/` | Window manager config |
 | `fzf/` | Fuzzy finder keybindings |

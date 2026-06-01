@@ -16,9 +16,9 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
  * Send a desktop notification via OSC 777 escape sequence.
  */
 const notify = (title: string, body: string): void => {
-  // cmux has a native Pi lifecycle extension that publishes richer in-app
-  // notifications/session state. Avoid sending a second terminal-level alert.
-  if (process.env.CMUX_SURFACE_ID) return;
+  // Herdr tracks Pi state/notifications when running inside a managed pane.
+  // Avoid sending a second terminal-level alert.
+  if (process.env.HERDR_ENV === "1") return;
 
   // OSC 777 format: ESC ] 777 ; notify ; title ; body BEL
   process.stdout.write(`\x1b]777;notify;${title};${body}\x07`);

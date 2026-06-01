@@ -20,6 +20,9 @@ bin/speedread
 *.tmp
 test-results/
 
+# OpenLogi runtime lock (config.toml is repo-managed)
+openlogi/config/openlogi.lock
+
 # Stream Deck .app wrappers (built by install.sh via osacompile)
 streamdeck/apps/
 

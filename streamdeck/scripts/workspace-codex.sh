@@ -1,5 +1,5 @@
 #!/bin/sh
-# Open Codex and switch to AeroSpace workspace C
+# Open Codex and switch to AeroSpace workspace O.
 #
 # Stream Deck: Page 1 — "Codex"
 
@@ -8,7 +8,7 @@ set -e
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 APP="Codex"
-WORKSPACE="C"
+WORKSPACE="O"
 
 codex_window_id() {
   if command -v jq >/dev/null 2>&1; then

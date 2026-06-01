@@ -7,7 +7,7 @@
 #   - Critical CLIs are installed
 #   - Top-level *.symlink files are linked to ~/
 #   - Fish shell config is properly symlinked
-#   - Tmux plugin manager is present
+#   - Herdr is installed for agent multiplexing
 #   - Tool configs (starship, ripgrep) are linked
 #   - PATH includes expected directories
 #   - Fish is registered as login shell
@@ -57,7 +57,7 @@ check_file_contains_literal() {
 
 header "Critical CLIs"
 
-for cmd in brew fish tmux starship mise bun uv qmd; do
+for cmd in brew fish herdr starship mise bun uv qmd; do
   if command -v "$cmd" >/dev/null 2>&1; then
     pass "$cmd"
   else
@@ -198,15 +198,21 @@ for file in "$FISH_SRC/completions"/*.fish; do
   check_symlink "$file" "$FISH_DEST/completions/$name" "completions/$name"
 done
 
-# ── Tmux ───────────────────────────────────────────────────────
+# ── Herdr ──────────────────────────────────────────────────────
 
-header "Tmux"
+header "Herdr"
 
-if [ -d "$HOME/.tmux/plugins/tpm/.git" ]; then
-  pass "TPM installed"
+if command -v herdr >/dev/null 2>&1; then
+  pass "herdr installed"
+  if herdr --version >/dev/null 2>&1; then
+    pass "herdr command executes"
+  else
+    warn "herdr command does not execute cleanly"
+  fi
+  info "Recommended agent integrations are documented in $DOTFILES_ROOT/herdr/README.md"
 else
-  warn "TPM not found at ~/.tmux/plugins/tpm/"
-  info "Install: git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm"
+  warn "herdr not found"
+  info "Install: brew install herdr"
 fi
 
 # ── Tool configs ───────────────────────────────────────────────
