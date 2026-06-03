@@ -13,6 +13,7 @@ references:
   - references/safe-refactoring.md
   - references/final-pass.md
   - references/production-boundaries.md
+  - references/fast-by-feel-product-engineering.md
 ---
 
 # Engineering Patterns
@@ -39,6 +40,10 @@ surfaces, substantial hidden behavior, end-to-end slices, and safe changes.
    retries, idempotency, observability, and failure behavior where a module
    crosses I/O, network, data, or third-party seams. See
    [production-boundaries.md](./references/production-boundaries.md).
+6. **Engineer fast-by-feel product paths.** For user-facing workflows, respond
+   locally on the common successful path, then reconcile with authority at a
+   named boundary. See
+   [fast-by-feel-product-engineering.md](./references/fast-by-feel-product-engineering.md).
 
 ## Vocabulary
 
@@ -79,10 +84,12 @@ surfaces, substantial hidden behavior, end-to-end slices, and safe changes.
 | Refactor existing code | `references/safe-refactoring.md` |
 | Final cleanup before commit/PR | `references/final-pass.md` |
 | External service, DB, queue, deployment, or reliability concern | `references/production-boundaries.md` |
+| User-facing workflow feels slow, waits on network, rerenders broadly, or has high-frequency interaction friction | `references/fast-by-feel-product-engineering.md` |
 
 ## Output Expectations
 
 When this skill informs a decision, name the pattern explicitly: “thin vertical
-slice,” “deep module,” “deletion test,” “preparatory refactoring,” or
-“production boundary.” Explain the tradeoff in terms of locality, leverage, and
-blast radius, not abstract cleanliness.
+slice,” “deep module,” “deletion test,” “preparatory refactoring,” “production
+boundary,” or “fast-by-feel product path.” Explain the tradeoff in terms of
+locality, leverage, blast radius, and user-visible responsiveness, not abstract
+cleanliness.
