@@ -18,11 +18,16 @@ if [ -z "$NODE_VERSION" ]; then
   exit 127
 fi
 
+run_dir="$PWD"
 project_dir="$PWD"
 while [ "$project_dir" != "/" ]; do
-  if [ -d "$project_dir/.qmd" ]; then
+  if [ -f "$project_dir/.qmd/index.yaml" ] || [ -f "$project_dir/.qmd/index.yml" ]; then
     export QMD_CONFIG_DIR="${QMD_CONFIG_DIR:-$project_dir/.qmd}"
     export INDEX_PATH="${INDEX_PATH:-$project_dir/.qmd/index.sqlite}"
+    # QMD resolves relative collection paths from process cwd. Run from the
+    # project root so checked-in .qmd/index.yml files stay portable across
+    # machines and from nested shells/agents.
+    run_dir="$project_dir"
     break
   fi
   project_dir="$(dirname "$project_dir")"
@@ -38,4 +43,4 @@ if [ -z "$npm_prefix" ] || [ ! -x "$qmd_bin" ]; then
 fi
 
 # shellcheck disable=SC2016 # Inner bash expands $1/$@ after mise has loaded the pinned Node env.
-exec mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- bash -c 'cd "$1" || exit 1; shift; exec "$@"' _ "$PWD" "$qmd_bin" "$@"
+exec mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- bash -c 'cd "$1" || exit 1; shift; exec "$@"' _ "$run_dir" "$qmd_bin" "$@"

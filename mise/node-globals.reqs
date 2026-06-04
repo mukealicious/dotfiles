@@ -1,4 +1,4 @@
 # Node CLIs installed under the mise-managed Node runtime.
 # Use this for npm CLIs with native Node dependencies or Node ABI sensitivity.
 # Keep simple Bun-friendly JS CLIs in ../bun.reqs instead.
-@tobilu/qmd@2.1.0
+@tobilu/qmd@2.5.3
