@@ -25,3 +25,13 @@ herdr integration install opencode
 ```
 
 Use `prefix+q` to detach and run `herdr` again to reattach.
+
+## Diff review companion
+
+For agent-authored changes, keep Hunk open in a neighboring pane:
+
+```bash
+hdw # hunk diff --watch
+```
+
+Then ask an agent to `use hunk-review` to inspect the live session, navigate hunks, and leave inline notes.

@@ -13,6 +13,8 @@
         rank-contributors = !git-rank-contributors
         count   = !git shortlog -sn
         fomo = "!default=$(git config --get init.defaultBranch || echo main) && git fetch origin \"$default\" && git rebase \"origin/$default\" --autostash"
+        hdiff = "!f() { git -c core.pager='hunk pager' diff \"$@\"; }; f"
+        hshow = "!f() { git -c core.pager='hunk pager' show \"$@\"; }; f"
 [color]
         diff = auto
         status = auto

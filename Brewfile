@@ -1,4 +1,5 @@
 tap "aprilnea/tap"                 # OpenLogi cask
+tap "modem-dev/tap"               # Hunk diff review CLI
 
 # Shell
 brew "fish"                      # Modern shell with built-in features
@@ -48,6 +49,7 @@ brew "zoxide"                    # Smart cd with frecency ranking (z command)
 brew "fd"                        # Modern find replacement
 brew "shellcheck"                # Shell script linter
 brew "just"                      # Simple command runner
+brew "modem-dev/tap/hunk"        # Review-first terminal diff viewer
 
 # Image Optimization
 brew "oxipng"                    # Fast PNG optimizer in Rust
