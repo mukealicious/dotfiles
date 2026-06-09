@@ -1,0 +1,19 @@
+{
+  "name": "pi-exa",
+  "version": "0.1.0",
+  "description": "Pi extension for Exa web search tools",
+  "keywords": ["pi-package", "pi-extension", "exa", "web-search"],
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "extensions",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": ["./extensions"]
+  }
+}

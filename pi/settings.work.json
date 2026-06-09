@@ -16,6 +16,7 @@
     "~/.dotfiles/.ai-runtime/pi/skills"
   ],
   "packages": [
+    "~/.dotfiles/pi/packages/pi-exa",
     "git:https://github.com/HazAT/pi-parallel",
     "~/.dotfiles/pi/packages/pi-openai-fast",
     "~/.dotfiles/pi/packages/pi-subagents",

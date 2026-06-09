@@ -17,10 +17,16 @@ bun install -g @earendil-works/pi-coding-agent
 
 Official migration path for old installs is `pi update`; run it again if it first updates only to the final old-scope handoff release.
 
-The Parallel tools currently come from `pi-parallel`, a Pi-native CLI wrapper. It exposes `web_search`, `web_fetch`, `deep_research`, and `batch_enrich` directly without MCP. In this dotfiles setup `parallel-cli` is installed via `curl -fsSL https://parallel.ai/install.sh | bash` into `~/.local/bin`; authentication is still manual:
-```bash
-parallel-cli login
-```
+Web search tools are split by cost/depth:
+
+- `pi-exa` provides `exa_search`, the first-choice low-cost lane for ordinary web discovery, coding docs, API examples, and quick current lookups. Set `EXA_API_KEY` privately (do not commit it), then run `/exa-setup` in Pi:
+  ```fish
+  set -Ux EXA_API_KEY "..."
+  ```
+- `pi-parallel` provides `parallel_search`, `parallel_extract`, `parallel_research`, and `parallel_enrich` for fallback search, deep research/synthesis, extraction, and enrichment. In this dotfiles setup `parallel-cli` is installed via `curl -fsSL https://parallel.ai/install.sh | bash` into `~/.local/bin`; authentication is still manual:
+  ```bash
+  parallel-cli login
+  ```
 
 Run `dot doctor` to verify agents, symlinks, and skill projections are correctly installed.
 
@@ -88,7 +94,7 @@ Current defaults:
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` (no user-level symlinking needed — Pi supports path-based discovery)
 - **Instructions**: `ai/install.sh` assembles one shared Pi instruction file, then symlinks it into both profiles
 - **Agents**: `ai/install.sh` assembles one shared Pi agent dir, then symlinks it into both profiles
-- **Packages**: pi-parallel, vendored pi-openai-fast, vendored pi-subagents, and mitsupi
+- **Packages**: vendored pi-exa, pi-parallel, vendored pi-openai-fast, vendored pi-subagents, and mitsupi
 
 In normal use there is no standalone user-facing top-level Pi profile: `pi` dispatches to
 either `pi-work` or `pi-personal`. The `~/.pi/agent/` tree is kept as the shared backing
@@ -135,7 +141,8 @@ Pi packages loaded by this setup:
 
 | Package | Provides |
 |---|---|
-| `pi-parallel` | Parallel web research tools (`web_search`, `web_fetch`, `deep_research`, `batch_enrich`; depends on standalone `parallel-cli`) |
+| `pi/packages/pi-exa` | Local Exa search tool (`exa_search`; depends on private `EXA_API_KEY`) |
+| `pi-parallel` | Parallel web research tools (`parallel_search`, `parallel_extract`, `parallel_research`, `parallel_enrich`; depends on standalone `parallel-cli`) |
 | `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4/GPT-5.5 models |
 | `pi/packages/pi-subagents` | Local vendored subagent delegation tools, builtin child agents, chains, and parallel runs |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |

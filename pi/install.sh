@@ -122,6 +122,7 @@ if [ -f "$DOTFILES_ROOT/pi/packages/pi-subagents/package-lock.json" ]; then
 fi
 
 PACKAGES="
+  $DOTFILES_ROOT/pi/packages/pi-exa
   git:https://github.com/HazAT/pi-parallel
   $DOTFILES_ROOT/pi/packages/pi-openai-fast
   $DOTFILES_ROOT/pi/packages/pi-subagents
