@@ -56,6 +56,7 @@ Some shared skills are intentionally vendored from upstream sources instead of b
 | `mattpocock/skills` | `ai/skills/grill-me/`, `ai/skills/grill-with-docs/`, `ai/skills/improve-codebase-architecture/` | Preserve compact planning, domain-model, and architecture-review workflows as portable shared skills |
 | `emilkowalski/skill` | `ai/skills/emil-design-eng/` | Preserve Emil Kowalski's design-engineering guidance as an exact upstream skill we can experiment with and review over time |
 | `pbakaus/impeccable` | `ai/skills/impeccable/` | Use Impeccable 3.x as the consolidated design-command router for PRODUCT.md + DESIGN.md workflows |
+| `plannotator/effective-html`, `ThariqS/html-effectiveness` | `ai/skills/visual-deliverables/` | Adapt HTML-with-a-strong-visual-bias workflows into a portable skill with curated one-file HTML/SVG examples |
 
 Rules for imported upstreams:
 
@@ -228,6 +229,7 @@ Most shared skills are repo-authored portable workflows. Imported skills are dif
 | `spec-planner` | Instruction-only | Dialogue-driven spec development with iterative refinement |
 | `tufte-data-viz` | Instruction-only | Tufte-style data visualization design and review |
 | `upstream-review` | Instruction-only | Review upstream provenance and watched sources against local artifacts |
+| `visual-deliverables` | Reference-heavy | Create self-contained HTML/SVG artifacts for architecture maps, explainers, review surfaces, planning boards, and small interactive workbenches |
 
 ### Imported Skills
 

@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visual deliverable template</title>
+<style>
+  :root {
+    --paper: #f8f5ed;
+    --surface: #fffdf8;
+    --ink: #171713;
+    --muted: #706f68;
+    --line: #d8d1c3;
+    --soft: #eee7d9;
+    --accent: #d67855;
+    --accent-soft: #f7ded3;
+    --ok: #718857;
+    --danger: #a9473f;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    padding: 28px;
+    gap: 18px;
+  }
+
+  header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 18px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(30px, 4vw, 54px);
+    line-height: .96;
+    font-weight: 520;
+    letter-spacing: -.03em;
+    margin: 0;
+  }
+
+  .purpose {
+    max-width: 560px;
+    color: var(--muted);
+    line-height: 1.55;
+    margin: 10px 0 0;
+  }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  button {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button[aria-pressed="true"], button:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
+    min-height: 0;
+  }
+
+  .canvas, aside {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--surface);
+  }
+
+  .canvas {
+    overflow: auto;
+    padding: 20px;
+  }
+
+  svg.map { display: block; width: 100%; min-width: 760px; height: auto; }
+  .zone { fill: #fbf7ee; stroke: var(--line); stroke-width: 1.3; stroke-dasharray: 4 5; }
+  .zone-label { font: 11px var(--mono); fill: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .node rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.4; rx: 12; }
+  .node text { font-family: var(--mono); fill: var(--ink); font-size: 13px; pointer-events: none; }
+  .node .sub { fill: var(--muted); font-size: 10.5px; }
+  .node { cursor: pointer; }
+  .node.active rect { stroke: var(--accent); stroke-width: 2.4; fill: var(--accent-soft); }
+  .node.dim { opacity: .34; }
+  .edge { fill: none; stroke: var(--muted); stroke-width: 1.5; marker-end: url(#arrow); }
+  .edge.active { stroke: var(--accent); stroke-width: 2.8; marker-end: url(#arrow-accent); }
+  .edge.dim { opacity: .22; }
+  .edge-label { font: 10.5px var(--mono); fill: var(--muted); }
+  .pulse { fill: var(--accent); opacity: 0; }
+  .pulse.active { opacity: 1; animation: travel 1400ms ease-out infinite; }
+
+  @keyframes travel {
+    0% { transform: translateX(0); opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { transform: translateX(520px); opacity: 0; }
+  }
+
+  aside {
+    padding: 20px;
+    align-self: start;
+    position: sticky;
+    top: 18px;
+  }
+  aside .hint { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 18px; }
+  aside h2 { font-family: var(--serif); font-size: 25px; font-weight: 520; margin: 0 0 8px; }
+  aside .meta { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+  aside p { color: #3e3d37; line-height: 1.55; margin: 0 0 16px; }
+  .facts { display: grid; gap: 8px; margin-top: 16px; }
+  .fact { border-top: 1px solid var(--line); padding-top: 9px; }
+  .fact b { display: block; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 3px; }
+  .fact span { font-size: 13px; }
+
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .legend span { display: inline-flex; gap: 6px; align-items: center; }
+  .swatch { width: 18px; height: 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+  .swatch.focus { border-color: var(--accent); background: var(--accent-soft); }
+
+  @media (max-width: 900px) {
+    .shell { padding: 18px; }
+    header { display: block; }
+    .actions { justify-content: flex-start; margin-top: 16px; }
+    main { grid-template-columns: 1fr; }
+    aside { position: static; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div>
+      <div class="eyebrow">Source-backed visual artifact</div>
+      <h1>System map</h1>
+      <p class="purpose">Replace this with the one-sentence job of the page. The visual should answer the question before this paragraph does.</p>
+    </div>
+    <div class="actions" aria-label="Sequence controls">
+      <button data-seq="all" aria-pressed="true">Everything</button>
+      <button data-seq="read">Read path</button>
+      <button data-seq="write">Write path</button>
+      <button id="copy-md">Copy Markdown</button>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div class="canvas">
+        <svg class="map" viewBox="0 0 980 560" role="img" aria-labelledby="svg-title svg-desc">
+          <title id="svg-title">System architecture map</title>
+          <desc id="svg-desc">A browser calls an API, the API reads from cache and database, and writes publish to a worker.</desc>
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#706f68"/></marker>
+            <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d67855"/></marker>
+          </defs>
+
+          <rect class="zone" x="40" y="70" width="210" height="390" rx="18"/>
+          <text class="zone-label" x="64" y="102">Client</text>
+          <rect class="zone" x="300" y="70" width="380" height="390" rx="18"/>
+          <text class="zone-label" x="324" y="102">Application</text>
+          <rect class="zone" x="730" y="70" width="210" height="390" rx="18"/>
+          <text class="zone-label" x="754" y="102">Backends</text>
+
+          <path class="edge" data-seq="read write" d="M220,210 C285,210 300,210 355,210"/>
+          <text class="edge-label" x="258" y="195">HTTP</text>
+          <path class="edge" data-seq="read" d="M555,190 C650,145 705,145 770,175"/>
+          <text class="edge-label" x="648" y="132">cache read</text>
+          <path class="edge" data-seq="read write" d="M555,230 C650,280 705,300 770,300"/>
+          <text class="edge-label" x="644" y="289">query</text>
+          <path class="edge" data-seq="write" d="M500,280 C500,360 610,395 770,385"/>
+          <text class="edge-label" x="595" y="406">publish job</text>
+          <circle class="pulse" data-seq="read write" cx="226" cy="210" r="5"/>
+
+          <g class="node active" data-k="browser">
+            <rect x="90" y="170" width="130" height="76"/>
+            <text x="112" y="202">Browser</text>
+            <text class="sub" x="112" y="222">user session</text>
+          </g>
+          <g class="node" data-k="api">
+            <rect x="355" y="170" width="200" height="110"/>
+            <text x="382" y="205">API route</text>
+            <text class="sub" x="382" y="226">auth, validate, fan out</text>
+            <text class="sub" x="382" y="246">returns view model</text>
+          </g>
+          <g class="node" data-k="cache">
+            <rect x="770" y="140" width="130" height="78"/>
+            <text x="792" y="172">Cache</text>
+            <text class="sub" x="792" y="192">fast path</text>
+          </g>
+          <g class="node" data-k="db">
+            <rect x="770" y="270" width="130" height="78"/>
+            <text x="792" y="302">Database</text>
+            <text class="sub" x="792" y="322">source of truth</text>
+          </g>
+          <g class="node" data-k="worker">
+            <rect x="770" y="360" width="130" height="78"/>
+            <text x="792" y="392">Worker</text>
+            <text class="sub" x="792" y="412">async effects</text>
+          </g>
+        </svg>
+      </div>
+      <div class="legend"><span><i class="swatch"></i> normal</span><span><i class="swatch focus"></i> selected or active sequence</span></div>
+    </section>
+
+    <aside aria-live="polite">
+      <div class="hint">Click a node, or choose a sequence.</div>
+      <h2 id="detail-title">Browser</h2>
+      <div class="meta" id="detail-meta">client boundary</div>
+      <p id="detail-body">The user-facing entry point. Keep this text specific to the inspected source, not generic architecture narration.</p>
+      <div class="facts">
+        <div class="fact"><b>Owns</b><span id="detail-owns">session state, visible interaction</span></div>
+        <div class="fact"><b>Watch</b><span id="detail-watch">where data enters and leaves the trust boundary</span></div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+const DETAILS = {
+  browser: { title: "Browser", meta: "client boundary", body: "The user-facing entry point. Replace with what was verified from routes, screenshots, or code.", owns: "session state, visible interaction", watch: "where data enters and leaves the trust boundary" },
+  api: { title: "API route", meta: "application boundary", body: "The central orchestration point. Show what it validates, calls, writes, and returns.", owns: "request validation, authorization, response shape", watch: "hidden side effects and inconsistent error paths" },
+  cache: { title: "Cache", meta: "read optimization", body: "A fast path. Label whether it is authoritative, reconstructable, stale, or user-visible.", owns: "derived reads", watch: "staleness, invalidation, fallback behavior" },
+  db: { title: "Database", meta: "source of truth", body: "The durable state. Name the actual tables, collections, or documents when known.", owns: "canonical records", watch: "migrations, constraints, transaction boundaries" },
+  worker: { title: "Worker", meta: "async side effects", body: "Background work that should not block the main request. Show retry, idempotency, and observability paths.", owns: "queued effects", watch: "duplicate delivery and missing dead-letter handling" }
+};
+
+const nodes = [...document.querySelectorAll('.node')];
+const edges = [...document.querySelectorAll('.edge')];
+const pulses = [...document.querySelectorAll('.pulse')];
+const title = document.getElementById('detail-title');
+const meta = document.getElementById('detail-meta');
+const body = document.getElementById('detail-body');
+const owns = document.getElementById('detail-owns');
+const watch = document.getElementById('detail-watch');
+
+function selectNode(key) {
+  nodes.forEach(n => n.classList.toggle('active', n.dataset.k === key));
+  const d = DETAILS[key];
+  title.textContent = d.title;
+  meta.textContent = d.meta;
+  body.textContent = d.body;
+  owns.textContent = d.owns;
+  watch.textContent = d.watch;
+}
+
+function setSequence(seq) {
+  document.querySelectorAll('[data-seq]').forEach(el => {
+    const applies = seq === 'all' || (el.dataset.seq || '').split(' ').includes(seq);
+    if (el.classList.contains('edge')) {
+      el.classList.toggle('active', applies && seq !== 'all');
+      el.classList.toggle('dim', !applies);
+    }
+    if (el.classList.contains('pulse')) el.classList.toggle('active', applies && seq !== 'all');
+  });
+  document.querySelectorAll('.actions button[data-seq]').forEach(btn => btn.setAttribute('aria-pressed', String(btn.dataset.seq === seq)));
+}
+
+nodes.forEach(n => n.addEventListener('click', () => selectNode(n.dataset.k)));
+document.querySelectorAll('button[data-seq]').forEach(btn => btn.addEventListener('click', () => setSequence(btn.dataset.seq)));
+
+document.getElementById('copy-md').addEventListener('click', async () => {
+  const md = `# System map\n\n- Purpose: replace with the artifact purpose\n- Selected node: ${title.textContent}\n- Watch: ${watch.textContent}\n`;
+  try {
+    await navigator.clipboard.writeText(md);
+  } catch {
+    const area = document.createElement('textarea');
+    area.value = md;
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
+  }
+});
+</script>
+</body>
+</html>

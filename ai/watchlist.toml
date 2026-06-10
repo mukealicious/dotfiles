@@ -111,6 +111,24 @@ review = "semantic-diff"
 notes = "Upstream reflection source folded into adapted ai/skills/breadboarding/"
 
 [[sources]]
+id = "effective-html"
+repo = "plannotator/effective-html"
+path = "skills"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream inspiration for ai/skills/visual-deliverables/"
+
+[[sources]]
+id = "html-effectiveness"
+repo = "ThariqS/html-effectiveness"
+path = ""
+branch = "main"
+kind = "repo"
+review = "pattern-scan"
+notes = "Bundled example corpus for ai/skills/visual-deliverables/references/examples/effective-html/"
+
+[[sources]]
 id = "pi-openai-fast"
 repo = "ben-vargas/pi-packages"
 path = "packages/pi-openai-fast"
