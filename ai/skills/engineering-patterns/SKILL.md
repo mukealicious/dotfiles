@@ -14,6 +14,7 @@ references:
   - references/final-pass.md
   - references/production-boundaries.md
   - references/fast-by-feel-product-engineering.md
+  - references/agent-friendly-code-topology.md
 ---
 
 # Engineering Patterns
@@ -44,6 +45,10 @@ surfaces, substantial hidden behavior, end-to-end slices, and safe changes.
    locally on the common successful path, then reconcile with authority at a
    named boundary. See
    [fast-by-feel-product-engineering.md](./references/fast-by-feel-product-engineering.md).
+7. **Optimize change locality for agents and humans.** Prefer structures where
+   related intent, constraints, and implementation live near each other,
+   especially on high-churn paths. See
+   [agent-friendly-code-topology.md](./references/agent-friendly-code-topology.md).
 
 ## Vocabulary
 
@@ -60,6 +65,8 @@ surfaces, substantial hidden behavior, end-to-end slices, and safe changes.
 - **Adapter**: a concrete implementation that satisfies an interface at a seam.
 - **Locality**: change, bugs, and knowledge concentrate in one place.
 - **Leverage**: one interface pays back across many callers and tests.
+- **Topology**: how code, files, indirection, and seams shape the path from an
+  intended change to the safe edit surface.
 
 ## Working Rules
 
@@ -85,11 +92,12 @@ surfaces, substantial hidden behavior, end-to-end slices, and safe changes.
 | Final cleanup before commit/PR | `references/final-pass.md` |
 | External service, DB, queue, deployment, or reliability concern | `references/production-boundaries.md` |
 | User-facing workflow feels slow, waits on network, rerenders broadly, or has high-frequency interaction friction | `references/fast-by-feel-product-engineering.md` |
+| Choosing between equivalent implementation shapes, especially for AI-heavy maintenance or high-churn code | `references/agent-friendly-code-topology.md` |
 
 ## Output Expectations
 
 When this skill informs a decision, name the pattern explicitly: “thin vertical
 slice,” “deep module,” “deletion test,” “preparatory refactoring,” “production
-boundary,” or “fast-by-feel product path.” Explain the tradeoff in terms of
-locality, leverage, blast radius, and user-visible responsiveness, not abstract
-cleanliness.
+boundary,” “fast-by-feel product path,” or “agent-friendly topology.” Explain
+the tradeoff in terms of locality, leverage, blast radius, agent/human reasoning
+load, and user-visible responsiveness, not abstract cleanliness.
