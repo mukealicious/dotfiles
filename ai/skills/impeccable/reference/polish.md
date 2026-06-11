@@ -8,7 +8,7 @@ Aligning the feature to the design system is **not optional**. Polish without al
 
 1. **Find the design system**: Search for design system documentation, component libraries, style guides, or token definitions. Study the core patterns: design principles, target audience, color tokens, spacing scale, typography styles, component API, motion conventions.
 2. **Note the conventions**: How are shared components imported? What spacing scale is used? Which colors come from tokens vs hard-coded values? What motion and interaction patterns are established? What flow shapes are used for comparable actions (modal vs full-page, inline vs route, save-on-blur vs explicit submit)?
-3. **Identify drift, then name the root cause**: For every deviation, classify it as a **missing token** (the value should exist in the system but doesn't), a **one-off implementation** (a shared component already exists but wasn't used), or a **conceptual misalignment** (the feature's flow, IA, or hierarchy doesn't match neighboring features). The fix differs by category — patch the value, swap to the shared component, or rework the flow. Fixing the symptom without naming the cause is how drift compounds.
+3. **Identify drift, then name the root cause**: For every deviation, classify it as a **missing token** (the value should exist in the system but doesn't), a **one-off implementation** (a shared component already exists but wasn't used), or a **conceptual misalignment** (the feature's flow, IA, or hierarchy doesn't match neighboring features). The fix differs by category — patch the value, swap to the shared component, or rework the flow. Fixing the symptom without naming the cause is how drift compounds. Use the critique lenses to name the symptom precisely before choosing the root cause.
 
 If a design system exists, polish **must** align the feature with it. If none exists, polish against the conventions visible in the codebase. **If anything about the system is ambiguous, ask — never guess at design system principles.**
 
@@ -24,7 +24,7 @@ Understand the current state and goals before touching anything:
 
 2. **Think experience-first**: Who actually uses this, and what's the best possible experience for them? Effective design beats decorative polish — a feature that looks beautiful but fights the user's flow is not polished. Walk the path from their perspective before opening DevTools.
 
-3. **Identify polish areas**:
+3. **Identify polish areas** using [critique-lenses.md](critique-lenses.md). Name the concept before fixing it:
    - Visual inconsistencies
    - Spacing and alignment issues
    - Interaction state gaps

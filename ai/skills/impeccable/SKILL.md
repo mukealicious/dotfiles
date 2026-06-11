@@ -111,6 +111,14 @@ If someone could look at this interface and say "AI made that" without doubt, it
 
 **Category-reflex check.** If someone could guess the theme and palette from the category name alone — "observability → dark blue", "healthcare → white + teal", "finance → navy + gold", "crypto → neon on black" — it's the training-data reflex. Rework the scene sentence and color strategy until the answer is no longer obvious from the domain.
 
+### Articulation standard
+
+When critiquing, auditing, polishing, or explaining design choices, translate vague reactions into named design concepts. Use [reference/critique-lenses.md](reference/critique-lenses.md) for the vocabulary.
+
+Bad: "This feels cluttered." Good: "The hierarchy is flat, decision points show 8 visible options, and weak signposts make wayfinding harder."
+
+Every substantial finding should name the lens, cite observable evidence, explain user impact, and give a concrete fix.
+
 ## Commands
 
 | Command | Category | Description | Reference |

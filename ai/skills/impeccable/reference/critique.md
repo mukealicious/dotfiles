@@ -20,6 +20,8 @@ Think like a design director. Evaluate:
 
 **AI Slop Detection (CRITICAL)**: Does this look like every other AI-generated interface? Review against ALL **DON'T** guidelines from the parent impeccable skill (already loaded in this context). Check for AI color palette, gradient text, dark glows, glassmorphism, hero metric layouts, identical card grids, generic fonts, and all other tells. **The test**: If someone said "AI made this," would you believe them immediately?
 
+**Critique Lens Discipline**: Consult [critique-lenses.md](critique-lenses.md). Name the specific design concept before prescribing the fix: affordance, hierarchy, wayfinding, semantic token drift, optical alignment, color-only state, truncation strategy, focus trap, etc. Avoid taste-only feedback.
+
 **Holistic Design Review**: visual hierarchy (eye flow, primary action clarity), information architecture (structure, grouping, cognitive load), emotional resonance (does it match brand and audience?), discoverability (are interactive elements obvious?), composition (balance, whitespace, rhythm), typography (hierarchy, readability, font choices), color (purposeful use, cohesion, accessibility), states & edge cases (empty, loading, error, success), microcopy (clarity, tone, helpfulness).
 
 **Cognitive Load** (consult [cognitive-load](cognitive-load.md)):
@@ -129,7 +131,8 @@ Highlight 2-3 things done well. Be specific about why they work.
 The 3-5 most impactful design problems, ordered by importance.
 
 For each issue, tag with **P0-P3 severity** (consult [heuristics-scoring](heuristics-scoring.md) for severity definitions):
-- **[P?] What**: Name the problem clearly
+- **[P?] Lens / What**: Name the design concept and the specific problem
+- **Evidence**: What is observable in the UI, code, or detector output
 - **Why it matters**: How this hurts users or undermines goals
 - **Fix**: What to do about it (be concrete)
 - **Suggested command**: Which command could address this (from: {{available_commands}})
@@ -159,6 +162,7 @@ Provocative questions that might unlock better solutions:
 **Remember**:
 - Be direct. Vague feedback wastes everyone's time.
 - Be specific. "The submit button," not "some elements."
+- Use precise lenses from [critique-lenses.md](critique-lenses.md), not vibes.
 - Say what's wrong AND why it matters to users.
 - Give concrete suggestions, not just "consider exploring..."
 - Prioritize ruthlessly. If everything is important, nothing is.
