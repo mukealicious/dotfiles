@@ -15,6 +15,7 @@ references:
   - references/production-boundaries.md
   - references/fast-by-feel-product-engineering.md
   - references/agent-friendly-code-topology.md
+  - references/thin-ai-clients.md
 ---
 
 # Engineering Patterns
@@ -93,6 +94,7 @@ surfaces, substantial hidden behavior, end-to-end slices, and safe changes.
 | External service, DB, queue, deployment, or reliability concern | `references/production-boundaries.md` |
 | User-facing workflow feels slow, waits on network, rerenders broadly, or has high-frequency interaction friction | `references/fast-by-feel-product-engineering.md` |
 | Choosing between equivalent implementation shapes, especially for AI-heavy maintenance or high-churn code | `references/agent-friendly-code-topology.md` |
+| AI/agent product architecture, chat/agent UX, local-vs-cloud inference, or deciding how much UI to build around AI | `references/thin-ai-clients.md` |
 
 ## Output Expectations
 
