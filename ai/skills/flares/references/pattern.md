@@ -18,7 +18,7 @@ The important jump is not “prettier artifacts.” It is giving agents a safe, 
 ```text
 source context + user intent
   -> agent builds thin static client
-  -> shared platform supplies backend primitives
+  -> shared Cloudflare platform supplies backend primitives
   -> human or orchestrator steers scope/data/auth
   -> Flare is published/shared when approved
   -> humans or the agent use it
@@ -31,7 +31,7 @@ Shopify Quick’s durable lesson is:
 
 - deploy a folder of static files with almost no ceremony;
 - put it behind an appropriate trust boundary;
-- expose a small fixed client-side API for data, files, AI, realtime, and identity;
+- expose a small fixed client-side API for manifest, identity, data, files, AI, realtime, and export;
 - say no to custom backends per app;
 - let visible working examples teach people what is possible.
 
@@ -59,11 +59,12 @@ A Flare does not require a human approval loop at every step. The key property i
 | Principle | Meaning |
 |---|---|
 | Thin generated clients | Flare code owns presentation and interaction; platform APIs own auth, persistence, realtime, files, secrets, and quotas. |
-| Fixed primitives | Data, files, AI, identity, realtime, and registry before custom backends. |
+| Cloudflare-native primitives | Workers, Durable Objects, R2, D1, Queues, Workflows, Access, Workers AI/AI Gateway, and service bindings before custom backend services. |
+| Fixed client API | Manifest, identity, db, events, files, AI, realtime, and export before bespoke per-Flare endpoints. |
 | Steerability | The agent can build/iterate, while a human or orchestrator can inspect and redirect purpose, data, auth, audience, expiry, and exports. |
 | Ephemeral by default | Most Flares should expire or archive unless intentionally promoted. |
 | Portable context | Store important state/results in Markdown, JSON, SQLite, git, R2/S3 — not only in the live app. |
-| Honest privacy | Public, unlisted, invite-gated, and SSO-gated are different claims. Label them clearly. |
+| Honest privacy | `public`, `unlisted`, `access-otp`, and `custom-invite` are different claims. Label them clearly. |
 | Promotion path | Useful toys can graduate into permanent sites, but not every artifact deserves permanence. |
 
 ## The Unit of Work
@@ -80,7 +81,7 @@ flare/
   exports/             # generated durable outputs, if any
 ```
 
-If deployed to Cloudflare, static files can live in R2/Workers Assets and state can live in a per-Flare Durable Object.
+If deployed to Cloudflare, stable platform files should live in Workers Static Assets, generated Flare bundles/uploads/exports can live in R2, and mutable per-Flare state/realtime should live in a per-Flare Durable Object backed by SQLite. D1 is the registry and query index, not the hot path for per-Flare interactions.
 
 ## Namespaces
 
@@ -101,10 +102,10 @@ The exact names can change; keep the distinction between ephemeral generated sur
 Before building a full platform, validate the behavior with:
 
 - a local static Flare preview;
-- a tiny deploy path to one Cloudflare Worker/R2 bucket;
-- one shared data primitive for form/JSON submissions;
+- a tiny deploy path to one Cloudflare Worker plus Workers Static Assets/R2;
+- one Durable Object SQLite shared data primitive for form/JSON submissions;
 - export back to JSON/Markdown;
-- manual auth mode selection;
+- manual auth/capability/expiry selection in the manifest;
 - no realtime, file uploads, or AI proxy until the loop proves useful.
 
 ## Anti-Patterns
@@ -116,3 +117,5 @@ Before building a full platform, validate the behavior with:
 - Calling unlisted links private.
 - Making the hosted Flare the only copy of important decisions or collected data.
 - Starting with a universal app builder before proving repeated flare types.
+- Routing Flare data-path writes through model calls, REST admin APIs, or public HTTP between platform Workers when bindings/service bindings are available.
+- Treating D1/KV as the default per-Flare realtime state store instead of Durable Objects.
