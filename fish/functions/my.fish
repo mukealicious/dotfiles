@@ -1,4 +1,4 @@
-# Search custom aliases and bin commands
+# Search custom aliases, fish functions, and bin commands
 function my
     set -l query $argv
 
@@ -7,6 +7,18 @@ function my
         alias | while read -l line
             echo "alias: $line"
         end
+
+        # Functions from dotfiles fish/functions
+        for fn in ~/.dotfiles/fish/functions/*.fish
+            set -l name (basename $fn .fish)
+            set -l desc (grep -m1 '^function .* -d ' $fn 2>/dev/null | sed -E 's/.* -d "([^"]+)".*/\1/')
+            if test -n "$desc"
+                echo "func: $name - $desc"
+            else
+                echo "func: $name"
+            end
+        end
+
         # Commands in dotfiles bin
         for cmd in ~/.dotfiles/bin/*
             set -l name (basename $cmd)
