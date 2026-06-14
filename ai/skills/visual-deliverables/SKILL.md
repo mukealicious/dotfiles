@@ -1,6 +1,6 @@
 ---
 name: visual-deliverables
-description: Create self-contained HTML deliverables with a strong visual bias: architecture maps, interactive explainers, review surfaces, planning boards, SVG diagrams, and small workbenches. Use when spatial structure, state, comparison, motion, or interaction would teach faster than Markdown.
+description: "Create self-contained HTML deliverables with a strong visual bias: architecture maps, interactive explainers, review surfaces, planning boards, SVG diagrams, and small workbenches. Use when spatial structure, state, comparison, motion, or interaction would teach faster than Markdown."
 metadata:
   watch-sources: |
     plannotator/effective-html/skills/html-diagram@138daaddddce5b89f0950aa446333bc03f3f7e95

@@ -1,6 +1,6 @@
 ---
 name: flares
-description: Create Flares: Cloudflare-native, steerable agent-generated mini-apps with zero-config APIs for data, files, AI, identity, realtime/websockets, export, and sharing. Use when the user says "make a flare" or asks to spin up a quick app/artifact/demo/dashboard/poll from context.
+description: "Create Flares: Cloudflare-native, steerable agent-generated mini-apps with zero-config APIs for data, files, AI, identity, realtime/websockets, export, and sharing. Use when the user says 'make a flare' or asks to spin up a quick app/artifact/demo/dashboard/poll from context."
 references:
   - references/pattern.md
   - references/cloudflare-personal-architecture.md
