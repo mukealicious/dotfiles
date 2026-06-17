@@ -16,6 +16,37 @@ case "${PI_CODING_AGENT_DIR:-}" in
     ;;
 esac
 
+# Herdr restores panes with commands like `pi --session ~/.pi/personal/...`.
+# In a fresh terminal that command may not carry PI_CODING_AGENT_DIR, so infer
+# the wrapper from the session path before falling back to the machine default.
+expect_session_path=0
+for arg in "$@"; do
+  if [ "$expect_session_path" -eq 1 ]; then
+    case "$arg" in
+      "$HOME/.pi/personal"/*)
+        exec "$BIN_DIR/pi-personal" "$@"
+        ;;
+      "$HOME/.pi/work"/*)
+        exec "$BIN_DIR/pi-work" "$@"
+        ;;
+    esac
+    expect_session_path=0
+    continue
+  fi
+
+  case "$arg" in
+    --session)
+      expect_session_path=1
+      ;;
+    --session="$HOME/.pi/personal"/*)
+      exec "$BIN_DIR/pi-personal" "$@"
+      ;;
+    --session="$HOME/.pi/work"/*)
+      exec "$BIN_DIR/pi-work" "$@"
+      ;;
+  esac
+done
+
 case "${PI_DEFAULT_PROFILE:-work}" in
   personal)
     exec "$BIN_DIR/pi-personal" "$@"
