@@ -5,3 +5,8 @@
 # QMD - per-project index databases (config is checked in)
 .qmd/*
 !.qmd/index.yml
+
+# Pi - per-user/project-local runtime preferences
+# Force-add if a repo intentionally shares Pi project config.
+.pi/settings.json
+.pi/sessions/
