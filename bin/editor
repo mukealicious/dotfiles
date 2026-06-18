@@ -1,6 +1,6 @@
 #!/bin/sh
 # Open files in the preferred code editor.
-# Default: Zed. Fallback: VS Code. Last resort: platform text editor/vi.
+# Default: Zed. Last resort: platform text editor/vi.
 
 set -e
 
@@ -15,13 +15,6 @@ if command -v zed >/dev/null 2>&1; then
     exec zed --wait "$@"
   fi
   exec zed "$@"
-fi
-
-if command -v code >/dev/null 2>&1; then
-  if [ "$wait" = "true" ]; then
-    exec code --wait "$@"
-  fi
-  exec code "$@"
 fi
 
 if [ "$wait" = "true" ]; then
