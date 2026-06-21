@@ -43,3 +43,6 @@ alias pbc 'pbcopy'
 alias pbp 'pbpaste'
 
 # Tool aliases loaded from topic directories (*/aliases.fish)
+
+# OrbStack command-line tools and shell integration
+source ~/.orbstack/shell/init2.fish 2>/dev/null || :

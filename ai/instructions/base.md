@@ -101,5 +101,6 @@
 ## Environment Notes
 
 - System: macOS/Darwin.
+- Container runtime: OrbStack replaces Docker Desktop. Use normal `docker` / `docker compose` commands. If Docker is unavailable, run `orb-doctor` or check `orbctl status`; start it with `open -a OrbStack`. Use `orb <cmd>` for quick Linux commands in the default OrbStack machine.
 - Check for `.envrc` in projects.
 - Prefer repo-local tooling and setup when present.

@@ -71,7 +71,7 @@ cask "ollama-app"                # Local LLM runner for QMD embeddings
 cask "wezterm"                   # GPU-accelerated terminal emulator
 cask "openlogi"                  # Local-first Logitech mouse configuration (Options+ replacement)
 cask "1password-cli"             # 1Password CLI for secrets management
-cask "docker-desktop"            # Docker Desktop with CLI tools
+cask "orbstack"                  # Lightweight Docker Desktop alternative for containers/VMs
 cask "gcloud-cli"                # Google Cloud CLI
 cask "jordanbaird-ice"           # Menu bar manager for macOS
 cask "nikitabobko/tap/aerospace" # i3-like tiling window manager for macOS

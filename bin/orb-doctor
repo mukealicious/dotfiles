@@ -1,0 +1,52 @@
+#!/bin/sh
+# Print OrbStack/Docker runtime diagnostics for humans and agents.
+
+set -u
+
+section() {
+  printf '\n==> %s\n' "$1"
+}
+
+run() {
+  printf '$ %s\n' "$*"
+  "$@"
+}
+
+section "OrbStack"
+if command -v orb >/dev/null 2>&1; then
+  run orb version || true
+else
+  echo "orb: not found on PATH"
+fi
+
+if command -v orbctl >/dev/null 2>&1; then
+  run orbctl status || true
+  run orbctl list || true
+else
+  echo "orbctl: not found on PATH"
+fi
+
+section "Docker CLI"
+if command -v docker >/dev/null 2>&1; then
+  docker_path="$(command -v docker)"
+  echo "docker: $docker_path"
+  if command -v readlink >/dev/null 2>&1; then
+    target="$(readlink "$docker_path" 2>/dev/null || true)"
+    [ -z "$target" ] || echo "docker target: $target"
+  fi
+  run docker --version || true
+  run docker context show || true
+  run docker context ls || true
+else
+  echo "docker: not found on PATH"
+fi
+
+section "Docker daemon"
+if command -v docker >/dev/null 2>&1; then
+  run docker info --format '{{.ServerVersion}} / {{.OperatingSystem}}' || true
+fi
+
+section "Doctor"
+if command -v orbctl >/dev/null 2>&1; then
+  run orbctl doctor || true
+fi
