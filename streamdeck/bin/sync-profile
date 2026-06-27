@@ -21,6 +21,30 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
+def deep_merge(base: dict, overlay: dict) -> dict:
+    merged = copy.deepcopy(base)
+    for key, value in overlay.items():
+        if value is None:
+            merged.pop(key, None)
+        elif isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = deep_merge(merged[key], value)
+        else:
+            merged[key] = copy.deepcopy(value)
+    return merged
+
+
+def local_overlay_path(layout_path: Path) -> Path:
+    return layout_path.with_name(f"{layout_path.stem}.local{layout_path.suffix}")
+
+
+def load_layout(path: Path) -> dict:
+    layout = load_json(path)
+    overlay_path = local_overlay_path(path)
+    if overlay_path.exists():
+        layout = deep_merge(layout, load_json(overlay_path))
+    return layout
+
+
 def save_json(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, separators=(",", ":")))
@@ -246,7 +270,7 @@ def backup_file(path: Path) -> None:
 
 
 def sync(layout_path: Path, profile_name_override: str | None = None) -> None:
-    layout = load_json(layout_path)
+    layout = load_layout(layout_path)
     layout_profile_name = layout.get("profileName")
     profile_name = profile_name_override or layout_profile_name
     profile_dir, profile_manifest = choose_profile(
@@ -276,6 +300,7 @@ def sync(layout_path: Path, profile_name_override: str | None = None) -> None:
     if page_id not in page_ids:
         page_ids.insert(0, page_id)
     pages["Pages"] = page_ids
+    pages["Current"] = page_id
     if created:
         pages["Default"] = page_id
     backup_file(root_manifest_path)

@@ -15,8 +15,9 @@ This topic now manages both:
 2. syncs the managed page into Stream Deck's live `ProfilesV3/` directory
 
 That means pulling dotfiles on another machine and running `dot` will apply the
-same managed workspace page there too, as long as Stream Deck has a matching
-profile name available.
+same managed workspace page there too. If the local Stream Deck profile uses a
+different name, add an ignored `streamdeck/layouts/workspaces.local.json`
+override with that machine's `profileName`.
 
 ## How It Works
 
@@ -65,6 +66,18 @@ Default target profile name:
 
 If the configured profile name does not exist on a machine, sync now fails fast
 instead of guessing another local profile.
+
+Machine-local overrides:
+
+- `streamdeck/layouts/workspaces.local.json` is gitignored
+- it is deep-merged over `workspaces.json` when present
+- set only local differences, for example:
+
+```json
+{
+  "profileName": "mikey"
+}
+```
 
 ## Files
 
@@ -178,6 +191,7 @@ But repo-managed updates are applied by `bin/sync-profile`, which:
 - finds or creates the managed page
 - rewrites the page manifest from `layouts/workspaces.json`
 - copies repo icons into the page `Images/` directory
+- marks the managed page as the current page for the target profile
 - preserves non-keypad controllers from the existing page template
 
 ## Gotchas

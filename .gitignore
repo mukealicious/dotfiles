@@ -25,6 +25,7 @@ openlogi/config/openlogi.lock
 
 # Stream Deck .app wrappers (built by install.sh via osacompile)
 streamdeck/apps/
+streamdeck/layouts/*.local.json
 
 # Agent scratch / research context
 .context/
