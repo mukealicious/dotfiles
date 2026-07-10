@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Surf lane for the user's default personal browser (Brave).
+
+set -euo pipefail
+
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+exec "$DOTFILES_ROOT/surf/bin/surf-lane" brave "$@"

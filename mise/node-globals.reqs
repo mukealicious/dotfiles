@@ -2,3 +2,5 @@
 # Use this for npm CLIs with native Node dependencies or Node ABI sensitivity.
 # Keep simple Bun-friendly JS CLIs in ../bun.reqs instead.
 @tobilu/qmd@2.5.3
+# Surf uses a Chrome native-messaging host; keep its internal host layout stable.
+surf-cli@2.8.0
