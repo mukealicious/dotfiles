@@ -20,6 +20,7 @@
     "~/.dotfiles/pi/packages/pi-parallel",
     "~/.dotfiles/pi/packages/pi-openai-fast",
     "~/.dotfiles/pi/packages/pi-subagents",
+    "npm:pi-mcp-adapter",
     {
       "source": "npm:mitsupi",
       "skills": [

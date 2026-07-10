@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flare-host",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/_flare/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "FLARE_OBJECT", "class_name": "FlareObject" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["FlareObject"] }],
+  "r2_buckets": [{ "binding": "FLARE_BUCKET", "bucket_name": "flares" }],
+  "d1_databases": [{ "binding": "REGISTRY_DB", "database_name": "flare_registry" }],
+  "queues": {
+    "producers": [{ "binding": "FLARE_JOBS", "queue": "flare-jobs" }]
+  },
+  "observability": { "enabled": true }
+}

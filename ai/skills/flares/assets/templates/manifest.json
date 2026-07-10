@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "title": "Untitled Flare",
+  "slug": "untitled-flare",
+  "status": "draft",
+  "purpose": "Describe what this Flare helps people do.",
+  "owner": {
+    "name": "Mikey",
+    "email": ""
+  },
+  "sourceSummary": [],
+  "capabilities": {
+    "identity": false,
+    "db": false,
+    "events": false,
+    "files": false,
+    "ai": false,
+    "realtime": false,
+    "export": false
+  },
+  "auth": {
+    "mode": "local",
+    "audience": [],
+    "roles": {}
+  },
+  "dataPolicy": {
+    "captured": [],
+    "storedIn": [],
+    "exports": [],
+    "retention": "",
+    "aiUse": "none"
+  },
+  "budgets": {
+    "maxDocuments": 1000,
+    "maxUploadBytes": 0,
+    "maxAiUsd": 0
+  },
+  "expiresAt": null,
+  "approvals": {
+    "publish": false,
+    "invite": false,
+    "aiOverPrivateData": false,
+    "externalScripts": false
+  },
+  "steeringLog": []
+}

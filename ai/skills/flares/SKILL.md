@@ -5,6 +5,9 @@ references:
   - references/pattern.md
   - references/cloudflare-personal-architecture.md
   - references/cloudflare-native-blueprint.md
+  - references/cloudflare-mcp.md
+  - references/deploy-workflow.md
+  - references/platform-implementation.md
   - references/steering-contract.md
   - references/flare-types.md
   - references/zero-config-api.md
@@ -42,6 +45,9 @@ A Flare is a steerable, agent-generated lightweight web app. Generated code owns
 | Understand the concept | [pattern.md](./references/pattern.md) |
 | Pick a Flare shape | [flare-types.md](./references/flare-types.md) |
 | Build or review platform architecture | [cloudflare-native-blueprint.md](./references/cloudflare-native-blueprint.md), then [cloudflare-personal-architecture.md](./references/cloudflare-personal-architecture.md) |
+| Use Cloudflare MCP safely | [cloudflare-mcp.md](./references/cloudflare-mcp.md) |
+| Deploy/share a hosted Flare | [deploy-workflow.md](./references/deploy-workflow.md) |
+| Implement the shared Worker/DO/D1/R2 platform | [platform-implementation.md](./references/platform-implementation.md) |
 | Define steerability, safety gates, or manifest fields | [steering-contract.md](./references/steering-contract.md) |
 | Implement client-facing APIs | [zero-config-api.md](./references/zero-config-api.md) |
 
@@ -52,10 +58,11 @@ A Flare is a steerable, agent-generated lightweight web app. Generated code owns
 3. **Choose the flare type.** See [flare-types.md](./references/flare-types.md).
 4. **Choose capabilities, not infrastructure.** Static only? Data? Files? AI? Realtime? Identity? Export? Lifecycle automation? See [zero-config-api.md](./references/zero-config-api.md).
 5. **Draft locally first.** Build a local preview or self-contained HTML when possible before any public deploy.
-6. **Write or update the manifest.** Include the steering fields in [steering-contract.md](./references/steering-contract.md), even if some values are provisional.
-7. **Steering gate.** Show the source summary, Flare behavior, data captured, auth mode, audience, expiry, and share/invite copy. Get user approval when publishing, inviting, spending meaningful resources, or exposing private context.
-8. **Publish only after approval.** If publishing, record URL, source path, auth mode, expiry, platform capabilities, and any data/export location.
-9. **Operate and close the loop.** If the Flare gathers data, export/summarize responses back into durable notes/tasks/decisions. Archive or promote intentionally.
+6. **Write or update the manifest.** Include the steering fields in [steering-contract.md](./references/steering-contract.md), even if some values are provisional. A starter template lives at [assets/templates/manifest.json](./assets/templates/manifest.json).
+7. **Use Cloudflare MCP as the operator channel.** For hosted work, read [cloudflare-mcp.md](./references/cloudflare-mcp.md): use MCP for docs/account/resource operations, Wrangler for reproducible deploys, and Worker bindings for runtime data.
+8. **Steering gate.** Show the source summary, Flare behavior, data captured, auth mode, audience, expiry, share/invite copy, and Cloudflare resources to create/change. Get user approval when publishing, inviting, spending meaningful resources, creating DNS/routes, or exposing private context.
+9. **Publish only after approval.** Follow [deploy-workflow.md](./references/deploy-workflow.md). Record URL, source path, auth mode, expiry, platform capabilities, and any data/export location.
+10. **Operate and close the loop.** If the Flare gathers data, export/summarize responses back into durable notes/tasks/decisions. Archive or promote intentionally.
 
 ## Cloudflare Native Defaults
 
@@ -73,7 +80,7 @@ Use this default stack unless the use case proves it needs less or more:
 | Identity | Cloudflare Access for owner/admin and known invitees; app-level signed gates for fine-grained per-Flare audiences |
 | Observability | Workers Logs/structured events, Analytics Engine for usage metrics when needed |
 
-Do not use the Cloudflare REST API from inside a Flare for data-path behavior when bindings or service bindings can do the work.
+Do not use the Cloudflare REST API or MCP from inside a Flare for data-path behavior when bindings or service bindings can do the work. MCP is for agent/operator setup and inspection; the hosted Worker is the runtime authority.
 
 ## Default Flare Manifest
 
@@ -134,7 +141,7 @@ Every Flare should have a manifest. Use this canonical shape and leave optional 
 
 The intended personal platform is Cloudflare-first: Access and/or invite gates for auth, one Worker host/router, Workers Static Assets or R2 for Flare bundles, Durable Objects with SQLite for per-Flare state and realtime, D1 for registry/indexes, R2 for uploads/exports, Queues/Workflows for lifecycle work, and Workers AI/AI Gateway for model calls.
 
-Read [cloudflare-native-blueprint.md](./references/cloudflare-native-blueprint.md) before implementing deployment behavior.
+Read [cloudflare-native-blueprint.md](./references/cloudflare-native-blueprint.md), [cloudflare-mcp.md](./references/cloudflare-mcp.md), and [platform-implementation.md](./references/platform-implementation.md) before implementing deployment behavior. A starter Wrangler config lives at [assets/templates/wrangler.flare-host.jsonc](./assets/templates/wrangler.flare-host.jsonc).
 
 ## Safety Checklist Before Sharing
 

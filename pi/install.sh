@@ -100,9 +100,16 @@ setup_pi_profile() {
   profile_dir="$1"
   settings_src="$2"
   profile_name="$3"
+  mcp_src="$4"
 
   mkdir -p "$profile_dir"
   materialize_pi_settings "$settings_src" "$profile_dir/settings.json" "$profile_name/settings.json"
+  if [ -n "$mcp_src" ]; then
+    ensure_symlink "$mcp_src" "$profile_dir/mcp.json" "$profile_name/mcp.json"
+  elif [ -L "$profile_dir/mcp.json" ] && [ "$(normalize_symlink_path "$(readlink "$profile_dir/mcp.json")")" = "$DOTFILES_ROOT/pi/mcp.json" ]; then
+    log_info "Removing personal-only MCP config from $profile_name/mcp.json"
+    rm "$profile_dir/mcp.json"
+  fi
 
   if [ -d "$DOTFILES_ROOT/pi/node_modules" ]; then
     ensure_symlink "$DOTFILES_ROOT/pi/node_modules" "$profile_dir/node_modules" "$profile_name/node_modules"
@@ -132,9 +139,9 @@ setup_pi_profile() {
 
 # Shared backing store for global Pi resources (assembled AGENTS.md, agents/).
 # Not a user-facing profile — pi dispatches to work or personal.
-setup_pi_profile "$HOME/.pi/agent" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/agent"
-setup_pi_profile "$HOME/.pi/work" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/work"
-setup_pi_profile "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/settings.personal.json" "$HOME/.pi/personal"
+setup_pi_profile "$HOME/.pi/agent" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/agent" ""
+setup_pi_profile "$HOME/.pi/work" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/work" ""
+setup_pi_profile "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/settings.personal.json" "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/mcp.json"
 
 # Seed the personal profile with existing shared OAuth credentials on first split.
 if [ -e "$HOME/.pi/agent/auth.json" ]; then
@@ -182,6 +189,10 @@ PACKAGES="
   npm:mitsupi
 "
 
+PERSONAL_PACKAGES="
+  npm:pi-mcp-adapter
+"
+
 log_info "Installing Pi packages..."
 for pkg in $PACKAGES; do
   # Extract display name: strip git:/npm: prefix, URL path, .git suffix
@@ -200,6 +211,18 @@ for pkg in $PACKAGES; do
     log_success "Installed $display_name"
   else
     log_warn "Failed to install $display_name (run 'PI_CODING_AGENT_DIR=<profile> pi install $pkg' manually)"
+  fi
+done
+
+log_info "Installing personal-only Pi packages..."
+for pkg in $PERSONAL_PACKAGES; do
+  display_name="${pkg##*/}"
+  display_name="${display_name%.git}"
+  display_name="${display_name#npm:}"
+  if PI_CODING_AGENT_DIR="$HOME/.pi/personal" "$HOME/.bun/bin/pi" install "$pkg" 2>/dev/null; then
+    log_success "Installed $display_name (personal)"
+  else
+    log_warn "Failed to install $display_name for personal profile (run 'PI_CODING_AGENT_DIR=$HOME/.pi/personal pi install $pkg' manually)"
   fi
 done
 
