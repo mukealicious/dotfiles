@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Surf lane for work/corporate browsing in Microsoft Edge.
+
+set -euo pipefail
+
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+exec "$DOTFILES_ROOT/surf/bin/surf-lane" edge "$@"

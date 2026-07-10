@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Run surf-cli against a specific browser lane/socket.
+# This prevents Brave and Edge from competing for Surf's default /tmp/surf.sock.
+
+set -euo pipefail
+
+if [ "$#" -lt 1 ]; then
+  echo "Usage: surf-lane <brave|edge> [surf args...]" >&2
+  exit 64
+fi
+
+lane="$1"
+shift
+
+case "$lane" in
+  brave)
+    socket="/tmp/surf-brave.sock"
+    browser_app="Brave Browser"
+    browser_profile="Default"
+    ;;
+  edge)
+    socket="/tmp/surf-edge.sock"
+    browser_app="Microsoft Edge"
+    browser_profile="Default"
+    ;;
+  *)
+    echo "Unknown Surf lane: $lane" >&2
+    echo "Expected: brave or edge" >&2
+    exit 64
+    ;;
+esac
+
+DOTFILES_ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+NODE_VERSION="$(awk -F= '/^[[:space:]]*node[[:space:]]*=/{gsub(/[ \"'"'"']/, "", $2); print $2; exit}' "$DOTFILES_ROOT/mise.toml")"
+
+find_surf_bin() {
+  if command -v mise >/dev/null 2>&1 && [ -n "$NODE_VERSION" ]; then
+    local npm_prefix
+    npm_prefix="$(mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- npm prefix -g 2>/dev/null || true)"
+    if [ -n "$npm_prefix" ] && [ -x "$npm_prefix/bin/surf" ]; then
+      printf '%s\n' "$npm_prefix/bin/surf"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+surf_bin="$(find_surf_bin || true)"
+if [ -z "$surf_bin" ] || [ ! -x "$surf_bin" ]; then
+  echo "surf-cli is not installed under the mise-managed Node runtime." >&2
+  echo "Fix: run ~/.dotfiles/mise/install.sh or dot" >&2
+  exit 127
+fi
+
+managed_extension_path=""
+browser_user_data=""
+if [ "$lane" = "brave" ]; then
+  case "$(uname -s)" in
+    Darwin)
+      managed_extension_path="$HOME/Library/Application Support/surf-cli-dotfiles/brave-agent-extension"
+      browser_user_data="$HOME/Library/Application Support/surf-cli-dotfiles/brave-user-data"
+      ;;
+    Linux)
+      managed_extension_path="$HOME/.local/share/surf-cli-dotfiles/brave-agent-extension"
+      browser_user_data="$HOME/.local/share/surf-cli-dotfiles/brave-user-data"
+      ;;
+  esac
+fi
+
+if [ "${1:-}" = "extension-path" ] && [ -n "$managed_extension_path" ]; then
+  printf '%s\n' "$managed_extension_path"
+  exit 0
+fi
+
+socket_ready() {
+  mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- node -e '
+    const net = require("node:net");
+    const socket = net.createConnection(process.argv[1]);
+    const done = (status) => { socket.destroy(); process.exit(status); };
+    socket.setTimeout(250, () => done(1));
+    socket.once("connect", () => done(0));
+    socket.once("error", () => done(1));
+  ' "$SURF_SOCKET" >/dev/null 2>&1
+}
+
+case "${1:-}" in
+  install|uninstall)
+    echo "This dotfiles setup manages Surf native hosts with per-browser sockets." >&2
+    echo "Use: $DOTFILES_ROOT/surf/install.sh" >&2
+    echo "For browser control, use surf (Brave default), surf-brave, or surf-edge." >&2
+    exit 64
+    ;;
+esac
+
+needs_socket=true
+case "${1:-}" in
+  ""|-h|--help|--help-full|--help-topic|--find|--llm-context|-V|--version|extension-path|path)
+    needs_socket=false
+    ;;
+esac
+
+export SURF_SOCKET="$socket"
+
+# On macOS, open the profile that owns the Surf extension if its lane socket is
+# unavailable. Calling the app without a profile can stop at the profile picker,
+# where no extension or native host is loaded.
+if [ "$needs_socket" = true ] && [ "$(uname -s)" = "Darwin" ] && ! socket_ready; then
+  browser_binary="/Applications/$browser_app.app/Contents/MacOS/$browser_app"
+  if [ -x "$browser_binary" ]; then
+    browser_args=(--profile-directory="$browser_profile")
+    if [ -n "$browser_user_data" ]; then
+      browser_args+=(--user-data-dir="$browser_user_data")
+    fi
+    if [ -n "$managed_extension_path" ] && [ -d "$managed_extension_path" ]; then
+      browser_args+=(--load-extension="$managed_extension_path")
+    fi
+    "$browser_binary" "${browser_args[@]}" >/dev/null 2>&1 &
+  else
+    open -g -a "$browser_app" --args --profile-directory="$browser_profile" >/dev/null 2>&1 || true
+  fi
+  deadline=$((SECONDS + 15))
+  while ! socket_ready && [ "$SECONDS" -lt "$deadline" ]; do
+    sleep 0.2
+  done
+fi
+
+exec mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- "$surf_bin" "$@"

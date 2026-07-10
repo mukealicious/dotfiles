@@ -144,6 +144,113 @@ else
   info "Install: brew install yt-dlp"
 fi
 
+# ── Surf browser lanes ─────────────────────────────────────────
+
+header "Surf browser lanes"
+
+for wrapper in surf surf-brave surf-edge; do
+  if [ -x "$DOTFILES_ROOT/bin/$wrapper" ]; then
+    pass "$wrapper wrapper"
+  else
+    fail "$wrapper wrapper missing"
+    info "Fix: restore $DOTFILES_ROOT/bin/$wrapper"
+  fi
+done
+
+surf_node_version="$(awk -F= '/^[[:space:]]*node[[:space:]]*=/{gsub(/[ \"'"'"']/, "", $2); print $2; exit}' "$DOTFILES_ROOT/mise.toml")"
+surf_mise_bin=""
+if command -v mise >/dev/null 2>&1 && [ -n "$surf_node_version" ]; then
+  surf_mise_prefix="$(mise exec -C "$DOTFILES_ROOT" "node@$surf_node_version" -- npm prefix -g 2>/dev/null || true)"
+  if [ -n "$surf_mise_prefix" ]; then
+    surf_mise_bin="$surf_mise_prefix/bin/surf"
+  fi
+fi
+
+if [ -n "$surf_mise_bin" ] && [ -x "$surf_mise_bin" ]; then
+  pass "surf-cli mise runtime binary: $surf_mise_bin"
+else
+  warn "surf-cli is not installed under the mise-managed Node runtime"
+  info "Fix: run $DOTFILES_ROOT/mise/install.sh"
+fi
+
+check_surf_manifest() {
+  lane_label="$1"
+  manifest_path="$2"
+  expected_socket="$3"
+
+  if [ ! -f "$manifest_path" ]; then
+    warn "$lane_label Surf native host manifest not installed"
+    info "Fix: load Surf extension in $lane_label, then run $DOTFILES_ROOT/surf/install.sh"
+    return
+  fi
+
+  if ! command -v jq >/dev/null 2>&1; then
+    warn "$lane_label Surf native host manifest could not be validated (jq missing)"
+    return
+  fi
+
+  if ! jq -e '
+    .name == "surf.browser.host" and
+    .type == "stdio" and
+    (.path | type == "string" and length > 0) and
+    (.allowed_origins | type == "array" and length > 0 and all(.[]; test("^chrome-extension://[a-p]{32}/$")))
+  ' "$manifest_path" >/dev/null 2>&1; then
+    fail "$lane_label Surf native host manifest is invalid"
+    info "Fix: rerun $DOTFILES_ROOT/surf/install.sh"
+    return
+  fi
+
+  pass "$lane_label Surf native host manifest"
+
+  surf_host_wrapper="$(jq -r '.path' "$manifest_path")"
+  if [ -x "$surf_host_wrapper" ]; then
+    pass "$lane_label Surf native host wrapper"
+  else
+    fail "$lane_label Surf native host wrapper is missing or not executable"
+    info "Expected wrapper: $surf_host_wrapper"
+    info "Fix: rerun $DOTFILES_ROOT/surf/install.sh"
+    return
+  fi
+
+  if grep -Fq "SURF_SOCKET=\"$expected_socket\"" "$surf_host_wrapper"; then
+    pass "$lane_label Surf socket configuration"
+  else
+    fail "$lane_label Surf native host does not target $expected_socket"
+    info "Fix: rerun $DOTFILES_ROOT/surf/install.sh"
+  fi
+
+  if [ ! -S "$expected_socket" ]; then
+    warn "$lane_label Surf runtime is not ready (socket absent: $expected_socket)"
+    info "Open $lane_label with the Surf extension enabled, then rerun dot doctor"
+  elif mise exec -C "$DOTFILES_ROOT" "node@$surf_node_version" -- node -e '
+    const net = require("node:net");
+    const socket = net.createConnection(process.argv[1]);
+    const done = (status) => { socket.destroy(); process.exit(status); };
+    socket.setTimeout(250, () => done(1));
+    socket.once("connect", () => done(0));
+    socket.once("error", () => done(1));
+  ' "$expected_socket" >/dev/null 2>&1; then
+    pass "$lane_label Surf runtime socket"
+  else
+    fail "$lane_label Surf runtime socket exists but is not accepting connections"
+    info "Restart $lane_label with the Surf extension enabled, then rerun dot doctor"
+  fi
+}
+
+case "$(uname -s)" in
+  Darwin)
+    check_surf_manifest "Brave" "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-brave.sock"
+    check_surf_manifest "Microsoft Edge" "$HOME/Library/Application Support/Microsoft Edge/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-edge.sock"
+    ;;
+  Linux)
+    check_surf_manifest "Brave" "$HOME/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-brave.sock"
+    check_surf_manifest "Microsoft Edge" "$HOME/.config/microsoft-edge/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-edge.sock"
+    ;;
+  *)
+    warn "Surf lane manifest checks are only implemented for macOS and Linux"
+    ;;
+esac
+
 # ── Top-level symlinks ─────────────────────────────────────────
 
 header "Top-level symlinks"
