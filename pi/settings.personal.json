@@ -29,5 +29,33 @@
     }
   ],
   "lastChangelogVersion": "0.74.0",
-  "hideThinkingBlock": false
+  "hideThinkingBlock": false,
+  "subagents": {
+    "agentOverrides": {
+      "scout": {
+        "model": "openai-codex/gpt-5.6-luna",
+        "thinking": "high"
+      },
+      "context-builder": {
+        "model": "openai-codex/gpt-5.6-terra",
+        "thinking": "high"
+      },
+      "worker": {
+        "model": "openai-codex/gpt-5.6-terra",
+        "thinking": "high"
+      },
+      "planner": {
+        "model": "openai-codex/gpt-5.6-terra",
+        "thinking": "max"
+      },
+      "reviewer": {
+        "model": "openai-codex/gpt-5.6-terra",
+        "thinking": "max"
+      },
+      "oracle": {
+        "model": "openai-codex/gpt-5.6-terra",
+        "thinking": "max"
+      }
+    }
+  }
 }

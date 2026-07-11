@@ -88,8 +88,8 @@ profiles:
 
 Current defaults:
 
-- **Work profile**: OpenAI `gpt-5.4` via API key
-- **Personal profile**: OpenAI Codex `gpt-5.4` via OAuth subscription
+- **Work profile**: OpenAI `gpt-5.5` via API key
+- **Personal profile**: OpenAI Codex `gpt-5.5` via OAuth subscription
 - **Theme**: Gruvbox Light
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` (no user-level symlinking needed — Pi supports path-based discovery)
 - **Instructions**: `ai/install.sh` assembles one shared Pi instruction file, then symlinks it into both profiles
@@ -100,6 +100,21 @@ In normal use there is no standalone user-facing top-level Pi profile: `pi` disp
 either `pi-work` or `pi-personal`. The `~/.pi/agent/` tree is kept as the shared backing
 store for global Pi instructions/agents and for compatibility with raw `~/.bun/bin/pi`
 usage.
+
+### Subagent model routing
+
+Both profiles apply the same cost-aware GPT-5.6 builtin overrides. The work profile uses the `openai` provider and the personal profile uses `openai-codex`:
+
+| Agent | Model | Thinking |
+|---|---|---|
+| `scout` | GPT-5.6 Luna | high |
+| `context-builder` | GPT-5.6 Terra | high |
+| `worker` | GPT-5.6 Terra | high |
+| `planner` | GPT-5.6 Terra | max |
+| `reviewer` | GPT-5.6 Terra | max |
+| `oracle` | GPT-5.6 Terra | max |
+
+The user-scoped `researcher` definition shadows the builtin and therefore declares the provider-neutral `gpt-5.6-terra` tier with high thinking directly in `pi/agents/researcher.md`; pi-subagents resolves it against the active profile provider. `delegate` continues to inherit its parent model. GPT-5.6 Sol remains an explicit per-run premium override rather than a default, and Ultra remains an opt-in multi-agent mode rather than a Pi thinking level.
 
 ## Extensions
 
@@ -143,6 +158,6 @@ Pi packages loaded by this setup:
 |---|---|
 | `pi/packages/pi-exa` | Local Exa search tool (`exa_search`; depends on private `EXA_API_KEY`) |
 | `pi-parallel` | Parallel web research tools (`parallel_search`, `parallel_extract`, `parallel_research`, `parallel_enrich`; depends on standalone `parallel-cli`) |
-| `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4/GPT-5.5 models |
+| `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4, GPT-5.5, and GPT-5.6 Luna/Terra/Sol models |
 | `pi/packages/pi-subagents` | Local vendored subagent delegation tools, builtin child agents, chains, and parallel runs |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |
