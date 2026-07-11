@@ -26,6 +26,23 @@ herdr integration install opencode
 
 Use `prefix+q` to detach and run `herdr` again to reattach.
 
+## Inline images
+
+`herdr/config.toml` enables Herdr's experimental Kitty graphics compositor so Pi image previews render instead of leaving blank rows. WezTerm supports the required Kitty graphics protocol.
+
+After changing this setting, reload the server config:
+
+```bash
+herdr server reload-config
+```
+
+After upgrading Herdr, check for a stale running server with `herdr status`. If it reports `restart_needed: yes`, replace the server while preserving live pane processes, then reattach the client:
+
+```bash
+herdr server live-handoff
+herdr
+```
+
 ## Diff review companion
 
 For agent-authored changes, keep Hunk open in a neighboring pane:

@@ -316,6 +316,14 @@ if command -v herdr >/dev/null 2>&1; then
   else
     warn "herdr command does not execute cleanly"
   fi
+  check_symlink "$DOTFILES_ROOT/herdr/config.toml" "$HOME/.config/herdr/config.toml" "Herdr config.toml"
+  herdr_status="$(herdr status 2>/dev/null || true)"
+  if printf '%s\n' "$herdr_status" | grep -q 'restart_needed: yes'; then
+    warn "running Herdr server is older than the installed client"
+    info "Fix without stopping pane processes: herdr server live-handoff"
+  elif printf '%s\n' "$herdr_status" | grep -q 'restart_needed: no'; then
+    pass "running Herdr server matches installed client"
+  fi
   info "Recommended agent integrations are documented in $DOTFILES_ROOT/herdr/README.md"
 else
   warn "herdr not found"

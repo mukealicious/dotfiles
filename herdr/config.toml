@@ -1,0 +1,8 @@
+onboarding = false
+
+[theme]
+name = "gruvbox"
+
+[experimental]
+# Required for inline image previews from Pi and other terminal applications.
+kitty_graphics = true
