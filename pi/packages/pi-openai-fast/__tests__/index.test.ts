@@ -187,14 +187,14 @@ describe("pi-openai-fast", () => {
 			const beforeProviderRequest = getRegisteredHandler(mockPi, "before_provider_request");
 
 			const { ctx, ui } = createMockContext(
-				{ provider: "openai", id: "gpt-5.4" } as ExtensionContext["model"],
+				{ provider: "openai-codex", id: "gpt-5.6-terra" } as ExtensionContext["model"],
 				[],
 				cwd,
 			);
 			await command.handler("on", ctx);
 
 			expect(mockPi.appendEntry).not.toHaveBeenCalled();
-			expect(ui.notify).toHaveBeenCalledWith("Fast mode is on for openai/gpt-5.4.", "info");
+			expect(ui.notify).toHaveBeenCalledWith("Fast mode is on for openai-codex/gpt-5.6-terra.", "info");
 
 			const payload = beforeProviderRequest(
 				{ type: "before_provider_request", payload: { input: "hello" } } as BeforeProviderRequestEvent,
@@ -206,12 +206,7 @@ describe("pi-openai-fast", () => {
 			expect(JSON.parse(readFileSync(globalConfigPath, "utf-8"))).toEqual({
 				persistState: true,
 				active: true,
-				supportedModels: [
-					"openai/gpt-5.4",
-					"openai-codex/gpt-5.4",
-					"openai/gpt-5.5",
-					"openai-codex/gpt-5.5",
-				],
+				supportedModels: [..._test.DEFAULT_SUPPORTED_MODEL_KEYS],
 			});
 		} finally {
 			cleanup();
@@ -240,7 +235,7 @@ describe("pi-openai-fast", () => {
 			await command.handler("on", ctx);
 
 			expect(ui.notify).toHaveBeenCalledWith(
-				"Fast mode is on, but anthropic/claude-sonnet-4 does not support it. Supported models: openai/gpt-5.4, openai-codex/gpt-5.4, openai/gpt-5.5, openai-codex/gpt-5.5.",
+				`Fast mode is on, but anthropic/claude-sonnet-4 does not support it. Supported models: ${_test.DEFAULT_SUPPORTED_MODEL_KEYS.join(", ")}.`,
 				"info",
 			);
 

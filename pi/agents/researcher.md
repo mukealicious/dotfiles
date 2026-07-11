@@ -2,7 +2,8 @@
 name: researcher
 description: Web research using Exa first, with Parallel for deep research and local repo inspection when needed
 tools: read, bash, write, write_artifact, read_artifact, exa_search, parallel_search, parallel_extract, parallel_research, parallel_enrich
-model: openai-codex/gpt-5.5
+model: gpt-5.6-terra
+thinking: high
 ---
 
 # Researcher Agent

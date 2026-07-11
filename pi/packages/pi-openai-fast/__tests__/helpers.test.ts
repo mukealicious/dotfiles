@@ -46,6 +46,14 @@ describe("pi-openai-fast helpers", () => {
 				supportedModels,
 			),
 		).toBe(true);
+		for (const id of ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"]) {
+			expect(
+				_test.isFastSupportedModel({ provider: "openai", id } as ExtensionContext["model"], supportedModels),
+			).toBe(true);
+			expect(
+				_test.isFastSupportedModel({ provider: "openai-codex", id } as ExtensionContext["model"], supportedModels),
+			).toBe(true);
+		}
 		expect(
 			_test.isFastSupportedModel(
 				{ provider: "anthropic", id: "claude-sonnet-4" } as ExtensionContext["model"],
@@ -62,12 +70,9 @@ describe("pi-openai-fast helpers", () => {
 			const defaultConfig = _test.resolveFastConfig(cwd, homeDir);
 			expect(defaultConfig.persistState).toBe(true);
 			expect(defaultConfig.active).toBe(false);
-			expect(defaultConfig.supportedModels).toEqual([
-				{ provider: "openai", id: "gpt-5.4" },
-				{ provider: "openai-codex", id: "gpt-5.4" },
-				{ provider: "openai", id: "gpt-5.5" },
-				{ provider: "openai-codex", id: "gpt-5.5" },
-			]);
+			expect(defaultConfig.supportedModels).toEqual(
+				_test.DEFAULT_SUPPORTED_MODEL_KEYS.map((key) => _test.parseSupportedModelKey(key)),
+			);
 
 			const { projectConfigPath, globalConfigPath } = _test.getConfigPaths(cwd, homeDir);
 			expect(_test.readConfigFile(globalConfigPath)).toEqual(_test.DEFAULT_CONFIG_FILE);
@@ -93,7 +98,17 @@ describe("pi-openai-fast helpers", () => {
 		}
 	});
 
-	it("upgrades generated legacy default supported model lists", () => {
+	it.each([
+		{ legacyModels: ["openai/gpt-5.4", "openai-codex/gpt-5.4"] },
+		{
+			legacyModels: [
+				"openai/gpt-5.4",
+				"openai-codex/gpt-5.4",
+				"openai/gpt-5.5",
+				"openai-codex/gpt-5.5",
+			],
+		},
+	])("upgrades generated legacy default supported model list %#", ({ legacyModels }) => {
 		const { cwd, homeDir, cleanup } = createTempConfigPaths();
 		try {
 			const { globalConfigPath } = _test.getConfigPaths(cwd, homeDir);
@@ -104,7 +119,7 @@ describe("pi-openai-fast helpers", () => {
 					{
 						persistState: true,
 						active: true,
-						supportedModels: ["openai/gpt-5.4", "openai-codex/gpt-5.4"],
+						supportedModels: legacyModels,
 					},
 					null,
 					2,
@@ -113,21 +128,13 @@ describe("pi-openai-fast helpers", () => {
 			);
 
 			const config = _test.resolveFastConfig(cwd, homeDir);
-			expect(config.supportedModels).toEqual([
-				{ provider: "openai", id: "gpt-5.4" },
-				{ provider: "openai-codex", id: "gpt-5.4" },
-				{ provider: "openai", id: "gpt-5.5" },
-				{ provider: "openai-codex", id: "gpt-5.5" },
-			]);
+			expect(config.supportedModels).toEqual(
+				_test.DEFAULT_SUPPORTED_MODEL_KEYS.map((key) => _test.parseSupportedModelKey(key)),
+			);
 			expect(_test.readConfigFile(globalConfigPath)).toEqual({
 				persistState: true,
 				active: true,
-				supportedModels: [
-					"openai/gpt-5.4",
-					"openai-codex/gpt-5.4",
-					"openai/gpt-5.5",
-					"openai-codex/gpt-5.5",
-				],
+				supportedModels: [..._test.DEFAULT_SUPPORTED_MODEL_KEYS],
 			});
 		} finally {
 			cleanup();
