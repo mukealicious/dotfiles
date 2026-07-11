@@ -71,7 +71,7 @@ For one run, use inline config:
 For persistent tweaks, prefer `/agents`: choose the builtin, press `e`, change the model or other fields, then save a user or project override. User overrides apply everywhere. Project overrides apply only in that repo and win over user overrides.
 
 Settings locations:
-- User scope: `~/.pi/agent/settings.json`
+- User scope: `$PI_CODING_AGENT_DIR/settings.json` (defaults to `~/.pi/agent/settings.json`)
 - Project scope: `.pi/settings.json`
 
 Direct settings example:

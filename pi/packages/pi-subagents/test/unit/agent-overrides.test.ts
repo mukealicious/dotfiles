@@ -3,12 +3,13 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { buildBuiltinOverrideConfig, discoverAgents, removeBuiltinAgentOverride } from "../../agents.ts";
+import { buildBuiltinOverrideConfig, discoverAgents, getActiveAgentDir, getUserAgentSettingsPath, removeBuiltinAgentOverride } from "../../agents.ts";
 
 let tempHome = "";
 let tempProject = "";
 const originalHome = process.env.HOME;
 const originalUserProfile = process.env.USERPROFILE;
+const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
 
 function writeJson(filePath: string, value: unknown): void {
 	fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -27,6 +28,7 @@ describe("builtin agent overrides", () => {
 		tempProject = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagents-project-"));
 		process.env.HOME = tempHome;
 		process.env.USERPROFILE = tempHome;
+		delete process.env.PI_CODING_AGENT_DIR;
 	});
 
 	afterEach(() => {
@@ -34,8 +36,27 @@ describe("builtin agent overrides", () => {
 		else process.env.HOME = originalHome;
 		if (originalUserProfile === undefined) delete process.env.USERPROFILE;
 		else process.env.USERPROFILE = originalUserProfile;
+		if (originalAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
+		else process.env.PI_CODING_AGENT_DIR = originalAgentDir;
 		fs.rmSync(tempHome, { recursive: true, force: true });
 		fs.rmSync(tempProject, { recursive: true, force: true });
+	});
+
+	it("reads user overrides from the active Pi profile", () => {
+		const profileDir = path.join(tempHome, ".pi", "personal");
+		process.env.PI_CODING_AGENT_DIR = profileDir;
+		writeJson(path.join(profileDir, "settings.json"), {
+			subagents: {
+				agentOverrides: {
+					reviewer: { model: "openai-codex/gpt-5.6-terra" },
+				},
+			},
+		});
+
+		assert.equal(getActiveAgentDir(), profileDir);
+		assert.equal(getUserAgentSettingsPath(), path.join(profileDir, "settings.json"));
+		const reviewer = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "reviewer");
+		assert.equal(reviewer?.model, "openai-codex/gpt-5.6-terra");
 	});
 
 	it("applies user settings overrides to builtin agents", () => {

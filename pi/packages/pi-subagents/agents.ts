@@ -199,7 +199,11 @@ function findNearestProjectRoot(cwd: string): string | null {
 }
 
 export function getUserAgentSettingsPath(): string {
-	return path.join(os.homedir(), ".pi", "agent", "settings.json");
+	return path.join(getActiveAgentDir(), "settings.json");
+}
+
+export function getActiveAgentDir(): string {
+	return process.env.PI_CODING_AGENT_DIR || path.join(os.homedir(), ".pi", "agent");
 }
 
 export function getProjectAgentSettingsPath(cwd: string): string | null {
@@ -677,7 +681,7 @@ function resolveNearestProjectAgentDirs(cwd: string): { readDirs: string[]; pref
 const BUILTIN_AGENTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "agents");
 
 export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryResult {
-	const userDirOld = path.join(os.homedir(), ".pi", "agent", "agents");
+	const userDirOld = path.join(getActiveAgentDir(), "agents");
 	const userDirNew = path.join(os.homedir(), ".agents");
 	const { readDirs: projectAgentDirs, preferredDir: projectAgentsDir } = resolveNearestProjectAgentDirs(cwd);
 	const userSettingsPath = getUserAgentSettingsPath();
@@ -714,7 +718,7 @@ export function discoverAgentsAll(cwd: string): {
 	userSettingsPath: string;
 	projectSettingsPath: string | null;
 } {
-	const userDirOld = path.join(os.homedir(), ".pi", "agent", "agents");
+	const userDirOld = path.join(getActiveAgentDir(), "agents");
 	const userDirNew = path.join(os.homedir(), ".agents");
 	const { readDirs: projectDirs, preferredDir: projectDir } = resolveNearestProjectAgentDirs(cwd);
 	const userSettingsPath = getUserAgentSettingsPath();

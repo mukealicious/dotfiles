@@ -103,7 +103,9 @@ usage.
 
 ### Subagent model routing
 
-Both profiles apply the same cost-aware GPT-5.6 builtin overrides. The work profile uses the `openai` provider and the personal profile uses `openai-codex`:
+Subagents follow the active parent profile: `pi-personal` children use `openai-codex`
+with the personal OAuth subscription, while `pi-work` children use `openai` with the
+work API key. Both profiles apply the same cost-aware GPT-5.6 builtin overrides:
 
 | Agent | Model | Thinking |
 |---|---|---|

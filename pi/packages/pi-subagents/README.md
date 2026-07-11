@@ -392,7 +392,7 @@ In this dotfiles fork, the `researcher` builtin is wired to `exa_search` from lo
 
 You can override selected builtin fields without copying the whole agent. Overrides live in settings:
 
-- User: `~/.pi/agent/settings.json`
+- User: `$PI_CODING_AGENT_DIR/settings.json` (defaults to `~/.pi/agent/settings.json`)
 - Project: `.pi/settings.json`
 
 Example:
