@@ -46,15 +46,15 @@
       },
       "planner": {
         "model": "openai/gpt-5.6-terra",
-        "thinking": "high"
+        "thinking": "max"
       },
       "reviewer": {
         "model": "openai/gpt-5.6-terra",
-        "thinking": "high"
+        "thinking": "max"
       },
       "oracle": {
         "model": "openai/gpt-5.6-terra",
-        "thinking": "high"
+        "thinking": "max"
       }
     }
   }
