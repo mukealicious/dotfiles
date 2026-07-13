@@ -52,9 +52,9 @@ set -gx PI_DEFAULT_PROFILE personal
 pi/
 ├── agents/                 # Pi agent metadata assembled with shared agent bodies
 │   └── review.frontmatter  # Shared-body review exemplar
-├── settings.work.json      # Work profile config (OpenAI API key flow)
-├── settings.personal.json  # Personal profile config (OpenAI Codex OAuth flow)
-├── install.sh              # Symlinks config, installs packages
+├── settings.work.json      # Work profile config baseline (OpenAI API key flow)
+├── settings.personal.json  # Personal profile config baseline (OpenAI Codex OAuth flow)
+├── install.sh              # Materializes settings, symlinks resources, installs packages
 ├── aliases.fish            # Shell aliases / profile dispatch
 ├── extensions/             # Custom TypeScript extensions
 │   └── notify.ts          # Desktop notification on agent completion
@@ -70,11 +70,19 @@ pi/
 
 ## Configuration
 
-Profile settings are symlinked by `install.sh`:
+Profile settings are materialized as writable runtime files by `install.sh`:
 
 - `pi/settings.work.json` → `~/.pi/work/settings.json`
 - `pi/settings.personal.json` → `~/.pi/personal/settings.json`
 - `pi/settings.work.json` → `~/.pi/agent/settings.json` (shared backing store / compatibility root)
+
+The tracked files are managed baselines rather than direct symlink targets. Pi writes
+interactive model choices and changelog state back to each profile's runtime file;
+keeping that file outside Git avoids dirtying the dotfiles worktree whenever a model
+changes. Installer runs refresh repo-managed settings while preserving
+`defaultProvider`, `defaultModel`, `defaultThinkingLevel`, `lastChangelogVersion`, and
+Pi's generated `trackingId`. Edit the tracked baseline for durable non-runtime
+configuration; use Pi normally for per-profile model changes.
 
 Shared global Pi runtime resources are projected once, then shared into both active
 profiles:
@@ -86,7 +94,7 @@ profiles:
 - `~/.pi/work/agents` → symlink to shared Pi agents
 - `~/.pi/personal/agents` → symlink to shared Pi agents
 
-Current defaults:
+Tracked baseline defaults:
 
 - **Work profile**: OpenAI `gpt-5.5` via API key
 - **Personal profile**: OpenAI Codex `gpt-5.5` via OAuth subscription
@@ -116,7 +124,7 @@ work API key. Both profiles apply the same cost-aware GPT-5.6 builtin overrides:
 | `reviewer` | GPT-5.6 Terra | max |
 | `oracle` | GPT-5.6 Terra | max |
 
-The user-scoped `researcher` definition shadows the builtin and therefore declares the provider-neutral `gpt-5.6-terra` tier with high thinking directly in `pi/agents/researcher.md`; pi-subagents resolves it against the active profile provider. `delegate` continues to inherit its parent model. GPT-5.6 Sol remains an explicit per-run premium override rather than a default, and Ultra remains an opt-in multi-agent mode rather than a Pi thinking level.
+The user-scoped `researcher` definition shadows the builtin and therefore declares the provider-neutral `gpt-5.6-terra` tier with high thinking directly in `pi/agents/researcher.md`; pi-subagents resolves it against the active profile provider. `delegate` continues to inherit its parent model. GPT-5.6 Sol remains an opt-in interactive profile choice rather than a tracked baseline; selecting it in Pi persists it in the writable runtime settings. Ultra remains an opt-in multi-agent mode rather than a Pi thinking level.
 
 ## Extensions
 

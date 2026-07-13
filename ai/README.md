@@ -308,7 +308,7 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 ### Pi Coding Agent (pi)
 - **Provider**: Anthropic (via @earendil-works/pi-coding-agent)
 - **Profiles**: `pi-work` and `pi-personal` — `pi` dispatches based on `PI_DEFAULT_PROFILE`
-- **Config**: `pi/settings.work.json` → `~/.pi/work/settings.json`, `pi/settings.personal.json` → `~/.pi/personal/settings.json`
+- **Config**: tracked `pi/settings.{work,personal}.json` baselines are materialized into writable profile settings so Pi can persist model changes without dirtying Git
 - **Instruction File**: `~/.pi/agent/AGENTS.md` (assembled), symlinked into both profiles
 - **Agents**: `~/.pi/agent/agents/` (assembled), symlinked into both profiles
 - **Aliases**: `pi-work-print`, `pi-personal-print`

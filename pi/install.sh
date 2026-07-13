@@ -2,8 +2,8 @@
 #
 # Pi Coding Agent Configuration
 #
-# Sets up Pi profile directories and symlinks per-profile settings.
-# Installs Pi packages via `pi install`.
+# Sets up Pi profile directories, materializes writable settings, and symlinks
+# managed resources. Installs Pi packages via `pi install`.
 #
 # Usage:
 #   ./install.sh          # Normal install
@@ -43,13 +43,65 @@ fi
 
 log_info "Setting up Pi coding agent..."
 
+# Pi persists interactive model choices and changelog state in settings.json.
+# Materialize a writable runtime file instead of symlinking it into Git. Repo
+# settings remain the managed baseline, while explicitly runtime-owned fields
+# survive subsequent installer runs.
+materialize_pi_settings() {
+  settings_src="$1"
+  settings_dst="$2"
+  settings_label="$3"
+
+  if ! command -v jq >/dev/null 2>&1; then
+    log_error "jq is required to materialize $settings_label"
+    log_hint "Install it with: brew install jq"
+    return 1
+  fi
+
+  if [ -e "$settings_dst" ] && [ ! -f "$settings_dst" ]; then
+    log_error "$settings_label exists but is not a settings file"
+    return 1
+  fi
+
+  settings_tmp="$(mktemp "${settings_dst}.tmp.XXXXXX")"
+
+  if [ -e "$settings_dst" ]; then
+    if ! jq --argjson runtime_keys '["defaultProvider", "defaultModel", "defaultThinkingLevel", "lastChangelogVersion", "trackingId"]' -s '
+      .[0] as $managed
+      | .[1] as $runtime
+      | $managed * (
+          $runtime
+          | with_entries(
+              .key as $key
+              | select($runtime_keys | index($key) != null)
+            )
+        )
+    ' "$settings_src" "$settings_dst" > "$settings_tmp"; then
+      rm -f "$settings_tmp"
+      log_error "Failed to merge $settings_label"
+      return 1
+    fi
+  else
+    cp "$settings_src" "$settings_tmp"
+  fi
+
+  if [ ! -L "$settings_dst" ] && [ -f "$settings_dst" ] && cmp -s "$settings_tmp" "$settings_dst"; then
+    rm -f "$settings_tmp"
+    return 0
+  fi
+
+  # mv replaces a legacy symlink itself rather than writing through it.
+  mv "$settings_tmp" "$settings_dst"
+  log_success "Materialized $settings_label"
+}
+
 setup_pi_profile() {
   profile_dir="$1"
   settings_src="$2"
   profile_name="$3"
 
   mkdir -p "$profile_dir"
-  ensure_symlink "$settings_src" "$profile_dir/settings.json" "$profile_name/settings.json"
+  materialize_pi_settings "$settings_src" "$profile_dir/settings.json" "$profile_name/settings.json"
 
   if [ -d "$DOTFILES_ROOT/pi/node_modules" ]; then
     ensure_symlink "$DOTFILES_ROOT/pi/node_modules" "$profile_dir/node_modules" "$profile_name/node_modules"
