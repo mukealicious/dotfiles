@@ -17,15 +17,15 @@ bun install -g @earendil-works/pi-coding-agent
 
 Official migration path for old installs is `pi update`; run it again if it first updates only to the final old-scope handoff release.
 
-Web search tools are split by cost/depth:
+Web search tools are routed by cost and depth:
 
-- `pi-exa` provides `exa_search`, the first-choice low-cost lane for ordinary web discovery, coding docs, API examples, and quick current lookups. Set `EXA_API_KEY` privately (do not commit it), then run `/exa-setup` in Pi:
-  ```fish
-  set -Ux EXA_API_KEY "..."
-  ```
-- `pi-parallel` provides `parallel_search`, `parallel_extract`, `parallel_research`, and `parallel_enrich` for fallback search, deep research/synthesis, extraction, and enrichment. In this dotfiles setup `parallel-cli` is installed via `curl -fsSL https://parallel.ai/install.sh | bash` into `~/.local/bin`; authentication is still manual:
+- Local `pi-parallel` provides `web_search`, `web_fetch`, `deep_research`, and `batch_enrich`. `web_search` defaults to Parallel Turbo for ordinary discovery and quick lookups, with Basic and Advanced available explicitly. In this dotfiles setup `parallel-cli` is installed via `curl -fsSL https://parallel.ai/install.sh | bash` into `~/.local/bin`; authentication is still manual:
   ```bash
   parallel-cli login
+  ```
+- `pi-exa` provides `exa_search` for semantic discovery, obscure technical/code material, broader multilingual search, and fallback verification. Set `EXA_API_KEY` privately (do not commit it), then run `/exa-setup` in Pi:
+  ```fish
+  set -Ux EXA_API_KEY "..."
   ```
 
 Run `dot doctor` to verify agents, symlinks, and skill projections are correctly installed.
@@ -159,7 +159,7 @@ Pi packages loaded by this setup:
 | Package | Provides |
 |---|---|
 | `pi/packages/pi-exa` | Local Exa search tool (`exa_search`; depends on private `EXA_API_KEY`) |
-| `pi-parallel` | Parallel web research tools (`parallel_search`, `parallel_extract`, `parallel_research`, `parallel_enrich`; depends on standalone `parallel-cli`) |
+| `pi/packages/pi-parallel` | Local vendored Parallel tools (`web_search`, `web_fetch`, `deep_research`, `batch_enrich`; Turbo is the default search mode; depends on standalone `parallel-cli`) |
 | `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4, GPT-5.5, and GPT-5.6 Luna/Terra/Sol models |
 | `pi/packages/pi-subagents` | Local vendored subagent delegation tools, builtin child agents, chains, and parallel runs |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |

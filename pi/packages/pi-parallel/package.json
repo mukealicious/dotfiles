@@ -1,0 +1,27 @@
+{
+  "name": "pi-parallel",
+  "version": "2.0.0-dotfiles.1",
+  "description": "Pi extension for parallel.ai web intelligence tools — search, extract, research, enrich",
+  "keywords": ["pi-package", "pi-extension", "parallel", "web-search", "research"],
+  "license": "MIT",
+  "author": "HazAT",
+  "homepage": "https://github.com/HazAT/pi-parallel#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HazAT/pi-parallel"
+  },
+  "files": [
+    "extension",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": ["./extension"]
+  }
+}

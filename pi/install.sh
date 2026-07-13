@@ -123,7 +123,7 @@ fi
 
 PACKAGES="
   $DOTFILES_ROOT/pi/packages/pi-exa
-  git:https://github.com/HazAT/pi-parallel
+  $DOTFILES_ROOT/pi/packages/pi-parallel
   $DOTFILES_ROOT/pi/packages/pi-openai-fast
   $DOTFILES_ROOT/pi/packages/pi-subagents
   npm:mitsupi

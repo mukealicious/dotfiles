@@ -127,14 +127,14 @@ export default function registerExaExtension(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "exa_search",
     label: "Exa Search",
-    description: "Search the public web with Exa. Prefer this for quick web discovery, coding docs, API examples, and low-cost current web lookups before using Parallel.",
-    promptSnippet: "Use exa_search first for ordinary public-web discovery, coding docs, API examples, and quick current lookups. Use Parallel only when deep synthesis, enrichment, or Parallel-specific extraction is needed.",
+    description: "Search the public web with Exa. Use this for semantic discovery, obscure technical or code material, broader multilingual search, or as a fallback when Parallel Turbo is thin or contradictory.",
+    promptSnippet: "Use Parallel Turbo first for ordinary web discovery and quick lookups. Use exa_search for semantic/code discovery, broader multilingual search, or as a fallback when Parallel is thin or contradictory.",
     promptGuidelines: [
       "Call this tool directly as exa_search({...}) — do NOT route through the mcp() tool.",
-      "Prefer exa_search over parallel_search for quick factual lookups, coding documentation, API examples, and ordinary web discovery.",
+      "Use exa_search for semantic discovery, obscure technical/code material, broader multilingual search, or to verify thin or contradictory Parallel results.",
       "Do NOT use web search for known URLs, raw GitHub files, APIs, localhost, or downloads; use bash/curl for those.",
       "Use type='auto' with contentMode='highlights' by default; it is the balanced, low-friction path.",
-      "Use type='deep' or 'deep-reasoning' only for harder comparisons or synthesis; use parallel_research for broad deep research when the user wants a full research brief.",
+      "Use type='deep' or 'deep-reasoning' only for harder comparisons or synthesis; use deep_research for broad deep research when the user wants a full research brief.",
       `If Exa behavior seems stale or contradictory, fetch the canonical Exa coding-agent docs: ${EXA_DOCS_URL}`,
     ],
     parameters: Type.Object({

@@ -14,6 +14,6 @@ In Pi, run `/exa-setup` to confirm the key is visible.
 
 ## Tool policy
 
-Use `exa_search` first for ordinary web discovery, coding docs, API examples, and quick current lookups. Keep Parallel available for deep research, enrichment, and Parallel-specific extraction.
+Use Parallel Turbo first for ordinary web discovery and quick current lookups. Keep `exa_search` for semantic discovery, obscure technical/code material, broader multilingual search, and fallback verification when Parallel results are thin or contradictory.
 
 Canonical Exa API reference for coding agents: https://docs.exa.ai/reference/search-api-guide-for-coding-agents
