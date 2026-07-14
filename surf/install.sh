@@ -14,16 +14,15 @@ DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 # shellcheck source=../lib/log.sh
 . "$DOTFILES_ROOT/lib/log.sh"
 
-NODE_VERSION="$(awk -F= '/^[[:space:]]*node[[:space:]]*=/{gsub(/[ \"'"'"']/, "", $2); print $2; exit}' "$DOTFILES_ROOT/mise.toml")"
-
 if ! command -v mise >/dev/null 2>&1; then
   log_warn "mise is not installed; skipping Surf lane setup"
   log_hint "Fix: run homebrew/install.sh or brew install mise"
   exit 0
 fi
 
+NODE_VERSION="$(mise current -C "$DOTFILES_ROOT" node 2>/dev/null || true)"
 if [ -z "$NODE_VERSION" ]; then
-  log_warn "No Node version found in mise.toml; skipping Surf lane setup"
+  log_warn "No active Node version found through mise; skipping Surf lane setup"
   exit 0
 fi
 

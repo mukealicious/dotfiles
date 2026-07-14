@@ -3,6 +3,7 @@
 set -e
 
 PI_BIN="$HOME/.bun/bin/pi"
+DOTFILES_ROOT="$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd -P)"
 
 export PI_CODING_AGENT_DIR="$HOME/.pi/personal"
 
@@ -14,4 +15,18 @@ fi
 unset OPENAI_API_KEY
 unset OPENAI_OP_REF
 
-exec "$PI_BIN" "$@"
+if ! command -v mise >/dev/null 2>&1; then
+  echo "pi-personal: mise is required to run Pi with the managed Node runtime" >&2
+  exit 1
+fi
+
+NODE_BIN="$(mise which -C "$DOTFILES_ROOT" node 2>/dev/null || true)"
+if [ -z "$NODE_BIN" ] || [ ! -x "$NODE_BIN" ]; then
+  echo "pi-personal: the mise-managed Node runtime is not installed" >&2
+  echo "Fix: run $DOTFILES_ROOT/mise/install.sh" >&2
+  exit 1
+fi
+
+# Invoke the Node entrypoint directly. `mise exec -C` would change Pi's working
+# directory to the dotfiles repository instead of preserving the caller's cwd.
+exec "$NODE_BIN" "$PI_BIN" "$@"

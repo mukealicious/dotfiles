@@ -1,0 +1,24 @@
+#!/bin/sh
+# Run @antfu/ni commands with the dotfiles-pinned Node while preserving the
+# caller's working directory and PATH for project-local package managers.
+
+set -e
+
+DOTFILES_ROOT="$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd -P)"
+COMMAND_NAME="${0##*/}"
+
+if ! command -v mise >/dev/null 2>&1; then
+  echo "$COMMAND_NAME: mise is required" >&2
+  exit 127
+fi
+
+NODE_BIN="$(mise which -C "$DOTFILES_ROOT" node 2>/dev/null || true)"
+COMMAND_BIN="$(mise which -C "$DOTFILES_ROOT" "$COMMAND_NAME" 2>/dev/null || true)"
+
+if [ -z "$NODE_BIN" ] || [ ! -x "$NODE_BIN" ] || [ -z "$COMMAND_BIN" ] || [ ! -x "$COMMAND_BIN" ]; then
+  echo "$COMMAND_NAME: the mise-managed @antfu/ni toolchain is not installed" >&2
+  echo "Fix: run $DOTFILES_ROOT/mise/install.sh" >&2
+  exit 127
+fi
+
+exec "$NODE_BIN" "$COMMAND_BIN" "$@"

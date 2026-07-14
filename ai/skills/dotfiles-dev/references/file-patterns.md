@@ -8,8 +8,10 @@
 | `aliases.fish` | Auto-discovered and symlinked to Fish conf.d | `git/aliases.fish` → Fish conf.d |
 | `keybindings.fish` | Auto-discovered and symlinked to Fish conf.d | `fzf/keybindings.fish` → Fish conf.d |
 | `install.sh` | Topic installer | Run by `script/install`/`dot` in deterministic order |
-| `bun.reqs` | Simple Bun-friendly JS CLIs | `opensrc` |
-| `mise/node-globals.reqs` | npm CLIs that need the mise-managed Node runtime | `@tobilu/qmd@2.1.0` |
+| `mise.toml` (`npm:` tools) | Versioned JS CLIs | `opensrc` |
+| `mise.lock` | Exact cross-machine toolchain pins | Node, pnpm, Bun, JS CLIs |
+| `pnpm/config.yaml` | Global pnpm policy | Seven-day release airlock |
+| `mise/node-globals.reqs` | npm CLIs that need the mise-managed Node runtime | `pkg@version|reviewed-build-dep` |
 | `uv.reqs` | Python CLI tools installed by `uv tool install` | `lue-reader` |
 
 ## Symlink Naming
@@ -48,7 +50,7 @@ When adding a new topic:
 |---|---|---|
 | System/native macOS CLIs and apps | `Brewfile` | Prefer Homebrew for broadly packaged binaries. |
 | Python CLIs | `uv.reqs` | Installed with `uv tool install`. |
-| Simple JS CLIs | `bun.reqs` | Use for Bun-friendly packages without native Node ABI sensitivity. |
+| Versioned JS CLIs | `mise.toml` (`npm:<package>`) | Installed as isolated mise tools; explicitly approve required install scripts. |
 | Native-sensitive Node CLIs | `mise/node-globals.reqs` | Installed with `mise exec -- npm install -g` so native deps match the pinned Node runtime. |
 | Behavior wrappers | `bin/` | `~/.dotfiles/bin` should win on PATH over runtime package bins. |
 

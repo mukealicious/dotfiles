@@ -68,7 +68,8 @@ done
 CORE_INSTALLERS=(
   "./homebrew/install.sh"
   "./macos/install.sh"
-  "./bun/install.sh"
+  "./pnpm/install.sh"
+  "./mise/install.sh"
   "./python/install.sh"
   "./fish/install.sh"
   "./ai/install.sh"

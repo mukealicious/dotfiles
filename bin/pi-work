@@ -3,6 +3,25 @@
 set -e
 
 PI_BIN="$HOME/.bun/bin/pi"
+DOTFILES_ROOT="$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd -P)"
+
+run_pi() {
+  if ! command -v mise >/dev/null 2>&1; then
+    echo "pi-work: mise is required to run Pi with the managed Node runtime" >&2
+    exit 1
+  fi
+
+  node_bin="$(mise which -C "$DOTFILES_ROOT" node 2>/dev/null || true)"
+  if [ -z "$node_bin" ] || [ ! -x "$node_bin" ]; then
+    echo "pi-work: the mise-managed Node runtime is not installed" >&2
+    echo "Fix: run $DOTFILES_ROOT/mise/install.sh" >&2
+    exit 1
+  fi
+
+  # Invoke the Node entrypoint directly. `mise exec -C` would change Pi's
+  # working directory instead of preserving the caller's project cwd.
+  exec "$node_bin" "$PI_BIN" "$@"
+}
 
 export PI_CODING_AGENT_DIR="$HOME/.pi/work"
 
@@ -13,7 +32,7 @@ fi
 
 if [ -n "${OPENAI_API_KEY:-}" ]; then
   export OPENAI_API_KEY
-  exec "$PI_BIN" "$@"
+  run_pi "$@"
 fi
 
 if [ -z "${OPENAI_OP_REF:-}" ]; then
@@ -37,4 +56,4 @@ if [ -z "$OPENAI_API_KEY" ]; then
 fi
 
 export OPENAI_API_KEY
-exec "$PI_BIN" "$@"
+run_pi "$@"

@@ -6,15 +6,15 @@
 set -euo pipefail
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-NODE_VERSION="$(awk -F= '/^[[:space:]]*node[[:space:]]*=/{gsub(/[ \"'"'"']/, "", $2); print $2; exit}' "$DOTFILES_ROOT/mise.toml")"
 
 if ! command -v mise >/dev/null 2>&1; then
   echo "qmd wrapper requires mise on PATH" >&2
   exit 127
 fi
 
+NODE_VERSION="$(mise current -C "$DOTFILES_ROOT" node 2>/dev/null || true)"
 if [ -z "$NODE_VERSION" ]; then
-  echo "qmd wrapper could not find a Node version in $DOTFILES_ROOT/mise.toml" >&2
+  echo "qmd wrapper could not resolve the dotfiles Node version through mise" >&2
   exit 127
 fi
 

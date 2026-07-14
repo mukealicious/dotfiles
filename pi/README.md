@@ -9,7 +9,7 @@ Run automatically by `script/install`, or manually:
 ~/.dotfiles/pi/install.sh
 ```
 
-Requires `pi` to be installed first. Pi itself is not managed through `bun.reqs`; use Pi's own updater so new releases are not delayed by Bun's default airlock window:
+Pi itself is intentionally not managed as an `npm:` tool in `mise.toml`; use Pi's own updater so new releases are not delayed by the global release airlock:
 
 ```bash
 pi update
@@ -18,7 +18,7 @@ pi update
 For a first-time install, Pi moved to `earendil-works/pi`; use the current package under the `@earendil-works` npm scope:
 
 ```bash
-bun install -g @earendil-works/pi-coding-agent --minimum-release-age=0
+mise exec -C ~/.dotfiles -- bun install -g @earendil-works/pi-coding-agent --minimum-release-age=0
 ```
 
 Official migration path for old installs is `pi update`; run it again if it first updates only to the final old-scope handoff release.

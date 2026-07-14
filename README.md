@@ -24,12 +24,12 @@ dot -e       # Open dotfiles in editor
 |----------|-------|
 | **Shell** | Fish with fzf |
 | **Terminal** | WezTerm, Herdr |
-| **Runtimes** | mise (Node.js), uv (Python), Bun |
+| **Runtimes** | mise (Node.js, pnpm, Bun), uv (Python) |
 | **Packages** | Homebrew (Brewfile) |
 | **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex, Pi |
 | **Window Mgmt** | AeroSpace (i3-like tiling), Ice (menu bar) |
 | **Database** | PostgreSQL 17, Redis |
-| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, agent-browser, surf-cli |
+| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, agent-browser, surf-cli |
 
 ## Architecture
 
@@ -49,8 +49,9 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `wezterm/` | WezTerm terminal config |
 | `aerospace/` | Window manager config |
 | `fzf/` | Fuzzy finder keybindings |
-| `bun/` | Bun global packages that do not need native Node ABI stability |
-| `mise/` | mise-managed runtimes and native Node CLIs such as QMD |
+| `bun/` | Bun-specific configuration and opt-in command aliases |
+| `pnpm/` | Default JavaScript package-manager policy and aliases |
+| `mise/` | Canonical JS toolchain versions, lockfile, and native Node CLIs such as QMD |
 | `pi/` | Pi coding agent config, extensions |
 | `agent-browser/` | Headless browser automation for AI agents |
 | `surf/` | Surf browser lanes for reliable Brave/Edge agent control |
@@ -84,11 +85,30 @@ Use the installer that owns the tool's runtime and failure modes:
 |-----------|-------|----------|
 | System/native macOS CLIs and apps | `Brewfile` | Homebrew has a stable package/cask |
 | Python CLIs | `uv.reqs` | Installed with `uv tool install` |
-| Simple JS CLIs | `bun.reqs` | Bun-friendly packages without native Node ABI sensitivity |
+| Versioned JS CLIs | `mise.toml` (`npm:<package>`) | Durable npm-registry CLIs installed as isolated mise tools |
 | Native-sensitive Node CLIs | `mise/node-globals.reqs` | npm CLIs with native deps or Node ABI sensitivity, installed under the pinned mise Node runtime |
 | Behavior wrappers | `bin/` | Dotfiles needs to add policy/behavior around an underlying tool; wrappers should win on PATH |
 
-Example: QMD lives in `mise/node-globals.reqs` because it uses native Node dependencies, while `bin/qmd` owns per-project `.qmd` detection.
+Example: `opensrc` and `agent-browser` are isolated `npm:` tools in `mise.toml`. QMD stays in `mise/node-globals.reqs` because it uses native Node dependencies, while `bin/qmd` owns per-project `.qmd` detection.
+
+### JavaScript Toolchain Policy
+
+- `mise.toml` declares compatible release lines; `mise.lock` pins exact top-level versions and backend-supported artifact checksums. Isolated npm CLI dependencies remain registry-resolved behind the seven-day release policy.
+- Node 24 LTS is the default runtime. pnpm 11 is the default package manager for new or unmarked projects. `pnpm/config.yaml` enforces a strict seven-day release airlock and rejects trust downgrades. Bun remains installed for repositories that explicitly target it.
+- Existing repositories follow their `packageManager`/`devEngines.packageManager` declaration and committed lockfile. Never generate a second lockfile to standardize an existing project.
+- `ni`/`nr` provide package-manager-neutral commands: they honor an existing lockfile and fall back to pnpm via `~/.nirc`. Dotfiles wrappers run them with the pinned global Node while preserving project-local package managers.
+- Yarn is a narrow Corepack exception: the `yarn` wrapper reads a repository's Yarn pin and falls back to Yarn Classic for an unmarked v1 lockfile. Corepack does not own pnpm.
+- Homebrew may install Node as a transitive formula dependency, but mise-managed Node must win on `PATH`.
+
+For a new pnpm project:
+
+```sh
+mise use node@24 pnpm@11
+mise lock
+pnpm init --init-package-manager
+```
+
+Review and commit `mise.toml`, `mise.lock`, `package.json`, and `pnpm-lock.yaml`. The normal `dot` workflow upgrades mise tools within these declared release lines, refreshes both macOS platform entries in `mise.lock`, and prompts you to review and commit the lockfile. Moving to a new major release line remains an explicit edit to `mise/config.toml`.
 
 ### File Conventions
 
@@ -98,7 +118,8 @@ Example: QMD lives in `mise/node-globals.reqs` because it uses native Node depen
 | `install.sh` | Topic-specific installer, run by `script/install` in deterministic order |
 | `aliases.fish` | Auto-discovered and symlinked to Fish conf.d |
 | `keybindings.fish` | Auto-discovered and symlinked to Fish conf.d |
-| `bun.reqs` | Simple Bun-friendly JS CLIs |
+| `mise.toml` / `mise.lock` | Compatible tool release lines plus exact top-level cross-machine pins |
+| `pnpm/config.yaml` | Global pnpm security policy |
 | `mise/node-globals.reqs` | Native-sensitive Node CLIs installed with mise-managed npm |
 | `uv.reqs` | Python CLI tools installed with uv |
 

@@ -124,9 +124,15 @@ run_step "brew bundle --file=$dotfilesDirectory/Brewfile" brew bundle --file="$d
 
 log_section "Topic installers"
 if [ "$force_symlinks" = "true" ]; then
-  run_step "$dotfilesDirectory/script/install --skip ./homebrew/install.sh --force" env FORCE=true "$dotfilesDirectory/script/install" --skip ./homebrew/install.sh --force
+  run_step "$dotfilesDirectory/script/install --skip ./homebrew/install.sh --force" env FORCE=true DOT_UPDATE=true "$dotfilesDirectory/script/install" --skip ./homebrew/install.sh --force
 else
-  run_step "$dotfilesDirectory/script/install --skip ./homebrew/install.sh" env FORCE=false "$dotfilesDirectory/script/install" --skip ./homebrew/install.sh
+  run_step "$dotfilesDirectory/script/install --skip ./homebrew/install.sh" env FORCE=false DOT_UPDATE=true "$dotfilesDirectory/script/install" --skip ./homebrew/install.sh
+fi
+
+if ! git -C "$dotfilesDirectory" diff --quiet HEAD -- mise.lock ||
+   [ -n "$(git -C "$dotfilesDirectory" ls-files --others --exclude-standard -- mise.lock)" ]; then
+  log_warn "mise.lock changed during toolchain updates"
+  log_hint "Review and commit $dotfilesDirectory/mise.lock to keep other machines reproducible"
 fi
 
 if [ -n "$optional_failures" ]; then

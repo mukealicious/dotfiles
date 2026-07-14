@@ -25,6 +25,10 @@ set -e
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 NPM_MIN_RELEASE_AGE="7"
+NI_DEFAULT_AGENT="defaultAgent=pnpm"
+PNPM_MIN_RELEASE_AGE="minimumReleaseAge: 10080"
+PNPM_STRICT_RELEASE_AGE="minimumReleaseAgeStrict: true"
+PNPM_TRUST_POLICY="trustPolicy: no-downgrade"
 UV_EXCLUDE_NEWER='exclude-newer = "P7D"'
 BUN_MIN_RELEASE_AGE='minimumReleaseAge = 604800'
 
@@ -53,11 +57,49 @@ check_file_contains_literal() {
   fi
 }
 
+mise_tool_version() {
+  tool="$1"
+  command -v mise >/dev/null 2>&1 || return 1
+  mise current -C "$DOTFILES_ROOT" "$tool" 2>/dev/null
+}
+
+check_mise_tool_selected() {
+  tool="$1"
+  actual="$(command -v "$tool" 2>/dev/null || true)"
+  expected="$(mise which "$tool" 2>/dev/null || true)"
+  shim="$HOME/.local/share/mise/shims/$tool"
+
+  if [ -z "$actual" ] || [ -z "$expected" ]; then
+    fail "$tool is not available through mise"
+    info "Fix: run $DOTFILES_ROOT/mise/install.sh and open a new shell"
+  elif [ "$actual" = "$expected" ] || [ "$actual" = "$shim" ]; then
+    pass "$tool resolves through mise: $actual"
+  else
+    fail "$tool bypasses mise: $actual"
+    info "Expected: $expected"
+    info "Fix: run dot, then open a new shell"
+  fi
+}
+
+check_dotfiles_command() {
+  command_name="$1"
+  actual="$(command -v "$command_name" 2>/dev/null || true)"
+  expected="$DOTFILES_ROOT/bin/$command_name"
+
+  if [ "$actual" = "$expected" ]; then
+    pass "$command_name runtime wrapper: $actual"
+  else
+    fail "$command_name bypasses its dotfiles runtime wrapper: ${actual:-missing}"
+    info "Expected: $expected"
+    info "Fix: run dot, then open a new shell"
+  fi
+}
+
 # ── Critical CLIs ──────────────────────────────────────────────
 
 header "Critical CLIs"
 
-for cmd in brew fish herdr starship mise bun uv qmd; do
+for cmd in brew fish herdr starship mise node pnpm bun ni yarn uv qmd; do
   if command -v "$cmd" >/dev/null 2>&1; then
     pass "$cmd"
   else
@@ -65,10 +107,19 @@ for cmd in brew fish herdr starship mise bun uv qmd; do
   fi
 done
 
+if command -v mise >/dev/null 2>&1; then
+  check_mise_tool_selected node
+  check_mise_tool_selected pnpm
+  check_mise_tool_selected bun
+fi
+
+check_dotfiles_command ni
+check_dotfiles_command yarn
+
 if command -v qmd >/dev/null 2>&1; then
   qmd_path="$(command -v qmd)"
   expected_qmd_wrapper="$DOTFILES_ROOT/bin/qmd"
-  node_version="$(awk -F= '/^[[:space:]]*node[[:space:]]*=/{gsub(/[ \"'"'"']/, "", $2); print $2; exit}' "$DOTFILES_ROOT/mise.toml")"
+  node_version="$(mise_tool_version node || true)"
   mise_qmd_bin=""
   if command -v mise >/dev/null 2>&1 && [ -n "$node_version" ]; then
     mise_prefix="$(mise exec -C "$DOTFILES_ROOT" "node@$node_version" -- npm prefix -g 2>/dev/null || true)"
@@ -157,7 +208,7 @@ for wrapper in surf surf-brave surf-edge; do
   fi
 done
 
-surf_node_version="$(awk -F= '/^[[:space:]]*node[[:space:]]*=/{gsub(/[ \"'"'"']/, "", $2); print $2; exit}' "$DOTFILES_ROOT/mise.toml")"
+surf_node_version="$(mise_tool_version node || true)"
 surf_mise_bin=""
 if command -v mise >/dev/null 2>&1 && [ -n "$surf_node_version" ]; then
   surf_mise_prefix="$(mise exec -C "$DOTFILES_ROOT" "node@$surf_node_version" -- npm prefix -g 2>/dev/null || true)"
@@ -336,6 +387,27 @@ header "Tool configs"
 
 check_symlink "$DOTFILES_ROOT/starship/starship.toml" "$HOME/.config/starship.toml" "starship.toml"
 check_symlink "$DOTFILES_ROOT/mise/config.toml" "$HOME/.config/mise/config.toml" "mise/config.toml"
+check_symlink "$DOTFILES_ROOT/mise.lock" "$HOME/.config/mise/mise.lock" "mise.lock"
+
+if [ -n "${XDG_CONFIG_HOME:-}" ]; then
+  PNPM_CONFIG="$XDG_CONFIG_HOME/pnpm/config.yaml"
+else
+  case "$(uname -s)" in
+    Darwin)
+      PNPM_CONFIG="$HOME/Library/Preferences/pnpm/config.yaml"
+      ;;
+    Linux)
+      PNPM_CONFIG="$HOME/.config/pnpm/config.yaml"
+      ;;
+    *)
+      PNPM_CONFIG=""
+      ;;
+  esac
+fi
+
+if [ -n "$PNPM_CONFIG" ]; then
+  check_symlink "$DOTFILES_ROOT/pnpm/config.yaml" "$PNPM_CONFIG" "pnpm config.yaml"
+fi
 
 if [ -e "$HOME/.tool-versions" ]; then
   warn "legacy ~/.tool-versions exists"
@@ -351,7 +423,13 @@ fi
 header "Supply chain protections"
 
 check_symlink "$DOTFILES_ROOT/python/uv.toml" "$HOME/.config/uv/uv.toml" "uv/uv.toml"
+check_file_contains_literal "$HOME/.nirc" "$NI_DEFAULT_AGENT" "~/.nirc pnpm default"
 check_file_contains_literal "$HOME/.npmrc" "min-release-age=$NPM_MIN_RELEASE_AGE" "~/.npmrc min-release-age"
+if [ -n "$PNPM_CONFIG" ]; then
+  check_file_contains_literal "$PNPM_CONFIG" "$PNPM_MIN_RELEASE_AGE" "pnpm config minimumReleaseAge"
+  check_file_contains_literal "$PNPM_CONFIG" "$PNPM_STRICT_RELEASE_AGE" "pnpm config strict release age"
+  check_file_contains_literal "$PNPM_CONFIG" "$PNPM_TRUST_POLICY" "pnpm config trust policy"
+fi
 check_file_contains_literal "$HOME/.config/uv/uv.toml" "$UV_EXCLUDE_NEWER" "~/.config/uv/uv.toml exclude-newer"
 check_file_contains_literal "$HOME/.bunfig.toml" "$BUN_MIN_RELEASE_AGE" "~/.bunfig.toml minimumReleaseAge"
 

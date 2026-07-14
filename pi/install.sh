@@ -29,14 +29,15 @@ if [ "$FORCE" = "true" ]; then
 fi
 
 PI_PACKAGE="@earendil-works/pi-coding-agent"
+PI_BIN="$HOME/.bun/bin/pi"
 
-if ! command -v pi >/dev/null 2>&1; then
+if [ ! -x "$PI_BIN" ]; then
   log_info "Installing Pi coding agent ($PI_PACKAGE)..."
-  if command -v bun >/dev/null 2>&1 && bun install -g "$PI_PACKAGE" --minimum-release-age=0 >/dev/null 2>&1; then
+  if command -v mise >/dev/null 2>&1 && mise exec -C "$DOTFILES_ROOT" -- bun install -g "$PI_PACKAGE" --minimum-release-age=0 >/dev/null 2>&1; then
     log_success "Installed pi"
   else
     log_warn "pi not installed, skipping Pi setup"
-    log_hint "Run manually: bun install -g $PI_PACKAGE --minimum-release-age=0"
+    log_hint "Run manually: mise exec -C $DOTFILES_ROOT -- bun install -g $PI_PACKAGE --minimum-release-age=0"
     exit 0
   fi
 fi
@@ -165,11 +166,11 @@ fi
 # Local vendored packages are installed from repo paths for tighter supply-chain control.
 if [ -f "$DOTFILES_ROOT/pi/packages/pi-subagents/package-lock.json" ]; then
   log_info "Installing pi-subagents runtime dependencies..."
-  if (cd "$DOTFILES_ROOT/pi/packages/pi-subagents" && npm_config_legacy_peer_deps=true npm ci --omit=dev --ignore-scripts >/dev/null 2>&1); then
+  if npm_config_legacy_peer_deps=true mise exec -C "$DOTFILES_ROOT/pi/packages/pi-subagents" -- npm ci --omit=dev --ignore-scripts >/dev/null 2>&1; then
     log_success "Installed pi-subagents dependencies"
   else
     log_warn "Failed to install pi-subagents dependencies"
-    log_hint "Run manually: cd $DOTFILES_ROOT/pi/packages/pi-subagents && npm_config_legacy_peer_deps=true npm ci --omit=dev --ignore-scripts"
+    log_hint "Run manually: npm_config_legacy_peer_deps=true mise exec -C $DOTFILES_ROOT/pi/packages/pi-subagents -- npm ci --omit=dev --ignore-scripts"
   fi
 fi
 
@@ -189,7 +190,7 @@ for pkg in $PACKAGES; do
   display_name="${display_name#npm:}"
   failed=false
   for profile_dir in "$HOME/.pi/work" "$HOME/.pi/personal"; do
-    if ! PI_CODING_AGENT_DIR="$profile_dir" "$HOME/.bun/bin/pi" install "$pkg" 2>/dev/null; then
+    if ! PI_CODING_AGENT_DIR="$profile_dir" mise exec -C "$DOTFILES_ROOT" -- "$PI_BIN" install "$pkg" 2>/dev/null; then
       failed=true
       break
     fi

@@ -1,0 +1,5 @@
+# Global pnpm policy. Project pnpm-workspace.yaml files may tighten or
+# explicitly override these defaults when a repository needs different behavior.
+minimumReleaseAge: 10080
+minimumReleaseAgeStrict: true
+trustPolicy: no-downgrade

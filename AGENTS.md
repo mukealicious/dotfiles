@@ -16,8 +16,9 @@ Topic-centric dotfiles (Holman-style). Manages macOS dev environment.
 | Add shell alias/abbr | `[topic]/aliases.fish` |
 | Add fish function | `fish/functions/` |
 | Add Homebrew package | `Brewfile` |
-| Add simple JS CLI | `bun.reqs` |
+| Add versioned JS CLI | `mise.toml` (`npm:<package>`) |
 | Add native-sensitive Node CLI | `mise/node-globals.reqs` |
+| Change JS runtime/package-manager defaults | `mise.toml`, `mise.lock`, `pnpm/config.yaml` |
 | Add Python CLI | `uv.reqs` |
 | New topic/tool | Create `[topic]/` dir, add `install.sh` |
 | Custom git command | `bin/git-<name>` (executable) |
@@ -137,7 +138,8 @@ Default rule: put install logic in `[topic]/install.sh`; only move upward into `
 - **Single source of truth**: One script owns each config area (e.g., `ai/install.sh` for all AI tool configs)
 - **No overlapping ownership**: Avoid multiple scripts managing same directories
 - **Deterministic execution**: `script/install` uses explicit `CORE_INSTALLERS` ordering for foundational installers, then sorted discovery for the rest. If a new installer has ordering requirements, update `script/install`.
-- **CLI installer boundaries**: Homebrew owns system/native CLIs and apps; `uv.reqs` owns Python tools; `bun.reqs` owns simple Bun-friendly JS CLIs; `mise/node-globals.reqs` owns npm CLIs with native Node dependencies or Node ABI sensitivity; `bin/` owns behavior wrappers that should win on PATH.
+- **JavaScript toolchain boundary**: `mise.toml`/`mise.lock` own Node, pnpm, Bun, and ordinary versioned JS CLIs. Existing repositories keep their declared package manager and lockfile; new/unmarked repositories default to pnpm. `pnpm/config.yaml` owns global pnpm policy; `bin/yarn` is the narrow Corepack compatibility path for Yarn repositories.
+- **CLI installer boundaries**: Homebrew owns system/native CLIs and apps; `uv.reqs` owns Python tools; `mise.toml` owns ordinary JS CLIs through the `npm:` backend; `mise/node-globals.reqs` owns npm CLIs with native Node dependencies or Node ABI sensitivity; `bin/` owns behavior wrappers that should win on PATH.
 
 ## Anti-Patterns
 

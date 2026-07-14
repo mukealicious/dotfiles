@@ -18,11 +18,7 @@ brew "opencode"                  # AI coding agent for terminal
 brew "gemini-cli"                # Google Gemini AI CLI
 
 # Languages & Version Management
-brew "mise"
-brew "node"
-brew "bun"
-brew "yarn"  # Install globally via Homebrew
-brew "pnpm"  # Fast Node.js package manager
+brew "mise"                      # Owns Node, pnpm, Bun, and versioned JS CLIs
 
 # Databases & Services
 brew "postgresql@17"

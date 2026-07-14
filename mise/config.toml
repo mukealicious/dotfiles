@@ -1,2 +1,22 @@
+# Canonical JavaScript toolchain for this dotfiles environment.
+# Fuzzy versions stay within the chosen release line; mise.lock pins exact
+# top-level versions and artifact checksums where the backend provides them.
+
 [tools]
-node = "24.6.0"
+node = "24"
+pnpm = "11"
+bun = "1.3"
+
+# Durable JavaScript CLIs are isolated mise tools. Packages with install scripts
+# must name the reviewed build explicitly.
+"npm:@antfu/ni" = "30"
+"npm:opensrc" = { version = "0.7", allow_builds = ["opensrc"] }
+"npm:agent-browser" = { version = "0.31", allow_builds = ["agent-browser"] }
+
+[settings]
+lockfile = true
+minimum_release_age = "7d"
+# npm is the installation adapter for isolated npm: CLI tools; pnpm remains the
+# default package manager for projects.
+npm.package_manager = "npm"
+idiomatic_version_file_enable_tools = ["node"]

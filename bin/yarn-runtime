@@ -1,0 +1,29 @@
+#!/bin/sh
+# Dispatch Yarn through the Corepack bundled with the dotfiles-pinned Node.
+# This preserves each repository's Yarn version without making Corepack the
+# package-manager owner for pnpm or npm projects.
+
+set -e
+
+DOTFILES_ROOT="$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd -P)"
+COMMAND_NAME="${0##*/}"
+
+if ! command -v mise >/dev/null 2>&1; then
+  echo "$COMMAND_NAME: mise is required" >&2
+  exit 127
+fi
+
+NODE_BIN="$(mise which -C "$DOTFILES_ROOT" node 2>/dev/null || true)"
+COREPACK_BIN="$(mise which -C "$DOTFILES_ROOT" corepack 2>/dev/null || true)"
+
+if [ -z "$NODE_BIN" ] || [ ! -x "$NODE_BIN" ] || [ -z "$COREPACK_BIN" ] || [ ! -x "$COREPACK_BIN" ]; then
+  echo "$COMMAND_NAME: the mise-managed Node/Corepack toolchain is not installed" >&2
+  echo "Fix: run $DOTFILES_ROOT/mise/install.sh" >&2
+  exit 127
+fi
+
+# Read an existing packageManager field, but never mutate an unmarked project.
+export COREPACK_ENABLE_AUTO_PIN=0
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+exec "$NODE_BIN" "$COREPACK_BIN" yarn "$@"

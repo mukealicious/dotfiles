@@ -76,6 +76,8 @@
 - Batch independent reads/searches and parallelize when safe.
 - Read enough context before editing; avoid thrashing.
 - Use `uv` for Python workflows.
+- In JavaScript/TypeScript repositories, follow the declared `packageManager`/`devEngines.packageManager` and existing lockfile. Never introduce a competing lockfile. Default new or unmarked projects to pnpm; use Bun as the package manager/runtime only when the repository explicitly targets Bun.
+- Treat mise as the owner of Node, pnpm, and Bun versions on this machine. Honor project-local mise configuration when present instead of installing competing runtime or package-manager copies. For new JS/TS repositories, record Node and pnpm in project-local mise config and initialize pnpm's package-manager metadata.
 
 ## Autonomy and Safety
 

@@ -23,10 +23,18 @@ if command -q mise
     mise activate fish | source
 end
 
-# Dotfiles wrappers intentionally sit above runtime package bins. Runtime tools
-# such as qmd may be installed under mise-managed Node, while ~/.dotfiles/bin
-# owns behavior wrappers like per-project .qmd detection.
-fish_add_path --move ~/.dotfiles/bin
+# Dotfiles wrappers intentionally sit above runtime package bins. Do not call
+# fish_add_path here: it would re-promote every persistent fish_user_paths entry
+# (including Homebrew) above mise. Rebuild PATH locally so wrappers win while
+# mise remains the runtime/package-manager owner.
+set -l dotfiles_bin ~/.dotfiles/bin
+set -l runtime_path
+for path_entry in $PATH
+    if test "$path_entry" != "$dotfiles_bin"
+        set -a runtime_path "$path_entry"
+    end
+end
+set -gx PATH "$dotfiles_bin" $runtime_path
 
 # Navigation
 alias d 'cd ~/Desktop'

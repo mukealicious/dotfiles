@@ -411,16 +411,24 @@ CLAUDE_REVIEW_APPENDIX="$CLAUDE_AGENTS_SRC/review.appendix.md"
 PI_REVIEW_FRONTMATTER="$PI_AGENTS_SRC/review.frontmatter"
 PI_REVIEW_APPENDIX="$PI_AGENTS_SRC/review.appendix.md"
 
-if ! command -v node >/dev/null 2>&1; then
+if command -v mise >/dev/null 2>&1 && mise which -C "$DOTFILES_ROOT" node >/dev/null 2>&1; then
+  run_node() {
+    mise exec -C "$DOTFILES_ROOT" -- node "$@"
+  }
+elif command -v node >/dev/null 2>&1; then
+  run_node() {
+    node "$@"
+  }
+else
   echo "  ERROR: node is required to project shared skills"
   exit 1
 fi
 
 log_info "Refreshing projected shared skill sources..."
-node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" codex "$SHARED_SKILLS_SRC" "$PROJECTED_CODEX_SKILLS_SRC"
-node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" claude-code "$SHARED_SKILLS_SRC" "$PROJECTED_CLAUDE_SKILLS_SRC"
-node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" opencode "$SHARED_SKILLS_SRC" "$PROJECTED_OPENCODE_SKILLS_SRC"
-node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" pi "$SHARED_SKILLS_SRC" "$PROJECTED_PI_SKILLS_SRC"
+run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" codex "$SHARED_SKILLS_SRC" "$PROJECTED_CODEX_SKILLS_SRC"
+run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" claude-code "$SHARED_SKILLS_SRC" "$PROJECTED_CLAUDE_SKILLS_SRC"
+run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" opencode "$SHARED_SKILLS_SRC" "$PROJECTED_OPENCODE_SKILLS_SRC"
+run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" pi "$SHARED_SKILLS_SRC" "$PROJECTED_PI_SKILLS_SRC"
 
 # Repo-local runtime skill projections
 log_info "Refreshing repo runtime skills..."

@@ -1,5 +1,0 @@
-# Bun global packages to install
-# Add packages here, one per line
-# Supports: package names, npm: prefix, or GitHub URLs
-opensrc
-agent-browser
