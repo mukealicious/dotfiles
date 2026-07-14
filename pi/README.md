@@ -45,9 +45,10 @@ of endpoint schemas:
 /mcp reconnect cloudflare-api
 ```
 
-The managed config lives in `pi/mcp.json` and is symlinked only into the personal
-Pi profile. Do not commit Cloudflare API tokens; use the OAuth flow or private
-shell env.
+The managed baseline lives in `pi/mcp.json` and is materialized only into the
+personal Pi profile as writable config. Installer runs preserve user-added MCP
+servers/imports while restoring repo-managed keys. Do not commit Cloudflare API
+tokens; use the OAuth flow or private shell env.
 
 Run `dot doctor` to verify agents, symlinks, and skill projections are correctly installed.
 
@@ -97,7 +98,7 @@ Profile settings are materialized as writable runtime files by `install.sh`:
 - `pi/settings.work.json` → `~/.pi/work/settings.json`
 - `pi/settings.personal.json` → `~/.pi/personal/settings.json`
 - `pi/settings.work.json` → `~/.pi/agent/settings.json` (shared backing store / compatibility root)
-- `pi/mcp.json` → `~/.pi/personal/mcp.json` only
+- `pi/mcp.json` → writable `~/.pi/personal/mcp.json` only
 
 The tracked files are managed baselines rather than direct symlink targets. Pi writes
 interactive model choices and changelog state back to each profile's runtime file;

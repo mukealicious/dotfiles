@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "slug": "untitled-flare",
+  "title": "Untitled Flare",
+  "purpose": "Describe what this Flare helps someone do.",
+  "capabilities": {
+    "activity": true
+  },
+  "activityTypes": [
+    {
+      "name": "feedback.comment",
+      "version": 1,
+      "label": "Feedback comment",
+      "schema": "activity-schemas/feedback.comment.v1.schema.json"
+    }
+  ],
+  "auth": {
+    "mode": "owner-access"
+  },
+  "dataPolicy": {
+    "captured": [
+      "comment body",
+      "optional interface target"
+    ],
+    "exportFormats": [
+      "json",
+      "markdown"
+    ]
+  },
+  "limits": {
+    "maxActivityRecords": 1000,
+    "maxActivityPayloadBytes": 16384
+  }
+}

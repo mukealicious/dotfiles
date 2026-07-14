@@ -1,164 +1,120 @@
 ---
 name: flares
-description: "Create Flares: Cloudflare-native, steerable agent-generated mini-apps with zero-config APIs for data, files, AI, identity, realtime/websockets, export, and sharing. Use when the user says 'make a flare' or asks to spin up a quick app/artifact/demo/dashboard/poll from context."
+description: "Create Flares: steerable, agent-generated mini-apps packaged as framework-agnostic static clients with declared activity types. Use when the user says 'make a flare' or asks for a quick app, artifact, demo, dashboard, poll, feedback surface, or interactive explainer."
 references:
   - references/pattern.md
-  - references/cloudflare-personal-architecture.md
-  - references/cloudflare-native-blueprint.md
-  - references/cloudflare-mcp.md
-  - references/deploy-workflow.md
-  - references/platform-implementation.md
-  - references/steering-contract.md
   - references/flare-types.md
+  - references/platform-contract.md
   - references/zero-config-api.md
+  - references/cloudflare-native-blueprint.md
+  - references/deploy-workflow.md
+  - references/steering-contract.md
+  - references/cloudflare-mcp.md
 ---
 
 # Flares
 
-Give agents a path beyond Markdown and one-file HTML into **Flares**: small hosted mini-apps with Cloudflare-native backend primitives.
+A **Flare** is a small, steerable web app generated from context and packaged as a portable static client. Generated code owns the experience. The shared platform owns identity, typed activity, validation, persistence, provenance, quotas, and export.
 
-A Flare is a steerable, agent-generated lightweight web app. Generated code owns the client experience; the shared Cloudflare platform owns identity, persistence, files, AI, realtime, quotas, exports, expiry, and deployment state.
+The first deep capability is **activity**: comments, votes, submissions, and other typed append-only input declared by each immutable Flare revision. Mutable records, files, realtime, AI, and public participation are later capabilities, not defaults.
+
+## Boundaries
+
+```text
+Generated Flare -> Runtime API ----\
+Console ---------> Management API --> shared platform domain modules
+CLI -------------> Management API --/
+Cloudflare MCP --> account/resource operations only
+```
+
+- Humans and external agents use Flares, the Console, and the CLI. There is no built-in platform agent.
+- Generated clients never call Cloudflare APIs, MCP, storage products, or model providers directly.
+- Cloudflare MCP is infrastructure-only. It is not the activity data plane.
+- Runtime service code belongs in the separate platform repository described by `specs/flare-platform.md` in the dotfiles source repository, not this repository’s skill tree.
 
 ## Use This For
 
-- Meeting follow-up Flares with synthesis, polls, comments, and export.
-- Dashboards, calculators, workbenches, demos, games, and prototypes.
-- Interactive explainers over transcripts, notes, repos, specs, screenshots, or datasets.
-- Personal or client-facing mini-apps that need lightweight persistence or collaboration.
-- Agent-created work surfaces that humans can inspect, steer, share, archive, or promote.
-
-## Core Contract
-
-- Start with the smallest useful Flare: static HTML/CSS/JS plus shared platform APIs.
-- Keep generated Flares thin. Do not invent per-Flare backend infrastructure unless the user explicitly asks.
-- Default to Cloudflare primitives: Workers Static Assets or R2 for files, Workers for API routing, Durable Objects with SQLite for per-Flare state and realtime, D1 for registry/query indexes, R2 for uploads/exports, Queues/Workflows for async lifecycle jobs, Access or signed invite gates for identity, Workers AI or AI Gateway for server-side model calls.
-- Agents may create and iterate on local/private Flares autonomously when the user asks.
-- **Do not publish, invite people, or expose private context without explicit user approval.**
-- Keep Flares steerable: expose purpose, data captured, auth, audience, expiry, export path, capabilities, budgets, and approvals so a human or orchestrator can redirect them.
-- Prefer portable durable records: Markdown, JSON, SQLite, git, R2/S3 objects.
-- Make privacy claims honest: `local`, `public`, `unlisted`, `access-otp`, and `custom-invite` mean different things.
+- Feedback, polls, rankings, comments, and structured submissions.
+- Interactive explainers, review surfaces, calculators, dashboards, and demos.
+- Small tools created from transcripts, notes, repos, specs, screenshots, or datasets.
+- Owner-only work surfaces that may later justify broader capabilities.
 
 ## Reading Order
 
 | Task | Read |
 |---|---|
 | Understand the concept | [pattern.md](./references/pattern.md) |
-| Pick a Flare shape | [flare-types.md](./references/flare-types.md) |
-| Build or review platform architecture | [cloudflare-native-blueprint.md](./references/cloudflare-native-blueprint.md), then [cloudflare-personal-architecture.md](./references/cloudflare-personal-architecture.md) |
-| Use Cloudflare MCP safely | [cloudflare-mcp.md](./references/cloudflare-mcp.md) |
-| Deploy/share a hosted Flare | [deploy-workflow.md](./references/deploy-workflow.md) |
-| Implement the shared Worker/DO/D1/R2 platform | [platform-implementation.md](./references/platform-implementation.md) |
-| Define steerability, safety gates, or manifest fields | [steering-contract.md](./references/steering-contract.md) |
-| Implement client-facing APIs | [zero-config-api.md](./references/zero-config-api.md) |
+| Choose a useful shape and activity types | [flare-types.md](./references/flare-types.md) |
+| Understand entities, lifecycle, API seams, or slice order | [platform-contract.md](./references/platform-contract.md) |
+| Build generated-client interactions | [zero-config-api.md](./references/zero-config-api.md) |
+| Map the contract to Cloudflare primitives | [cloudflare-native-blueprint.md](./references/cloudflare-native-blueprint.md) |
+| Validate, plan, deploy, or share a packet | [deploy-workflow.md](./references/deploy-workflow.md) |
+| Define the manifest, data policy, or approval gate | [steering-contract.md](./references/steering-contract.md) |
+| Inspect or configure Cloudflare infrastructure | [cloudflare-mcp.md](./references/cloudflare-mcp.md) |
 
 ## Workflow
 
-1. **Name the flare job.** Is this for reading, deciding, collecting input, calculating, visualizing, playing, monitoring, or collaborating?
-2. **Gather source context.** Use transcripts, notes, repo files, diffs, docs, data, screenshots, and QMD search when relevant.
-3. **Choose the flare type.** See [flare-types.md](./references/flare-types.md).
-4. **Choose capabilities, not infrastructure.** Static only? Data? Files? AI? Realtime? Identity? Export? Lifecycle automation? See [zero-config-api.md](./references/zero-config-api.md).
-5. **Draft locally first.** Build a local preview or self-contained HTML when possible before any public deploy.
-6. **Write or update the manifest.** Include the steering fields in [steering-contract.md](./references/steering-contract.md), even if some values are provisional. A starter template lives at [assets/templates/manifest.json](./assets/templates/manifest.json).
-7. **Use Cloudflare MCP as the operator channel.** For hosted work, read [cloudflare-mcp.md](./references/cloudflare-mcp.md): use MCP for docs/account/resource operations, Wrangler for reproducible deploys, and Worker bindings for runtime data.
-8. **Steering gate.** Show the source summary, Flare behavior, data captured, auth mode, audience, expiry, share/invite copy, and Cloudflare resources to create/change. Get user approval when publishing, inviting, spending meaningful resources, creating DNS/routes, or exposing private context.
-9. **Publish only after approval.** Follow [deploy-workflow.md](./references/deploy-workflow.md). Record URL, source path, auth mode, expiry, platform capabilities, and any data/export location.
-10. **Operate and close the loop.** If the Flare gathers data, export/summarize responses back into durable notes/tasks/decisions. Archive or promote intentionally.
+1. **Name the job.** State what someone should understand, decide, calculate, or submit.
+2. **Gather and minimize context.** Prefer a purpose-built synthesis over publishing raw private source material.
+3. **Choose the smallest shape.** Start static; add declared activity only when input must persist.
+4. **Define activity types.** Give each type a stable name, version, label, and local JSON Schema.
+5. **Build a portable packet.** Produce `flare.json`, `activity-schemas/`, and built `dist/` assets. Use [assets/templates/flare.json](./assets/templates/flare.json).
+6. **Preview locally.** Keep the client framework-independent and use the Runtime API contract rather than custom backend code.
+7. **Plan before applying.** Use the platform CLI for packet validation/deployment. If the platform is unavailable, stop at a valid local packet; do not invent a one-off backend.
+8. **Get approval for external effects.** Publishing, routes/DNS, invitations, private-context exposure, and resource mutations require explicit approval.
+9. **Close the loop.** Inspect/export activity through the Console or CLI and move important outcomes into durable notes, tasks, or decisions.
 
-## Cloudflare Native Defaults
+## Packet Contract
 
-Use this default stack unless the use case proves it needs less or more:
-
-| Concern | Default |
-|---|---|
-| Host/router | One Workers app with route-aware API handling and static asset fallback |
-| Static bundles | Workers Static Assets for the platform shell; R2 for generated per-Flare bundles and uploads |
-| Per-Flare state | One Durable Object instance per Flare, backed by SQLite |
-| Realtime | Durable Object WebSockets, with hibernation for long-lived rooms |
-| Registry | D1 for searchable metadata; KV only for cache/bootstrap/config that can tolerate eventual consistency |
-| Async work | Queues for background tasks; Workflows for durable multi-step lifecycle jobs |
-| AI | Server-side Workers AI or AI Gateway calls with budgets and audit records |
-| Identity | Cloudflare Access for owner/admin and known invitees; app-level signed gates for fine-grained per-Flare audiences |
-| Observability | Workers Logs/structured events, Analytics Engine for usage metrics when needed |
-
-Do not use the Cloudflare REST API or MCP from inside a Flare for data-path behavior when bindings or service bindings can do the work. MCP is for agent/operator setup and inspection; the hosted Worker is the runtime authority.
-
-## Default Flare Manifest
-
-Every Flare should have a manifest. Use this canonical shape and leave optional fields empty for local drafts:
-
-```json
-{
-  "schemaVersion": 1,
-  "title": "Design review follow-up",
-  "slug": "design-review-2026-06-10",
-  "status": "draft",
-  "purpose": "Collect async feedback on decisions and open questions",
-  "owner": {
-    "name": "Mikey",
-    "email": "owner@example.com"
-  },
-  "sourceSummary": ["transcript.md", "repo: current branch"],
-  "capabilities": {
-    "identity": true,
-    "db": true,
-    "events": true,
-    "files": false,
-    "ai": false,
-    "realtime": false,
-    "export": true
-  },
-  "auth": {
-    "mode": "local",
-    "audience": [],
-    "roles": {
-      "owner@example.com": "owner"
-    }
-  },
-  "dataPolicy": {
-    "captured": ["votes", "comments"],
-    "storedIn": ["Durable Object SQLite"],
-    "exports": ["responses.json", "summary.md"],
-    "retention": "archive after 14 days",
-    "aiUse": "none"
-  },
-  "budgets": {
-    "maxDocuments": 1000,
-    "maxUploadBytes": 0,
-    "maxAiUsd": 0
-  },
-  "expiresAt": "2026-06-24T00:00:00Z",
-  "approvals": {
-    "publish": false,
-    "invite": false,
-    "aiOverPrivateData": false,
-    "externalScripts": false
-  },
-  "steeringLog": []
-}
+```text
+flare.json
+activity-schemas/
+  <type>.v<version>.schema.json
+dist/
+  index.html
+  assets/
 ```
 
-## Platform Direction
+The packet is deterministic and secret-free. It contains no owner credentials, Cloudflare IDs, environment-specific route, mutable deployment state, custom backend, or model keys.
 
-The intended personal platform is Cloudflare-first: Access and/or invite gates for auth, one Worker host/router, Workers Static Assets or R2 for Flare bundles, Durable Objects with SQLite for per-Flare state and realtime, D1 for registry/indexes, R2 for uploads/exports, Queues/Workflows for lifecycle work, and Workers AI/AI Gateway for model calls.
+## Core Rules
 
-Read [cloudflare-native-blueprint.md](./references/cloudflare-native-blueprint.md), [cloudflare-mcp.md](./references/cloudflare-mcp.md), and [platform-implementation.md](./references/platform-implementation.md) before implementing deployment behavior. A starter Wrangler config lives at [assets/templates/wrangler.flare-host.jsonc](./assets/templates/wrangler.flare-host.jsonc).
+- A Flare has stable identity; revisions and deployments are immutable historical records.
+- Activity belongs to the Flare and records the originating revision and deployment.
+- Runtime clients may append only activity types declared by their revision.
+- Actor, timestamps, scope, type version, and provenance are server-derived.
+- `Idempotency-Key` is required for activity writes.
+- The Console is owner-only and read-oriented in V1.
+- External agents use the CLI first; a custom Flare MCP server is deferred.
+- No automatic archive, purge, migration, or destructive cleanup.
+- Do not describe unlisted URLs as private.
 
-## Safety Checklist Before Sharing
+## Initial Platform Shape
 
-- [ ] User approved publishing and invitation/share text, if the Flare leaves the local/private workspace.
-- [ ] Audience and auth mode are explicit.
-- [ ] Sensitive source material is summarized/redacted, not dumped raw.
-- [ ] The Flare declares what data it stores and where exports go.
-- [ ] Expiry/archive behavior is explicit, or permanence is intentional.
-- [ ] Generated code has no external scripts/analytics/CDNs unless approved.
-- [ ] Secrets/API keys stay server-side behind platform APIs.
-- [ ] The Worker enforces auth, expiry, quotas, and capability flags server-side.
+| Concern | V1 owner |
+|---|---|
+| Shared routing and Runtime/Management APIs | One Worker |
+| Stable Flare/revision/deployment catalog | D1 |
+| Per-Flare activity authority | One Durable Object with SQLite per stable Flare ID |
+| Immutable revision packets | R2 |
+| Owner authentication | Cloudflare Access |
+| Agent/operator access | Platform CLI over Management API |
 
-## Skill Combinations
+Files, voice, generic mutable databases, realtime, AI, invitations, and public writes remain deferred until repeated use proves a narrower contract.
 
-- Use `engineering-patterns/references/thin-ai-clients.md` when an AI-heavy Flare needs a UI-vs-agent or local-vs-cloud architecture decision.
-- Use `visual-deliverables` for local one-file HTML explainers before hosting.
-- Use `breadboarding` when the mini-app workflow needs places/affordances/stores/wiring.
-- Use `framing-doc` or `kickoff-doc` when a durable synthesis should precede the Flare.
-- Use `qmd` when personal notes or a markdown vault are source context.
-- Use `spec-planner` before building the Cloudflare platform, deploy CLI, or SDK.
+## Safety Before Deployment
+
+- [ ] Source context is minimized and sensitive material is not copied unnecessarily.
+- [ ] Activity types and captured fields are explicit.
+- [ ] Packet contains no secrets, credentials, analytics, or unapproved external scripts.
+- [ ] Target route, access mode, and Cloudflare mutations are shown before apply.
+- [ ] User explicitly approved any publish, invite, DNS, or public/private-context exposure.
+- [ ] Important results have a JSON or Markdown export path.
+
+## Useful Skill Combinations
+
+- Use `visual-deliverables` for a local one-file prototype before packetizing.
+- Use `breadboarding` when the interaction or state flow needs mapping.
+- Use `impeccable` for UI/UX quality.
+- Use `framing-doc` or `kickoff-doc` when synthesis should precede the Flare.
+- Use `spec-planner` before changing the platform contract or adding a capability module.
