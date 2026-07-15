@@ -3,6 +3,6 @@ mode = "auto"
 watch = false
 exclude_untracked = false
 line_numbers = true
-wrap_lines = false
+wrap_lines = true
 agent_notes = true
 transparent_background = false

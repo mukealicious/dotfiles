@@ -82,8 +82,8 @@
 ## Herdr Workflow
 
 - When `HERDR_ENV=1`, treat Herdr as part of the working environment and load the `herdr` skill when deeper coordination guidance is needed.
-- At the beginning of a new conversation, once the user's intent is clear, discover the current tab with `herdr pane current --current` and rename it to a concise 2–5 word task or outcome label. Do this without asking; update it only after a material topic pivot.
-- Keep workspace labels project-oriented. Use labeled tabs for independent task contexts and labeled panes for observable concurrent processes such as servers, tests, logs, debuggers, or interactive agents.
+- At the beginning of a new conversation, once the user's intent is clear, discover the current tab with `herdr pane current --current` and rename it to `<agent> · <task>`, where the task is a concise 2–5 word outcome label and the agent comes from Herdr's pane metadata. Do this without asking; update it only after a material topic pivot.
+- Keep workspace labels project-oriented. Prefer a 50/50 sibling pane for an interactive companion to the coding agent, especially Hunk. Put servers, logs, and other persistent runtime processes in their own labeled tabs; group related processes as labeled panes within that tab.
 - Prefer the current pane for short commands. Split with `--no-focus` only when concurrency or visibility is useful, and label every tab or pane you create.
 - Treat unrelated panes as user-owned: do not inspect, type into, move, repurpose, or close them unless asked. Re-read live IDs before acting because Herdr IDs can change.
 - Prefer the configured subagent harness for isolated, structured delegation; prefer Herdr panes when terminal visibility or later user interaction is valuable.

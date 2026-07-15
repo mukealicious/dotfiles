@@ -29,13 +29,15 @@ Once the user's intent is clear, rename the current tab to the conversation topi
 
 ```bash
 herdr pane current --current
-herdr tab rename <tab_id-from-response> "Herdr agent ergonomics"
+herdr tab rename <tab_id-from-response> "<agent-from-response> · Improve agent ergonomics"
 ```
 
 Choose a stable, scannable label:
 
-- Use 2–5 words describing the task or intended outcome.
-- Prefer `Fix checkout retries` over vague labels such as `Working` or `Code`.
+- Prefix agent tabs with the agent name reported by Herdr, such as
+  `pi · Fix checkout retries`; omit the prefix when no agent is reported.
+- Use 2–5 words describing the task or intended outcome after the prefix.
+- Prefer `pi · Fix checkout retries` over vague labels such as `pi · Working`.
 - Do not repeat the repository name; the workspace already provides project context.
 - Do not put transient status such as `WIP`, `blocked`, or `done` in the label;
   Herdr already displays agent status.
@@ -50,39 +52,63 @@ Tab renaming is low-risk and reversible. Do it without asking.
 |---|---|---|
 | Project/repository context | Workspace | Keep workspace labels project-oriented. Do not rename for each task. |
 | Independent conversation or subcontext | Tab | Give every created tab a task-level label. |
-| Concurrent process in the same task | Pane | Split and label it by role, such as `tests`, `dev server`, or `logs`. |
+| Interactive coding companion | Pane | Split beside the agent, usually 50/50, and label by role, such as `hunk`. |
+| Server, logs, or persistent watcher | Tab | Keep runtime processes out of the coding tab; group related processes as labeled panes in one operational tab. |
 | Specialized autonomous work | Agent pane or subagent harness | Prefer the configured subagent harness for bounded delegation; use a visible pane when the user benefits from watching or interacting with it. |
 
 Avoid creating layout clutter. Use the current pane for short commands. Create a
-sibling pane when a process is long-running, interactive, or useful to observe
-alongside the conversation.
+sibling pane when a tool is directly complementary to the coding conversation.
+Create a separate tab for persistent processes the user may monitor independently.
 
-## Side-Process Workflow
+## Common Layout Recipes
 
-Discover the current pane rather than guessing IDs:
+### Coding with Hunk
+
+When the user asks to open Hunk beside the agent, keep the agent on the left and
+create an evenly sized Hunk pane on the right. Do not duplicate an existing Hunk
+pane or session.
 
 ```bash
 herdr pane current --current
+herdr pane rename <current-pane-id> "<agent-from-response>"
+herdr pane split --current --direction right --ratio 0.5 --no-focus
+herdr pane rename <new-pane-id> "hunk"
+herdr pane run <new-pane-id> "hunk diff --watch"
 ```
 
-Split without stealing focus, parse the returned pane ID, label it, then run the
-process:
+Running Hunk's interactive TUI still requires an explicit user request. Keep
+focus on the agent so the user can choose when to enter the Hunk pane.
+
+### Servers, Logs, and Watchers
+
+Create a background tab instead of splitting the coding tab:
 
 ```bash
-herdr pane split --current --direction right --no-focus
-herdr pane rename <new_pane_id> "dev server"
-herdr pane run <new_pane_id> "pnpm dev"
+herdr pane current --current
+herdr tab create --workspace <workspace-id-from-response> --label "dev server" --no-focus
+herdr pane rename <new-tab-root-pane-id> "server"
+herdr pane run <new-tab-root-pane-id> "pnpm dev"
 ```
 
-For tests, servers, watchers, and logs:
+If several persistent processes belong together, split that operational tab and
+label panes by role, such as `server`, `logs`, or `worker`. Keep unrelated
+processes in separate tabs.
+
+### Short Commands
+
+Run short tests, builds, and one-off commands in the agent pane unless interaction,
+concurrency, or persistent visibility makes a separate pane or tab useful.
+
+For visible commands and persistent processes:
 
 1. Use repository-native commands.
 2. Keep focus on the conversation with `--no-focus`.
 3. Wait for a meaningful readiness/completion signal when one exists.
 4. Read only enough recent output to verify the result.
 5. Report failures; do not turn them into success-shaped fallbacks.
-6. Do not close the pane automatically if preserving its output is useful. Close
-   only disposable panes you created, and never interrupt a live process silently.
+6. Do not close the pane or tab automatically if preserving its output is useful.
+   Close only disposable contexts you created, and never interrupt a live process
+   silently.
 
 ## Coordination Workflow
 
@@ -96,7 +122,8 @@ Use Herdr coordination when it adds visibility or enables genuine concurrency:
 - Wait for a visible sibling agent with `herdr wait agent-status`.
 - Read completed output with `herdr pane read`.
 - Use a labeled new tab for a distinct investigation that should remain available.
-- Use a labeled split for logs, tests, REPLs, debuggers, or user-visible agents.
+- Use a labeled split for interactive companions, REPLs, debuggers, or
+  user-visible agents that belong beside the current conversation.
 
 Prefer built-in agent/subagent orchestration when it provides better isolation,
 structured outputs, or parallel execution. Herdr panes are complementary: they
