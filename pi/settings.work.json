@@ -24,7 +24,9 @@
       "source": "npm:mitsupi",
       "skills": [
         "-skills/frontend-design/SKILL.md",
-        "-skills/librarian/SKILL.md"
+        "-skills/librarian/SKILL.md",
+        "-skills/native-web-search/SKILL.md",
+        "-skills/web-browser/SKILL.md"
       ]
     }
   ],

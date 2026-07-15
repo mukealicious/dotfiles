@@ -1,157 +1,84 @@
 # Dotfiles Repository
 
-Topic-centric dotfiles (Holman-style). Manages macOS dev environment.
+Topic-centric dotfiles for a macOS development environment.
 
-## Quick Reference
+## Commands
 
-- `script/bootstrap` - initial setup, symlinks
-- `script/install` - run all installers
-- `bin/dot` - update everything
-- `bin/dot doctor` - check environment health
+- `script/bootstrap` — initial setup and symlinks
+- `script/install` — run all installers
+- `bin/dot` — update everything
+- `bin/dot doctor` — check environment health
 
 ## Where to Look
 
 | Task | Start here |
-|------|-----------|
-| Add shell alias/abbr | `[topic]/aliases.fish` |
-| Add fish function | `fish/functions/` |
-| Add Homebrew package | `Brewfile` |
-| Add versioned JS CLI | `mise.toml` (`npm:<package>`) |
-| Add native-sensitive Node CLI | `mise/node-globals.reqs` |
-| Change JS runtime/package-manager defaults | `mise.toml`, `mise.lock`, `pnpm/config.yaml` |
-| Add Python CLI | `uv.reqs` |
-| New topic/tool | Create `[topic]/` dir, add `install.sh` |
-| Custom git command | `bin/git-<name>` (executable) |
+|---|---|
+| Shell alias or abbreviation | `[topic]/aliases.fish` |
+| Fish function or config | `fish/functions/`, `fish/config.fish`, `fish/conf.d/` |
+| Homebrew package | `Brewfile` |
+| Versioned JS CLI | `mise.toml` (`npm:<package>`) |
+| Native-sensitive Node CLI | `mise/node-globals.reqs` |
+| JS runtime/package-manager policy | `mise.toml`, `mise.lock`, `pnpm/config.yaml` |
+| Python CLI | `uv.reqs` |
+| New topic or tool | `[topic]/`, usually with `install.sh` |
+| Custom git command | `bin/git-<name>` |
 | Git config | `git/gitconfig.symlink` |
-| Fish shell config | `fish/config.fish`, `fish/conf.d/` |
+| Stream Deck layout/button | `streamdeck/layouts/`, `streamdeck/bin/sync-profile` |
+| Shared AI instruction | `ai/instructions/base.md` |
 | Shared AI skill | `ai/skills/[name]/SKILL.md` |
-| Codex-only skill | `Codex/skills/[name]/SKILL.md` |
-| Agent instructions (shared) | `ai/instructions/base.md` |
-| Agent instructions (Codex) | `Codex/instructions/appendix.md` |
-| Codex settings/hooks | `Codex/settings.json`, `Codex/hooks/` |
-| Subagent definition | `Codex/agents/` (or `ai/agents/` for shared body) |
-| Installer ordering | `script/install` (`CORE_INSTALLERS`) |
-| Symlink/logging helpers | `lib/symlink.sh`, `lib/log.sh` |
-| Stream Deck layout/buttons | `streamdeck/layouts/`, `streamdeck/bin/sync-profile` |
-| Environment diagnostics | `bin/dot-doctor` |
+| Pi config or extension | `pi/`; see `pi/README.md` |
+| Claude-specific config | `claude/`; see `claude/README.md` |
+| AI capability architecture | `ai/README.md` |
 
-## Development
+Use the `dotfiles-dev` skill for detailed file patterns, topic setup, skills, and custom git commands.
 
-Use the `dotfiles-dev` skill for detailed guidance on:
-- Adding topics, skills, configurations
-- File patterns and conventions
-- Custom git commands
-
-## AI Capability Architecture
-
-Three-layer skill system across multiple AI tools. See `ai/README.md` for full details.
-
-| Layer | Location | Works With |
-|---|---|---|
-| Shared skills | `ai/skills/` | All agents (Codex, Pi, OpenCode, Codex) |
-| Codex-specific | `Codex/skills/` | Codex only |
-| Pi extensions | `pi/extensions/` | Pi only |
-
-**Installer ownership**:
-- `ai/install.sh` — shared skills, agent instructions, symlinks to all tools
-- `Codex/install.sh` — Codex settings, plugins
-- `pi/install.sh` — Pi settings, themes, extensions, packages
-
-## Codex Capabilities
-
-Codex config lives in `Codex/` and is symlinked to `~/.Codex/`. See `Codex/README.md` for full architecture.
-
-**Key files (edit here, not in ~/.Codex/):**
-- `Codex/settings.json` - permissions, hooks, MCP servers
-- `Codex/skills/` - Codex-only overlays (currently empty; shared skills live in `ai/skills/`)
-- `Codex/agents/` - subagents; `review` is split-source (`ai/agents/review.body.md` + `Codex/agents/review.frontmatter`), while `oracle` and `librarian` remain combined
-- `Codex/hooks/` - PreToolUse and lifecycle hooks
-
-**Subagents** — invoke via natural language (e.g., "use the oracle to review this"). Treat the agent names as stable capability labels; any model selection is a harness-specific implementation detail, not the canonical identity of the agent:
-
-| Agent | When to invoke | Can write files? |
-|-------|----------------|------------------|
-| **oracle** | Architecture decisions, complex debugging, planning, second opinions. | No (read-only) |
-| **librarian** | Understanding 3rd-party libraries, exploring remote repositories, tracing code flow. | No (read-only) |
-| **review** | Code review after changes. Focused on bugs, security, and structural fit. | No (read-only) |
-
-**Important: subagent routing for implementation work.** Oracle, librarian, and review are **read-only advisors** — they cannot Edit or Write files. For parallelized implementation tasks (writing code, editing files, running builds), use `subagent_type: "general-purpose"` which has full tool access. Never route implementation work to oracle/librarian/review — it will fail.
-
-Oracle and librarian should separate **discovery** from **investigation** for external-library questions: use GitHub-wide code search to find targets, then inspect fetched source for implementation details. In this repo today, discovery maps to `grep_app`, while source-backed investigation should use the shared `opensrc` workflow. `grep_app` is configured at user scope in `~/.Codex.json` (globally available — per-agent MCP scoping is not yet supported by Codex).
-
-**Evidence standard for external investigations:** include repo/package identity, version or ref when known, file citations for key claims, and note whether a conclusion comes from README/examples/tests or core implementation.
-
-**Migration cleanup:** if `context7` was previously installed locally, remove it once with:
-
-```bash
-claude mcp remove --scope user context7
-codex mcp remove context7
-```
-
-**Safety Hook**: PreToolUse hook intercepts `rm -rf/-r/-f` commands and rewrites to `trash` (macOS built-in). User confirms the modified command.
-
-**Notification Hook**: Stop and Notification hooks play a sound and show macOS notification when Codex finishes or needs attention.
-
-**MCP Servers**:
-- Linear - project management via OAuth (auth on first use)
-- grep_app - GitHub-wide code search (user scope, globally available)
-
-## Pi Coding Agent
-
-Pi config lives in `pi/` and is symlinked to `~/.pi/agent/`. See `pi/README.md`.
-
-Key features:
-- Discovers shared skills via `settings.json` path config
-- `notify.ts` extension sends desktop notifications (OSC 777)
-- mitsupi package provides uv interceptor, /answer, /review, /todos, /files
-
-## Shell Scripting Conventions
-
-See `.Codex/rules/shell-scripting.md` for detailed guidance. Summary:
-
-All installer scripts follow these patterns:
-
-- Use `#!/bin/sh` (portable) and `set -e` (fail fast)
-- Get script directory: `$(cd "$(dirname "$0")/.." && pwd -P)`
-- Safe file iteration: `[ -e "$file" ] || continue`
-- Provide `--force` flag for correcting misconfigurations
-
-**Symlink management** (see `lib/symlink.sh` for canonical implementation):
-- Always validate symlink targets, don't assume existing symlinks are correct
-- Handle: non-existent, correct, broken, misdirected symlinks
-- Clean dead symlinks before creating new ones
-- Provide actionable fix commands in warnings
-
-## Architecture Principles
-
-### Installer Ownership Model
+## Ownership Model
 
 Keep changes in the narrowest layer that owns them:
-- `bin/dot` — top-level user workflow and sequencing needed specifically by `dot`
-- `script/install` — installer orchestration: explicit ordering, sorted fallback discovery, skip/forwarding behavior
-- `[topic]/install.sh` — idempotent topic-specific setup
-- `dot doctor` — diagnostics and fix hints
 
-Default rule: put install logic in `[topic]/install.sh`; only move upward into `script/install` or `bin/dot` when orchestration or UX requires it.
+- `[topic]/install.sh` — idempotent topic-specific setup; default home for install logic
+- `script/install` — installer orchestration, ordering, skip behavior, and argument forwarding
+- `bin/dot` — top-level update workflow specific to `dot`
+- `bin/dot-doctor` — diagnostics and actionable fix hints
 
-- **Shared libraries**: `lib/log.sh` provides consistent shell UX helpers; `lib/symlink.sh` provides `ensure_symlink` and `check_symlink` — reuse these instead of rewriting logging or symlink logic
-- **Single source of truth**: One script owns each config area (e.g., `ai/install.sh` for all AI tool configs)
-- **No overlapping ownership**: Avoid multiple scripts managing same directories
-- **Deterministic execution**: `script/install` uses explicit `CORE_INSTALLERS` ordering for foundational installers, then sorted discovery for the rest. If a new installer has ordering requirements, update `script/install`.
-- **JavaScript toolchain boundary**: `mise.toml`/`mise.lock` own Node, pnpm, Bun, and ordinary versioned JS CLIs. Existing repositories keep their declared package manager and lockfile; new/unmarked repositories default to pnpm. `pnpm/config.yaml` owns global pnpm policy; `bin/yarn` is the narrow Corepack compatibility path for Yarn repositories.
-- **CLI installer boundaries**: Homebrew owns system/native CLIs and apps; `uv.reqs` owns Python tools; `mise.toml` owns ordinary JS CLIs through the `npm:` backend; `mise/node-globals.reqs` owns npm CLIs with native Node dependencies or Node ABI sensitivity; `bin/` owns behavior wrappers that should win on PATH.
+Foundational installers are listed in `script/install`'s `CORE_INSTALLERS`; remaining installers are discovered in sorted order. Update orchestration only when a new installer has a real ordering dependency.
 
-## Anti-Patterns
+Reuse `lib/log.sh` and `lib/symlink.sh`. A single script should own each configuration area, and symlink logic must handle missing, correct, broken, and misdirected links.
 
-- Edit files under `~/.Codex/`, `~/.pi/agent/`, or `~/.config/opencode/` directly — edit source files in this repo, run `dot` to install
-- Author shared skills in `.agents/skills/` or `.Codex/skills/` — these are installer-managed runtime outputs
-- Add topic-specific logic to `script/install` or `bin/dot` unless orchestration requires it
-- Create multiple scripts that manage the same config directory
-- Assume existing symlinks point to the correct target — always validate
-- Use `find | while` for order-dependent operations
-- Skip dead symlink cleanup before creating new ones
-- Commit `~/.localrc`, `~/.gitconfig.local`, or any `.env*` files
+## Toolchain Boundaries
 
-## Secrets
+- Homebrew owns system/native CLIs and apps.
+- `uv.reqs` owns Python CLIs.
+- `mise.toml` and `mise.lock` own Node, pnpm, Bun, and ordinary versioned JS CLIs.
+- `mise/node-globals.reqs` owns npm CLIs with native dependencies or Node ABI sensitivity.
+- `pnpm/config.yaml` owns global pnpm policy.
+- `bin/yarn` is the narrow Corepack compatibility path for Yarn repositories.
+- `bin/` owns behavior wrappers that should win on `PATH`.
 
-Never commit: `~/.localrc`, `~/.gitconfig.local`
+Existing repositories keep their declared package manager and lockfile; new or unmarked repositories default to pnpm.
+
+## Shell Installers
+
+Installer scripts use `#!/bin/sh` and `set -e`. Resolve the repository root with:
+
+```sh
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+```
+
+Use `[ -e "$file" ] || continue` for safe glob iteration and provide `--force` when an installer needs to correct existing misconfiguration.
+
+## Generated and Runtime Files
+
+- Edit source files in this repository, not installed outputs under `~/.claude/`, `~/.pi/`, `~/.codex/`, or `~/.config/opencode/`.
+- Author shared skills in `ai/skills/`; `.agents/skills/`, `.claude/skills/`, and `.ai-runtime/` are installer-managed projections.
+- `ai/install.sh` owns shared AI instructions, projected skills, and assembled agents.
+- `claude/install.sh` owns Claude settings and hooks.
+- `pi/install.sh` owns Pi profiles, settings, themes, extensions, and packages.
+
+## Guardrails
+
+- Do not put topic-specific behavior in `script/install` or `bin/dot` unless orchestration requires it.
+- Do not create overlapping owners for the same config directory.
+- Validate symlink targets and clean dead symlinks before creating replacements.
+- Avoid `find | while` for order-dependent operations.
+- Never commit `~/.localrc`, `~/.gitconfig.local`, or `.env*` files.
