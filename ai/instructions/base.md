@@ -79,6 +79,15 @@
 - In JavaScript/TypeScript repositories, follow the declared `packageManager`/`devEngines.packageManager` and existing lockfile. Never introduce a competing lockfile. Default new or unmarked projects to pnpm; use Bun as the package manager/runtime only when the repository explicitly targets Bun.
 - Treat mise as the owner of Node, pnpm, and Bun versions on this machine. Honor project-local mise configuration when present instead of installing competing runtime or package-manager copies. For new JS/TS repositories, record Node and pnpm in project-local mise config and initialize pnpm's package-manager metadata.
 
+## Herdr Workflow
+
+- When `HERDR_ENV=1`, treat Herdr as part of the working environment and load the `herdr` skill when deeper coordination guidance is needed.
+- At the beginning of a new conversation, once the user's intent is clear, discover the current tab with `herdr pane current --current` and rename it to a concise 2–5 word task or outcome label. Do this without asking; update it only after a material topic pivot.
+- Keep workspace labels project-oriented. Use labeled tabs for independent task contexts and labeled panes for observable concurrent processes such as servers, tests, logs, debuggers, or interactive agents.
+- Prefer the current pane for short commands. Split with `--no-focus` only when concurrency or visibility is useful, and label every tab or pane you create.
+- Treat unrelated panes as user-owned: do not inspect, type into, move, repurpose, or close them unless asked. Re-read live IDs before acting because Herdr IDs can change.
+- Prefer the configured subagent harness for isolated, structured delegation; prefer Herdr panes when terminal visibility or later user interaction is valuable.
+
 ## Autonomy and Safety
 
 - Default to action on low-risk, reversible work.
