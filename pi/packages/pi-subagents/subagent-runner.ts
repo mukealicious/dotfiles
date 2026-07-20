@@ -40,6 +40,7 @@ import {
 import { buildPiArgs, cleanupTempDir } from "./pi-args.ts";
 import { formatModelAttemptNote, isRetryableModelFailure } from "./model-fallback.ts";
 import { attachPostExitStdioGuard, trySignalChild } from "./post-exit-stdio-guard.ts";
+import { acquireChildStartupPermit } from "./child-startup-gate.ts";
 import { detectSubagentError, extractTextFromContent, extractToolArgsPreview, getFinalOutput } from "./utils.ts";
 import { parseSessionTokens, type TokenUsage } from "./session-tokens.ts";
 import {
@@ -166,7 +167,7 @@ interface RunPiStreamingResult {
 	interrupted?: boolean;
 }
 
-function runPiStreaming(
+async function runPiStreaming(
 	args: string[],
 	cwd: string,
 	outputFile: string,
@@ -177,6 +178,7 @@ function runPiStreaming(
 	childEventContext?: ChildEventContext,
 	registerInterrupt?: (interrupt: (() => void) | undefined) => void,
 ): Promise<RunPiStreamingResult> {
+	const releaseStartupPermit = await acquireChildStartupPermit();
 	return new Promise((resolve) => {
 		const outputStream = fs.createWriteStream(outputFile, { flags: "w" });
 		const spawnEnv = { ...process.env, ...(env ?? {}), ...getSubagentDepthEnv(maxSubagentDepth) };
@@ -290,6 +292,7 @@ function runPiStreaming(
 		let settled = false;
 		const clearStdioGuard = attachPostExitStdioGuard(child, { idleMs: 2000, hardMs: 8000 });
 		child.stdout.on("data", (chunk: Buffer) => {
+			releaseStartupPermit();
 			const text = chunk.toString();
 			stdoutBuf += text;
 			const lines = stdoutBuf.split("\n");
@@ -343,6 +346,7 @@ function runPiStreaming(
 		});
 		child.on("close", (exitCode, signal) => {
 			settled = true;
+			releaseStartupPermit();
 			registerInterrupt?.(undefined);
 			clearDrainTimers();
 			clearStdioGuard();
@@ -364,6 +368,7 @@ function runPiStreaming(
 
 		child.on("error", (spawnError) => {
 			settled = true;
+			releaseStartupPermit();
 			registerInterrupt?.(undefined);
 			clearDrainTimers();
 			clearStdioGuard();
@@ -372,7 +377,7 @@ function runPiStreaming(
 			const spawnErrorMessage = spawnError instanceof Error ? spawnError.message : String(spawnError);
 			resolve({ stderr, exitCode: 1, messages, usage, model, error: error ?? spawnErrorMessage, finalOutput });
 		});
-	});
+	}).finally(releaseStartupPermit);
 }
 
 function resolvePiPackageRootFallback(): string {

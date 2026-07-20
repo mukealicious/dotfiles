@@ -7,6 +7,7 @@ export interface MockPiResponse {
 	output?: string;
 	stderr?: string;
 	exitCode?: number;
+	startupDelay?: number;
 	delay?: number;
 	jsonl?: unknown[];
 	steps?: Array<{

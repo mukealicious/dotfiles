@@ -45,6 +45,7 @@ import { buildSkillInjection, resolveSkillsWithFallback } from "./skills.ts";
 import { getPiSpawnCommand } from "./pi-spawn.ts";
 import { createJsonlWriter } from "./jsonl-writer.ts";
 import { attachPostExitStdioGuard, trySignalChild } from "./post-exit-stdio-guard.ts";
+import { acquireChildStartupPermit } from "./child-startup-gate.ts";
 import { applyThinkingSuffix, buildPiArgs, cleanupTempDir } from "./pi-args.ts";
 import { captureSingleOutputSnapshot, resolveSingleOutput, type SingleOutputSnapshot } from "./single-output.ts";
 import {
@@ -173,6 +174,7 @@ async function runSingleAttempt(
 	};
 	result.progress = progress;
 	const spawnEnv = { ...process.env, ...sharedEnv, ...getSubagentDepthEnv(options.maxSubagentDepth) };
+	const releaseStartupPermit = await acquireChildStartupPermit();
 
 	const exitCode = await new Promise<number>((resolve) => {
 		const spawnSpec = getPiSpawnCommand(args);
@@ -254,6 +256,7 @@ async function runSingleAttempt(
 		const finish = (code: number) => {
 			if (settled) return;
 			settled = true;
+			releaseStartupPermit();
 			clearFinalDrainTimers();
 			clearStdioGuard();
 			if (activityTimer) {
@@ -419,6 +422,7 @@ async function runSingleAttempt(
 
 		const clearStdioGuard = attachPostExitStdioGuard(proc, { idleMs: 2000, hardMs: 8000 });
 		proc.stdout.on("data", (d) => {
+			releaseStartupPermit();
 			buf += d.toString();
 			const lines = buf.split("\n");
 			buf = lines.pop() || "";
@@ -502,7 +506,7 @@ async function runSingleAttempt(
 				removeInterruptListener = () => options.interruptSignal?.removeEventListener("abort", interrupt);
 			}
 		}
-	});
+	}).finally(releaseStartupPermit);
 	result.exitCode = exitCode;
 	if (interruptedByControl) {
 		result.exitCode = 0;

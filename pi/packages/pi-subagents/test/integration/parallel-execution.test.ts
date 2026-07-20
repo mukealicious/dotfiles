@@ -151,6 +151,29 @@ describe("parallel agent execution", { skip: !piAvailable ? "pi packages not ava
 		assert.equal(results[2].agent, "agent-c");
 	});
 
+	it("serializes child initialization before parallel model work", async () => {
+		for (let i = 0; i < 3; i++) {
+			mockPi.onCall({ startupDelay: 200, delay: 50, output: "Done" });
+		}
+		const agents = makeAgentConfigs(["agent-a", "agent-b", "agent-c"]);
+		const run = mapConcurrent(
+			agents,
+			3,
+			async ({ name }: any, index: number) => runSync(tempDir, agents, name, `Task ${index}`, { index }),
+		);
+
+		const deadline = Date.now() + 1000;
+		while (mockPi.callCount() === 0 && Date.now() < deadline) {
+			await new Promise((resolve) => setTimeout(resolve, 10));
+		}
+		assert.equal(mockPi.callCount(), 1);
+		await new Promise((resolve) => setTimeout(resolve, 50));
+		assert.equal(mockPi.callCount(), 1, "only one child should be in Pi initialization");
+
+		const results = await run;
+		assert.ok(results.every((result: any) => result.exitCode === 0));
+	});
+
 	it("all agents get independent results", async () => {
 		mockPi.onCall({ output: "Result" });
 		const agents = makeAgentConfigs(["a", "b"]);

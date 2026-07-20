@@ -107,6 +107,12 @@ async function main() {
 		JSON.stringify({ args: process.argv.slice(2) }),
 		"utf-8",
 	);
+	if (typeof response.startupDelay === "number" && response.startupDelay > 0) {
+		await new Promise((resolve) => setTimeout(resolve, response.startupDelay));
+	}
+	if (jsonMode) {
+		writeJsonlLine({ type: "session", version: 3, id: `mock-${process.pid}`, cwd: process.cwd() });
+	}
 
 	if (typeof response.delay === "number" && response.delay > 0) {
 		await new Promise((resolve) => setTimeout(resolve, response.delay));

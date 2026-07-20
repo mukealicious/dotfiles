@@ -4,6 +4,7 @@
 
 ### Fixed
 - Made user agent definitions and builtin overrides follow the active `PI_CODING_AGENT_DIR`, preserving provider/auth affinity for profile-based Pi setups.
+- Serialized only the child Pi initialization phase so parallel subagents cannot lose their shared auth snapshot while a sibling refreshes OAuth credentials; model work still runs concurrently after startup.
 
 ## [0.20.1] - 2026-04-27
 
