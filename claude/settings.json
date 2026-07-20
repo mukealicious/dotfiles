@@ -104,6 +104,17 @@
         ],
         "matcher": "*"
       }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "tldraw-offline",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$HOME/.dotfiles/claude/hooks/tldraw-server-context.sh\" SubagentStart"
+          }
+        ]
+      }
     ]
   },
   "mcpServers": {

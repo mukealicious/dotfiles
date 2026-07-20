@@ -13,7 +13,8 @@
     "maxRetries": 5
   },
   "skills": [
-    "~/.dotfiles/.ai-runtime/pi/skills"
+    "~/.dotfiles/.ai-runtime/pi/skills",
+    "~/skills/tldraw-offline"
   ],
   "packages": [
     "~/.dotfiles/pi/packages/pi-exa",

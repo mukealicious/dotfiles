@@ -68,8 +68,9 @@ claude/
 ├── install.sh              # Symlinks settings.json + configures MCP servers
 ├── settings.json           # Global config (permissions, hooks, MCP)
 ├── hooks/                  # Lifecycle hooks
-│   ├── safety-rm.sh        # PreToolUse: rewrites rm to trash
-│   └── notify-idle.sh      # Stop/Notification: sound + macOS alert
+│   ├── safety-rm.sh              # PreToolUse: rewrites rm to trash
+│   ├── notify-idle.sh            # Stop/Notification: sound + macOS alert
+│   └── tldraw-server-context.sh  # Portable adapter for tldraw's app-managed hook
 ├── agents/                 # Subagents (specialized AI advisors)
 │   ├── oracle.md           # Legacy combined agent
 │   ├── librarian.md        # Legacy combined agent
