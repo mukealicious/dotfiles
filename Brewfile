@@ -15,7 +15,6 @@ brew "coreutils"
 brew "wget"
 brew "tlrc"                      # Simplified man pages (tldr client in Rust)
 brew "opencode"                  # AI coding agent for terminal
-brew "gemini-cli"                # Google Gemini AI CLI
 
 # Languages & Version Management
 brew "mise"                      # Owns Node, pnpm, Bun, and versioned JS CLIs
@@ -36,7 +35,6 @@ brew "pandoc"                    # Universal document converter (markdown -> pla
 brew "typst"                     # Document compiler for rendering generated .typ files
 brew "ffmpeg"                    # Audio/video processing (required by lue-reader TTS)
 brew "yt-dlp"                    # YouTube video/audio downloader
-brew "promptfoo"                 # LLM prompt testing and evaluation
 brew "tw93/tap/mole"             # Mac cleanup and optimization tool (mo)
 
 # Modern CLI Tools
