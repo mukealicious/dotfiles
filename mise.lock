@@ -37,7 +37,7 @@ version = "30.2.0"
 backend = "npm:@antfu/ni"
 
 [[tools."npm:agent-browser"]]
-version = "0.31.1"
+version = "0.31.2"
 backend = "npm:agent-browser"
 
 [tools."npm:agent-browser".options]
@@ -51,11 +51,11 @@ backend = "npm:opensrc"
 allow_builds = '["opensrc"]'
 
 [[tools.pnpm]]
-version = "11.10.0"
+version = "11.13.0"
 backend = "aqua:pnpm/pnpm"
 
 [tools.pnpm."platforms.macos-arm64"]
-checksum = "sha256:d0d8a55b47dbe07a80d13fec7ee5af9bdca36187e61f9562d72d81dd637178c4"
-url = "https://github.com/pnpm/pnpm/releases/download/v11.10.0/pnpm-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/466571520"
+checksum = "sha256:01af2f0e57108a4f82193a14618c57104c1426137ce62b95e0199852a542880f"
+url = "https://github.com/pnpm/pnpm/releases/download/v11.13.0/pnpm-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/475928565"
 provenance = "github-attestations"
