@@ -29,15 +29,17 @@ Once the user's intent is clear, rename the current tab to the conversation topi
 
 ```bash
 herdr pane current --current
-herdr tab rename <tab_id-from-response> "<agent-from-response> · Improve agent ergonomics"
+herdr tab rename <tab_id-from-response> "π Improve agent ergonomics"
 ```
 
 Choose a stable, scannable label:
 
-- Prefix agent tabs with the agent name reported by Herdr, such as
-  `pi · Fix checkout retries`; omit the prefix when no agent is reported.
+- Prefix Pi agent tabs with the compact `π` sigil, such as
+  `π Fix checkout retries`; do not spell out `pi` or add separator punctuation.
+- For another reported agent, use its name unless a compact sigil is documented;
+  omit the prefix when no agent is reported.
 - Use 2–5 words describing the task or intended outcome after the prefix.
-- Prefer `pi · Fix checkout retries` over vague labels such as `pi · Working`.
+- Prefer `π Fix checkout retries` over vague labels such as `π Working`.
 - Do not repeat the repository name; the workspace already provides project context.
 - Do not put transient status such as `WIP`, `blocked`, or `done` in the label;
   Herdr already displays agent status.
