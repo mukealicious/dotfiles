@@ -1,177 +1,156 @@
-# Cloudflare Native Blueprint
+# Cloudflare-Native Blueprint
 
-## Architecture Bias
+This reference maps the stable [platform contract](./platform-contract.md) to Cloudflare adapters. It does not redefine product lifecycle or client APIs.
 
-Build Flares as a capability platform, not a per-app backend generator.
+## V1 Topology
 
 ```text
-agent/user intent
-  -> generated Flare bundle and manifest
-  -> Flare host Worker
-      -> serves assets
-      -> enforces auth, expiry, quotas, capabilities
-      -> exposes /_flare/* SDK APIs
-      -> routes mutable state and realtime to one Flare Durable Object
-  -> R2 for generated bundles, uploads, and exports
-  -> D1 for searchable registry and reporting indexes
-  -> Queues/Workflows for lifecycle jobs
-  -> Workers AI or AI Gateway for model calls
+Cloudflare Access
+  -> shared flare-host Worker
+      -> Runtime API for generated Flares
+      -> Management API for Console and CLI
+      -> stable Console assets
+      -> immutable Flare assets from R2
+      -> D1 catalog lookup
+      -> per-Flare Durable Object activity calls
+
+D1: Flare/revision/deployment-target/deployment catalog
+R2: immutable revision packets
+Durable Object SQLite: authoritative activity per stable Flare ID
 ```
 
-The generated client should never know Cloudflare credentials, provider API keys, storage bucket names, registry table names, or Durable Object IDs. It calls the platform SDK; the Worker maps the request to the current Flare.
+Prefer one Worker initially. Logical Runtime/Management authorization boundaries do not require separate physical services.
 
 ## Primitive Map
 
-| Need | Cloudflare primitive | Default use |
+| Need | Cloudflare primitive | V1 use |
 |---|---|---|
-| Host and API routes | Workers | One platform Worker routes host/path to a Flare and handles `/_flare/*`. |
-| Static platform shell | Workers Static Assets | Good for the stable host app, SDK, admin UI, and SPA fallback. |
-| Generated Flare bundles | R2 or Workers Static Assets | Use R2 for many generated per-Flare folders; use Workers Static Assets for versioned platform files. |
-| Per-Flare mutable state | Durable Objects with SQLite | One named object per Flare stores documents, events, sessions, quotas, and room state. |
-| Realtime/collaboration | Durable Object WebSockets | Same object that owns state coordinates live clients. Use hibernation when rooms can sit idle. |
-| Registry/search/admin lists | D1 | Global index of Flare metadata, status, owner, auth mode, expiry, and exports. |
-| Bootstrap/cache/config | KV | Only for low-critical cached manifests or config that tolerates eventual consistency. |
-| Uploads/exports | R2 | Store under `flares/{slug}/uploads/` and `flares/{slug}/exports/`. |
-| Background jobs | Queues | Export generation, notifications, ingestion, thumbnailing, cleanup fanout. |
-| Long-running lifecycle | Workflows | Publish, invite, summarize, promote, archive, retention, approval waits. |
-| AI/model calls | Workers AI or AI Gateway | Server-side only, with budgets, purpose logging, and data-policy checks. |
-| Identity/admin gate | Cloudflare Access | Owner/admin and known-email gates. Inspect verified identity server-side. |
-| Per-Flare invitations | Worker signed tokens | Fine-grained roles, expiry, and audience rules after Access-only modes prove limiting. |
-| Abuse prevention | Turnstile, Rate Limiting, DO counters | Add to public or intake Flares; always enforce server-side write limits. |
-| Observability | Workers Logs, Analytics Engine | Structured events for publish/share/write/export/AI usage. |
+| Host and API routing | Workers | Resolve `/f/<slug>/`, serve assets, expose Runtime and Management routes. |
+| Stable Console and SDK | Workers Static Assets | Versioned platform-owned browser assets. |
+| Revision packets | R2 | Immutable manifest, schemas, and `dist/` assets under revision-specific prefixes. |
+| Catalog | D1 | Stable Flares, immutable revisions/deployments, stable targets, route lookup. |
+| Activity authority | Durable Objects with SQLite | One named object per stable Flare ID; schemas, append/list, quotas, idempotency. |
+| Owner access | Cloudflare Access | Interactive browser identity and scoped Management API service token. |
+| Logs | Workers observability | Structured request/deploy/activity errors without payloads or secrets. |
 
-## Core Topology
+Do not add KV, Queues, Workflows, Workers AI, AI Gateway, WebSockets, uploads, or per-Flare Workers to the first slice.
 
-Prefer one platform Worker at first:
+## Stable Routing
+
+Use a path shape such as:
 
 ```text
-GET  /                         -> resolve Flare, serve index/static bundle
-GET  /assets/*                 -> serve Flare asset from R2 or ASSETS binding
-GET  /_flare/client.js         -> serve pinned SDK
-GET  /_flare/manifest          -> sanitized manifest/bootstrap
-GET  /_flare/identity          -> current viewer/role/capabilities
-POST /_flare/db/:collection    -> validated document write
-GET  /_flare/db/:collection    -> validated document list
-GET  /_flare/export.json       -> owner/admin export
-GET  /_flare/realtime          -> websocket upgrade to Flare Durable Object
+/f/<slug>/
+/f/<slug>/assets/*
+/f/<slug>/_flare/bootstrap
+/f/<slug>/_flare/activity
+/api/manage/v1/*
 ```
 
-Split into service-bound Workers only when the platform has real pressure:
-
-- a public host Worker for read/API routing;
-- an admin Worker for deploy, publish, and registry operations;
-- an AI Worker with tighter secrets and budgets;
-- a workflow/queue Worker for lifecycle tasks.
-
-Use service bindings between Workers instead of public HTTP calls.
-
-## Durable Object Model
-
-Use `idFromName(slug)` for the first slice so the mental model stays simple:
+D1 resolves the mutable slug to a stable Flare ID, then resolves its stable deployment target to the active immutable deployment/revision. R2 asset keys use stable IDs and revision numbers, not user-controlled raw paths:
 
 ```text
-flare: design-review-2026-06-10
-  Durable Object:
-    documents(collection, id, json, author, created_at, updated_at)
-    events(id, type, json, author, created_at)
-    sessions(session_id, identity_json, role, created_at, last_seen_at)
-    quotas(subject, window, count, reset_at)
+flares/<flare-id>/revisions/<revision-number>/flare.json
+flares/<flare-id>/revisions/<revision-number>/activity-schemas/...
+flares/<flare-id>/revisions/<revision-number>/dist/...
 ```
 
-Rules:
+Normalize paths, reject traversal/encoded traversal, and bind every lookup to the resolved revision prefix. Generated assets from one Flare must never be able to address another prefix.
 
-- Durable Object SQLite is the source of truth for interactive per-Flare state.
-- D1 is not the hot path for votes/comments/cursors. Use it for registry and reporting indexes.
-- KV is not the source of truth for mutable Flare data.
-- R2 holds large blobs and export artifacts; DO SQLite stores metadata and references.
-- WebSocket messages should validate against capability flags and write through the same object when they change durable state.
+## D1 Ownership
 
-## Lifecycle Jobs
+D1 is authoritative for global metadata:
 
-Use Queues for short background fanout:
-
-- create export bundle;
-- send notification/invite jobs;
-- process upload metadata;
-- append analytics/audit events;
-- cleanup expired R2 prefixes after archive.
-
-Use Workflows when state must survive retries, waits, approvals, or multi-step progress:
-
-- publish a Flare after approval;
-- invite audience and wait for deadline;
-- summarize responses using AI after expiry;
-- promote a Flare into a permanent app/site;
-- archive, export, and delete mutable state according to retention.
-
-Keep Workflow steps idempotent. Store external side-effect IDs in D1 or the Flare Durable Object.
-
-## Agents SDK Fit
-
-Use the Agents SDK when the platform itself needs a steerable operator, not for every basic CRUD Flare.
-
-Good fits:
-
-- a per-Flare steward that tracks instructions, state, unresolved questions, and steering log;
-- a background agent that turns exported responses into summaries and follow-up drafts;
-- a human-in-the-loop approval flow for publish/invite/private-data AI use;
-- scheduled nudges, expiry checks, and promotion suggestions;
-- MCP/tool access for connecting Flares back to notes, Linear, GitHub, or repo context.
-
-Avoid putting core data-path writes behind model behavior. User submissions, votes, comments, uploads, and exports should be deterministic Worker/DO code.
-
-## Wrangler Shape
-
-Keep generated Flare code out of platform config. The platform has stable bindings:
-
-```jsonc
-{
-  "name": "flare-host",
-  "main": "src/index.ts",
-  "compatibility_date": "2026-06-11",
-  "compatibility_flags": ["nodejs_compat"],
-  "assets": {
-    "directory": "./dist",
-    "binding": "ASSETS",
-    "run_worker_first": ["/_flare/*"]
-  },
-  "durable_objects": {
-    "bindings": [{ "name": "FLARE_OBJECT", "class_name": "FlareObject" }]
-  },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["FlareObject"] }],
-  "r2_buckets": [{ "binding": "FLARE_BUCKET", "bucket_name": "flares" }],
-  "d1_databases": [{ "binding": "REGISTRY_DB", "database_name": "flare_registry" }],
-  "queues": {
-    "producers": [{ "binding": "FLARE_JOBS", "queue": "flare-jobs" }],
-    "consumers": [{ "queue": "flare-jobs" }]
-  },
-  "observability": { "enabled": true }
-}
+```text
+flares
+flare_revisions
+deployment_targets
+deployments
 ```
 
-Verify exact Wrangler schema and current compatibility-date practice against Cloudflare docs before implementation.
+Key lifecycle shape:
 
-## First Platform Slice
+- `flares.slug` is unique but not a storage identity;
+- `(flare_id, revision_number)` and `(flare_id, packet_sha256)` are unique;
+- `deployment_targets.route` is unique;
+- one V1 target exists per `(flare_id, environment)`;
+- `deployments.plan_hash` is unique for lost-response retry;
+- `deployment_targets.active_deployment_id` is the only mutable release pointer.
 
-Build in this order:
+Activation appends the deployment and flips the target pointer in one D1 transaction. A failed staged publication leaves the previous pointer unchanged.
 
-1. Local Flare manifest and static preview.
-2. Worker host with `/_flare/manifest`, `/_flare/identity`, and asset serving.
-3. One `FlareObject` with SQLite-backed document collections.
-4. `POST`/`GET /_flare/db/:collection` with server-side capability, expiry, schema, and quota checks.
-5. Owner/admin `/_flare/export.json`.
-6. R2 upload of generated Flare bundle plus D1 registry row.
-7. Public, unlisted, and access-otp modes.
-8. Queue export job and archive path.
-9. Realtime WebSocket room.
-10. AI API and Agents SDK steward only after data/export/auth are stable.
+## Durable Object Ownership
 
-## Non-Negotiables
+Address one object with `idFromName(flareId)`, never `slug`.
 
-- Bindings over REST API calls from Workers.
-- Deterministic server code for auth, writes, exports, quotas, and expiry.
-- No secrets or model keys in generated clients.
-- Expiry and auth enforced server-side.
-- Export path for every persisted data type.
-- Manifest and steering log updated for every publish/share/promotion decision.
-- Observability for publish, share, write, export, AI, archive, and error events.
+SQLite owns:
+
+```text
+revision_activity_types(revision_id, definitions_json, configured_at)
+activity_records(
+  id, revision_id, deployment_id, type, type_version,
+  actor_json, payload_json, idempotency_key, request_sha256,
+  created_at, supersedes_id, redacted_at
+)
+```
+
+The object serializes writes for one Flare and performs append in this order:
+
+1. replay same-key/same-hash records;
+2. reject same-key/different-hash conflicts;
+3. reject new writes from a superseded deployment;
+4. validate against configured revision schema and quotas;
+5. insert and return the authoritative record.
+
+D1 is not the hot write path for per-Flare activity. A cross-Flare D1 feed is a later, rebuildable projection.
+
+## R2 Ownership
+
+R2 stores immutable revision bytes only after server-side packet verification. Publication must:
+
+1. verify packet limit, path safety, canonical file index, and every SHA-256;
+2. write to a new revision prefix;
+3. configure revision activity definitions in the Durable Object;
+4. activate D1 only after all required bytes/configuration exist.
+
+Staged prefixes may remain for manual inspection after failure. V1 performs no automatic cleanup or destructive recovery.
+
+## Access Boundary
+
+- Access protects the owner Console, Management API, and owner-only reference Flare.
+- Browser identity comes from a validated Access assertion.
+- CLI uses a dedicated least-privilege Access service token scoped only to the Management API.
+- Tokens live in 1Password/private environment variables, never packet files, logs, or repository config.
+- Worker handlers recheck the expected Access audience and owner/automation subject.
+
+Verify current assertion headers, service-token headers, and policy configuration in official Cloudflare docs before implementation. Missing permission fails closed.
+
+## Cross-Flare Projection (Slice 2)
+
+After authoritative append, record a small outbox item in the Flare Durable Object. A retryable alarm projects only summary metadata into D1 with the activity ID as an idempotency key. The Console labels feed freshness and links back to authoritative per-Flare activity.
+
+Projection failure must not fail an already-committed activity write.
+
+## Wrangler Starting Shape
+
+Use [the template](../assets/templates/wrangler.flare-host.jsonc) only as a starting shape. Before implementing, verify current Wrangler schema, compatibility-date guidance, Durable Object SQLite migration syntax, Static Assets routing, R2/D1 bindings, and Access behavior against official documentation.
+
+## Production Boundaries
+
+- **D1:** bounded queries, cursor pagination, transactional target activation.
+- **Durable Objects:** bounded payloads/results, explicit schema/config errors, no swallowed storage failures.
+- **R2:** checksum verification before activation, immutable keys, normalized paths.
+- **Access:** fail closed; never broaden policy after authorization errors.
+- **Logs:** include request/Flare/revision/deployment identifiers, latency, status, and error code; exclude activity payloads, assertions, tokens, and cookies.
+
+## Deferred Infrastructure
+
+Add new primitives only with a proven capability contract:
+
+- Queues/alarms beyond the slice-2 projection;
+- R2 uploads and file scanning;
+- WebSocket hibernation for realtime;
+- Workers AI/AI Gateway;
+- invitation email delivery;
+- public abuse prevention;
+- automated retention or cleanup.

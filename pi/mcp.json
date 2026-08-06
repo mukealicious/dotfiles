@@ -1,0 +1,14 @@
+{
+  "settings": {
+    "toolPrefix": "server",
+    "idleTimeout": 10,
+    "directTools": false
+  },
+  "mcpServers": {
+    "cloudflare-api": {
+      "url": "https://mcp.cloudflare.com/mcp",
+      "lifecycle": "lazy",
+      "directTools": ["docs", "search", "execute"]
+    }
+  }
+}

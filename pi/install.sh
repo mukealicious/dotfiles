@@ -96,13 +96,59 @@ materialize_pi_settings() {
   log_success "Materialized $settings_label"
 }
 
+# pi-mcp-adapter updates mcp.json with atomic renames, so its runtime config
+# must be writable rather than a symlink into Git. Preserve user-added MCP
+# servers/imports while keeping repo-managed keys authoritative.
+materialize_pi_mcp() {
+  mcp_src="$1"
+  mcp_dst="$2"
+  mcp_label="$3"
+
+  if ! command -v jq >/dev/null 2>&1; then
+    log_error "jq is required to materialize $mcp_label"
+    log_hint "Install it with: brew install jq"
+    return 1
+  fi
+
+  if [ -e "$mcp_dst" ] && [ ! -f "$mcp_dst" ]; then
+    log_error "$mcp_label exists but is not a config file"
+    return 1
+  fi
+
+  mcp_tmp="$(mktemp "${mcp_dst}.tmp.XXXXXX")"
+  if [ -e "$mcp_dst" ]; then
+    if ! jq -s '.[1] * .[0]' "$mcp_src" "$mcp_dst" > "$mcp_tmp"; then
+      rm -f "$mcp_tmp"
+      log_error "Failed to merge $mcp_label"
+      return 1
+    fi
+  else
+    cp "$mcp_src" "$mcp_tmp"
+  fi
+
+  if [ ! -L "$mcp_dst" ] && [ -f "$mcp_dst" ] && cmp -s "$mcp_tmp" "$mcp_dst"; then
+    rm -f "$mcp_tmp"
+    return 0
+  fi
+
+  mv "$mcp_tmp" "$mcp_dst"
+  log_success "Materialized $mcp_label"
+}
+
 setup_pi_profile() {
   profile_dir="$1"
   settings_src="$2"
   profile_name="$3"
+  mcp_src="$4"
 
   mkdir -p "$profile_dir"
   materialize_pi_settings "$settings_src" "$profile_dir/settings.json" "$profile_name/settings.json"
+  if [ -n "$mcp_src" ]; then
+    materialize_pi_mcp "$mcp_src" "$profile_dir/mcp.json" "$profile_name/mcp.json"
+  elif [ -L "$profile_dir/mcp.json" ] && [ "$(normalize_symlink_path "$(readlink "$profile_dir/mcp.json")")" = "$DOTFILES_ROOT/pi/mcp.json" ]; then
+    log_info "Removing personal-only MCP config from $profile_name/mcp.json"
+    rm "$profile_dir/mcp.json"
+  fi
 
   if [ -d "$DOTFILES_ROOT/pi/node_modules" ]; then
     ensure_symlink "$DOTFILES_ROOT/pi/node_modules" "$profile_dir/node_modules" "$profile_name/node_modules"
@@ -132,9 +178,9 @@ setup_pi_profile() {
 
 # Shared backing store for global Pi resources (assembled AGENTS.md, agents/).
 # Not a user-facing profile — pi dispatches to work or personal.
-setup_pi_profile "$HOME/.pi/agent" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/agent"
-setup_pi_profile "$HOME/.pi/work" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/work"
-setup_pi_profile "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/settings.personal.json" "$HOME/.pi/personal"
+setup_pi_profile "$HOME/.pi/agent" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/agent" ""
+setup_pi_profile "$HOME/.pi/work" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/work" ""
+setup_pi_profile "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/settings.personal.json" "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/mcp.json"
 
 # Seed the personal profile with existing shared OAuth credentials on first split.
 if [ -e "$HOME/.pi/agent/auth.json" ]; then
@@ -182,6 +228,10 @@ PACKAGES="
   npm:mitsupi
 "
 
+PERSONAL_PACKAGES="
+  npm:pi-mcp-adapter
+"
+
 log_info "Installing Pi packages..."
 for pkg in $PACKAGES; do
   # Extract display name: strip git:/npm: prefix, URL path, .git suffix
@@ -200,6 +250,19 @@ for pkg in $PACKAGES; do
     log_success "Installed $display_name"
   else
     log_warn "Failed to install $display_name (run 'PI_CODING_AGENT_DIR=<profile> pi install $pkg' manually)"
+  fi
+done
+
+log_info "Installing personal-only Pi packages..."
+for pkg in $PERSONAL_PACKAGES; do
+  display_name="${pkg##*/}"
+  display_name="${display_name%.git}"
+  display_name="${display_name#npm:}"
+  if PI_CODING_AGENT_DIR="$HOME/.pi/personal" mise exec -C "$DOTFILES_ROOT" -- "$PI_BIN" install "$pkg" 2>/dev/null; then
+    log_success "Installed $display_name (personal)"
+  else
+    log_warn "Failed to install $display_name for personal profile"
+    log_hint "Run manually: PI_CODING_AGENT_DIR=$HOME/.pi/personal mise exec -C $DOTFILES_ROOT -- $PI_BIN install $pkg"
   fi
 done
 

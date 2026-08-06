@@ -34,6 +34,22 @@ Web search tools are routed by cost and depth:
   set -Ux EXA_API_KEY "..."
   ```
 
+MCP is intentionally narrow and personal-profile-only in this setup.
+`pi-mcp-adapter` provides one lazy proxy tool plus a tiny direct-tool surface for
+Cloudflare's Code Mode API MCP server. The Cloudflare server stays
+token-efficient by exposing `docs`, `search`, and `execute` instead of thousands
+of endpoint schemas:
+
+```bash
+# First-time Cloudflare OAuth / metadata cache warmup inside Pi:
+/mcp reconnect cloudflare-api
+```
+
+The managed baseline lives in `pi/mcp.json` and is materialized only into the
+personal Pi profile as writable config. Installer runs preserve user-added MCP
+servers/imports while restoring repo-managed keys. Do not commit Cloudflare API
+tokens; use the OAuth flow or private shell env.
+
 Run `dot doctor` to verify agents, symlinks, and skill projections are correctly installed.
 
 For local editor/typecheck support of custom Pi extensions, install transient dev dependencies without committing a lockfile:
@@ -60,6 +76,7 @@ pi/
 │   └── review.frontmatter  # Shared-body review exemplar
 ├── settings.work.json      # Work profile config baseline (OpenAI API key flow)
 ├── settings.personal.json  # Personal profile config baseline (OpenAI Codex OAuth flow)
+├── mcp.json                # Personal-only Cloudflare Code Mode MCP config
 ├── install.sh              # Materializes settings, symlinks resources, installs packages
 ├── aliases.fish            # Shell aliases / profile dispatch
 ├── extensions/             # Custom TypeScript extensions
@@ -81,6 +98,7 @@ Profile settings are materialized as writable runtime files by `install.sh`:
 - `pi/settings.work.json` → `~/.pi/work/settings.json`
 - `pi/settings.personal.json` → `~/.pi/personal/settings.json`
 - `pi/settings.work.json` → `~/.pi/agent/settings.json` (shared backing store / compatibility root)
+- `pi/mcp.json` → writable `~/.pi/personal/mcp.json` only
 
 The tracked files are managed baselines rather than direct symlink targets. Pi writes
 interactive model choices and changelog state back to each profile's runtime file;
@@ -108,7 +126,7 @@ Tracked baseline defaults:
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` plus tldraw offline's app-managed skill at `~/skills/tldraw-offline` when installed; missing external skill paths are harmless
 - **Instructions**: `ai/install.sh` assembles one shared Pi instruction file, then symlinks it into both profiles
 - **Agents**: `ai/install.sh` assembles one shared Pi agent dir, then symlinks it into both profiles
-- **Packages**: vendored pi-exa, pi-parallel, vendored pi-openai-fast, vendored pi-subagents, and mitsupi
+- **Packages**: vendored pi-exa, pi-parallel, vendored pi-openai-fast, vendored pi-subagents, and mitsupi. The personal profile additionally installs pi-mcp-adapter.
 
 In normal use there is no standalone user-facing top-level Pi profile: `pi` dispatches to
 either `pi-work` or `pi-personal`. The `~/.pi/agent/` tree is kept as the shared backing
@@ -176,4 +194,5 @@ Pi packages loaded by this setup:
 | `pi/packages/pi-parallel` | Local vendored Parallel tools (`web_search`, `web_fetch`, `deep_research`, `batch_enrich`; Turbo is the default search mode; depends on standalone `parallel-cli`) |
 | `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4, GPT-5.5, and GPT-5.6 Luna/Terra/Sol models |
 | `pi/packages/pi-subagents` | Local vendored subagent delegation tools, builtin child agents, chains, and parallel runs |
+| `pi-mcp-adapter` | Personal-profile-only lazy MCP bridge; configured here for Cloudflare's token-efficient Code Mode API MCP server |
 | `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |
