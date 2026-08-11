@@ -1,4 +1,3 @@
-tap "aprilnea/tap"                 # OpenLogi cask
 tap "modem-dev/tap"               # Hunk diff review CLI
 
 # Shell
@@ -63,7 +62,6 @@ cask "claude-code"               # Claude AI coding assistant CLI
 cask "zed"                       # Primary code editor
 cask "ollama-app"                # Local LLM runner for QMD embeddings
 cask "wezterm"                   # GPU-accelerated terminal emulator
-cask "openlogi"                  # Local-first Logitech mouse configuration (Options+ replacement)
 cask "1password-cli"             # 1Password CLI for secrets management
 cask "orbstack"                  # Lightweight Docker Desktop alternative for containers/VMs
 cask "gcloud-cli"                # Google Cloud CLI
