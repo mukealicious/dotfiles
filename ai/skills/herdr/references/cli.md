@@ -2,21 +2,48 @@
 
 Commands communicate with the running Herdr session over its local socket.
 Successful management commands generally print JSON; `pane read` prints text.
+The installed binary is the syntax authority. `herdr --skill` prints its bundled,
+release-matched upstream skill on Herdr 0.8 and later.
 
 ## Discover Live IDs
 
 ```bash
+printf '%s\n' "$HERDR_WORKSPACE_ID" "$HERDR_TAB_ID" "$HERDR_PANE_ID"
 herdr pane current --current
-herdr pane list
-herdr workspace list
-herdr tab list --workspace <workspace_id>
+herdr pane list --workspace "$HERDR_WORKSPACE_ID"
+herdr tab list --workspace "$HERDR_WORKSPACE_ID"
 herdr tab get <tab_id>
 herdr pane get <pane_id>
+herdr workspace list # only when cross-workspace discovery is needed
 ```
 
-The focused pane returned by `pane current` is the calling agent's pane. Workspace,
-tab, and pane IDs are live identifiers and may compact after contexts are closed.
-Always discover rather than guess them.
+`--current` resolves the calling agent's pane only when `HERDR_ENV=1`; an
+out-of-band process has no caller-relative pane. An omitted target may resolve
+the user interface's focused pane instead, so never use omission as a fallback.
+For explicitly authorized out-of-band control, begin with `herdr workspace list`,
+narrow by the requested repository/workspace, then list tabs or panes only in
+that workspace and use explicit IDs throughout. Herdr 0.8 IDs are opaque stable
+handles and closed IDs are not reused. Moving a pane across workspaces can assign
+it a new workspace-qualified ID. Always discover rather than guess IDs and
+refresh state before destructive actions.
+
+## Out-of-Band Discovery
+
+Use this only when the user or an explicit workflow has authorized Herdr control
+from a process where `HERDR_ENV` is not `1`:
+
+```bash
+herdr workspace list
+herdr tab list --workspace <requested_workspace_id>
+herdr pane list --workspace <requested_workspace_id>
+herdr tab get <explicit_tab_id>
+herdr pane get <explicit_pane_id>
+```
+
+Match the workspace by the requested repository/CWD or a user-provided identity.
+Match tabs and panes by labels, CWD, known packet/session metadata, or IDs returned
+when the workflow created them. If multiple targets remain plausible, stop and
+ask. Do not use `--current`, UI focus, or unrelated panes as discovery shortcuts.
 
 ## Tabs
 
@@ -62,6 +89,33 @@ herdr pane swap --source-pane <pane_id> --target-pane <pane_id>
 herdr pane zoom --current --toggle
 ```
 
+## Agents
+
+`agent start` launches a recognized interactive agent in an existing pane that is
+at its shell prompt. It does not create layout:
+
+```bash
+herdr agent start reviewer --kind codex --pane <pane_id>
+herdr agent start researcher --kind pi --pane <pane_id> -- --skill librarian
+```
+
+Arguments after `--` are passed to the target agent. The Pi `--skill` in the
+second example is therefore not Herdr's top-level `herdr --skill` printing flag.
+
+Prompt and wait through the agent surface when Herdr should track lifecycle state:
+
+```bash
+herdr agent prompt reviewer "Review the current diff." --wait --timeout 120000
+herdr agent wait reviewer --until blocked --timeout 120000
+herdr agent get reviewer
+herdr agent read reviewer --source recent-unwrapped --lines 120
+```
+
+Agent targets are unique live names or pane IDs. For an existing profile wrapper,
+restored session, or command requiring explicit environment variables, `pane run`
+may remain the correct launch primitive; verify the resulting agent through
+`agent get` or `agent wait`.
+
 ## Read and Wait
 
 Read existing output:
@@ -80,14 +134,14 @@ herdr pane read <pane_id> --source recent-unwrapped --lines 50
 Wait for future output:
 
 ```bash
-herdr wait output <pane_id> --match "ready on port 3000" --timeout 30000
-herdr wait output <pane_id> --match "server.*ready" --regex --timeout 30000
+herdr pane wait-output <pane_id> --match "ready on port 3000" --timeout 30000
+herdr pane wait-output <pane_id> --regex "server.*ready" --timeout 30000
 ```
 
 Wait for an agent's public status:
 
 ```bash
-herdr wait agent-status <pane_id> --status done --timeout 120000
+herdr agent wait <pane_id> --until done --timeout 120000
 ```
 
 Public statuses are `idle`, `working`, `blocked`, `done`, and `unknown`. `done`
@@ -130,6 +184,6 @@ herdr pane rename <new_pane_id> "dev server"
 herdr pane run <new_pane_id> "pnpm dev"
 
 # 4. Verify readiness and inspect concise output.
-herdr wait output <new_pane_id> --match "ready" --timeout 30000
+herdr pane wait-output <new_pane_id> --match "ready" --timeout 30000
 herdr pane read <new_pane_id> --source recent-unwrapped --lines 30
 ```

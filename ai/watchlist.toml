@@ -149,9 +149,9 @@ notes = "Upstream source for locally vendored pi/packages/pi-subagents"
 
 [[sources]]
 id = "herdr-skill"
-repo = "ogulcancelik/herdr"
-path = "SKILL.md"
+repo = "herdrdev/herdr"
+path = "skills/herdr/SKILL.md"
 branch = "master"
 kind = "skill"
 review = "semantic-diff"
-notes = "Upstream source for locally vendored ai/skills/herdr/"
+notes = "Release mechanics upstream for the locally adapted ai/skills/herdr/ skill; compare with herdr --skill"
