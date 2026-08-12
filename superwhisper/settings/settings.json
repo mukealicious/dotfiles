@@ -1,0 +1,20 @@
+{
+  "favoriteModelIDs" : [
+    "vad-v2",
+    "speakerkit-coreml"
+  ],
+  "modeKeys" : [
+    "super",
+    "message-XWSM",
+    "default",
+    "message-JJGS",
+    "message",
+    "message-JRUL"
+  ],
+  "replacements" : [
+
+  ],
+  "vocabulary" : [
+    "superwhisper"
+  ]
+}

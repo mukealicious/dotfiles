@@ -1,0 +1,5 @@
+# Private and large runtime data
+/recordings/
+/models/
+
+.DS_Store
