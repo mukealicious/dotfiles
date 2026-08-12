@@ -2,3 +2,4 @@
 # Add Python tools here, one per line
 # Format: package or package[extras]
 lue-reader
+parakeet-mlx

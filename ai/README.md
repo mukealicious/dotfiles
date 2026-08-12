@@ -223,6 +223,7 @@ Most shared skills are repo-authored portable workflows. Imported skills are dif
 | `engineering-patterns` | Instruction-only | Agent-native engineering doctrine: deep modules, vertical slices, safe refactoring, final cleanup, production boundaries |
 | `favicon-generator` | Scripts | Generate optimized favicons (ImageMagick) |
 | `librarian` | Instruction-only | Multi-repository codebase exploration |
+| `moja-glava` | Workflow + script | Save, study, recall, and resume sources or agent-session checkpoints through the private Moja Glava knowledge base |
 | `opensrc` | Instruction-only | Fetch source context for external packages and repositories |
 | `production-readiness` | Instruction-only | Review services and integrations for resilience, observability, migrations, capacity, and rollback |
 | `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |

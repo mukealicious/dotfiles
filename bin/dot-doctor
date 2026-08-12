@@ -195,6 +195,14 @@ else
   info "Install: brew install yt-dlp"
 fi
 
+if command -v parakeet-mlx >/dev/null 2>&1; then
+  pass "parakeet-mlx"
+else
+  warn "parakeet-mlx not found"
+  info "Used by the moja-glava YouTube transcription adapter"
+  info "Install: $DOTFILES_ROOT/python/install.sh"
+fi
+
 # ── Surf browser lanes ─────────────────────────────────────────
 
 header "Surf browser lanes"
@@ -371,14 +379,162 @@ if command -v herdr >/dev/null 2>&1; then
   herdr_status="$(herdr status 2>/dev/null || true)"
   if printf '%s\n' "$herdr_status" | grep -q 'restart_needed: yes'; then
     warn "running Herdr server is older than the installed client"
-    info "Fix without stopping pane processes: herdr server live-handoff"
+    info "Homebrew upgrades cannot live-handoff Herdr sessions"
+    info "Checkpoint important work, then from outside Herdr run: herdr server stop; herdr"
+    info "Stopping the server exits its pane processes"
   elif printf '%s\n' "$herdr_status" | grep -q 'restart_needed: no'; then
     pass "running Herdr server matches installed client"
   fi
-  info "Recommended agent integrations are documented in $DOTFILES_ROOT/herdr/README.md"
+
+  if herdr --skill >/dev/null 2>&1; then
+    pass "Herdr release-matched agent skill is available"
+  else
+    warn "Herdr does not expose its release-matched agent skill"
+    info "Expected on Herdr 0.8+: herdr --skill"
+  fi
+
+  integration_issues=0
+  personal_integrations="$(PI_CODING_AGENT_DIR="$HOME/.pi/personal" herdr integration status 2>/dev/null || true)"
+  work_integrations="$(PI_CODING_AGENT_DIR="$HOME/.pi/work" herdr integration status 2>/dev/null || true)"
+
+  if [ -d "$HOME/.pi/personal" ] && ! printf '%s\n' "$personal_integrations" | grep -q '^pi: current ';
+  then
+    warn "Herdr Pi personal integration is missing or outdated"
+    integration_issues=1
+  fi
+  if [ -d "$HOME/.pi/work" ] && ! printf '%s\n' "$work_integrations" | grep -q '^pi: current ';
+  then
+    warn "Herdr Pi work integration is missing or outdated"
+    integration_issues=1
+  fi
+
+  for integration in claude codex opencode; do
+    if command -v "$integration" >/dev/null 2>&1 \
+      && ! printf '%s\n' "$personal_integrations" | grep -q "^$integration: current "; then
+      warn "Herdr $integration integration is missing or outdated"
+      integration_issues=1
+    fi
+  done
+
+  if [ "$integration_issues" -eq 0 ]; then
+    pass "Herdr agent integrations are installed and current"
+  else
+    info "Fix: $DOTFILES_ROOT/herdr/install.sh"
+  fi
 else
   warn "herdr not found"
   info "Install: brew install herdr"
+fi
+
+# ── Hammerspoon ────────────────────────────────────────────────
+
+header "Hammerspoon"
+
+if [ -d "/Applications/Hammerspoon.app" ]; then
+  pass "Hammerspoon app"
+else
+  fail "Hammerspoon app is not installed"
+  info "Fix: brew bundle --file $DOTFILES_ROOT/Brewfile"
+fi
+
+check_symlink "$DOTFILES_ROOT/hammerspoon/init.lua" "$HOME/.hammerspoon/init.lua" "Hammerspoon init.lua"
+check_symlink "$DOTFILES_ROOT/hammerspoon/lib" "$HOME/.hammerspoon/lib" "Hammerspoon lib"
+check_symlink "$DOTFILES_ROOT/hammerspoon/bin" "$HOME/.hammerspoon/bin" "Hammerspoon bin"
+
+if [ -x "$DOTFILES_ROOT/hammerspoon/bin/start-agent.sh" ] \
+  && [ -x "$DOTFILES_ROOT/hammerspoon/bin/wait-for-agent.sh" ]; then
+  pass "Hammerspoon agent launcher"
+else
+  fail "Hammerspoon agent launcher or queue waiter is not executable"
+  info "Fix: $DOTFILES_ROOT/hammerspoon/install.sh"
+fi
+
+capture_dependencies_ok=true
+for command in herdr hunk jq; do
+  if ! command -v "$command" >/dev/null 2>&1; then
+    fail "Hammerspoon capture dependency is missing: $command"
+    capture_dependencies_ok=false
+  fi
+done
+if [ "$capture_dependencies_ok" = true ]; then
+  pass "Hammerspoon capture dependencies"
+fi
+
+if [ -x "$DOTFILES_ROOT/bin/pi-personal" ]; then
+  if "$DOTFILES_ROOT/bin/pi-personal" --version >/dev/null 2>&1; then
+    pass "Hammerspoon personal Pi launcher"
+  else
+    fail "Hammerspoon personal Pi launcher cannot start"
+    info "Check the mise-managed Node and Pi installation"
+  fi
+else
+  fail "Hammerspoon personal Pi launcher is missing"
+fi
+
+moja_glava_dir="${MOJA_GLAVA_DIR:-$HOME/Code/moja-glava}"
+if [ -d "$moja_glava_dir" ] && [ -f "$moja_glava_dir/AGENTS.md" ]; then
+  pass "Hammerspoon Moja Glava vault"
+else
+  fail "Hammerspoon Moja Glava vault or AGENTS.md is missing"
+  info "Expected: $moja_glava_dir"
+fi
+
+if [ -f "$DOTFILES_ROOT/.ai-runtime/pi/skills/moja-glava/SKILL.md" ]; then
+  pass "Hammerspoon moja-glava skill projection"
+else
+  fail "Hammerspoon moja-glava skill projection is missing"
+  info "Fix: $DOTFILES_ROOT/ai/install.sh"
+fi
+
+hammerspoon_cli="/Applications/Hammerspoon.app/Contents/Frameworks/hs/hs"
+if [ -x "$hammerspoon_cli" ]; then
+  if hammerspoon_runtime="$("$hammerspoon_cli" -t 2 -q -c '
+    local palette = _G.desktopAgentPalette
+    local queue = palette and palette.writerQueueStatus and palette:writerQueueStatus() or nil
+    return hs.json.encode({
+      palette_loaded = palette ~= nil,
+      accessibility = hs.accessibilityState(false),
+      screen_recording = hs.screenRecordingState(false),
+      queue = queue,
+    })
+  ' 2>/dev/null)"; then
+    pass "Hammerspoon runtime IPC"
+
+    if printf '%s\n' "$hammerspoon_runtime" | jq -e '.palette_loaded == true' >/dev/null 2>&1; then
+      pass "Hammerspoon desktop capture palette is loaded"
+    else
+      fail "Hammerspoon desktop capture palette is not loaded"
+      info "Open the Hammerspoon Console, fix config errors, then reload while the capture queue is idle"
+    fi
+
+    if printf '%s\n' "$hammerspoon_runtime" | jq -e '.accessibility == true' >/dev/null 2>&1; then
+      pass "Hammerspoon Accessibility permission"
+    else
+      fail "Hammerspoon Accessibility permission is missing"
+      info "Enable Hammerspoon in System Settings → Privacy & Security → Accessibility"
+    fi
+
+    if printf '%s\n' "$hammerspoon_runtime" | jq -e '.screen_recording == true' >/dev/null 2>&1; then
+      pass "Hammerspoon Screen Recording permission"
+    else
+      warn "Hammerspoon Screen Recording permission is missing"
+      info "Text and metadata capture work, but screenshots require System Settings → Privacy & Security → Screen Recording"
+    fi
+
+    hammerspoon_queue="$(printf '%s\n' "$hammerspoon_runtime" | jq -c '.queue // {}' 2>/dev/null || true)"
+    if printf '%s\n' "$hammerspoon_queue" | jq -e '.paused == true' >/dev/null 2>&1; then
+      warn "Hammerspoon writer queue is paused"
+      info "Reconcile its active Herdr tab before running: _G.desktopAgentPalette:resumeWriterQueue(true)"
+      info "Queue state: $hammerspoon_queue"
+    elif printf '%s\n' "$hammerspoon_queue" | jq -e '.idle == true' >/dev/null 2>&1; then
+      pass "Hammerspoon writer queue is idle"
+    else
+      info "Hammerspoon writer queue is active: $hammerspoon_queue"
+    fi
+  else
+    warn "Hammerspoon runtime is not available"
+    info "Open Hammerspoon to enable the desktop capture hotkey and live permission checks"
+  fi
 fi
 
 # ── Tool configs ───────────────────────────────────────────────

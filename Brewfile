@@ -67,3 +67,4 @@ cask "orbstack"                  # Lightweight Docker Desktop alternative for co
 cask "gcloud-cli"                # Google Cloud CLI
 cask "jordanbaird-ice"           # Menu bar manager for macOS
 cask "nikitabobko/tap/aerospace" # i3-like tiling window manager for macOS
+cask "hammerspoon"                # Programmable macOS automation and desktop-agent glue
