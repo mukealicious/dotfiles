@@ -15,18 +15,6 @@
         ]
       }
     ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/Users/mikeywills/.claude/hooks/herdr-agent-state.sh' blocked",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
     "PreToolUse": [
       {
         "hooks": [
@@ -36,42 +24,9 @@
           }
         ],
         "matcher": "Bash"
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash '/Users/mikeywills/.claude/hooks/herdr-agent-state.sh' working",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
       }
     ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/Users/mikeywills/.claude/hooks/herdr-agent-state.sh' release",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/Users/mikeywills/.claude/hooks/herdr-agent-state.sh' idle",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
+    "SessionStart": [{"matcher":"*","hooks":[{"type":"command","command":"bash '/Users/mikeywills/.claude/hooks/herdr-agent-state.sh' session","timeout":10}]}],
     "Stop": [
       {
         "hooks": [
@@ -81,28 +36,6 @@
             "type": "command"
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash '/Users/mikeywills/.claude/hooks/herdr-agent-state.sh' idle",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/Users/mikeywills/.claude/hooks/herdr-agent-state.sh' working",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
       }
     ],
     "SubagentStart": [
@@ -112,6 +45,15 @@
           {
             "type": "command",
             "command": "sh \"$HOME/.dotfiles/claude/hooks/tldraw-server-context.sh\" SubagentStart"
+          }
+        ]
+      },
+      {
+        "matcher": "tldraw-offline",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh '/Users/mikeywills/skills/tldraw-offline/inject-server-context.sh' SubagentStart"
           }
         ]
       }
