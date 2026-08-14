@@ -54,7 +54,7 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `mise/` | Canonical JS toolchain versions, lockfile, and native Node CLIs such as QMD |
 | `pi/` | Pi coding agent config, extensions |
 | `agent-browser/` | Headless browser automation for AI agents |
-| `surf/` | Surf browser lanes for reliable Brave/Edge agent control |
+| `surf/` | Surf browser lanes using dedicated Brave Beta/Edge agent control |
 | `ripgrep/` | Ripgrep config and environment setup |
 | `python/` | Python tools via uv |
 | `ruby/` | Ruby config (gemrc, irbrc) |

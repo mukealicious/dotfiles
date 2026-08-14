@@ -57,6 +57,7 @@ brew "libyaml"                   # YAML parsing library (fast PyYAML backend)
 brew "b2-tools"                  # Backblaze B2 command-line tool
 
 # Casks
+cask "brave-browser@beta"        # Dedicated Surf browser; isolates automation from personal Brave updates
 cask "codex"                     # OpenAI's coding agent
 cask "claude-code"               # Claude AI coding assistant CLI
 cask "zed"                       # Primary code editor

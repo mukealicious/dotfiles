@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Surf lane for the user's default personal browser (Brave).
+# Surf lane for the dedicated agent browser (Brave Beta).
 
 set -euo pipefail
 

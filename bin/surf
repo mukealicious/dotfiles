@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Dotfiles policy wrapper: plain `surf` targets the default Brave lane.
+# Dotfiles policy wrapper: plain `surf` targets the dedicated Brave Beta lane.
 # Use surf-edge for Microsoft Edge, and surf/install.sh for native-host setup.
 
 set -euo pipefail

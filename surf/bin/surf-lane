@@ -15,7 +15,10 @@ shift
 case "$lane" in
   brave)
     socket="/tmp/surf-brave.sock"
-    browser_app="Brave Browser"
+    # Use a separate app bundle, not a second process from the user's stable
+    # Brave bundle. Sparkle can replace that shared bundle while stable Brave
+    # is running, after which new human tabs cannot launch renderers.
+    browser_app="Brave Browser Beta"
     browser_profile="Default"
     ;;
   edge)
@@ -105,9 +108,9 @@ esac
 
 export SURF_SOCKET="$socket"
 
-# On macOS, open the profile that owns the Surf extension if its lane socket is
-# unavailable. Calling the app without a profile can stop at the profile picker,
-# where no extension or native host is loaded.
+# On macOS, open the dedicated profile that owns the Surf extension if its lane
+# socket is unavailable. Calling the app without a profile can stop at the
+# profile picker, where no extension or native host is loaded.
 if [ "$needs_socket" = true ] && [ "$(uname -s)" = "Darwin" ] && ! socket_ready; then
   browser_binary="/Applications/$browser_app.app/Contents/MacOS/$browser_app"
   if [ -x "$browser_binary" ]; then
@@ -119,6 +122,10 @@ if [ "$needs_socket" = true ] && [ "$(uname -s)" = "Darwin" ] && ! socket_ready;
       browser_args+=(--load-extension="$managed_extension_path")
     fi
     "$browser_binary" "${browser_args[@]}" >/dev/null 2>&1 &
+  elif [ "$lane" = "brave" ]; then
+    echo "Surf's Brave lane requires the dedicated Brave Browser Beta app." >&2
+    echo "Fix: brew install --cask brave-browser@beta" >&2
+    exit 127
   else
     open -g -a "$browser_app" --args --profile-directory="$browser_profile" >/dev/null 2>&1 || true
   fi

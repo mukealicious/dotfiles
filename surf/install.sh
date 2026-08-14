@@ -186,7 +186,7 @@ log_info "Setting up Surf browser lanes"
 log_hint "Extension path: $EXTENSION_PATH"
 log_hint "Do not use 'surf install' for these lanes; this installer writes per-browser sockets."
 
-install_lane "brave" "Brave agent profile" "/tmp/surf-brave.sock" "$brave_manifest_dir" "$brave_extension_path" "$brave_user_data_dir"
+install_lane "brave" "Brave Beta agent profile" "/tmp/surf-brave.sock" "$brave_manifest_dir" "$brave_extension_path" "$brave_user_data_dir"
 install_lane "edge" "Microsoft Edge" "/tmp/surf-edge.sock" "$edge_manifest_dir" "$EXTENSION_PATH" ""
 
 log_success "Surf lane setup complete"

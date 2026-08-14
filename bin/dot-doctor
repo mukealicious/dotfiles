@@ -298,7 +298,13 @@ check_surf_manifest() {
 
 case "$(uname -s)" in
   Darwin)
-    check_surf_manifest "Brave" "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-brave.sock"
+    if [ -x "/Applications/Brave Browser Beta.app/Contents/MacOS/Brave Browser Beta" ]; then
+      pass "Brave Browser Beta dedicated Surf app"
+    else
+      fail "Brave Browser Beta dedicated Surf app missing"
+      info "Fix: brew install --cask brave-browser@beta"
+    fi
+    check_surf_manifest "Brave Beta" "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-brave.sock"
     check_surf_manifest "Microsoft Edge" "$HOME/Library/Application Support/Microsoft Edge/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-edge.sock"
     ;;
   Linux)

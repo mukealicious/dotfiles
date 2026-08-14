@@ -1,6 +1,6 @@
 ---
 name: surf-browser
-description: Use for browser automation in this dotfiles setup, especially real logged-in browsing. Use surf-brave for the default Brave browser and surf-edge for work/Edge. Use agent-browser only for headless or isolated test automation.
+description: Use for browser automation in this dotfiles setup, especially real logged-in browsing. Use surf-brave for the dedicated Brave Beta agent browser and surf-edge for work/Edge. Use agent-browser only for headless or isolated test automation.
 ---
 
 # Surf Browser
@@ -13,15 +13,15 @@ This dotfiles setup uses per-browser sockets:
 
 | Situation | Command | Browser |
 |---|---|---|
-| Default agent browsing | `surf-brave` | Brave (`surf`, dedicated user data) |
+| Default agent browsing | `surf-brave` | Brave Beta (`surf`, dedicated app + user data) |
 | Work / corporate / Edge-specific browsing | `surf-edge` | Microsoft Edge |
 
-The wrappers set `SURF_SOCKET` so Brave and Edge do not compete for Surf's default `/tmp/surf.sock`. The Brave wrapper opens isolated `surf` user data and its managed extension copy directly, outside Brave's normal profile picker. Keep Surf disabled in the human-only `muke` profile. Use `~/.dotfiles/surf/install.sh` for native-host setup.
+The wrappers set `SURF_SOCKET` so Brave Beta and Edge do not compete for Surf's default `/tmp/surf.sock`. The Brave wrapper opens an isolated Brave Beta app and `surf` user data with its managed extension copy directly, outside stable Brave's profile picker. Stable Brave is human-only; keep Surf disabled in `muke`. Use `~/.dotfiles/surf/install.sh` for native-host setup.
 
 ## Start every task safely
 
 1. Pick the lane:
-   - Default to `surf-brave` for isolated agent browsing.
+   - Default to `surf-brave` for isolated agent browsing in Brave Beta.
    - Use `surf-edge` when the user says work, corporate, Microsoft, Edge, Entra/Azure, SharePoint, Outlook, Teams, or similar.
 2. Check connectivity:
    ```bash
