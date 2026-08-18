@@ -144,7 +144,7 @@ You can also edit settings directly:
 }
 ```
 
-Use `~/.pi/agent/settings.json` for a user override or `.pi/settings.json` for a project override. The same `agentOverrides` block can change `tools`, `skills`, inherited context, prompt text, or disable a builtin. If you want a totally different agent, create a user or project agent with the same name; for normal tweaks, prefer overrides.
+Use `$PI_CODING_AGENT_DIR/settings.json` for a user override (falling back to `~/.pi/agent/settings.json` only when the variable is absent) or `.pi/settings.json` for a project override. The same `agentOverrides` block can change `tools`, `skills`, inherited context, prompt text, or disable a builtin. If you want a totally different agent, create a user or project agent with the same name; for normal tweaks, prefer overrides.
 
 ## Where running subagents show up
 
@@ -507,7 +507,7 @@ Chains are reusable `.chain.md` workflows stored next to agent files.
 
 | Scope | Path |
 |-------|------|
-| User | `~/.pi/agent/agents/{name}.chain.md` |
+| User | `$PI_CODING_AGENT_DIR/agents/{name}.chain.md` (or `~/.pi/agent` without the environment variable) |
 | Project | `.pi/agents/{name}.chain.md` |
 
 Project discovery also reads legacy `.agents/{name}.chain.md` files. If both locations define the same parsed chain name, `.pi/agents/` wins.
@@ -573,9 +573,9 @@ Discovery uses project-first precedence:
 2. Project packages and project settings packages via `package.json -> pi.skills`
 3. Current task cwd package via `package.json -> pi.skills`
 4. `.pi/settings.json -> skills`
-5. `~/.pi/agent/skills/{name}/SKILL.md`
+5. `$PI_CODING_AGENT_DIR/skills/{name}/SKILL.md` (or the no-environment `~/.pi/agent` fallback)
 6. User packages and user settings packages via `package.json -> pi.skills`
-7. `~/.pi/agent/settings.json -> skills`
+7. `$PI_CODING_AGENT_DIR/settings.json -> skills`
 
 Use agent defaults, override them at runtime, or disable them:
 
@@ -765,7 +765,7 @@ After a worktree parallel step completes, per-agent diff stats are appended to t
 
 ## Configuration
 
-`pi-subagents` reads optional JSON config from `~/.pi/agent/extensions/subagent/config.json`.
+`pi-subagents` reads optional JSON config from `$PI_CODING_AGENT_DIR/extensions/subagent/config.json`; when no profile is selected, upstream compatibility retains `~/.pi/agent/extensions/subagent/config.json`.
 
 ### `asyncByDefault`
 
@@ -828,7 +828,7 @@ Controls whether subagents receive runtime intercom coordination instructions an
 Fields:
 
 - `mode`: default `always`; use `fork-only` to inject only for forked runs, or `off` to disable the bridge.
-- `instructionFile`: optional Markdown template replacing the default bridge instructions. `{orchestratorTarget}` is interpolated. Relative paths resolve from `~/.pi/agent/extensions/subagent/`.
+- `instructionFile`: optional Markdown template replacing the default bridge instructions. `{orchestratorTarget}` is interpolated. Relative paths resolve from `$PI_CODING_AGENT_DIR/extensions/subagent/`.
 
 Bridge activation also requires `pi-intercom` to be installed and enabled, a targetable current session name or fallback alias, and `pi-intercom` in any explicit agent `extensions` allowlist.
 
@@ -861,7 +861,7 @@ Each chain run creates a user-and-profile-scoped temp directory like:
 <tmpdir>/pi-subagents-<user-scope>-<profile-name>-<profile-hash>/chain-runs/{runId}/
 ```
 
-The profile identity comes from `PI_CODING_AGENT_DIR`, with `~/.pi/agent` retained only as the no-environment compatibility fallback. Work, personal, and fallback processes therefore cannot share async, result, chain, or temporary artifact state.
+The profile identity comes from `PI_CODING_AGENT_DIR`, with `~/.pi/agent` retained only as the no-environment compatibility fallback. Work, personal, and fallback processes therefore cannot share config, user skills or settings packages, run history, intercom configuration, saved chains, async/result/chain state, or temporary artifact cleanup.
 
 It may contain files such as `context.md`, `plan.md`, `progress.md`, and `parallel-{stepIndex}/.../output.md`. Directories older than 24 hours are cleaned up on extension startup.
 

@@ -11,3 +11,7 @@ metadata:
 - Source URL: <https://github.com/ben-vargas/pi-packages/tree/9ff717f3576faeb143c88dbc1362371fbaa63b3b/packages/pi-openai-fast>
 
 This directory is an in-repo vendor copy so Pi can load the package from a local path instead of installing it from npm.
+
+## Local divergences
+
+- Global fast-mode configuration follows `PI_CODING_AGENT_DIR`, retaining `~/.pi/agent` only as the no-environment compatibility fallback.

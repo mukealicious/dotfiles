@@ -15,3 +15,4 @@ This directory is an in-repo vendor copy so Pi can load the package from a local
 
 - Active user scope resolves through `PI_CODING_AGENT_DIR`, retaining `~/.pi/agent` only when the environment variable is absent.
 - Temporary async, result, chain, and artifact state is isolated by both OS user and active Pi profile.
+- User configuration, skill/package discovery, run history, intercom, saved chains, and session-artifact cleanup follow the same active-profile boundary.

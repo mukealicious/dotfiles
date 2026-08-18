@@ -6,7 +6,8 @@
  *
  * Startup state comes from `pi-openai-fast.json`, not resumed session history.
  * Config precedence is project `.pi/extensions/pi-openai-fast.json` over
- * global `~/.pi/agent/extensions/pi-openai-fast.json`.
+ * global `$PI_CODING_AGENT_DIR/extensions/pi-openai-fast.json`, falling back
+ * to `~/.pi/agent/extensions/pi-openai-fast.json` for upstream compatibility.
  *
  * `supportedModels` controls which `provider/model-id` pairs receive the flag.
  * Legacy generated configs are upgraded when their supported model list still
@@ -86,16 +87,20 @@ function getConfigCwd(ctx: ExtensionContext): string {
 	return ctx.cwd || process.cwd();
 }
 
+function resolveActiveProfileDir(homeDir: string = homedir()): string {
+	return process.env.PI_CODING_AGENT_DIR || join(homeDir, ".pi", "agent");
+}
+
 function getConfigPaths(
 	cwd: string,
-	homeDir: string = homedir(),
+	profileDir: string = resolveActiveProfileDir(),
 ): {
 	projectConfigPath: string;
 	globalConfigPath: string;
 } {
 	return {
 		projectConfigPath: join(cwd, ".pi", "extensions", FAST_CONFIG_BASENAME),
-		globalConfigPath: join(homeDir, ".pi", "agent", "extensions", FAST_CONFIG_BASENAME),
+		globalConfigPath: join(profileDir, "extensions", FAST_CONFIG_BASENAME),
 	};
 }
 
@@ -224,8 +229,8 @@ function upgradeLegacyDefaultConfig(filePath: string, config: FastConfigFile | n
 	return upgradedConfig;
 }
 
-function resolveFastConfig(cwd: string, homeDir: string = homedir()): ResolvedFastConfig {
-	const { projectConfigPath, globalConfigPath } = getConfigPaths(cwd, homeDir);
+function resolveFastConfig(cwd: string, profileDir: string = resolveActiveProfileDir()): ResolvedFastConfig {
+	const { projectConfigPath, globalConfigPath } = getConfigPaths(cwd, profileDir);
 	ensureDefaultConfigFile(projectConfigPath, globalConfigPath);
 
 	const globalConfig = upgradeLegacyDefaultConfig(globalConfigPath, readConfigFile(globalConfigPath)) ?? {};
@@ -438,6 +443,7 @@ export const _test = {
 	FAST_SERVICE_TIER,
 	DEFAULT_SUPPORTED_MODEL_KEYS,
 	DEFAULT_CONFIG_FILE,
+	resolveActiveProfileDir,
 	getConfigPaths,
 	parseSupportedModelKey,
 	parseSupportedModels,

@@ -9,7 +9,6 @@ import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { Component, TUI } from "@earendil-works/pi-tui";
 import { matchesKey, visibleWidth, truncateToWidth } from "@earendil-works/pi-tui";
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
 import type { AgentConfig, ChainConfig, ChainStepConfig } from "./agents.ts";
 import type { ResolvedStepBehavior } from "./settings.ts";
@@ -18,6 +17,7 @@ import { createEditorState, ensureCursorVisible, getCursorDisplayPos, handleEdit
 import { updateFrontmatterField } from "./agent-serializer.ts";
 import { serializeChain } from "./chain-serializer.ts";
 import { resolveModelCandidate, splitThinkingSuffix } from "./model-fallback.ts";
+import { resolveActiveProfileDir } from "./profile-paths.ts";
 
 export type ClarifyMode = 'single' | 'parallel' | 'chain';
 
@@ -40,6 +40,17 @@ export interface ChainClarifyResult {
 	templates: string[];
 	behaviorOverrides: (BehaviorOverride | undefined)[];
 	runInBackground?: boolean;
+}
+
+export function getSavedChainPath(name: string): string {
+	return path.join(resolveActiveProfileDir(), "agents", `${name}.chain.md`);
+}
+
+export function saveChain(config: ChainConfig): string {
+	const filePath = getSavedChainPath(config.name);
+	fs.mkdirSync(path.dirname(filePath), { recursive: true });
+	fs.writeFileSync(filePath, serializeChain({ ...config, filePath }), "utf-8");
+	return filePath;
 }
 
 type EditMode = "template" | "output" | "reads" | "model" | "thinking" | "skills";
@@ -323,12 +334,8 @@ export class ChainClarifyComponent implements Component {
 				return;
 			}
 			try {
-				const dir = path.join(os.homedir(), ".pi", "agent", "agents");
-				fs.mkdirSync(dir, { recursive: true });
-				const filePath = path.join(dir, `${name}.chain.md`);
 				const config = this.buildChainConfig(name);
-				config.filePath = filePath;
-				fs.writeFileSync(filePath, serializeChain(config), "utf-8");
+				const filePath = saveChain(config);
 				this.showSaveMessage(`Saved ${name}.chain.md`, "info");
 			} catch (err) {
 				this.showSaveMessage(err instanceof Error ? err.message : String(err), "error");

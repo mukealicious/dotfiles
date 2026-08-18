@@ -2,11 +2,9 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import type { AgentConfig } from "./agents.ts";
+import { resolveActiveProfileDir } from "./profile-paths.ts";
 import type { ExtensionConfig, IntercomBridgeConfig, IntercomBridgeMode } from "./types.ts";
 
-const DEFAULT_INTERCOM_EXTENSION_DIR = path.join(os.homedir(), ".pi", "agent", "extensions", "pi-intercom");
-const DEFAULT_INTERCOM_CONFIG_PATH = path.join(os.homedir(), ".pi", "agent", "intercom", "config.json");
-const DEFAULT_SUBAGENT_CONFIG_DIR = path.join(os.homedir(), ".pi", "agent", "extensions", "subagent");
 const DEFAULT_INTERCOM_TARGET_PREFIX = "subagent-chat";
 export const INTERCOM_BRIDGE_MARKER = "Intercom orchestration channel:";
 const DEFAULT_INTERCOM_BRIDGE_TEMPLATE = `The inherited thread is reference-only. Do not continue that conversation or send questions, status updates, or completion handoffs to the orchestrator in normal assistant text.
@@ -45,6 +43,18 @@ interface ResolveIntercomBridgeInput {
 	extensionDir?: string;
 	configPath?: string;
 	settingsDir?: string;
+}
+
+export function getIntercomExtensionDir(): string {
+	return path.join(resolveActiveProfileDir(), "extensions", "pi-intercom");
+}
+
+export function getIntercomConfigPath(): string {
+	return path.join(resolveActiveProfileDir(), "intercom", "config.json");
+}
+
+export function getSubagentConfigDir(): string {
+	return path.join(resolveActiveProfileDir(), "extensions", "subagent");
 }
 
 export function resolveIntercomSessionTarget(sessionName: string | undefined, sessionId: string): string {
@@ -134,9 +144,9 @@ ${instruction}`;
 export function diagnoseIntercomBridge(input: ResolveIntercomBridgeInput): IntercomBridgeDiagnostic {
 	const config = resolveIntercomBridgeConfig(input.config);
 	const mode = config.mode;
-	const extensionDir = path.resolve(input.extensionDir ?? DEFAULT_INTERCOM_EXTENSION_DIR);
+	const extensionDir = path.resolve(input.extensionDir ?? getIntercomExtensionDir());
 	const orchestratorTarget = input.orchestratorTarget?.trim();
-	const configPath = path.resolve(input.configPath ?? DEFAULT_INTERCOM_CONFIG_PATH);
+	const configPath = path.resolve(input.configPath ?? getIntercomConfigPath());
 	const wantsIntercom = mode !== "off" && !(mode === "fork-only" && input.context !== "fork");
 	const piIntercomAvailable = fs.existsSync(extensionDir);
 	let configStatus: ReturnType<typeof intercomConfigStatus> | undefined;
@@ -172,9 +182,9 @@ export function diagnoseIntercomBridge(input: ResolveIntercomBridgeInput): Inter
 export function resolveIntercomBridge(input: ResolveIntercomBridgeInput): IntercomBridgeState {
 	const config = resolveIntercomBridgeConfig(input.config);
 	const mode = config.mode;
-	const extensionDir = path.resolve(input.extensionDir ?? DEFAULT_INTERCOM_EXTENSION_DIR);
+	const extensionDir = path.resolve(input.extensionDir ?? getIntercomExtensionDir());
 	const orchestratorTarget = input.orchestratorTarget?.trim();
-	const settingsDir = path.resolve(input.settingsDir ?? DEFAULT_SUBAGENT_CONFIG_DIR);
+	const settingsDir = path.resolve(input.settingsDir ?? getSubagentConfigDir());
 	const defaultInstruction = buildIntercomBridgeInstruction(
 		orchestratorTarget || "{orchestratorTarget}",
 		DEFAULT_INTERCOM_BRIDGE_TEMPLATE,
@@ -193,7 +203,7 @@ export function resolveIntercomBridge(input: ResolveIntercomBridgeInput): Interc
 		return { active: false, mode, extensionDir, instruction: defaultInstruction };
 	}
 
-	const configPath = path.resolve(input.configPath ?? DEFAULT_INTERCOM_CONFIG_PATH);
+	const configPath = path.resolve(input.configPath ?? getIntercomConfigPath());
 	const intercomStatus = intercomConfigStatus(configPath);
 	if (intercomStatus.error) console.warn(`Failed to parse intercom config at '${configPath}'. Assuming enabled.`, intercomStatus.error);
 	if (!intercomStatus.enabled) {

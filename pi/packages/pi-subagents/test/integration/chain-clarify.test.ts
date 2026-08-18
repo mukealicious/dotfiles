@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { describe, it } from "node:test";
 import { tryImport } from "../support/helpers.ts";
 
@@ -19,6 +22,13 @@ interface ClarifyTestComponent {
 
 interface ClarifyTestModule {
 	ChainClarifyComponent: new (...args: unknown[]) => ClarifyTestComponent;
+	saveChain: (config: {
+		name: string;
+		description: string;
+		source: "user";
+		filePath: string;
+		steps: Array<{ agent: string; task: string }>;
+	}) => string;
 }
 
 const clarifyMod = await tryImport<ClarifyTestModule>("./chain-clarify.ts");
@@ -26,6 +36,34 @@ const available = !!clarifyMod;
 const ChainClarifyComponent = clarifyMod?.ChainClarifyComponent;
 
 describe("chain clarify model display", { skip: !available ? "pi packages not available" : undefined }, () => {
+	it("saves chains in the active profile and retains the no-environment fallback", () => {
+		const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-chain-save-profile-"));
+		const previousHome = process.env.HOME;
+		const previousProfile = process.env.PI_CODING_AGENT_DIR;
+		try {
+			const work = path.join(root, "work");
+			const personal = path.join(root, "personal");
+			for (const profile of [work, personal]) {
+				process.env.PI_CODING_AGENT_DIR = profile;
+				const saved = clarifyMod!.saveChain({ name: path.basename(profile), description: "Saved chain", source: "user", filePath: "", steps: [{ agent: "worker", task: "Do work" }] });
+				assert.equal(saved, path.join(profile, "agents", `${path.basename(profile)}.chain.md`));
+				assert.equal(fs.existsSync(saved), true);
+			}
+
+			process.env.HOME = root;
+			delete process.env.PI_CODING_AGENT_DIR;
+			const saved = clarifyMod!.saveChain({ name: "fallback", description: "Saved chain", source: "user", filePath: "", steps: [{ agent: "worker", task: "Do work" }] });
+			assert.equal(saved, path.join(root, ".pi", "agent", "agents", "fallback.chain.md"));
+			assert.equal(fs.existsSync(saved), true);
+		} finally {
+			if (previousHome === undefined) delete process.env.HOME;
+			else process.env.HOME = previousHome;
+			if (previousProfile === undefined) delete process.env.PI_CODING_AGENT_DIR;
+			else process.env.PI_CODING_AGENT_DIR = previousProfile;
+			fs.rmSync(root, { recursive: true, force: true });
+		}
+	});
+
 	it("keeps the preferred provider visible after applying thinking to a bare model", () => {
 		const component = new ChainClarifyComponent(
 			{ requestRender() {} },

@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
 import { _test } from "../extensions/index.js";
@@ -112,7 +112,7 @@ describe("pi-openai-fast helpers", () => {
 		const { cwd, homeDir, cleanup } = createTempConfigPaths();
 		try {
 			const { globalConfigPath } = _test.getConfigPaths(cwd, homeDir);
-			mkdirSync(join(homeDir, ".pi", "agent", "extensions"), { recursive: true });
+			mkdirSync(dirname(globalConfigPath), { recursive: true });
 			writeFileSync(
 				globalConfigPath,
 				`${JSON.stringify(
