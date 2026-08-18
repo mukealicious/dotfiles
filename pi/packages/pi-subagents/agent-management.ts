@@ -21,6 +21,7 @@ import type { Details } from "./types.ts";
 type ManagementAction = "list" | "get" | "create" | "update" | "delete";
 type ManagementScope = "user" | "project";
 type ManagementContext = Pick<ExtensionContext, "cwd" | "modelRegistry">;
+const ORDINARY_LEAF_TOOLS = ["read", "grep", "find", "ls"];
 
 interface ManagementParams {
 	action?: string;
@@ -227,7 +228,10 @@ function applyAgentConfig(target: AgentConfig, cfg: Record<string, unknown>): st
 		} else return "config.fallbackModels must be a comma-separated string, string array, or false when provided.";
 	}
 	if (hasKey(cfg, "tools")) {
-		if (cfg.tools === false || cfg.tools === "") { target.tools = undefined; target.mcpDirectTools = undefined; }
+		if (cfg.tools === false || cfg.tools === "") {
+			target.tools = [...ORDINARY_LEAF_TOOLS];
+			target.mcpDirectTools = undefined;
+		}
 		else if (typeof cfg.tools === "string") { const parsed = parseTools(cfg.tools); target.tools = parsed.tools; target.mcpDirectTools = parsed.mcpDirectTools; }
 		else return "config.tools must be a comma-separated string or false when provided.";
 	}
@@ -455,6 +459,8 @@ export function handleCreate(params: ManagementParams, ctx: ManagementContext): 
 		systemPromptMode: defaultSystemPromptMode(name),
 		inheritProjectContext: defaultInheritProjectContext(name),
 		inheritSkills: defaultInheritSkills(),
+		tools: [...ORDINARY_LEAF_TOOLS],
+		maxSubagentDepth: 0,
 	};
 	const applyError = applyAgentConfig(agent, cfg);
 	if (applyError) return result(applyError, true);

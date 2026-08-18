@@ -5,6 +5,8 @@ export interface AgentTemplate {
 	config: Partial<AgentConfig>;
 }
 
+const ORDINARY_LEAF_TOOLS = ["read", "grep", "find", "ls"];
+
 export type TemplateItem =
 	| { type: "agent"; name: string; config: Partial<AgentConfig> }
 	| { type: "chain"; name: string; description: string }
@@ -15,7 +17,12 @@ export const TEMPLATE_ITEMS: TemplateItem[] = [
 	{
 		type: "agent",
 		name: "Blank",
-		config: { description: "Describe this agent", systemPrompt: "" },
+		config: {
+			description: "Describe this agent",
+			systemPrompt: "",
+			tools: [...ORDINARY_LEAF_TOOLS],
+			maxSubagentDepth: 0,
+		},
 	},
 	{
 		type: "agent",
@@ -23,8 +30,8 @@ export const TEMPLATE_ITEMS: TemplateItem[] = [
 		config: {
 			description: "Analyzes codebases and reports findings",
 			systemPrompt: "You are a code analysis agent. Given a codebase and a question, thoroughly investigate the relevant files and report your findings. Focus on accuracy — read the actual code rather than guessing.",
-			tools: ["read", "bash"],
-			output: "analysis.md",
+			tools: [...ORDINARY_LEAF_TOOLS],
+			maxSubagentDepth: 0,
 		},
 	},
 	{
@@ -33,7 +40,8 @@ export const TEMPLATE_ITEMS: TemplateItem[] = [
 		config: {
 			description: "Reviews code for bugs, style, and correctness",
 			systemPrompt: "You are a code review agent. Examine the code changes or files provided and identify bugs, style issues, performance concerns, and correctness problems. Be specific — cite line numbers and explain why each issue matters.",
-			tools: ["read", "bash"],
+			tools: [...ORDINARY_LEAF_TOOLS],
+			maxSubagentDepth: 0,
 		},
 	},
 	{
@@ -42,17 +50,8 @@ export const TEMPLATE_ITEMS: TemplateItem[] = [
 		config: {
 			description: "Creates implementation plans from requirements",
 			systemPrompt: "You are a planning agent. Given a task or requirements, create a detailed implementation plan. Break the work into concrete steps, identify which files need changes, and note any risks or dependencies.",
-			tools: ["read", "bash"],
-			output: "plan.md",
-		},
-	},
-	{
-		type: "agent",
-		name: "Implementer",
-		config: {
-			description: "Implements code changes from a plan",
-			systemPrompt: "You are an implementation agent. Given a plan or task, make the necessary code changes. Write clean, tested code that follows existing patterns. Run tests after making changes.",
-			defaultProgress: true,
+			tools: [...ORDINARY_LEAF_TOOLS],
+			maxSubagentDepth: 0,
 		},
 	},
 	{ type: "separator", label: "Chains" },

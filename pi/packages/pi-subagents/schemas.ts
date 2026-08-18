@@ -4,20 +4,15 @@
 
 import { Type } from "typebox";
 
-const SkillOverride = Type.Unsafe({
-	type: ["string", "array", "boolean"],
-	items: { type: "string" },
+const SkillOverride = Type.Union([Type.String(), Type.Array(Type.String()), Type.Boolean()], {
 	description: "Skill name(s) to inject (comma-separated), array of strings, or boolean (false disables, true uses default)",
 });
 
-const OutputOverride = Type.Unsafe({
-	type: ["string", "boolean"],
+const OutputOverride = Type.Union([Type.String(), Type.Boolean()], {
 	description: "Output filename/path (string), or false to disable file output",
 });
 
-const ReadsOverride = Type.Unsafe({
-	type: ["array", "boolean"],
-	items: { type: "string" },
+const ReadsOverride = Type.Union([Type.Array(Type.String()), Type.Boolean()], {
 	description: "Files to read before running (array of filenames), or false to disable",
 });
 
@@ -106,7 +101,7 @@ export const SubagentParams = Type.Object({
 	task: Type.Optional(Type.String({ description: "Task (SINGLE mode, optional for self-contained agents)" })),
 	// Management action (when present, tool operates in management mode)
 	action: Type.Optional(Type.String({
-		description: "Action: 'list', 'get', 'create', 'update', 'delete', 'status', 'interrupt', or 'doctor'. Omit for execution mode."
+		description: "Action: 'list', 'get', 'create', 'update', 'delete', 'status', 'interrupt', or 'doctor'. Omit for execution mode; doctor returns diagnostics."
 	})),
 	id: Type.Optional(Type.String({
 		description: "Run id or prefix for action='status' or action='interrupt'."
@@ -122,9 +117,10 @@ export const SubagentParams = Type.Object({
 		description: "Chain name for get/update/delete management actions"
 	})),
 	// Agent/chain configuration for create/update (nested to avoid conflicts with execution fields)
-	config: Type.Optional(Type.Unsafe({
-		type: ["object", "string"],
-		additionalProperties: true,
+	config: Type.Optional(Type.Union([
+		Type.Object({}, { additionalProperties: true }),
+		Type.String(),
+	], {
 		description: "Agent or chain config for create/update. Agent: name, description, scope ('user'|'project', default 'user'), systemPrompt, systemPromptMode, inheritProjectContext, inheritSkills, model, tools (comma-separated), extensions (comma-separated), skills (comma-separated), thinking, output, reads, progress, maxSubagentDepth. Chain: name, description, scope, steps (array of {agent, task?, output?, reads?, model?, skills?, progress?}). Presence of 'steps' creates a chain instead of an agent. String values must be valid JSON."
 	})),
 	tasks: Type.Optional(Type.Array(TaskItem, { description: "PARALLEL mode: [{agent, task, count?, output?, reads?, progress?}, ...]" })),
@@ -153,8 +149,7 @@ export const SubagentParams = Type.Object({
 	clarify: Type.Optional(Type.Boolean({ description: "Show TUI to preview/edit before execution (default: true for chains, false for single/parallel). Implies sync mode." })),
 	control: Type.Optional(ControlOverrides),
 	// Solo agent overrides
-	output: Type.Optional(Type.Unsafe({
-		type: ["string", "boolean"],
+	output: Type.Optional(Type.Union([Type.String(), Type.Boolean()], {
 		description: "Output file for single agent (string), or false to disable. Relative paths resolve against cwd.",
 	})),
 	skill: Type.Optional(SkillOverride),

@@ -12,6 +12,7 @@ import {
 } from "../../skills.ts";
 
 let tempDir = "";
+const originalProfile = process.env.PI_CODING_AGENT_DIR;
 
 function makeProjectSkill(cwd: string, name: string, body: string): void {
 	const skillDir = path.join(cwd, ".pi", "skills", name);
@@ -50,10 +51,13 @@ describe("skills filesystem fallback", () => {
 	beforeEach(() => {
 		tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-skills-fallback-"));
 		clearSkillCache();
+		delete process.env.PI_CODING_AGENT_DIR;
 	});
 
 	afterEach(() => {
 		clearSkillCache();
+		if (originalProfile === undefined) delete process.env.PI_CODING_AGENT_DIR;
+		else process.env.PI_CODING_AGENT_DIR = originalProfile;
 		fs.rmSync(tempDir, { recursive: true, force: true });
 	});
 

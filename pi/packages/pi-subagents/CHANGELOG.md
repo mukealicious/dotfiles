@@ -2,12 +2,25 @@
 
 ## [Unreleased]
 
+### Changed
+- Reduced builtin roles to leaf `scout`, `researcher`, and `worker`; shared generated `review` is the canonical read-only reviewer.
+- Routed role defaults through provider-neutral `gpt-5.6` IDs: Luna/high for scout, Terra/high for researcher, Luna/max for worker, and Sol/xhigh for review.
+- Added Pi's native `max` thinking level to subagent argument handling and manager/clarify selectors.
+- Made ordinary custom agents and templates default to `maxSubagentDepth: 0`.
+
 ### Fixed
+- Enforced read-only scout/review output and progress boundaries before parent-side session or output writes, including parallel and chain requests.
+- Kept explicit tool allowlists authoritative when an intercom bridge is active.
+- Replaced invalid flexible TypeBox schemas with compiler-safe unions and documented doctor diagnostics.
+
 - Kept user agent and chain discovery and management inside the active profile's real `agents/` directory; home `~/.agents` remains a skill location only.
 - Scoped configuration, user skill and package discovery, run history, intercom, saved chains, and session artifact cleanup by active `PI_CODING_AGENT_DIR`, preserving the no-environment fallback.
 - Scoped temporary async, result, chain, and artifact state by active `PI_CODING_AGENT_DIR` in addition to OS user, preventing work, personal, and fallback profiles from sharing support state.
 - Made user agent definitions and builtin overrides follow the active `PI_CODING_AGENT_DIR`, preserving provider/auth affinity for profile-based Pi setups.
 - Serialized only the child Pi initialization phase so parallel subagents cannot lose their shared auth snapshot while a sibling refreshes OAuth credentials; model work still runs concurrently after startup.
+
+### Removed
+- Removed builtin context-builder, reviewer, planner, oracle, and delegate roles plus packaged prompt shortcuts.
 
 ## [0.20.1] - 2026-04-27
 

@@ -22,6 +22,7 @@ describe("model fallback helpers", () => {
 
 	it("preserves thinking suffix when resolving a bare id", () => {
 		assert.equal(resolveModelCandidate("gpt-5-mini:high", availableModels), "openai/gpt-5-mini:high");
+		assert.equal(resolveModelCandidate("gpt-5-mini:max", availableModels), "openai/gpt-5-mini:max");
 	});
 
 	it("leaves ambiguous bare ids untouched", () => {

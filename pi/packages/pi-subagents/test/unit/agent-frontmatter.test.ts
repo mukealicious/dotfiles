@@ -147,6 +147,22 @@ describe("agent frontmatter prompt inheritance flags", () => {
 		assert.match(serialized, /inheritSkills: true/);
 	});
 
+	it("serializes native max thinking without degrading it", () => {
+		const agent: AgentConfig = {
+			name: "worker",
+			description: "Worker",
+			systemPrompt: "Do work",
+			systemPromptMode: "replace",
+			inheritProjectContext: false,
+			inheritSkills: false,
+			source: "project",
+			filePath: "/tmp/worker.md",
+			thinking: "max",
+		};
+
+		assert.match(serializeAgent(agent), /thinking: max/);
+	});
+
 	it("parses inheritProjectContext and inheritSkills from discovered agent frontmatter", () => {
 		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagents-agent-prompt-inheritance-frontmatter-"));
 		tempDirs.push(dir);
@@ -190,51 +206,78 @@ Do work
 		assert.equal(worker?.inheritSkills, false);
 	});
 
-	it("builtin agents inherit project context by default", () => {
+	it("builtin agents declare their role-specific prompt settings", () => {
 		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagents-builtin-default-prompt-settings-"));
 		const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagents-builtin-default-home-"));
 		tempDirs.push(dir);
 		tempDirs.push(homeDir);
 		const previousHome = process.env.HOME;
 		const previousUserProfile = process.env.USERPROFILE;
+		const previousProfile = process.env.PI_CODING_AGENT_DIR;
 
 		try {
 			process.env.HOME = homeDir;
 			process.env.USERPROFILE = homeDir;
+			delete process.env.PI_CODING_AGENT_DIR;
 
 			const result = discoverAgents(dir, "both");
+			assert.deepEqual(result.agents.filter((agent) => agent.source === "builtin").map((agent) => agent.name).sort(), ["researcher", "scout", "worker"]);
 			const scout = result.agents.find((agent) => agent.name === "scout");
-			const reviewer = result.agents.find((agent) => agent.name === "reviewer");
-			const delegate = result.agents.find((agent) => agent.name === "delegate");
+			const researcher = result.agents.find((agent) => agent.name === "researcher");
+			const worker = result.agents.find((agent) => agent.name === "worker");
 			assert.equal(scout?.inheritProjectContext, true);
-			assert.equal(reviewer?.inheritProjectContext, true);
-			assert.equal(delegate?.inheritProjectContext, true);
+			assert.equal(researcher?.inheritProjectContext, true);
+			assert.equal(worker?.inheritProjectContext, true);
+			assert.deepEqual(scout?.tools, ["read", "grep", "find", "ls"]);
+			assert.equal(scout?.model, "gpt-5.6-luna");
+			assert.equal(scout?.thinking, "high");
+			assert.equal(scout?.output, undefined);
+			assert.equal(scout?.defaultReads, undefined);
+			assert.equal(scout?.defaultProgress, false);
+			assert.equal(scout?.maxSubagentDepth, 0);
+			assert.deepEqual(fs.readdirSync(path.dirname(scout!.filePath)).filter((entry) => entry.endsWith(".md")).sort(), ["researcher.md", "scout.md", "worker.md"]);
+			assert.deepEqual(researcher?.tools, ["read", "web_search", "web_fetch", "deep_research", "batch_enrich", "exa_search"]);
+			assert.equal(researcher?.extensions, undefined);
+			assert.equal(researcher?.model, "gpt-5.6-terra");
+			assert.equal(researcher?.thinking, "high");
+			assert.equal(researcher?.output, undefined);
+			assert.equal(researcher?.defaultProgress, false);
+			assert.equal(researcher?.maxSubagentDepth, 0);
+			assert.equal(worker?.model, "gpt-5.6-luna");
+			assert.equal(worker?.thinking, "max");
+			assert.equal(worker?.tools, undefined);
+			assert.equal(worker?.defaultReads, undefined);
+			assert.equal(worker?.defaultProgress, false);
+			assert.equal(worker?.maxSubagentDepth, 0);
 		} finally {
 			if (previousHome === undefined) delete process.env.HOME;
 			else process.env.HOME = previousHome;
 			if (previousUserProfile === undefined) delete process.env.USERPROFILE;
 			else process.env.USERPROFILE = previousUserProfile;
+			if (previousProfile === undefined) delete process.env.PI_CODING_AGENT_DIR;
+			else process.env.PI_CODING_AGENT_DIR = previousProfile;
 		}
 	});
 
-	it("defaults delegate to append mode with inherited project context", () => {
-		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagents-agent-delegate-default-prompt-settings-"));
+	it("defaults ordinary custom agents to leaf depth", () => {
+		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagents-agent-default-leaf-"));
 		tempDirs.push(dir);
 		const agentsDir = path.join(dir, ".pi", "agents");
 		fs.mkdirSync(agentsDir, { recursive: true });
-		fs.writeFileSync(path.join(agentsDir, "delegate.md"), `---
-name: delegate
-description: Delegate
+		fs.writeFileSync(path.join(agentsDir, "helper.md"), `---
+name: helper
+description: Helper
 ---
 
 Do work
 `, "utf-8");
 
-		const result = discoverAgents(dir, "project");
-		const delegate = result.agents.find((agent) => agent.name === "delegate");
-		assert.equal(delegate?.systemPromptMode, "append");
-		assert.equal(delegate?.inheritProjectContext, true);
-		assert.equal(delegate?.inheritSkills, false);
+		const helper = discoverAgents(dir, "project").agents.find((agent) => agent.name === "helper");
+		assert.equal(helper?.systemPromptMode, "replace");
+		assert.equal(helper?.inheritProjectContext, false);
+		assert.deepEqual(helper?.tools, ["read", "grep", "find", "ls"]);
+		assert.equal(helper?.extensions, undefined);
+		assert.equal(helper?.maxSubagentDepth, 0);
 	});
 });
 

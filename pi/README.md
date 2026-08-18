@@ -121,20 +121,21 @@ while the directory itself is left untouched for manual deletion after later ver
 
 ### Subagent model routing
 
-Subagents follow the active parent profile: `pi-personal` children use `openai-codex`
-with the personal OAuth subscription, while `pi-work` children use `openai` with the
-work API key. Both profiles apply the same cost-aware GPT-5.6 builtin overrides:
+Subagents resolve bare model IDs through the active parent profile: `pi-personal`
+children use `openai-codex` with the personal OAuth subscription, while `pi-work`
+children use `openai` with the work API key.
 
-| Agent | Model | Thinking |
+| Role | Model | Thinking |
 |---|---|---|
 | `scout` | GPT-5.6 Luna | high |
-| `context-builder` | GPT-5.6 Terra | high |
-| `worker` | GPT-5.6 Terra | high |
-| `planner` | GPT-5.6 Terra | max |
-| `reviewer` | GPT-5.6 Terra | max |
-| `oracle` | GPT-5.6 Terra | max |
+| `researcher` | GPT-5.6 Terra | high |
+| `worker` | GPT-5.6 Luna | max |
+| `review` | GPT-5.6 Sol | xhigh |
 
-The user-scoped `researcher` definition shadows the builtin and therefore declares the provider-neutral `gpt-5.6-terra` tier with high thinking directly in `pi/agents/researcher.md`; pi-subagents resolves it against the active profile provider. `delegate` continues to inherit its parent model. GPT-5.6 Sol remains an opt-in interactive profile choice rather than a tracked baseline; selecting it in Pi persists it in the writable runtime settings. Ultra remains an opt-in multi-agent mode rather than a Pi thinking level.
+The package retains only builtin scout, researcher, and worker. The generated shared
+`review` agent is canonical. Scout and review are read-only leaves; researcher is a
+web/evidence leaf; worker is the only default delegated checkout writer. Profile
+settings do not override these role defaults.
 
 ## Extensions
 

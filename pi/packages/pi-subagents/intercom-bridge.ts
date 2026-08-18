@@ -227,10 +227,10 @@ export function resolveIntercomBridge(input: ResolveIntercomBridgeInput): Interc
 export function applyIntercomBridgeToAgent(agent: AgentConfig, bridge: IntercomBridgeState): AgentConfig {
 	if (!bridge.active || !bridge.orchestratorTarget) return agent;
 	if (!extensionSandboxAllowsIntercom(agent.extensions, bridge.extensionDir)) return agent;
+	// An explicit allowlist is authoritative. Do not widen it for bridge setup.
+	if (agent.tools !== undefined && !agent.tools.includes("intercom")) return agent;
 
-	const tools = agent.tools && !agent.tools.includes("intercom")
-		? [...agent.tools, "intercom"]
-		: agent.tools;
+	const tools = agent.tools;
 	const instruction = bridge.instruction;
 	const trimmedPrompt = agent.systemPrompt?.trim() || "";
 	const systemPrompt = trimmedPrompt.includes(INTERCOM_BRIDGE_MARKER)

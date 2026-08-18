@@ -10,6 +10,7 @@ let tempHome = "";
 let tempProject = "";
 const originalHome = process.env.HOME;
 const originalUserProfile = process.env.USERPROFILE;
+const originalProfile = process.env.PI_CODING_AGENT_DIR;
 
 function writeJson(filePath: string, value: unknown): void {
 	fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -30,6 +31,7 @@ describe("builtin agent disabling", () => {
 		tempProject = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagents-disabled-project-"));
 		process.env.HOME = tempHome;
 		process.env.USERPROFILE = tempHome;
+		delete process.env.PI_CODING_AGENT_DIR;
 	});
 
 	afterEach(() => {
@@ -37,6 +39,8 @@ describe("builtin agent disabling", () => {
 		else process.env.HOME = originalHome;
 		if (originalUserProfile === undefined) delete process.env.USERPROFILE;
 		else process.env.USERPROFILE = originalUserProfile;
+		if (originalProfile === undefined) delete process.env.PI_CODING_AGENT_DIR;
+		else process.env.PI_CODING_AGENT_DIR = originalProfile;
 		fs.rmSync(tempHome, { recursive: true, force: true });
 		fs.rmSync(tempProject, { recursive: true, force: true });
 	});
@@ -45,15 +49,15 @@ describe("builtin agent disabling", () => {
 		writeJson(path.join(tempHome, ".pi", "agent", "settings.json"), {
 			subagents: {
 				agentOverrides: {
-					reviewer: { disabled: true },
+					scout: { disabled: true },
 				},
 			},
 		});
 
-		const runtimeReviewer = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "reviewer");
+		const runtimeReviewer = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "scout");
 		assert.equal(runtimeReviewer, undefined);
 
-		const allReviewer = discoverAgentsAll(tempProject).builtin.find((agent) => agent.name === "reviewer");
+		const allReviewer = discoverAgentsAll(tempProject).builtin.find((agent) => agent.name === "scout");
 		assert.ok(allReviewer);
 		assert.equal(allReviewer.disabled, true);
 		assert.equal(allReviewer.override?.scope, "user");
@@ -64,7 +68,7 @@ describe("builtin agent disabling", () => {
 		writeJson(settingsPath, {
 			subagents: {
 				agentOverrides: {
-					reviewer: { disabled: "true" },
+					scout: { disabled: "true" },
 				},
 			},
 		});
@@ -73,7 +77,7 @@ describe("builtin agent disabling", () => {
 			() => discoverAgents(tempProject, "both"),
 			(error: unknown) => error instanceof Error
 				&& error.message.includes(settingsPath)
-				&& error.message.includes("reviewer")
+				&& error.message.includes("scout")
 				&& error.message.includes("disabled"),
 		);
 	});
@@ -97,16 +101,16 @@ describe("builtin agent disabling", () => {
 			subagents: {
 				disableBuiltins: true,
 				agentOverrides: {
-					reviewer: { model: "openai/gpt-5.4" },
+					scout: { model: "openai/gpt-5.4" },
 				},
 			},
 		});
 
-		const reviewer = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "reviewer");
-		assert.ok(reviewer);
-		assert.equal(reviewer.disabled, undefined);
-		assert.equal(reviewer.model, "openai/gpt-5.4");
-		assert.equal(reviewer.override?.scope, "user");
+		const scout = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "scout");
+		assert.ok(scout);
+		assert.equal(scout.disabled, undefined);
+		assert.equal(scout.model, "openai/gpt-5.4");
+		assert.equal(scout.override?.scope, "user");
 	});
 
 	it("project disableBuiltins false re-enables builtins hidden by user bulk disable", () => {
@@ -127,7 +131,7 @@ describe("builtin agent disabling", () => {
 			subagents: {
 				disableBuiltins: true,
 				agentOverrides: {
-					reviewer: { disabled: false, model: "openai/gpt-5.4" },
+					scout: { disabled: false, model: "openai/gpt-5.4" },
 				},
 			},
 		});
@@ -135,10 +139,10 @@ describe("builtin agent disabling", () => {
 			subagents: { disableBuiltins: true },
 		});
 
-		const reviewer = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "reviewer");
-		assert.equal(reviewer, undefined);
+		const scout = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "scout");
+		assert.equal(scout, undefined);
 
-		const allReviewer = discoverAgentsAll(tempProject).builtin.find((agent) => agent.name === "reviewer");
+		const allReviewer = discoverAgentsAll(tempProject).builtin.find((agent) => agent.name === "scout");
 		assert.ok(allReviewer);
 		assert.equal(allReviewer.disabled, true);
 		assert.equal(allReviewer.override?.scope, "project");

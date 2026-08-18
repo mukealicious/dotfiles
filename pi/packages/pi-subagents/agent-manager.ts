@@ -426,6 +426,8 @@ export class AgentManagerComponent implements Component {
 				systemPromptMode: defaultSystemPromptMode(name),
 				inheritProjectContext: defaultInheritProjectContext(name),
 				inheritSkills: defaultInheritSkills(),
+				tools: ["read", "grep", "find", "ls"],
+				maxSubagentDepth: 0,
 				source: state.scope,
 				filePath: "",
 				...templateConfig,

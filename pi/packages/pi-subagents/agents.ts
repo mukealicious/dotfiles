@@ -17,13 +17,14 @@ export type AgentScope = "user" | "project" | "both";
 
 export type AgentSource = "builtin" | "user" | "project";
 export type SystemPromptMode = "append" | "replace";
+const ORDINARY_LEAF_TOOLS = ["read", "grep", "find", "ls"];
 
-export function defaultSystemPromptMode(name: string): SystemPromptMode {
-	return name === "delegate" ? "append" : "replace";
+export function defaultSystemPromptMode(_name: string): SystemPromptMode {
+	return "replace";
 }
 
-export function defaultInheritProjectContext(name: string): boolean {
-	return name === "delegate";
+export function defaultInheritProjectContext(_name: string): boolean {
+	return false;
 }
 
 export function defaultInheritSkills(): boolean {
@@ -585,11 +586,12 @@ function loadAgentsFromDir(dir: string, source: AgentSource): AgentConfig[] {
 		}
 
 		const parsedMaxSubagentDepth = Number(frontmatter.maxSubagentDepth);
+		const ordinaryAgentWithoutTools = source !== "builtin" && tools.length === 0 && mcpDirectTools.length === 0;
 
 		agents.push({
 			name: frontmatter.name,
 			description: frontmatter.description,
-			tools: tools.length > 0 ? tools : undefined,
+			tools: tools.length > 0 ? tools : ordinaryAgentWithoutTools ? [...ORDINARY_LEAF_TOOLS] : undefined,
 			mcpDirectTools: mcpDirectTools.length > 0 ? mcpDirectTools : undefined,
 			model: frontmatter.model,
 			fallbackModels: fallbackModels && fallbackModels.length > 0 ? fallbackModels : undefined,
@@ -609,7 +611,7 @@ function loadAgentsFromDir(dir: string, source: AgentSource): AgentConfig[] {
 			maxSubagentDepth:
 				Number.isInteger(parsedMaxSubagentDepth) && parsedMaxSubagentDepth >= 0
 					? parsedMaxSubagentDepth
-					: undefined,
+					: source === "builtin" ? undefined : 0,
 			extraFields: Object.keys(extraFields).length > 0 ? extraFields : undefined,
 		});
 	}

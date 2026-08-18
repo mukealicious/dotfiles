@@ -45,18 +45,33 @@ describe("agent management config parsing", () => {
 		assert.match(readText(result), /config must be valid JSON:/);
 	});
 
-	it("creates delegate with its builtin prompt defaults", () => {
+	it("creates ordinary custom agents as leaf roles", () => {
 		const result = handleCreate(
-			{ config: { name: "delegate", description: "Delegate helper", scope: "project" } },
+			{ config: { name: "helper", description: "Helper", scope: "project" } },
 			{ cwd: tempDir, modelRegistry: { getAvailable: () => [] } },
 		);
 
 		assert.equal(result.isError, false);
-		const filePath = path.join(tempDir, ".pi", "agents", "delegate.md");
+		const filePath = path.join(tempDir, ".pi", "agents", "helper.md");
 		const content = fs.readFileSync(filePath, "utf-8");
-		assert.match(content, /systemPromptMode: append/);
-		assert.match(content, /inheritProjectContext: true/);
+		assert.match(content, /systemPromptMode: replace/);
+		assert.match(content, /inheritProjectContext: false/);
 		assert.match(content, /inheritSkills: false/);
+		assert.match(content, /tools: read, grep, find, ls/);
+		assert.doesNotMatch(content, /^extensions:/m);
+		assert.match(content, /maxSubagentDepth: 0/);
+	});
+
+	it("does not turn an ordinary role into an unrestricted writer when tools are cleared", () => {
+		const result = handleCreate(
+			{ config: { name: "safe-helper", description: "Helper", scope: "project", tools: false } },
+			{ cwd: tempDir, modelRegistry: { getAvailable: () => [] } },
+		);
+
+		assert.equal(result.isError, false);
+		const content = fs.readFileSync(path.join(tempDir, ".pi", "agents", "safe-helper.md"), "utf-8");
+		assert.match(content, /tools: read, grep, find, ls/);
+		assert.doesNotMatch(content, /^extensions:/m);
 	});
 
 	it("keeps user agent CRUD in the active profile's real agents directory", () => {

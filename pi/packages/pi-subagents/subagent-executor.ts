@@ -326,6 +326,77 @@ async function maybeBuildForegroundIntercomReceipt(input: {
 	};
 }
 
+const CANONICAL_READ_ONLY_ROLE_TOOLS: Record<string, string[]> = {
+	scout: ["read", "grep", "find", "ls"],
+	researcher: ["read", "web_search", "web_fetch", "deep_research", "batch_enrich", "exa_search"],
+	review: ["read", "grep", "find", "ls"],
+};
+const READ_ONLY_TOOLS = new Set(Object.values(CANONICAL_READ_ONLY_ROLE_TOOLS).flat());
+
+function enforceReadOnlyRoleBoundary(agent: AgentConfig): AgentConfig {
+	const canonicalTools = CANONICAL_READ_ONLY_ROLE_TOOLS[agent.name];
+	const bounded = canonicalTools
+		? { ...agent, tools: [...canonicalTools], mcpDirectTools: undefined }
+		: agent;
+	if (!isMechanicallyReadOnly(bounded)) return bounded;
+	return {
+		...bounded,
+		output: undefined,
+		defaultReads: canonicalTools ? undefined : bounded.defaultReads,
+		defaultProgress: false,
+		maxSubagentDepth: 0,
+	};
+}
+
+function isMechanicallyReadOnly(agent: AgentConfig | undefined): boolean {
+	if (!agent || agent.tools === undefined || agent.mcpDirectTools?.length) return false;
+	return agent.tools.every((tool) => READ_ONLY_TOOLS.has(tool));
+}
+
+function readonlyOverrideError(
+	agent: AgentConfig | undefined,
+	value: object,
+	label: string,
+): string | undefined {
+	if (!isMechanicallyReadOnly(agent)) return undefined;
+	const request = value as Record<string, unknown>;
+	const overrides = [
+		...(Object.hasOwn(request, "output") ? ["output"] : []),
+		...(Object.hasOwn(request, "progress") ? ["progress"] : []),
+	];
+	return overrides.length > 0
+		? `Read-only agent '${agent.name}' does not allow explicit ${overrides.join(" or ")} overrides (${label}).`
+		: undefined;
+}
+
+function validateReadOnlyOverrides(params: SubagentParamsLike, agents: AgentConfig[]): string | undefined {
+	const resolveAgent = (name: string) => agents.find((agent) => agent.name === name);
+	if (params.agent) {
+		const error = readonlyOverrideError(resolveAgent(params.agent), params, "single run");
+		if (error) return error;
+	}
+	for (let i = 0; i < params.tasks?.length; i++) {
+		const task = params.tasks[i]!;
+		const error = readonlyOverrideError(resolveAgent(task.agent), task, `parallel task ${i + 1}`);
+		if (error) return error;
+	}
+	for (let stepIndex = 0; stepIndex < params.chain?.length; stepIndex++) {
+		const step = params.chain[stepIndex]!;
+		if (isParallelStep(step)) {
+			for (let taskIndex = 0; taskIndex < step.parallel.length; taskIndex++) {
+				const task = step.parallel[taskIndex]!;
+				const error = readonlyOverrideError(resolveAgent(task.agent), task, `chain step ${stepIndex + 1}, parallel task ${taskIndex + 1}`);
+				if (error) return error;
+			}
+			continue;
+		}
+		const sequential = step as SequentialStep;
+		const error = readonlyOverrideError(resolveAgent(sequential.agent), sequential, `chain step ${stepIndex + 1}`);
+		if (error) return error;
+	}
+	return undefined;
+}
+
 function validateExecutionInput(
 	params: SubagentParamsLike,
 	agents: AgentConfig[],
@@ -1754,9 +1825,10 @@ export function createSubagentExecutor(deps: ExecutorDeps): {
 			context: effectiveParams.context,
 			orchestratorTarget: sessionName,
 		});
+		const boundedAgents = discoveredAgents.map(enforceReadOnlyRoleBoundary);
 		const agents = intercomBridge.active
-			? discoveredAgents.map((agent) => applyIntercomBridgeToAgent(agent, intercomBridge))
-			: discoveredAgents;
+			? boundedAgents.map((agent) => applyIntercomBridgeToAgent(agent, intercomBridge))
+			: boundedAgents;
 		const runId = randomUUID().slice(0, 8);
 		const shareEnabled = effectiveParams.share === true;
 		const hasChain = (effectiveParams.chain?.length ?? 0) > 0;
@@ -1776,6 +1848,8 @@ export function createSubagentExecutor(deps: ExecutorDeps): {
 			allowClarifyTaskPrompt,
 		);
 		if (validationError) return validationError;
+		const readOnlyOverrideError = validateReadOnlyOverrides(effectiveParams, agents);
+		if (readOnlyOverrideError) return buildRequestedModeError(effectiveParams, readOnlyOverrideError);
 
 		let sessionFileForIndex: (idx?: number) => string | undefined = () => undefined;
 		try {

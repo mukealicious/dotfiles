@@ -15,7 +15,7 @@ interface ClarifyTestComponent {
 	modelSelectedIndex: number;
 	filteredModels: ClarifyTestModel[];
 	getEffectiveModel(stepIndex: number): string;
-	applyThinkingLevel(level: "high"): void;
+	applyThinkingLevel(level: "high" | "max"): void;
 	enterModelSelector(): void;
 	handleModelSelectorInput(data: string): void;
 }
@@ -97,6 +97,8 @@ describe("chain clarify model display", { skip: !available ? "pi packages not av
 		component.editingStep = 0;
 		component.applyThinkingLevel("high");
 		assert.equal(component.getEffectiveModel(0), "github-copilot/gpt-5-mini:high");
+		component.applyThinkingLevel("max");
+		assert.equal(component.getEffectiveModel(0), "github-copilot/gpt-5-mini:max");
 	});
 
 	it("keeps the current model selected and preserves thinking when switching models", () => {

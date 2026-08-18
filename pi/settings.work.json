@@ -31,33 +31,5 @@
       ]
     }
   ],
-  "hideThinkingBlock": false,
-  "subagents": {
-    "agentOverrides": {
-      "scout": {
-        "model": "openai/gpt-5.6-luna",
-        "thinking": "high"
-      },
-      "context-builder": {
-        "model": "openai/gpt-5.6-terra",
-        "thinking": "high"
-      },
-      "worker": {
-        "model": "openai/gpt-5.6-terra",
-        "thinking": "high"
-      },
-      "planner": {
-        "model": "openai/gpt-5.6-terra",
-        "thinking": "max"
-      },
-      "reviewer": {
-        "model": "openai/gpt-5.6-terra",
-        "thinking": "max"
-      },
-      "oracle": {
-        "model": "openai/gpt-5.6-terra",
-        "thinking": "max"
-      }
-    }
-  }
+  "hideThinkingBlock": false
 }

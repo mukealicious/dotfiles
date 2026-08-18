@@ -55,7 +55,7 @@ export function saveChain(config: ChainConfig): string {
 
 type EditMode = "template" | "output" | "reads" | "model" | "thinking" | "skills";
 
-const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh"] as const;
+const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 type ThinkingLevel = typeof THINKING_LEVELS[number];
 
 /**
@@ -1046,7 +1046,8 @@ export class ChainClarifyComponent implements Component {
 			"low": "Light reasoning",
 			"medium": "Moderate reasoning",
 			"high": "Deep reasoning",
-			"xhigh": "Maximum reasoning (ultrathink)",
+			"xhigh": "Extra-high reasoning",
+			"max": "Maximum reasoning",
 		};
 
 		for (let i = 0; i < THINKING_LEVELS.length; i++) {
