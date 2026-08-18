@@ -46,6 +46,11 @@ Herdr's top-level `--skill` only prints instructions. When `agent start` include
 arguments after `--`, those arguments belong to the launched agent—for example,
 a Pi `--skill` argument is a Pi option, not a Herdr option.
 
+For release-specific subcommands, inspect the relevant group with `herdr agent`,
+`herdr pane`, `herdr worktree`, or `herdr integration`; do not run bare `herdr`
+for discovery because it launches or attaches the TUI. Most control commands
+return JSON, so use returned IDs rather than guessing them.
+
 ## Start Every Conversation Well
 
 When the calling process is Herdr-managed, rename its current tab once the user's
@@ -107,6 +112,24 @@ herdr pane run <new-pane-id> "hunk diff --watch"
 
 Running Hunk's interactive TUI still requires an explicit user request. Keep
 focus on the agent so the user can choose when to enter the Hunk pane.
+
+### Agent and pane waits
+
+Use `herdr agent prompt <target> <text> --wait` for ordinary delegated work. The
+wait settles on the first observed `idle`, `done`, or `blocked` state; do not
+repeat those defaults with `--until`. A prompt sent while an agent is not
+working must produce an observed lifecycle change within five seconds or Herdr
+returns `agent_prompt_stalled`. This tracks lifecycle state, not a particular
+turn, so an already-working turn may satisfy the wait.
+
+Use `--until` only when a specific state matters, and inspect `agent get` and
+`agent read` before responding to `blocked`. Standalone `herdr agent wait`
+without `--until` uses the same settled-state defaults.
+
+`herdr pane wait-output` searches the selected current terminal snapshot
+immediately, including output that already exists, and then polls. Use a
+literal `--match` or Rust `--regex`; select `visible`, `recent`, or
+`recent-unwrapped` with `--source` when needed.
 
 ### Servers, Logs, and Watchers
 

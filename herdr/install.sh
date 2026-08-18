@@ -2,7 +2,7 @@
 #
 # Herdr Configuration
 #
-# Symlinks the tracked config and refreshes integrations for installed agents.
+# Symlinks the tracked config and refreshes the two supported Pi integrations.
 #
 # Usage:
 #   ./install.sh          # Normal install (preserves an existing regular file)
@@ -33,14 +33,17 @@ mkdir -p "$HERDR_DEST"
 ensure_symlink "$HERDR_SRC" "$HERDR_DEST/config.toml" "Herdr config.toml"
 
 if command -v herdr >/dev/null 2>&1; then
-  log_info "Refreshing Herdr agent integrations..."
+  log_info "Refreshing supported Pi integrations..."
 
-  if [ -d "$HOME/.pi/work" ]; then
-    PI_CODING_AGENT_DIR="$HOME/.pi/work" herdr integration install pi
-  fi
-  if [ -d "$HOME/.pi/personal" ]; then
-    PI_CODING_AGENT_DIR="$HOME/.pi/personal" herdr integration install pi
-  fi
+  # Herdr owns generated integration state; invoke its official installer only.
+  for profile in work personal; do
+    profile_dir="$HOME/.pi/$profile"
+    if [ -d "$profile_dir" ]; then
+      PI_CODING_AGENT_DIR="$profile_dir" herdr integration install pi
+    fi
+  done
+
+  # Preserve the existing global integrations for other installed agents.
   if command -v claude >/dev/null 2>&1; then
     herdr integration install claude
   fi

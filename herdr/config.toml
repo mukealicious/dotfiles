@@ -3,6 +3,20 @@ onboarding = false
 [theme]
 name = "gruvbox"
 
+[ui]
+# Keep attention ordering useful when several background agents need review.
+agent_panel_sort = "priority"
+
+[ui.toast]
+# Herdr owns managed-pane notifications; Pi's OSC fallback is suppressed inside Herdr.
+delivery = "herdr"
+
+[ui.sound]
+# Do not add a second audible attention channel.
+enabled = false
+
 [experimental]
 # Required for inline image previews from Pi and other terminal applications.
 kitty_graphics = true
+# Keep pane screen history ephemeral across full Herdr server restarts.
+pane_history = false

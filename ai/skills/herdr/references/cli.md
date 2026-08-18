@@ -111,12 +111,23 @@ herdr agent get reviewer
 herdr agent read reviewer --source recent-unwrapped --lines 120
 ```
 
+`agent prompt --wait` settles on the first observed `idle`, `done`, or `blocked`
+state. Without `--until`, `agent wait` uses the same settled-state defaults;
+use `--until` only for a state-specific workflow. A prompt sent from a
+non-working state must produce an observed lifecycle change within five seconds,
+or Herdr returns `agent_prompt_stalled`. The wait tracks lifecycle state rather
+than an individual turn, so an already-working turn may satisfy it.
+
 Agent targets are unique live names or pane IDs. For an existing profile wrapper,
 restored session, or command requiring explicit environment variables, `pane run`
 may remain the correct launch primitive; verify the resulting agent through
 `agent get` or `agent wait`.
 
 ## Read and Wait
+
+`pane wait-output` searches the selected current terminal snapshot immediately,
+including output that already exists, and then polls for a match. It does not
+require the matching text to be emitted after the command starts.
 
 Read existing output:
 
@@ -131,12 +142,17 @@ herdr pane read <pane_id> --source recent-unwrapped --lines 50
 - `recent-unwrapped`: joins terminal soft wraps and matches what output waiting sees.
 - Add `--format ansi` or `--ansi` when rendered TUI output matters.
 
-Wait for future output:
+Wait for matching output (existing or future):
 
 ```bash
 herdr pane wait-output <pane_id> --match "ready on port 3000" --timeout 30000
 herdr pane wait-output <pane_id> --regex "server.*ready" --timeout 30000
 ```
+
+The selected snapshot defaults to `recent`; use `--source visible`,
+`--source recent-unwrapped`, or `--lines N` when the output surface needs to be
+narrowed. `--match` is a literal substring and `--regex` uses Rust regular
+expressions.
 
 Wait for an agent's public status:
 

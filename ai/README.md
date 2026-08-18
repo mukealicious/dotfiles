@@ -237,7 +237,8 @@ Custom extensions symlinked by `pi/install.sh`. Third-party extensions installed
 | Extension | Type | Description |
 |---|---|---|
 | `handoff.ts` | Command | `/handoff` writes temporary continuation context and resumes on a summarized tree branch |
-| `notify.ts` | Lifecycle hook | Desktop notification via OSC 777 on agent completion (WezTerm) |
+| `notify.ts` | Lifecycle hook | Non-Herdr desktop notification via OSC 777; suppressed under `HERDR_ENV=1` |
+| `usage-footer.ts` | UI footer | Model/provider, token, context, cost, and Codex subscription usage details |
 
 | Package | Source | Provides |
 |---|---|---|
@@ -282,11 +283,12 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 - **Instruction File**: `~/.gemini/GEMINI.md` (assembled from shared base)
 
 ### Pi Coding Agent (pi)
-- **Provider**: Anthropic (via @earendil-works/pi-coding-agent)
-- **Profiles**: `pi-work` and `pi-personal` — `pi` dispatches based on `PI_DEFAULT_PROFILE`
+- **Provider**: OpenAI — work uses its profile-scoped API-key flow; personal uses its profile-scoped Codex OAuth flow
+- **Profiles**: exactly `pi-work` and `pi-personal` — `pi` dispatches based on `PI_DEFAULT_PROFILE`
 - **Config**: tracked `pi/settings.{work,personal}.json` baselines are materialized into writable profile settings so Pi can persist model changes without dirtying Git
 - **Instruction File**: `.ai-runtime/pi/AGENTS.md` (assembled), linked into both profiles
 - **Agents**: `.ai-runtime/pi/agents/` (assembled), linked file-by-file into each real profile-local `agents/` directory; custom agents and chains remain profile-local
+- **Herdr**: official generated Pi integrations are refreshed only with a profile-scoped `herdr integration install pi`; local OSC notifications are suppressed inside Herdr
 - **Aliases**: `pi-work-print`, `pi-personal-print`
 
 ## Instruction Composition

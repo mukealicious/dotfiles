@@ -151,6 +151,11 @@ Shared guidance now lives in `ai/instructions/base.md`, with small harness appen
 
 `~/.AGENTS.md` remains a base-only compatibility output rather than the main source of truth.
 
+Pi has exactly two supported profiles, `~/.pi/work` and `~/.pi/personal`; the
+`pi`, `pi-work`, and `pi-personal` launchers select one explicitly. Shared
+instructions and managed agents are staged under `.ai-runtime/pi/`, while
+profile-local settings, packages, sessions, and custom agents remain separate.
+
 The primary portability model is shared instructions plus shared skills. Harness-native `agents/` formats are optional and used only when a tool materially benefits from named agent metadata.
 
 ### Safety Hook
@@ -192,6 +197,7 @@ Shared skills in `ai/skills/` are projected to Claude, Pi, OpenCode, and Codex:
 | `bro` | Manual plain-language restatement |
 | `framing-doc` / `kickoff-doc` | Evidence-grounded framing and builder-facing shaped territory |
 | `handoff` | Temporary same-process continuation context |
+| `herdr` | Managed-pane coordination, attention, and native worktree topology |
 | `opensrc` / `librarian` | Source-backed external code investigation |
 | `build-skill` / `dotfiles-dev` | Skill authoring and repository conventions |
 | `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |

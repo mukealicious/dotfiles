@@ -74,7 +74,8 @@ pi/
 ├── aliases.fish            # Thin Fish forwarding to bin/pi
 ├── extensions/             # Custom TypeScript extensions
 │   ├── handoff.ts          # Same-process temporary conversation handoff
-│   └── notify.ts           # Desktop notification on agent completion
+│   ├── notify.ts           # Non-Herdr OSC notification fallback
+│   └── usage-footer.ts      # Token, model, and Codex subscription usage footer
 ├── intercepted-commands/   # Shell shims for Python tooling
 │   ├── pip                # → uv add / uv run --with
 │   ├── pip3               # → uv add / uv run --with
@@ -189,6 +190,13 @@ PI_CODING_AGENT_DIR="$HOME/.pi/personal" herdr integration install pi
 ```
 
 **Supported terminals**: WezTerm, Ghostty, iTerm2
+
+### usage-footer.ts — Usage Footer
+
+Adds model/provider, token-total, context-window, and cost information to Pi's
+footer. When the active model uses `openai-codex`, it also fetches the ChatGPT
+five-hour and weekly subscription windows; other providers do not trigger that
+request. `/usage` shows the same subscription details on demand.
 
 ### Provided by Mitsupi
 
