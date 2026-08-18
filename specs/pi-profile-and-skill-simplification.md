@@ -215,6 +215,17 @@ These are comparison inputs, not trees to copy wholesale. Local topic-owned inst
 
 Each deliverable updates the tests, watches, projections, and documentation it directly changes. D9 is a final consistency pass, not the owner of unfinished work from earlier slices.
 
+## Per-deliverable implementation cadence
+
+After each deliverable:
+
+1. Run its targeted tests and checks; reserve complete cross-profile verification for D10.
+2. Commit only that deliverable using a conventional commit, keeping the branch bisectable and independently revertible.
+3. Write a Dillon-style handoff to the OS temporary directory, never the checkout. Name the completed and next deliverables, branch and commit, validation results, known failures, next unfinished step, and suggested skills. Reference this spec, commits, and diffs instead of duplicating them; redact sensitive values.
+4. Perform the holistic branch review after D10, using the per-deliverable commits and handoffs as the review map.
+
+Until D8 installs the local handoff skill and extension, follow the reviewed upstream handoff skill at `dmmulroy/.dotfiles@f9f7aa1a3638d6bfb6fa0b94fd110185534a2895` manually. Do not add a temporary projected skill or extension. Once D8 is accepted, the installed `/handoff` workflow replaces manual handoff-file creation.
+
 ## Likely Source Files
 
 ### Profile and runtime boundary
