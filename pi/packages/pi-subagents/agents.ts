@@ -10,6 +10,9 @@ import { KNOWN_FIELDS } from "./agent-serializer.ts";
 import { parseChain } from "./chain-serializer.ts";
 import { mergeAgentsForScope } from "./agent-selection.ts";
 import { parseFrontmatter } from "./frontmatter.ts";
+import { resolveActiveProfileDir } from "./profile-paths.ts";
+
+export { resolveActiveProfileDir as getActiveAgentDir } from "./profile-paths.ts";
 
 export type AgentScope = "user" | "project" | "both";
 
@@ -199,11 +202,7 @@ function findNearestProjectRoot(cwd: string): string | null {
 }
 
 export function getUserAgentSettingsPath(): string {
-	return path.join(getActiveAgentDir(), "settings.json");
-}
-
-export function getActiveAgentDir(): string {
-	return process.env.PI_CODING_AGENT_DIR || path.join(os.homedir(), ".pi", "agent");
+	return path.join(resolveActiveProfileDir(), "settings.json");
 }
 
 export function getProjectAgentSettingsPath(cwd: string): string | null {
@@ -681,7 +680,7 @@ function resolveNearestProjectAgentDirs(cwd: string): { readDirs: string[]; pref
 const BUILTIN_AGENTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "agents");
 
 export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryResult {
-	const userDirOld = path.join(getActiveAgentDir(), "agents");
+	const userDirOld = path.join(resolveActiveProfileDir(), "agents");
 	const userDirNew = path.join(os.homedir(), ".agents");
 	const { readDirs: projectAgentDirs, preferredDir: projectAgentsDir } = resolveNearestProjectAgentDirs(cwd);
 	const userSettingsPath = getUserAgentSettingsPath();
@@ -718,7 +717,7 @@ export function discoverAgentsAll(cwd: string): {
 	userSettingsPath: string;
 	projectSettingsPath: string | null;
 } {
-	const userDirOld = path.join(getActiveAgentDir(), "agents");
+	const userDirOld = path.join(resolveActiveProfileDir(), "agents");
 	const userDirNew = path.join(os.homedir(), ".agents");
 	const { readDirs: projectDirs, preferredDir: projectDir } = resolveNearestProjectAgentDirs(cwd);
 	const userSettingsPath = getUserAgentSettingsPath();

@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Fixed
+- Scoped temporary async, result, chain, and artifact state by active `PI_CODING_AGENT_DIR` in addition to OS user, preventing work, personal, and fallback profiles from sharing support state.
 - Made user agent definitions and builtin overrides follow the active `PI_CODING_AGENT_DIR`, preserving provider/auth affinity for profile-based Pi setups.
 - Serialized only the child Pi initialization phase so parallel subagents cannot lose their shared auth snapshot while a sibling refreshes OAuth credentials; model work still runs concurrently after startup.
 

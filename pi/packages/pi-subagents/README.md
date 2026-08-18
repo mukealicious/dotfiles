@@ -855,15 +855,17 @@ stdin is a JSON object with `repoRoot`, `worktreePath`, `agentCwd`, `branch`, `i
 
 ## Files, logs, and observability
 
-Each chain run creates a user-scoped temp directory like:
+Each chain run creates a user-and-profile-scoped temp directory like:
 
 ```text
-<tmpdir>/pi-subagents-<scope>/chain-runs/{runId}/
+<tmpdir>/pi-subagents-<user-scope>-<profile-name>-<profile-hash>/chain-runs/{runId}/
 ```
+
+The profile identity comes from `PI_CODING_AGENT_DIR`, with `~/.pi/agent` retained only as the no-environment compatibility fallback. Work, personal, and fallback processes therefore cannot share async, result, chain, or temporary artifact state.
 
 It may contain files such as `context.md`, `plan.md`, `progress.md`, and `parallel-{stepIndex}/.../output.md`. Directories older than 24 hours are cleaned up on extension startup.
 
-Debug artifacts live under `{sessionDir}/subagent-artifacts/` or a user-scoped temp artifact directory. Per task you may see:
+Debug artifacts live under `{sessionDir}/subagent-artifacts/` or the user-and-profile-scoped temp artifact directory. Per task you may see:
 
 - `{runId}_{agent}_input.md`
 - `{runId}_{agent}_output.md`
@@ -879,7 +881,7 @@ Async completions notify only the originating session. The result watcher emits 
 Async runs write:
 
 ```text
-<tmpdir>/pi-subagents-<scope>/async-subagent-runs/<id>/
+<tmpdir>/pi-subagents-<user-scope>-<profile-name>-<profile-hash>/async-subagent-runs/<id>/
   status.json
   events.jsonl
   output-<n>.log

@@ -10,3 +10,8 @@ metadata:
 - Source URL: <https://github.com/nicobailon/pi-subagents/tree/b91c8810785e2574ade9416d3653a5162d103434>
 
 This directory is an in-repo vendor copy so Pi can load the package from a local path instead of installing it from npm.
+
+## Local divergences
+
+- Active user scope resolves through `PI_CODING_AGENT_DIR`, retaining `~/.pi/agent` only when the environment variable is absent.
+- Temporary async, result, chain, and artifact state is isolated by both OS user and active Pi profile.
