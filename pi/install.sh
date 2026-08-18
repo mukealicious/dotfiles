@@ -130,8 +130,40 @@ setup_pi_profile() {
   fi
 }
 
+# D4 retires these installer-managed extension links. Match the exact absolute
+# source path that previous installer runs created, including links that are
+# now dead because the source was deleted. Never remove user-owned files,
+# directories, or links to another live source.
+remove_retired_extension_link() {
+  profile_dir="$1"
+  profile_name="$2"
+  extension_name="$3"
+  extension_source="$DOTFILES_ROOT/pi/extensions/$extension_name"
+  extension_target="$profile_dir/extensions/$extension_name"
+  extension_label="$profile_name/extensions/$extension_name"
+
+  if [ -L "$extension_target" ]; then
+    if [ "$(readlink "$extension_target")" = "$extension_source" ]; then
+      rm "$extension_target"
+      log_success "Removed retired managed extension link: $extension_label"
+    elif [ -e "$extension_target" ]; then
+      log_warn "Preserving unmanaged extension link: $extension_label"
+    else
+      log_warn "Preserving dead unmanaged extension link: $extension_label"
+    fi
+  elif [ -e "$extension_target" ]; then
+    log_warn "Preserving user-owned extension entry: $extension_label"
+  fi
+}
+
 setup_pi_profile "$HOME/.pi/work" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/work"
 setup_pi_profile "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/settings.personal.json" "$HOME/.pi/personal"
+
+for profile_name in work personal; do
+  profile_dir="$HOME/.pi/$profile_name"
+  remove_retired_extension_link "$profile_dir" "$profile_name" cost.ts
+  remove_retired_extension_link "$profile_dir" "$profile_name" watchdog.ts
+done
 
 # Install researcher support CLI required by pi-parallel.
 # Upstream documents Homebrew, but the published tap does not currently

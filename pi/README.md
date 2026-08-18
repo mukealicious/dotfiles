@@ -52,6 +52,15 @@ set -gx PI_DEFAULT_PROFILE work
 set -gx PI_DEFAULT_PROFILE personal
 ```
 
+`bin/pi` is the sole launch dispatcher. It keeps a recognized inherited
+`PI_CODING_AGENT_DIR`, otherwise recognizes work/personal `--session PATH` and
+`--session=PATH` values before using `PI_DEFAULT_PROFILE`. A session from the
+other profile fails rather than opening it under the wrong profile. Fish delegates
+to this wrapper; `pi-work` and `pi-personal` select their named profile directly.
+All three supported launch commands set `GIT_EDITOR=true`,
+`GIT_SEQUENCE_EDITOR=true`, and `GIT_MERGE_AUTOEDIT=no` only for Pi's child
+process, leaving the interactive shell's Git editor configuration unchanged.
+
 ## Directory Structure
 
 ```
@@ -61,7 +70,7 @@ pi/
 ├── settings.work.json      # Work profile config baseline (OpenAI API key flow)
 ├── settings.personal.json  # Personal profile config baseline (OpenAI Codex OAuth flow)
 ├── install.sh              # Materializes settings, symlinks resources, installs packages
-├── aliases.fish            # Shell aliases / profile dispatch
+├── aliases.fish            # Thin Fish forwarding to bin/pi
 ├── extensions/             # Custom TypeScript extensions
 │   └── notify.ts          # Desktop notification on agent completion
 ├── intercepted-commands/   # Shell shims for Python tooling

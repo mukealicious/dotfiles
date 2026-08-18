@@ -2,58 +2,8 @@
 
 set -e
 
-PI_BIN="$HOME/.bun/bin/pi"
-DOTFILES_ROOT="$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd -P)"
-
-run_pi() {
-  if ! command -v mise >/dev/null 2>&1; then
-    echo "pi-work: mise is required to run Pi with the managed Node runtime" >&2
-    exit 1
-  fi
-
-  node_bin="$(mise which -C "$DOTFILES_ROOT" node 2>/dev/null || true)"
-  if [ -z "$node_bin" ] || [ ! -x "$node_bin" ]; then
-    echo "pi-work: the mise-managed Node runtime is not installed" >&2
-    echo "Fix: run $DOTFILES_ROOT/mise/install.sh" >&2
-    exit 1
-  fi
-
-  # Invoke the Node entrypoint directly. `mise exec -C` would change Pi's
-  # working directory instead of preserving the caller's project cwd.
-  exec "$node_bin" "$PI_BIN" "$@"
-}
-
-export PI_CODING_AGENT_DIR="$HOME/.pi/work"
-
-if [ ! -x "$PI_BIN" ]; then
-  echo "pi-work: expected binary at $PI_BIN" >&2
-  exit 1
-fi
-
-if [ -n "${OPENAI_API_KEY:-}" ]; then
-  export OPENAI_API_KEY
-  run_pi "$@"
-fi
-
-if [ -z "${OPENAI_OP_REF:-}" ]; then
-  echo "pi-work: set OPENAI_API_KEY or OPENAI_OP_REF for work mode" >&2
-  exit 1
-fi
-
-if ! command -v op >/dev/null 2>&1; then
-  echo "pi-work: 1Password CLI 'op' is not installed" >&2
-  exit 1
-fi
-
-OPENAI_API_KEY="$(op read "$OPENAI_OP_REF")" || {
-  echo "pi-work: failed to load OPENAI_API_KEY from 1Password via OPENAI_OP_REF" >&2
-  exit 1
-}
-
-if [ -z "$OPENAI_API_KEY" ]; then
-  echo "pi-work: OPENAI_OP_REF returned an empty secret" >&2
-  exit 1
-fi
-
-export OPENAI_API_KEY
-run_pi "$@"
+BIN_DIR="$(CDPATH='' cd -- "$(dirname "$0")" && pwd -P)"
+export PI_DISPATCH_LIBRARY=1
+export PI_WRAPPER_PROFILE=work
+. "$BIN_DIR/pi"
+dispatch_pi "$@"
