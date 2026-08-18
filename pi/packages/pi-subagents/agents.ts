@@ -3,7 +3,6 @@
  */
 
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { KNOWN_FIELDS } from "./agent-serializer.ts";
@@ -680,8 +679,7 @@ function resolveNearestProjectAgentDirs(cwd: string): { readDirs: string[]; pref
 const BUILTIN_AGENTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "agents");
 
 export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryResult {
-	const userDirOld = path.join(resolveActiveProfileDir(), "agents");
-	const userDirNew = path.join(os.homedir(), ".agents");
+	const userDir = path.join(resolveActiveProfileDir(), "agents");
 	const { readDirs: projectAgentDirs, preferredDir: projectAgentsDir } = resolveNearestProjectAgentDirs(cwd);
 	const userSettingsPath = getUserAgentSettingsPath();
 	const projectSettingsPath = getProjectAgentSettingsPath(cwd);
@@ -696,9 +694,7 @@ export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryRe
 		projectSettingsPath,
 	);
 
-	const userAgentsOld = scope === "project" ? [] : loadAgentsFromDir(userDirOld, "user");
-	const userAgentsNew = scope === "project" ? [] : loadAgentsFromDir(userDirNew, "user");
-	const userAgents = [...userAgentsOld, ...userAgentsNew];
+	const userAgents = scope === "project" ? [] : loadAgentsFromDir(userDir, "user");
 
 	const projectAgents = scope === "user" ? [] : projectAgentDirs.flatMap((dir) => loadAgentsFromDir(dir, "project"));
 	const agents = mergeAgentsForScope(scope, userAgents, projectAgents, builtinAgents)
@@ -717,8 +713,7 @@ export function discoverAgentsAll(cwd: string): {
 	userSettingsPath: string;
 	projectSettingsPath: string | null;
 } {
-	const userDirOld = path.join(resolveActiveProfileDir(), "agents");
-	const userDirNew = path.join(os.homedir(), ".agents");
+	const userDir = path.join(resolveActiveProfileDir(), "agents");
 	const { readDirs: projectDirs, preferredDir: projectDir } = resolveNearestProjectAgentDirs(cwd);
 	const userSettingsPath = getUserAgentSettingsPath();
 	const projectSettingsPath = getProjectAgentSettingsPath(cwd);
@@ -732,10 +727,7 @@ export function discoverAgentsAll(cwd: string): {
 		userSettingsPath,
 		projectSettingsPath,
 	);
-	const user = [
-		...loadAgentsFromDir(userDirOld, "user"),
-		...loadAgentsFromDir(userDirNew, "user"),
-	];
+	const user = loadAgentsFromDir(userDir, "user");
 	const projectMap = new Map<string, AgentConfig>();
 	for (const dir of projectDirs) {
 		for (const agent of loadAgentsFromDir(dir, "project")) {
@@ -751,12 +743,9 @@ export function discoverAgentsAll(cwd: string): {
 		}
 	}
 	const chains = [
-		...loadChainsFromDir(userDirOld, "user"),
-		...loadChainsFromDir(userDirNew, "user"),
+		...loadChainsFromDir(userDir, "user"),
 		...Array.from(chainMap.values()),
 	];
-
-	const userDir = fs.existsSync(userDirNew) ? userDirNew : userDirOld;
 
 	return { builtin, user, project, chains, userDir, projectDir, userSettingsPath, projectSettingsPath };
 }

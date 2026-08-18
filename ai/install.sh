@@ -29,10 +29,12 @@ if [ "$FORCE" = "true" ]; then
 fi
 
 _TMPFILES=""
+PI_STAGE_TREE=""
 _cleanup() {
   for f in $_TMPFILES; do
     rm -f "$f"
   done
+  [ -z "$PI_STAGE_TREE" ] || rm -rf "$PI_STAGE_TREE"
 }
 trap _cleanup EXIT INT TERM
 
@@ -330,6 +332,151 @@ ensure_runtime_overlay_symlink() {
   ensure_symlink "$src" "$target" "$desc"
 }
 
+pi_profile_error() {
+  echo "  ERROR: $1" >&2
+  return 1
+}
+
+is_exact_symlink() {
+  target="$1"
+  expected="$2"
+  [ -L "$target" ] && [ "$(readlink "$target")" = "$expected" ]
+}
+
+validate_staged_pi_tree() {
+  tree="$1"
+
+  [ -f "$tree/AGENTS.md" ] || pi_profile_error "staged Pi tree is missing AGENTS.md"
+  [ -d "$tree/agents" ] || pi_profile_error "staged Pi tree is missing agents/"
+  [ -d "$tree/skills" ] || pi_profile_error "staged Pi tree is missing skills/"
+
+  set -- "$tree/agents"/*.md
+  [ -f "$1" ] || pi_profile_error "staged Pi tree contains no managed agents"
+  set -- "$tree/skills"/*
+  [ -e "$1" ] || pi_profile_error "staged Pi tree contains no projected skills"
+}
+
+preflight_pi_profile() {
+  profile_dir="$1"
+  staged_tree="$2"
+  instruction="$profile_dir/AGENTS.md"
+  agents_dir="$profile_dir/agents"
+  legacy_instruction="$HOME/.pi/agent/AGENTS.md"
+  legacy_agents_dir="$HOME/.pi/agent/agents"
+
+  if [ -e "$instruction" ] || [ -L "$instruction" ]; then
+    if ! is_exact_symlink "$instruction" "$PI_RUNTIME_TREE/AGENTS.md" && ! is_exact_symlink "$instruction" "$legacy_instruction"; then
+      pi_profile_error "$instruction is not the installer-managed link; preserve it and move it before rerunning"
+      return 1
+    fi
+  fi
+
+  if [ -e "$agents_dir" ] || [ -L "$agents_dir" ]; then
+    if [ -L "$agents_dir" ]; then
+      if ! is_exact_symlink "$agents_dir" "$legacy_agents_dir"; then
+        pi_profile_error "$agents_dir must be a real directory for profile-local agents; refusing to replace its unrelated link"
+        return 1
+      fi
+      return 0
+    elif [ ! -d "$agents_dir" ]; then
+      pi_profile_error "$agents_dir exists but is not a directory"
+      return 1
+    fi
+  fi
+
+  [ -d "$agents_dir" ] || return 0
+  for managed_agent in "$staged_tree/agents"/*.md; do
+    [ -f "$managed_agent" ] || continue
+    name="$(basename "$managed_agent")"
+    target="$agents_dir/$name"
+    [ -e "$target" ] || [ -L "$target" ] || continue
+    if is_exact_symlink "$target" "$PI_RUNTIME_TREE/agents/$name" || is_exact_symlink "$target" "$legacy_agents_dir/$name"; then
+      continue
+    fi
+    pi_profile_error "managed agent collision at $target; rename or remove the profile-local entry before rerunning"
+    return 1
+  done
+}
+
+link_pi_profile_resources() {
+  profile_dir="$1"
+  tree="$2"
+  instruction="$profile_dir/AGENTS.md"
+  agents_dir="$profile_dir/agents"
+  legacy_instruction="$HOME/.pi/agent/AGENTS.md"
+  legacy_agents_dir="$HOME/.pi/agent/agents"
+
+  mkdir -p "$profile_dir"
+  if is_exact_symlink "$instruction" "$legacy_instruction"; then
+    echo "  Replacing legacy Pi instruction link: $instruction"
+    rm "$instruction"
+  fi
+  if [ ! -e "$instruction" ] && [ ! -L "$instruction" ]; then
+    ln -s "$tree/AGENTS.md" "$instruction"
+    echo "  Linked $instruction"
+  fi
+
+  if is_exact_symlink "$agents_dir" "$legacy_agents_dir"; then
+    echo "  Replacing legacy Pi agents link: $agents_dir"
+    rm "$agents_dir"
+  fi
+  mkdir -p "$agents_dir"
+
+  # Remove only stale links previously managed by this generated tree. Preserve
+  # profile-local files and links with any other owner.
+  for target in "$agents_dir"/*.md; do
+    [ -L "$target" ] || continue
+    current="$(readlink "$target")"
+    case "$current" in
+      "$tree/agents/"*)
+        [ -e "$target" ] && continue
+        echo "  Removing stale managed Pi agent link: $target"
+        rm "$target"
+        ;;
+    esac
+  done
+
+  for managed_agent in "$tree/agents"/*.md; do
+    [ -f "$managed_agent" ] || continue
+    name="$(basename "$managed_agent")"
+    target="$agents_dir/$name"
+    if is_exact_symlink "$target" "$legacy_agents_dir/$name"; then
+      echo "  Replacing legacy Pi agent link: $target"
+      rm "$target"
+    fi
+    if [ ! -e "$target" ] && [ ! -L "$target" ]; then
+      ln -s "$managed_agent" "$target"
+      echo "  Linked $target"
+    fi
+  done
+}
+
+swap_staged_pi_tree() {
+  stage="$1"
+  destination="$2"
+  parent="$(dirname "$destination")"
+  previous=""
+
+  if [ -e "$destination" ] || [ -L "$destination" ]; then
+    previous="$(mktemp -d "$parent/.pi.previous.XXXXXX")"
+    rmdir "$previous"
+    if ! mv "$destination" "$previous"; then
+      pi_profile_error "could not prepare the previous generated Pi tree for replacement"
+      return 1
+    fi
+  fi
+
+  if ! mv "$stage" "$destination"; then
+    if [ -n "$previous" ]; then
+      mv "$previous" "$destination" || pi_profile_error "could not restore the previous generated Pi tree after a failed swap"
+    fi
+    pi_profile_error "could not activate the staged Pi tree"
+    return 1
+  fi
+
+  [ -z "$previous" ] || rm -rf "$previous"
+}
+
 log_info "Setting up AI instruction files..."
 
 SHARED_INSTRUCTIONS_BASE="$DOTFILES_ROOT/ai/instructions/base.md"
@@ -374,13 +521,6 @@ assemble_instruction_file "$HOME/.gemini/GEMINI.md" "$HOME/.gemini/GEMINI.md" ""
 mkdir -p "$HOME/.codex"
 assemble_instruction_file "$HOME/.codex/instructions.md" "$HOME/.codex/instructions.md" ""
 
-# Pi: shared AGENTS.md projected once to ~/.pi/agent/, then shared into the
-# active work/personal profile roots.
-mkdir -p "$HOME/.pi/agent" "$HOME/.pi/work" "$HOME/.pi/personal"
-assemble_instruction_file "$HOME/.pi/agent/AGENTS.md" "$HOME/.pi/agent/AGENTS.md" "$PI_INSTRUCTIONS_APPENDIX"
-ensure_symlink "$HOME/.pi/agent/AGENTS.md" "$HOME/.pi/work/AGENTS.md" "$HOME/.pi/work/AGENTS.md"
-ensure_symlink "$HOME/.pi/agent/AGENTS.md" "$HOME/.pi/personal/AGENTS.md" "$HOME/.pi/personal/AGENTS.md"
-
 #
 # Skills and Agents (single source of truth for all AI tools)
 #
@@ -402,7 +542,6 @@ PROJECTED_SKILLS_ROOT="$DOTFILES_ROOT/.ai-runtime"
 PROJECTED_CODEX_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/codex/skills"
 PROJECTED_CLAUDE_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/claude-code/skills"
 PROJECTED_OPENCODE_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/opencode/skills"
-PROJECTED_PI_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/pi/skills"
 PROJECT_AGENTS_SKILLS_DIR="$DOTFILES_ROOT/.agents/skills"
 PROJECT_CLAUDE_SKILLS_DIR="$DOTFILES_ROOT/.claude/skills"
 REVIEW_BODY_SRC="$SHARED_AGENTS_SRC/review.body.md"
@@ -428,7 +567,6 @@ log_info "Refreshing projected shared skill sources..."
 run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" codex "$SHARED_SKILLS_SRC" "$PROJECTED_CODEX_SKILLS_SRC"
 run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" claude-code "$SHARED_SKILLS_SRC" "$PROJECTED_CLAUDE_SKILLS_SRC"
 run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" opencode "$SHARED_SKILLS_SRC" "$PROJECTED_OPENCODE_SKILLS_SRC"
-run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" pi "$SHARED_SKILLS_SRC" "$PROJECTED_PI_SKILLS_SRC"
 
 # Repo-local runtime skill projections
 log_info "Refreshing repo runtime skills..."
@@ -474,30 +612,27 @@ if [ -d "$CLAUDE_AGENTS_SRC" ]; then
   done
 fi
 
-# Pi agents
-log_info "Setting up Pi agents..."
-PI_AGENT_DIR="$HOME/.pi/agent/agents"
-mkdir -p "$PI_AGENT_DIR"
-clean_dead_symlinks "$PI_AGENT_DIR"
-pi_generated_agents=""
+# Pi generated resources. Build and validate a complete sibling tree before
+# changing the active tree or either profile's resource links.
+log_info "Staging generated Pi resources..."
+PI_RUNTIME_TREE="$PROJECTED_SKILLS_ROOT/pi"
+PI_STAGE_TREE="$(mktemp -d "$PROJECTED_SKILLS_ROOT/.pi.stage.XXXXXX")"
+mkdir -p "$PI_STAGE_TREE/agents"
+assemble_instruction_file "$PI_STAGE_TREE/AGENTS.md" "$PI_STAGE_TREE/AGENTS.md" "$PI_INSTRUCTIONS_APPENDIX"
+run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" pi "$SHARED_SKILLS_SRC" "$PI_STAGE_TREE/skills"
 
 if [ -f "$REVIEW_BODY_SRC" ] && [ -f "$PI_REVIEW_FRONTMATTER" ]; then
-  pi_generated_agents="review.md"
-fi
-
-clean_stale_managed_markdown_files "$PI_AGENT_DIR" "$MANAGED_AGENT_MARKER" "$pi_generated_agents"
-
-if [ -n "$pi_generated_agents" ]; then
   assemble_agent_file \
     "$PI_REVIEW_FRONTMATTER" \
     "$REVIEW_BODY_SRC" \
     "$PI_REVIEW_APPENDIX" \
-    "$PI_AGENT_DIR/review.md" \
-    "$PI_AGENT_DIR/review.md" \
-    "pi/agents/review.md"
+    "$PI_STAGE_TREE/agents/review.md" \
+    "$PI_STAGE_TREE/agents/review.md" \
+    ""
 fi
 
-# Symlink standalone Pi agent files (skip frontmatter, appendix, and body fragments)
+# Materialize standalone Pi agents so the generated tree does not depend on a
+# profile or the deprecated fallback directory.
 for agent_file in "$PI_AGENTS_SRC"/*.md; do
   [ -e "$agent_file" ] || continue
   case "$agent_file" in
@@ -505,14 +640,32 @@ for agent_file in "$PI_AGENTS_SRC"/*.md; do
       continue
       ;;
   esac
-  agent_name=$(basename "$agent_file")
-  ensure_symlink "$agent_file" "$PI_AGENT_DIR/$agent_name" "$PI_AGENT_DIR/$agent_name"
+  cp "$agent_file" "$PI_STAGE_TREE/agents/$(basename "$agent_file")"
 done
 
-# Share the same global Pi agents into both active profile roots.
-mkdir -p "$HOME/.pi/work" "$HOME/.pi/personal"
-ensure_symlink "$PI_AGENT_DIR" "$HOME/.pi/work/agents" "$HOME/.pi/work/agents"
-ensure_symlink "$PI_AGENT_DIR" "$HOME/.pi/personal/agents" "$HOME/.pi/personal/agents"
+if ! validate_staged_pi_tree "$PI_STAGE_TREE"; then
+  rm -rf "$PI_STAGE_TREE"
+  exit 1
+fi
+
+# Detect collisions before swapping the generated tree, so a profile-local
+# custom agent or chain is never overwritten by a managed agent link.
+for profile_dir in "$HOME/.pi/work" "$HOME/.pi/personal"; do
+  if ! preflight_pi_profile "$profile_dir" "$PI_STAGE_TREE"; then
+    rm -rf "$PI_STAGE_TREE"
+    exit 1
+  fi
+done
+
+if ! swap_staged_pi_tree "$PI_STAGE_TREE" "$PI_RUNTIME_TREE"; then
+  rm -rf "$PI_STAGE_TREE"
+  exit 1
+fi
+PI_STAGE_TREE=""
+
+for profile_dir in "$HOME/.pi/work" "$HOME/.pi/personal"; do
+  link_pi_profile_resources "$profile_dir" "$PI_RUNTIME_TREE"
+done
 
 # OpenCode skills
 log_info "Setting up OpenCode skills..."

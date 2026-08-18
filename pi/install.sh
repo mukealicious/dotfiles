@@ -130,20 +130,8 @@ setup_pi_profile() {
   fi
 }
 
-# Shared backing store for global Pi resources (assembled AGENTS.md, agents/).
-# Not a user-facing profile — pi dispatches to work or personal.
-setup_pi_profile "$HOME/.pi/agent" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/agent"
 setup_pi_profile "$HOME/.pi/work" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/work"
 setup_pi_profile "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/settings.personal.json" "$HOME/.pi/personal"
-
-# Seed the personal profile with existing shared OAuth credentials on first split.
-if [ -e "$HOME/.pi/agent/auth.json" ]; then
-  if [ ! -s "$HOME/.pi/personal/auth.json" ] || [ "$(tr -d '[:space:]' < "$HOME/.pi/personal/auth.json" 2>/dev/null)" = "{}" ]; then
-    cp "$HOME/.pi/agent/auth.json" "$HOME/.pi/personal/auth.json"
-    chmod 600 "$HOME/.pi/personal/auth.json"
-    log_success "Seeded ~/.pi/personal/auth.json from ~/.pi/agent/auth.json"
-  fi
-fi
 
 # Install researcher support CLI required by pi-parallel.
 # Upstream documents Homebrew, but the published tap does not currently

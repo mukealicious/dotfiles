@@ -98,12 +98,12 @@ same name only when you want a substantially different agent.
 ## Discovery and Scope Rules
 
 Agent files can live in:
-- `~/.pi/agent/agents/*.md` — user scope
+- `$PI_CODING_AGENT_DIR/agents/*.md` — user scope (or `~/.pi/agent` only when no profile is selected)
 - `.pi/agents/*.md` — canonical project scope
 - legacy `.agents/*.md` — still read for compatibility, but `.pi/agents/` wins on conflicts
 
 Chains live in:
-- `~/.pi/agent/agents/*.chain.md`
+- `$PI_CODING_AGENT_DIR/agents/*.chain.md` (or `~/.pi/agent` only when no profile is selected)
 - `.pi/agents/*.chain.md`
 - legacy `.agents/*.chain.md`
 

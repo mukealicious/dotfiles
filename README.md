@@ -145,7 +145,7 @@ Shared guidance now lives in `ai/instructions/base.md`, with small harness appen
 `ai/install.sh` assembles the final installed instruction files:
 
 - `~/.claude/CLAUDE.md` = shared base + Claude appendix
-- `~/.pi/agent/AGENTS.md` = shared base + Pi appendix
+- `.ai-runtime/pi/AGENTS.md` = shared base + Pi appendix, linked from both Pi profiles
 - `~/.config/opencode/AGENTS.md` = shared base + OpenCode appendix
 - `~/.codex/instructions.md` and `~/.gemini/GEMINI.md` = shared base only
 

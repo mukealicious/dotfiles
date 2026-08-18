@@ -80,7 +80,6 @@ Profile settings are materialized as writable runtime files by `install.sh`:
 
 - `pi/settings.work.json` → `~/.pi/work/settings.json`
 - `pi/settings.personal.json` → `~/.pi/personal/settings.json`
-- `pi/settings.work.json` → `~/.pi/agent/settings.json` (shared backing store / compatibility root)
 
 The tracked files are managed baselines rather than direct symlink targets. Pi writes
 interactive model choices and changelog state back to each profile's runtime file;
@@ -90,15 +89,11 @@ changes. Installer runs refresh repo-managed settings while preserving
 Pi's generated `trackingId`. Edit the tracked baseline for durable non-runtime
 configuration; use Pi normally for per-profile model changes.
 
-Shared global Pi runtime resources are projected once, then shared into both active
-profiles:
-
-- `~/.pi/agent/AGENTS.md` → canonical assembled Pi instructions
-- `~/.pi/work/AGENTS.md` → symlink to shared Pi instructions
-- `~/.pi/personal/AGENTS.md` → symlink to shared Pi instructions
-- `~/.pi/agent/agents/` → canonical assembled/symlinked Pi agent defs
-- `~/.pi/work/agents` → symlink to shared Pi agents
-- `~/.pi/personal/agents` → symlink to shared Pi agents
+Shared Pi resources are staged and validated under `.ai-runtime/pi/` before they
+replace the active generated tree. Both active profiles then link their
+`AGENTS.md` files to the generated instruction, while retaining separate real
+`agents/` directories. Managed agent files link individually to the generated
+agents; custom agents and chains remain in their owning profile.
 
 Tracked baseline defaults:
 
@@ -106,14 +101,14 @@ Tracked baseline defaults:
 - **Personal profile**: OpenAI Codex `gpt-5.5` via OAuth subscription
 - **Theme**: Gruvbox Light
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` plus tldraw offline's app-managed skill at `~/skills/tldraw-offline` when installed; missing external skill paths are harmless
-- **Instructions**: `ai/install.sh` assembles one shared Pi instruction file, then symlinks it into both profiles
-- **Agents**: `ai/install.sh` assembles one shared Pi agent dir, then symlinks it into both profiles
+- **Instructions**: `ai/install.sh` stages `.ai-runtime/pi/AGENTS.md`, validates it, then links it into both profiles
+- **Agents**: `ai/install.sh` stages `.ai-runtime/pi/agents/`, validates it, then links managed files into each profile-local agent directory
 - **Packages**: vendored pi-exa, pi-parallel, vendored pi-openai-fast, vendored pi-subagents, and mitsupi
 
 In normal use there is no standalone user-facing top-level Pi profile: `pi` dispatches to
-either `pi-work` or `pi-personal`. The `~/.pi/agent/` tree is kept as the shared backing
-store for global Pi instructions/agents and for compatibility with raw `~/.bun/bin/pi`
-usage.
+either `pi-work` or `pi-personal`. The deprecated `~/.pi/agent/` fallback is not managed
+or read by local installers; exact legacy resource links are migrated during the cutover,
+while the directory itself is left untouched for manual deletion after later verification.
 
 ### Subagent model routing
 

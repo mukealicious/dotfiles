@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Fixed
+- Kept user agent and chain discovery and management inside the active profile's real `agents/` directory; home `~/.agents` remains a skill location only.
 - Scoped configuration, user skill and package discovery, run history, intercom, saved chains, and session artifact cleanup by active `PI_CODING_AGENT_DIR`, preserving the no-environment fallback.
 - Scoped temporary async, result, chain, and artifact state by active `PI_CODING_AGENT_DIR` in addition to OS user, preventing work, personal, and fallback profiles from sharing support state.
 - Made user agent definitions and builtin overrides follow the active `PI_CODING_AGENT_DIR`, preserving provider/auth affinity for profile-based Pi setups.

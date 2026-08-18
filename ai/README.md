@@ -106,7 +106,7 @@ Verify a new entry with:
 bin/ai-watch --source <id>
 ```
 
-The same rule now applies to assembled agent runtime files under `~/.claude/agents/` and `~/.pi/agent/agents/`: edit the split source files in the repo, not the installed outputs.
+The same rule now applies to assembled agent runtime files under `~/.claude/agents/` and the managed links in each Pi profile's `agents/` directory: edit the split source files in the repo, not the installed outputs.
 
 ### Shared Instructions
 
@@ -121,9 +121,9 @@ Current install targets:
 | Installed file | Composition |
 |---|---|
 | `~/.claude/CLAUDE.md` | `ai/instructions/base.md` + `claude/instructions/appendix.md` |
-| `~/.pi/agent/AGENTS.md` | `ai/instructions/base.md` + `pi/instructions/appendix.md` |
-| `~/.pi/work/AGENTS.md` | symlink → `~/.pi/agent/AGENTS.md` |
-| `~/.pi/personal/AGENTS.md` | symlink → `~/.pi/agent/AGENTS.md` |
+| `.ai-runtime/pi/AGENTS.md` | `ai/instructions/base.md` + `pi/instructions/appendix.md` |
+| `~/.pi/work/AGENTS.md` | symlink → `.ai-runtime/pi/AGENTS.md` |
+| `~/.pi/personal/AGENTS.md` | symlink → `.ai-runtime/pi/AGENTS.md` |
 | `~/.config/opencode/AGENTS.md` | `ai/instructions/base.md` + `opencode/instructions/appendix.md` |
 | `~/.codex/instructions.md` | `ai/instructions/base.md` |
 | `~/.gemini/GEMINI.md` | `ai/instructions/base.md` |
@@ -145,7 +145,7 @@ Agent Assembly Status:
 
 | Capability | Shared source | Harness metadata | Installed outputs |
 |---|---|---|---|
-| `review` | `ai/agents/review.body.md` | `claude/agents/review.frontmatter`, `pi/agents/review.frontmatter` | `~/.claude/agents/review.md`, `~/.pi/agent/agents/review.md` |
+| `review` | `ai/agents/review.body.md` | `claude/agents/review.frontmatter`, `pi/agents/review.frontmatter` | `~/.claude/agents/review.md`, `.ai-runtime/pi/agents/review.md`, and managed links in each Pi profile |
 
 `oracle` and `librarian` remain legacy combined Claude agent files for now. The repo is intentionally hybrid, and more agent migrations are optional rather than the default direction.
 
@@ -310,8 +310,8 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 - **Provider**: Anthropic (via @earendil-works/pi-coding-agent)
 - **Profiles**: `pi-work` and `pi-personal` — `pi` dispatches based on `PI_DEFAULT_PROFILE`
 - **Config**: tracked `pi/settings.{work,personal}.json` baselines are materialized into writable profile settings so Pi can persist model changes without dirtying Git
-- **Instruction File**: `~/.pi/agent/AGENTS.md` (assembled), symlinked into both profiles
-- **Agents**: `~/.pi/agent/agents/` (assembled), symlinked into both profiles
+- **Instruction File**: `.ai-runtime/pi/AGENTS.md` (assembled), linked into both profiles
+- **Agents**: `.ai-runtime/pi/agents/` (assembled), linked file-by-file into each real profile-local `agents/` directory; custom agents and chains remain profile-local
 - **Aliases**: `pi-work-print`, `pi-personal-print`
 
 ## Instruction Composition
