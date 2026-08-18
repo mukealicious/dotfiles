@@ -83,6 +83,8 @@ for profile in work personal; do
   [ -d "$SUCCESS_HOME/.pi/$profile/agents" ] && [ ! -L "$SUCCESS_HOME/.pi/$profile/agents" ] || fail "$profile agents directory is not real"
   [ "$(readlink "$SUCCESS_HOME/.pi/$profile/agents/review.md")" = "$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/agents/review.md" ] || fail "$profile review agent was not linked individually"
 done
+[ -f "$SUCCESS_REPO/.ai-runtime/pi/skills/handoff/SKILL.md" ] || fail "handoff skill was not projected into Pi runtime"
+assert_file_contains "$SUCCESS_REPO/.ai-runtime/pi/skills/handoff/SKILL.md" "temporary handoff"
 [ -f "$SUCCESS_HOME/.pi/agent/AGENTS.md" ] || fail "legacy fallback was modified"
 printf '%s\n' 'work custom agent' > "$SUCCESS_HOME/.pi/work/agents/custom.md"
 printf '%s\n' 'work custom chain' > "$SUCCESS_HOME/.pi/work/agents/custom.chain.md"

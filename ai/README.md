@@ -57,7 +57,7 @@ auto-sync mechanism.
 
 | Upstream | Local scope | Ownership |
 |---|---|---|
-| `dmmulroy/.dotfiles@f9f7aa1a3638d6bfb6fa0b94fd110185534a2895` | `grilling`, `domain-modeling`, `tdd`, `implement`, `bro` | Grilling, domain docs, TDD, manual implementation, and plain-language restatement |
+| `dmmulroy/.dotfiles@f9f7aa1a3638d6bfb6fa0b94fd110185534a2895` | `grilling`, `domain-modeling`, `tdd`, `implement`, `bro`, `handoff` | Grilling, domain docs, TDD, manual implementation, plain-language restatement, and temporary handoffs |
 | `mattpocock/skills@9c9f36ccd3995266cd675468af71639c8dde1ec5` | `codebase-design`, thin `grill-me`, thin `grill-with-docs` | Deep-module/interface vocabulary and manual entry-point provenance |
 | `rjs/shaping-skills@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9` | `framing-doc`, `kickoff-doc`, `breadboarding` | Framing, shaped kickoff territory, and breadboarding |
 | `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | `impeccable` | Product UI/UX and visual interaction design |
@@ -196,6 +196,7 @@ uncertain.
 | `flares` | Cloudflare-native mini-apps and thin AI-client guidance |
 | `grill-me` / `grill-with-docs` | Thin manual entries into grilling and domain modeling |
 | `grilling` | Dependency-aware design-tree questioning |
+| `handoff` | Temporary same-process continuation context |
 | `herdr` | Herdr pane/workspace/agent coordination |
 | `hunk-review` | Hunk diff and comment workflow |
 | `implement` | Manual current-session implementation |
@@ -235,6 +236,7 @@ Custom extensions symlinked by `pi/install.sh`. Third-party extensions installed
 
 | Extension | Type | Description |
 |---|---|---|
+| `handoff.ts` | Command | `/handoff` writes temporary continuation context and resumes on a summarized tree branch |
 | `notify.ts` | Lifecycle hook | Desktop notification via OSC 777 on agent completion (WezTerm) |
 
 | Package | Source | Provides |

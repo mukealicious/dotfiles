@@ -191,6 +191,7 @@ Shared skills in `ai/skills/` are projected to Claude, Pi, OpenCode, and Codex:
 | `implement` | Manual current-session implementation of approved specs/tickets |
 | `bro` | Manual plain-language restatement |
 | `framing-doc` / `kickoff-doc` | Evidence-grounded framing and builder-facing shaped territory |
+| `handoff` | Temporary same-process continuation context |
 | `opensrc` / `librarian` | Source-backed external code investigation |
 | `build-skill` / `dotfiles-dev` | Skill authoring and repository conventions |
 | `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |

@@ -59,6 +59,15 @@ review = "semantic-diff"
 notes = "Reviewed plain-language restatement source for ai/skills/bro/SKILL.md"
 
 [[sources]]
+id = "handoff"
+repo = "dmmulroy/.dotfiles"
+path = "home/.agents/skills/handoff"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Reviewed temporary same-process handoff source for ai/skills/handoff/SKILL.md"
+
+[[sources]]
 id = "codebase-design"
 repo = "mattpocock/skills"
 path = "skills/engineering/codebase-design"

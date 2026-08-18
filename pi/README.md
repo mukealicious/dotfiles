@@ -73,7 +73,8 @@ pi/
 ├── patches/                 # Exact-context local patches for pinned Pi packages
 ├── aliases.fish            # Thin Fish forwarding to bin/pi
 ├── extensions/             # Custom TypeScript extensions
-│   └── notify.ts          # Desktop notification on agent completion
+│   ├── handoff.ts          # Same-process temporary conversation handoff
+│   └── notify.ts           # Desktop notification on agent completion
 ├── intercepted-commands/   # Shell shims for Python tooling
 │   ├── pip                # → uv add / uv run --with
 │   ├── pip3               # → uv add / uv run --with
@@ -150,6 +151,9 @@ settings do not override these role defaults.
 - Use `/skill:code-review` for proportional advisory review and Hunk for user-facing
   annotations. Mitsupi `/review` remains an optional manual tree-isolated experiment,
   not an automatic sequel.
+- Use `/handoff` for temporary same-process continuation context: it writes the
+  handoff outside the checkout, summarizes the source branch with `/tree`, and
+  continues from that handoff without selecting a new profile or spawning a child.
 - `/skill:grilling`, `/skill:grill-me`, `/skill:grill-with-docs`, `/skill:tdd`,
   `/skill:implement`, and `/skill:bro` are composable workflows. `implement` and
   `bro` are manual-only; implementation stays in the current session, does not
@@ -159,6 +163,19 @@ settings do not override these role defaults.
 
 Extensions are TypeScript files using Pi's `ExtensionAPI`. Symlinked into each active
 profile's `extensions/` directory by `install.sh`.
+
+### handoff.ts — Conversation Handoffs
+
+Registers `/handoff [focus]`. The command invokes the manual-only shared handoff
+skill, waits for its agent turn, preserves the source JSONL branch, navigates back
+to the first user message with `summarize: true`, clears restored editor text, and
+continues automatically from the temporary handoff. Cancellation or failure leaves
+the prior branch and any handoff artifact available and reports the failure.
+
+The handoff stays in the current Pi/Herdr process, so its active profile, working
+directory, pane identity, and Git state carry through naturally. Specs and other
+durable project records remain separate from temporary handoffs and Moja Glava
+checkpoints.
 
 ### notify.ts — Desktop Notifications
 

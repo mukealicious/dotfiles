@@ -208,6 +208,8 @@ for profile in work personal; do
   ' "$settings" >/dev/null || fail "$profile Mitsupi resource allowlist changed"
   [ -L "$HOME_ROOT/.pi/$profile/extensions/notify.ts" ] || fail "$profile local notify extension is missing"
   [ "$(readlink "$HOME_ROOT/.pi/$profile/extensions/notify.ts")" = "$REPO/pi/extensions/notify.ts" ] || fail "$profile local notify link is misdirected"
+  [ -L "$HOME_ROOT/.pi/$profile/extensions/handoff.ts" ] || fail "$profile handoff extension is missing"
+  [ "$(readlink "$HOME_ROOT/.pi/$profile/extensions/handoff.ts")" = "$REPO/pi/extensions/handoff.ts" ] || fail "$profile handoff link is misdirected"
   assert_not_contains "$settings" 'extensions/notify.ts'
   assert_not_contains "$settings" 'extensions/loop.ts'
   assert_not_contains "$settings" 'extensions/control.ts'
