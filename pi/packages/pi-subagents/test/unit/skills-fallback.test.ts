@@ -260,6 +260,51 @@ describe("skills filesystem fallback", () => {
 		}
 	});
 
+	it("honors positive package skill filters without scanning unrelated installed packages", async () => {
+		const fakeHome = path.join(tempDir, "fake-home");
+		const userAgentDir = path.join(fakeHome, ".pi", "agent");
+		const filteredPackage = path.join(userAgentDir, "packages", "filtered-package");
+		const unrelatedPackage = path.join(userAgentDir, "npm", "node_modules", "unrelated-package");
+		const previousHome = process.env.HOME;
+		const previousUserProfile = process.env.USERPROFILE;
+
+		try {
+			process.env.HOME = fakeHome;
+			process.env.USERPROFILE = fakeHome;
+			makePackageSkill(filteredPackage, "allowed-skill", "Allowed package skill.");
+			const blockedDir = path.join(filteredPackage, "skills", "blocked-skill");
+			fs.mkdirSync(blockedDir, { recursive: true });
+			fs.writeFileSync(path.join(blockedDir, "SKILL.md"), "Blocked package skill.\n", "utf-8");
+			if (process.platform !== "win32") {
+				fs.symlinkSync(filteredPackage, path.join(filteredPackage, "skills", "package-loop"));
+			}
+			makePackageSkill(unrelatedPackage, "unrelated-skill", "Unrelated installed package skill.");
+			fs.mkdirSync(userAgentDir, { recursive: true });
+			fs.writeFileSync(
+				path.join(userAgentDir, "settings.json"),
+				JSON.stringify({
+					packages: [{
+						source: "./packages/filtered-package",
+						skills: ["skills/allowed-skill/SKILL.md"],
+					}],
+				}, null, 2),
+				"utf-8",
+			);
+
+			const fresh = await importSkillsFresh();
+			fresh.clearSkillCache();
+			const discovered = fresh.discoverAvailableSkills(tempDir).map((entry) => entry.name);
+			assert.ok(discovered.includes("allowed-skill"));
+			assert.ok(!discovered.includes("blocked-skill"));
+			assert.ok(!discovered.includes("unrelated-skill"));
+		} finally {
+			if (previousHome === undefined) delete process.env.HOME;
+			else process.env.HOME = previousHome;
+			if (previousUserProfile === undefined) delete process.env.USERPROFILE;
+			else process.env.USERPROFILE = previousUserProfile;
+		}
+	});
+
 	it("surfaces malformed project settings files instead of silently ignoring them", () => {
 		fs.mkdirSync(path.join(tempDir, ".pi"), { recursive: true });
 		fs.writeFileSync(path.join(tempDir, ".pi", "settings.json"), "{bad-json", "utf-8");

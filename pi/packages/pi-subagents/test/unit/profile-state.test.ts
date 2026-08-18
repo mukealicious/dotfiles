@@ -108,7 +108,7 @@ describe("profile-scoped runtime state", () => {
 			assert.ok(names.includes(`${prefix}-direct`));
 			assert.ok(names.includes(`${prefix}-settings`));
 			assert.ok(names.includes(`${prefix}-package`));
-			assert.ok(names.includes(`${prefix}-installed`));
+			assert.ok(!names.includes(`${prefix}-installed`), "unconfigured profile npm packages must not be scanned");
 			const other = prefix === "work" ? "personal" : "work";
 			assert.ok(!names.includes(`${other}-direct`));
 			assert.ok(!names.includes(`${other}-installed`));

@@ -70,6 +70,7 @@ pi/
 ├── settings.work.json      # Work profile config baseline (OpenAI API key flow)
 ├── settings.personal.json  # Personal profile config baseline (OpenAI Codex OAuth flow)
 ├── install.sh              # Materializes settings, symlinks resources, installs packages
+├── patches/                 # Exact-context local patches for pinned Pi packages
 ├── aliases.fish            # Thin Fish forwarding to bin/pi
 ├── extensions/             # Custom TypeScript extensions
 │   └── notify.ts          # Desktop notification on agent completion
@@ -172,9 +173,42 @@ PI_CODING_AGENT_DIR="$HOME/.pi/personal" herdr integration install pi
 
 **Supported terminals**: WezTerm, Ghostty, iTerm2
 
-### Provided by mitsupi
+### Provided by Mitsupi
 
-The `npm:mitsupi` package provides additional extensions including `uv.ts` (Python tooling interceptor), `answer.ts`, `review.ts`, `todos.ts`, `files.ts`, and more. These are installed automatically via `pi install npm:mitsupi`.
+Both profile settings pin `npm:mitsupi@1.6.0` and use positive resource
+allowlists. The enabled extensions are `answer.ts`, `context.ts`, `files.ts`,
+`multi-edit.ts`, `prompt-editor.ts`, `todos.ts`, `uv.ts`, `whimsical.ts`,
+`btw.ts`, and `review.ts`; the enabled skills are `apple-mail`, `commit`,
+`github`, `google-workspace`, `mermaid`, `pi-share`, `sentry`, `summarize`,
+and `uv`. Mitsupi prompts and themes are disabled. The package remains fully
+installed so retained resources can use internal files, but filtered resources
+such as `notify.ts`, `control.ts`, `session-breakdown.ts`, and `loop.ts` are not
+Pi-visible. `/btw` and `/review` are manual trials; `/loop` is unavailable.
+Start `/review` from an empty tree branch with automatic fixing disabled, then
+return through `/end-review` with a summary or an explicit fix prompt. `/btw`
+is for non-mutating tangents; its in-memory child is not separately visible to
+Herdr, so the pane may appear idle and no separate completion toast is expected.
+
+`pi/install.sh` applies the tracked `pi/patches/mitsupi-1.6.0-prompt-editor.patch`
+only after both profile copies pass the exact version/context preflight. The
+patch adds Pi's native `max` thinking level to Mitsupi's mode editor, adapts
+its model picker to the current Pi runtime contract, and keeps a fresh
+profile's required `default` mode from creating a latency-named `fast` mode.
+Personal mode calibration is runtime state: use Mitsupi's
+`/mode` UI in `~/.pi/personal`: choose **Configure modes…**, keep **default**,
+add **light**, **standard**, and **deep**, then use **Change model** and
+**Change thinking level** to set `light` `openai-codex/gpt-5.6-luna`/`max`,
+`standard` `openai-codex/gpt-5.6-terra`/`max`, `default`
+`openai-codex/gpt-5.6-sol`/`xhigh`, and `deep`
+`openai-codex/gpt-5.6-sol`/`max`. `/fast` remains the independent
+`pi-openai-fast` service-tier toggle.
+
+The filtered Mitsupi surface includes `control.ts`, `go-to-bed.ts`, `loop.ts`,
+`notify.ts`, `session-breakdown.ts`, `split-fork.ts`, the `anachb`,
+`frontend-design`, `ghidra`, `librarian`, `native-web-search`, `oebb-scotty`,
+`openscad`, `tmux`, `update-changelog`, and `web-browser` skills, and the
+`nightowl` theme. Local `pi/extensions/notify.ts` is the sole non-Herdr OSC
+fallback and suppresses itself when `HERDR_ENV=1`.
 
 ## Intercepted Commands
 
@@ -184,9 +218,10 @@ Shell shims in `pi/intercepted-commands/` that print helpful error messages redi
 
 ## Skill Collisions
 
-Some shared skills (`commit`, `uv`, `web-browser`) intentionally collide with mitsupi's bundled copies. Pi prefers mitsupi's versions for those names.
-
-Two other mitsupi collisions are intentionally filtered out in both profile settings files: `librarian` so Pi loads this repo's projected Pi-specific variant, and `frontend-design` so the older bundled design skill does not compete with the canonical `/impeccable` 3.x workflow.
+Some shared skills (`commit` and `uv`) intentionally collide with Mitsupi's
+bundled copies. The explicit Mitsupi allowlist owns those names in Pi; other
+bundled skills, including `librarian`, `frontend-design`, `web-browser`, and
+the approved filtered skills, are not exposed.
 
 ## Packages
 
@@ -198,4 +233,4 @@ Pi packages loaded by this setup:
 | `pi/packages/pi-parallel` | Local vendored Parallel tools (`web_search`, `web_fetch`, `deep_research`, `batch_enrich`; Turbo is the default search mode; depends on standalone `parallel-cli`) |
 | `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4, GPT-5.5, and GPT-5.6 Luna/Terra/Sol models |
 | `pi/packages/pi-subagents` | Local vendored subagent delegation tools, builtin child agents, chains, and parallel runs |
-| `mitsupi` | /answer, /review, /todos, /files, /context, uv interceptor |
+| `mitsupi@1.6.0` | Curated `/answer`, `/context`, `/files`, `/multi-edit`, `/prompt-editor`, `/todos`, `/uv`, `/whimsical`, manual `/btw` and `/review`, plus the nine allowlisted skills |

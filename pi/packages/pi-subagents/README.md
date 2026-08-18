@@ -401,6 +401,11 @@ role has depth zero. Pi thinking levels are `off`, `minimal`, `low`, `medium`,
 management and clarify selectors, model suffixes, saved chains, async payloads,
 and child launch arguments.
 
+Skill fallback discovery follows Pi's settings boundary: settings-declared
+package resource filters are applied before package skills enter the selector.
+Project package manifests remain available, while unrelated active-profile and
+global npm package roots are not scanned opportunistically.
+
 ## Diagnostics and troubleshooting
 
 Start with the read-only diagnostic report:

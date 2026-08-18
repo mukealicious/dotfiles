@@ -30,6 +30,9 @@ fi
 
 PI_PACKAGE="@earendil-works/pi-coding-agent"
 PI_BIN="$HOME/.bun/bin/pi"
+MIN_PI_VERSION="0.80.6"
+MITSUPI_PACKAGE="npm:mitsupi@1.6.0"
+MITSUPI_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-prompt-editor.patch"
 
 if [ ! -x "$PI_BIN" ]; then
   log_info "Installing Pi coding agent ($PI_PACKAGE)..."
@@ -43,6 +46,132 @@ if [ ! -x "$PI_BIN" ]; then
 fi
 
 log_info "Setting up Pi coding agent..."
+
+if ! command -v jq >/dev/null 2>&1; then
+  log_error "jq is required for Pi setup"
+  log_hint "Install it with: brew install jq"
+  exit 1
+fi
+
+if ! command -v patch >/dev/null 2>&1; then
+  log_error "patch is required to apply the Mitsupi compatibility patch"
+  exit 1
+fi
+
+if [ ! -f "$MITSUPI_PATCH" ]; then
+  log_error "Mitsupi compatibility patch is missing: $MITSUPI_PATCH"
+  exit 1
+fi
+
+pi_version_at_least() {
+  actual="$1"
+  minimum="$2"
+  awk -v actual="$actual" -v minimum="$minimum" '
+    BEGIN {
+      split(actual, a, ".")
+      split(minimum, b, ".")
+      for (i = 1; i <= 3; i++) {
+        if ((a[i] + 0) > (b[i] + 0)) exit 0
+        if ((a[i] + 0) < (b[i] + 0)) exit 1
+      }
+      exit 0
+    }
+  '
+}
+
+check_pi_version() {
+  pi_version="$($PI_BIN --version 2>/dev/null | sed -n 's/.*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' | head -n 1)"
+  if [ -z "$pi_version" ]; then
+    log_error "Unable to determine Pi version; Pi >= $MIN_PI_VERSION is required"
+    exit 1
+  fi
+  if ! pi_version_at_least "$pi_version" "$MIN_PI_VERSION"; then
+    log_error "Pi $pi_version is too old; Pi >= $MIN_PI_VERSION is required for native max thinking"
+    exit 1
+  fi
+  log_success "Pi $pi_version supports native max thinking"
+}
+
+mitsupi_package_dir() {
+  printf '%s/.pi/%s/npm/node_modules/mitsupi\n' "$HOME" "$1"
+}
+
+check_mitsupi_package_copy() {
+  profile_name="$1"
+  package_dir="$(mitsupi_package_dir "$profile_name")"
+
+  # A missing package is installed below. An existing package, including a
+  # malformed directory, must be validated before any profile is mutated.
+  if [ ! -e "$package_dir" ] && [ ! -L "$package_dir" ]; then
+    log_info "Mitsupi is not installed for $profile_name yet"
+    return 0
+  fi
+
+  package_json="$package_dir/package.json"
+  prompt_editor="$package_dir/extensions/prompt-editor.ts"
+  if [ ! -f "$package_json" ] || ! jq -e --arg version "1.6.0" '.name == "mitsupi" and .version == $version' "$package_json" >/dev/null 2>&1; then
+    log_error "Mitsupi $profile_name copy is not exactly version 1.6.0: $package_dir"
+    log_hint "Remove or reinstall only this profile's package with PI_CODING_AGENT_DIR=$HOME/.pi/$profile_name pi install $MITSUPI_PACKAGE"
+    exit 1
+  fi
+  if [ ! -f "$prompt_editor" ]; then
+    log_error "Mitsupi $profile_name prompt-editor context is missing: $prompt_editor"
+    exit 1
+  fi
+
+  if (cd "$package_dir" && patch -p1 -N -t --dry-run < "$MITSUPI_PATCH") >/dev/null 2>&1; then
+    log_success "Validated unpatched Mitsupi 1.6.0 context for $profile_name"
+    return 0
+  fi
+  if (cd "$package_dir" && patch -R -p1 -t --dry-run < "$MITSUPI_PATCH") >/dev/null 2>&1; then
+    log_success "Validated patched Mitsupi 1.6.0 context for $profile_name"
+    return 0
+  fi
+
+  log_error "Unknown Mitsupi 1.6.0 prompt-editor context for $profile_name: $prompt_editor"
+  log_hint "Refusing to mutate either profile; inspect the installed package before retrying"
+  exit 1
+}
+
+preflight_mitsupi_copies() {
+  check_mitsupi_package_copy work
+  check_mitsupi_package_copy personal
+}
+
+ensure_mitsupi_package() {
+  for profile_name in work personal; do
+    package_dir="$(mitsupi_package_dir "$profile_name")"
+    if [ -d "$package_dir" ]; then
+      continue
+    fi
+    log_info "Installing $MITSUPI_PACKAGE for $profile_name..."
+    if ! PI_CODING_AGENT_DIR="$HOME/.pi/$profile_name" mise exec -C "$DOTFILES_ROOT" -- "$PI_BIN" install "$MITSUPI_PACKAGE"; then
+      log_error "Failed to install $MITSUPI_PACKAGE for $profile_name"
+      exit 1
+    fi
+  done
+}
+
+apply_mitsupi_patch() {
+  for profile_name in work personal; do
+    package_dir="$(mitsupi_package_dir "$profile_name")"
+    if (cd "$package_dir" && patch -p1 -N -t --dry-run < "$MITSUPI_PATCH") >/dev/null 2>&1; then
+      (cd "$package_dir" && patch -p1 -N -t < "$MITSUPI_PATCH") >/dev/null
+      log_success "Applied Mitsupi 1.6.0 prompt-editor patch for $profile_name"
+    elif (cd "$package_dir" && patch -R -p1 -t --dry-run < "$MITSUPI_PATCH") >/dev/null 2>&1; then
+      log_success "Mitsupi 1.6.0 prompt-editor patch already applied for $profile_name"
+    else
+      log_error "Mitsupi 1.6.0 context changed after preflight for $profile_name"
+      exit 1
+    fi
+  done
+}
+
+# Validate both existing copies before setup, package installation, or any
+# profile link/settings mutation. Missing copies are the only allowed state;
+# they are installed and validated again before the patch is applied.
+check_pi_version
+preflight_mitsupi_copies
 
 # Pi persists interactive model choices and changelog state in settings.json.
 # Materialize a writable runtime file instead of symlinking it into Git. Repo
@@ -199,8 +328,11 @@ PACKAGES="
   $DOTFILES_ROOT/pi/packages/pi-parallel
   $DOTFILES_ROOT/pi/packages/pi-openai-fast
   $DOTFILES_ROOT/pi/packages/pi-subagents
-  npm:mitsupi
 "
+
+ensure_mitsupi_package
+preflight_mitsupi_copies
+apply_mitsupi_patch
 
 log_info "Installing Pi packages..."
 for pkg in $PACKAGES; do

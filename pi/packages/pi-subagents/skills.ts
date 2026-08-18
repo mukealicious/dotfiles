@@ -2,7 +2,6 @@
  * Skill resolution and caching for subagent extension
  */
 
-import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -101,88 +100,185 @@ function readJsonFileBestEffort(filePath: string): unknown {
 	try {
 		return JSON.parse(fs.readFileSync(filePath, "utf-8"));
 	} catch {
-		// Package scans over installed dependencies are opportunistic.
 		return null;
 	}
 }
 
-function extractSkillPathsFromPackageRoot(packageRoot: string, source: SkillSource, bestEffort = false): SkillSearchPath[] {
+function isPackageOverridePattern(pattern: string): boolean {
+	return pattern.startsWith("!") || pattern.startsWith("+") || pattern.startsWith("-");
+}
+
+function normalizePackagePattern(pattern: string): string {
+	const normalized = pattern.replace(/\\/g, "/");
+	return normalized.startsWith("./") ? normalized.slice(2) : normalized;
+}
+
+function escapeRegex(value: string): string {
+	return value.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Match the small glob pattern language used by Pi package filters without
+ * adding a runtime dependency to this vendored package. Pi's package manager
+ * also tests the relative path, basename, and (for skills) the skill
+ * directory name, so mirror those candidates below.
+ */
+function packagePatternRegex(pattern: string): RegExp {
+	const normalized = normalizePackagePattern(pattern);
+	let expression = "^";
+	for (let index = 0; index < normalized.length; index++) {
+		const character = normalized[index];
+		if (character === "*" && normalized[index + 1] === "*") {
+			if (normalized[index + 2] === "/") {
+				expression += "(?:.*/)?";
+				index += 2;
+			} else {
+				expression += ".*";
+				index += 1;
+			}
+		} else if (character === "*") {
+			expression += "[^/]*";
+		} else if (character === "?") {
+			expression += "[^/]";
+		} else {
+			expression += escapeRegex(character ?? "");
+		}
+	}
+	return new RegExp(`${expression}$`);
+}
+
+function packageResourceCandidates(filePath: string, packageRoot: string): string[] {
+	const relativePath = path.relative(packageRoot, filePath).replace(/\\/g, "/");
+	const fileName = path.basename(filePath);
+	const candidates = [relativePath, fileName, filePath.replace(/\\/g, "/")];
+
+	if (fileName === "SKILL.md") {
+		const skillDir = path.dirname(filePath);
+		candidates.push(
+			path.relative(packageRoot, skillDir).replace(/\\/g, "/"),
+			path.basename(skillDir),
+			skillDir.replace(/\\/g, "/"),
+		);
+	}
+
+	return candidates;
+}
+
+function matchesPackagePattern(filePath: string, pattern: string, packageRoot: string, exact = false): boolean {
+	const normalized = normalizePackagePattern(pattern);
+	const candidates = packageResourceCandidates(filePath, packageRoot);
+	if (exact) return candidates.some((candidate) => candidate === normalized);
+	const matcher = packagePatternRegex(normalized);
+	return candidates.some((candidate) => matcher.test(candidate));
+}
+
+function isEnabledByPackagePatterns(filePath: string, patterns: string[], packageRoot: string): boolean {
+	const includes = patterns.filter((pattern) => !isPackageOverridePattern(pattern));
+	const excludes = patterns.filter((pattern) => pattern.startsWith("!")).map((pattern) => pattern.slice(1));
+	const forceIncludes = patterns.filter((pattern) => pattern.startsWith("+")).map((pattern) => pattern.slice(1));
+	const forceExcludes = patterns.filter((pattern) => pattern.startsWith("-")).map((pattern) => pattern.slice(1));
+
+	let enabled = includes.length === 0 || includes.some((pattern) => matchesPackagePattern(filePath, pattern, packageRoot));
+	if (enabled && excludes.some((pattern) => matchesPackagePattern(filePath, pattern, packageRoot))) enabled = false;
+	if (forceIncludes.some((pattern) => matchesPackagePattern(filePath, pattern, packageRoot, true))) enabled = true;
+	if (forceExcludes.some((pattern) => matchesPackagePattern(filePath, pattern, packageRoot, true))) enabled = false;
+	return enabled;
+}
+
+function collectPackageSkillFiles(resourcePath: string, visited = new Set<string>()): string[] {
+	if (!fs.existsSync(resourcePath)) return [];
+
+	let stat: fs.Stats;
+	let realPath: string;
+	try {
+		stat = fs.statSync(resourcePath);
+		realPath = fs.realpathSync(resourcePath);
+	} catch {
+		return [];
+	}
+
+	if (stat.isFile()) return resourcePath.toLowerCase().endsWith(".md") ? [path.resolve(resourcePath)] : [];
+	if (!stat.isDirectory() || visited.has(realPath)) return [];
+	visited.add(realPath);
+
+	const rootSkill = path.join(resourcePath, "SKILL.md");
+	if (fs.existsSync(rootSkill)) return [path.resolve(rootSkill)];
+
+	let entries: fs.Dirent[];
+	try {
+		entries = fs.readdirSync(resourcePath, { withFileTypes: true });
+	} catch {
+		return [];
+	}
+
+	const files: string[] = [];
+	for (const entry of entries) {
+		if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+		const childPath = path.join(resourcePath, entry.name);
+		if (entry.isDirectory() || entry.isSymbolicLink()) {
+			files.push(...collectPackageSkillFiles(childPath, visited));
+		} else if (entry.isFile() && entry.name.toLowerCase().endsWith(".md")) {
+			files.push(path.resolve(childPath));
+		}
+	}
+	return files;
+}
+
+function extractSkillPathsFromPackageRoot(packageRoot: string, source: SkillSource, userPatterns?: string[], bestEffort = false): SkillSearchPath[] {
 	const packageJsonPath = path.join(packageRoot, "package.json");
-	const pkg = bestEffort
-		? readJsonFileBestEffort(packageJsonPath)
-		: readOptionalJsonFile(packageJsonPath, "package manifest");
+	const pkg = bestEffort ? readJsonFileBestEffort(packageJsonPath) : readOptionalJsonFile(packageJsonPath, "package manifest");
 	if (!pkg || typeof pkg !== "object" || Array.isArray(pkg)) return [];
 	const pi = (pkg as { pi?: unknown }).pi;
 	if (!pi || typeof pi !== "object" || Array.isArray(pi)) return [];
 	const skills = (pi as { skills?: unknown }).skills;
 	if (!Array.isArray(skills)) return [];
-	return skills
-		.filter((entry): entry is string => typeof entry === "string")
-		.map((entry) => ({ path: path.resolve(packageRoot, entry), source }));
+
+	const manifestEntries = skills.filter((entry): entry is string => typeof entry === "string");
+	const sourceEntries = manifestEntries.filter((entry) => !isPackageOverridePattern(entry));
+	const manifestPatterns = manifestEntries.filter(isPackageOverridePattern);
+	const allFiles = sourceEntries.flatMap((entry) => collectPackageSkillFiles(path.resolve(packageRoot, entry)));
+	const manifestFiles = manifestPatterns.length === 0
+		? allFiles
+		: allFiles.filter((filePath) => isEnabledByPackagePatterns(filePath, manifestPatterns, packageRoot));
+	if (userPatterns !== undefined && userPatterns.length === 0) return [];
+	const enabledFiles = userPatterns === undefined
+		? manifestFiles
+		: manifestFiles.filter((filePath) => isEnabledByPackagePatterns(filePath, userPatterns, packageRoot));
+	return enabledFiles.map((filePath) => ({ path: filePath, source }));
 }
 
-let cachedGlobalNpmRoot: string | null = null;
+function collectProjectPackageSkillPaths(cwd: string): SkillSearchPath[] {
+	const packagesRoot = path.join(cwd, CONFIG_DIR, "npm", "node_modules");
+	if (!fs.existsSync(packagesRoot)) return [];
 
-function getGlobalNpmRoot(): string | null {
-	if (cachedGlobalNpmRoot !== null) return cachedGlobalNpmRoot;
+	let entries: fs.Dirent[];
 	try {
-		cachedGlobalNpmRoot = execSync("npm root -g", { encoding: "utf-8", timeout: 5000 }).trim();
-		return cachedGlobalNpmRoot;
+		entries = fs.readdirSync(packagesRoot, { withFileTypes: true });
 	} catch {
-		// Global npm root is optional in constrained environments.
-		cachedGlobalNpmRoot = ""; // Empty string means "tried but failed"
-		return null;
-	}
-}
-
-function collectInstalledPackageSkillPaths(cwd: string): SkillSearchPath[] {
-	const dirs: SkillSearchPath[] = [
-		{ path: path.join(cwd, CONFIG_DIR, "npm", "node_modules"), source: "project-package" },
-		{ path: path.join(getAgentDir(), "npm", "node_modules"), source: "user-package" },
-	];
-
-	const globalRoot = getGlobalNpmRoot();
-	if (globalRoot) {
-		dirs.push({ path: globalRoot, source: "user-package" });
+		return [];
 	}
 
 	const results: SkillSearchPath[] = [];
-
-	for (const dir of dirs) {
-		if (!fs.existsSync(dir.path)) continue;
-		let entries: fs.Dirent[];
-		try {
-			entries = fs.readdirSync(dir.path, { withFileTypes: true });
-		} catch {
-			continue;
-		}
-
-		for (const entry of entries) {
-			if (entry.name.startsWith(".")) continue;
-			if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
-
-			if (entry.name.startsWith("@")) {
-				const scopeDir = path.join(dir.path, entry.name);
-				let scopeEntries: fs.Dirent[];
-				try {
-					scopeEntries = fs.readdirSync(scopeDir, { withFileTypes: true });
-				} catch {
-					continue;
-				}
-				for (const scopeEntry of scopeEntries) {
-					if (scopeEntry.name.startsWith(".")) continue;
-					if (!scopeEntry.isDirectory() && !scopeEntry.isSymbolicLink()) continue;
-					const pkgRoot = path.join(scopeDir, scopeEntry.name);
-					results.push(...extractSkillPathsFromPackageRoot(pkgRoot, dir.source, true));
-				}
+	for (const entry of entries) {
+		if (entry.name.startsWith(".")) continue;
+		if (entry.name.startsWith("@")) {
+			const scopeRoot = path.join(packagesRoot, entry.name);
+			let scopedEntries: fs.Dirent[];
+			try {
+				scopedEntries = fs.readdirSync(scopeRoot, { withFileTypes: true });
+			} catch {
 				continue;
 			}
-
-			const pkgRoot = path.join(dir.path, entry.name);
-			results.push(...extractSkillPathsFromPackageRoot(pkgRoot, dir.source, true));
+			for (const scopedEntry of scopedEntries) {
+				if (scopedEntry.name.startsWith(".")) continue;
+				if (!scopedEntry.isDirectory() && !scopedEntry.isSymbolicLink()) continue;
+				results.push(...extractSkillPathsFromPackageRoot(path.join(scopeRoot, scopedEntry.name), "project-package", undefined, true));
+			}
+			continue;
 		}
+		if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
+		results.push(...extractSkillPathsFromPackageRoot(path.join(packagesRoot, entry.name), "project-package", undefined, true));
 	}
-
 	return results;
 }
 
@@ -310,7 +406,13 @@ function collectSettingsPackageSkillPaths(cwd: string): SkillSearchPath[] {
 
 			const packageRoot = resolveSettingsPackageRoot(packageSource, base);
 			if (!packageRoot) continue;
-			results.push(...extractSkillPathsFromPackageRoot(packageRoot, source));
+			const packageSkills = typeof entry === "object" && entry !== null
+				? (entry as { skills?: unknown }).skills
+				: undefined;
+			const skillPatterns = Array.isArray(packageSkills)
+				? packageSkills.filter((pattern): pattern is string => typeof pattern === "string")
+				: undefined;
+			results.push(...extractSkillPathsFromPackageRoot(packageRoot, source, skillPatterns));
 		}
 	}
 
@@ -323,7 +425,7 @@ function buildSkillPaths(cwd: string): SkillSearchPath[] {
 		{ path: path.join(cwd, ".agents", "skills"), source: "project" },
 		{ path: path.join(getAgentDir(), "skills"), source: "user" },
 		{ path: path.join(os.homedir(), ".agents", "skills"), source: "user" },
-		...collectInstalledPackageSkillPaths(cwd),
+		...collectProjectPackageSkillPaths(cwd),
 		...collectSettingsPackageSkillPaths(cwd),
 		...extractSkillPathsFromPackageRoot(cwd, "project-package"),
 		...collectSettingsSkillPaths(cwd),
@@ -358,9 +460,6 @@ function inferSkillSource(filePath: string, cwd: string, sourceHint?: SkillSourc
 	if (isWithinPath(filePath, userPackagesRoot)) return "user-package";
 	if (isWithinPath(filePath, userSkillsRoot) || isWithinPath(filePath, userAgentsRoot)) return "user";
 	if (isWithinPath(filePath, agentDir)) return "user-settings";
-
-	const globalRoot = getGlobalNpmRoot();
-	if (globalRoot && isWithinPath(filePath, globalRoot)) return "user-package";
 
 	return "unknown";
 }

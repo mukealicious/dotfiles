@@ -239,7 +239,7 @@ Custom extensions symlinked by `pi/install.sh`. Third-party extensions installed
 
 | Package | Source | Provides |
 |---|---|---|
-| `npm:mitsupi` | Armin Ronacher | /answer, /review, /todos, /files, /context, uv interceptor |
+| `npm:mitsupi@1.6.0` | Armin Ronacher | Curated `/answer`, `/context`, `/files`, `/multi-edit`, `/prompt-editor`, `/todos`, `/uv`, `/whimsical`, manual `/btw` and `/review`, plus the nine allowlisted skills; prompts/themes disabled |
 
 ### Intercepted Commands (`pi/intercepted-commands/`)
 
