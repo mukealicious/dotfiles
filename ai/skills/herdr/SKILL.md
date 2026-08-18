@@ -1,6 +1,8 @@
 ---
 name: herdr
 description: "Operate effectively inside Herdr: name the current conversation, organize work into workspaces/tabs/panes, run observable side processes, and coordinate agents. Use whenever HERDR_ENV=1 or when asked about Herdr."
+metadata:
+  watch-sources: herdrdev/herdr/skills/herdr/SKILL.md@346411fa21afd297f5ed3b3fa56f9e3fbf7654b7
 ---
 
 # Herdr

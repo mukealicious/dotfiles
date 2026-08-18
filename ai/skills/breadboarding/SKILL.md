@@ -7,8 +7,8 @@ references:
   - references/slicing.md
 metadata:
   watch-sources: |
-    rjs/shaping-skills/breadboarding@main
-    rjs/shaping-skills/breadboard-reflection@main
+    rjs/shaping-skills/breadboarding@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9
+    rjs/shaping-skills/breadboard-reflection@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9
 ---
 
 # Breadboarding

@@ -137,6 +137,23 @@ The package retains only builtin scout, researcher, and worker. The generated sh
 web/evidence leaf; worker is the only default delegated checkout writer. Profile
 settings do not override these role defaults.
 
+### Workflow boundaries
+
+- Use Pi `/tree` for sequential, reversible exploration in the current process.
+- Use `pi-subagents` for bounded independent reconnaissance, research, implementation,
+  or review work; the parent keeps decisions, integration, and validation.
+- Use a Herdr worktree for concurrent filesystem isolation and Hunk review; it is
+  not another delegation or lifecycle owner.
+- Use `/fork` or `/clone` for a separate session when history or provider state
+  should diverge.
+- Use `/skill:code-review` for proportional advisory review and Hunk for user-facing
+  annotations. Mitsupi `/review` remains an optional manual tree-isolated experiment,
+  not an automatic sequel.
+- `/skill:grilling`, `/skill:grill-me`, `/skill:grill-with-docs`, `/skill:tdd`,
+  `/skill:implement`, and `/skill:bro` are composable workflows. `implement` and
+  `bro` are manual-only; implementation stays in the current session, does not
+  auto-delegate, and does not commit without a separate request.
+
 ## Extensions
 
 Extensions are TypeScript files using Pi's `ExtensionAPI`. Symlinked into each active

@@ -2,7 +2,7 @@
 name: framing-doc
 description: Creates evidence-grounded framing documents from transcripts, call notes, VTT files, or pasted stakeholder conversations. Use when turning raw conversations into a problem frame with source quotes, options considered, problem, outcome, and solution-space boundaries.
 metadata:
-  watch-sources: rjs/shaping-skills/framing-doc@main
+  watch-sources: rjs/shaping-skills/framing-doc@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9
 ---
 
 # Framing Doc

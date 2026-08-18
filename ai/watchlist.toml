@@ -5,13 +5,6 @@
 version = 1
 
 [[sources]]
-# id: stable local identifier used by --source
-# repo: GitHub owner/repo
-# path: watched subpath within the repo; use "" for the repo root
-# branch: branch to inspect, usually main
-# kind: skill | repo | docs | topic | package | other
-# review: optional hint for later review, usually semantic-diff or pattern-scan
-# notes: short reason this source is watched
 id = "post-mortem"
 repo = "walterra/agent-tools"
 path = "packages/post-mortem"
@@ -21,13 +14,58 @@ review = "semantic-diff"
 notes = "Shared retrospective skill source for ai/skills/post-mortem/SKILL.md"
 
 [[sources]]
-id = "emil-design-eng"
-repo = "emilkowalski/skill"
-path = "skills/emil-design-eng"
+id = "grilling"
+repo = "dmmulroy/.dotfiles"
+path = "home/.agents/skills/grilling"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
-notes = "Upstream Emil design skill source for ai/skills/emil-design-eng/SKILL.md"
+notes = "Reviewed grilling source for ai/skills/grilling/SKILL.md"
+
+[[sources]]
+id = "domain-modeling"
+repo = "dmmulroy/.dotfiles"
+path = "home/.agents/skills/domain-modeling"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Reviewed domain-modeling source for ai/skills/domain-modeling/"
+
+[[sources]]
+id = "tdd"
+repo = "dmmulroy/.dotfiles"
+path = "home/.agents/skills/tdd"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Reviewed TDD source and focused references for ai/skills/tdd/"
+
+[[sources]]
+id = "implement"
+repo = "dmmulroy/.dotfiles"
+path = "home/.agents/skills/implement"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Reviewed implementation workflow source for ai/skills/implement/SKILL.md"
+
+[[sources]]
+id = "bro"
+repo = "dmmulroy/.dotfiles"
+path = "home/.agents/skills/bro"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Reviewed plain-language restatement source for ai/skills/bro/SKILL.md"
+
+[[sources]]
+id = "codebase-design"
+repo = "mattpocock/skills"
+path = "skills/engineering/codebase-design"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Pinned sole deep-module/interface/seam owner for ai/skills/codebase-design/"
 
 [[sources]]
 id = "grill-me"
@@ -36,7 +74,7 @@ path = "skills/productivity/grill-me"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
-notes = "Upstream Grill Me skill source for ai/skills/grill-me/SKILL.md"
+notes = "Thin manual entry provenance for ai/skills/grill-me/SKILL.md"
 
 [[sources]]
 id = "grill-with-docs"
@@ -45,34 +83,16 @@ path = "skills/engineering/grill-with-docs"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
-notes = "Upstream Grill With Docs skill source for ai/skills/grill-with-docs/"
-
-[[sources]]
-id = "improve-codebase-architecture"
-repo = "mattpocock/skills"
-path = "skills/engineering/improve-codebase-architecture"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Upstream Improve Codebase Architecture skill source for ai/skills/improve-codebase-architecture/"
+notes = "Thin composition provenance for ai/skills/grill-with-docs/"
 
 [[sources]]
 id = "impeccable"
 repo = "pbakaus/impeccable"
-path = "source/skills/impeccable"
+path = ".agents/skills/impeccable"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
 notes = "Upstream Impeccable 3.x consolidated skill source for ai/skills/impeccable/"
-
-[[sources]]
-id = "openai-skills"
-repo = "openai/skills"
-path = ""
-branch = "main"
-kind = "repo"
-review = "pattern-scan"
-notes = "General upstream inspiration source for portable skill patterns"
 
 [[sources]]
 id = "shaping-framing-doc"
@@ -81,7 +101,7 @@ path = "framing-doc"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
-notes = "Upstream inspiration source for adapted ai/skills/framing-doc/"
+notes = "Reviewed upstream inspiration for adapted ai/skills/framing-doc/"
 
 [[sources]]
 id = "shaping-kickoff-doc"
@@ -90,7 +110,7 @@ path = "kickoff-doc"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
-notes = "Upstream inspiration source for adapted ai/skills/kickoff-doc/"
+notes = "Reviewed upstream inspiration for adapted ai/skills/kickoff-doc/"
 
 [[sources]]
 id = "shaping-breadboarding"
@@ -99,7 +119,7 @@ path = "breadboarding"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
-notes = "Upstream inspiration source for adapted ai/skills/breadboarding/"
+notes = "Reviewed upstream source for adapted ai/skills/breadboarding/"
 
 [[sources]]
 id = "shaping-breadboard-reflection"
@@ -108,16 +128,25 @@ path = "breadboard-reflection"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
-notes = "Upstream reflection source folded into adapted ai/skills/breadboarding/"
+notes = "Reviewed reflection source folded into adapted ai/skills/breadboarding/"
 
 [[sources]]
-id = "effective-html"
+id = "effective-html-diagram"
 repo = "plannotator/effective-html"
-path = "skills"
+path = "skills/html-diagram"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
-notes = "Upstream inspiration for ai/skills/visual-deliverables/"
+notes = "Upstream diagram inspiration for ai/skills/visual-deliverables/"
+
+[[sources]]
+id = "effective-html-plan"
+repo = "plannotator/effective-html"
+path = "skills/html-plan"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream plan-artifact inspiration for ai/skills/visual-deliverables/"
 
 [[sources]]
 id = "html-effectiveness"
@@ -127,6 +156,87 @@ branch = "main"
 kind = "repo"
 review = "pattern-scan"
 notes = "Bundled example corpus for ai/skills/visual-deliverables/references/examples/effective-html/"
+
+[[sources]]
+id = "production-release"
+repo = "wondelai/skills"
+path = "release-it"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Release resilience influence for ai/skills/production-readiness/"
+
+[[sources]]
+id = "production-ddia"
+repo = "wondelai/skills"
+path = "ddia-systems"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Data-boundary influence for ai/skills/production-readiness/"
+
+[[sources]]
+id = "tufte-data-viz"
+repo = "caylent/tufte-data-viz"
+path = ""
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Primary quantitative visualization influence for ai/skills/tufte-data-viz/"
+
+[[sources]]
+id = "tufte-claude-skill"
+repo = "aref-vc/tufte-claude-skill"
+path = ""
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Chart-selection influence for ai/skills/tufte-data-viz/"
+
+[[sources]]
+id = "tufte-vdqi-plugin"
+repo = "gnurio/tufte-vdqi-plugin"
+path = ""
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Assessment-rigor influence for ai/skills/tufte-data-viz/"
+
+[[sources]]
+id = "hunk-review"
+repo = "modem-dev/hunk"
+path = "skills/hunk-review/SKILL.md"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Hunk review workflow source for ai/skills/hunk-review/SKILL.md"
+
+[[sources]]
+id = "hunk-agent-workflows"
+repo = "modem-dev/hunk"
+path = "docs/agent-workflows.md"
+branch = "main"
+kind = "docs"
+review = "semantic-diff"
+notes = "Hunk workflow guidance source for ai/skills/hunk-review/SKILL.md"
+
+[[sources]]
+id = "herdr-skill"
+repo = "herdrdev/herdr"
+path = "skills/herdr/SKILL.md"
+branch = "master"
+kind = "skill"
+review = "semantic-diff"
+notes = "Release mechanics upstream for the locally adapted ai/skills/herdr/ skill; compare with herdr --skill"
+
+[[sources]]
+id = "openai-skills"
+repo = "openai/skills"
+path = ""
+branch = "main"
+kind = "repo"
+review = "pattern-scan"
+notes = "General upstream inspiration source for portable skill patterns"
 
 [[sources]]
 id = "pi-openai-fast"
@@ -145,13 +255,3 @@ branch = "main"
 kind = "package"
 review = "semantic-diff"
 notes = "Upstream source for locally vendored pi/packages/pi-subagents"
-
-
-[[sources]]
-id = "herdr-skill"
-repo = "herdrdev/herdr"
-path = "skills/herdr/SKILL.md"
-branch = "master"
-kind = "skill"
-review = "semantic-diff"
-notes = "Release mechanics upstream for the locally adapted ai/skills/herdr/ skill; compare with herdr --skill"

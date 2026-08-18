@@ -56,9 +56,10 @@ reasoning and orchestration; local adapter for device-specific work.
 
 ## Production Boundary
 
-Cloud AI and agents are production dependencies. Apply
-[production-boundaries.md](./production-boundaries.md) to model providers,
-context stores, tool runners, generated writes, rate limits, and audit trails.
+Cloud AI and agents are production dependencies. Apply the
+[production-readiness resilience checklist](../../production-readiness/references/resilience-checklist.md)
+to model providers, context stores, tool runners, generated writes, rate limits,
+and audit trails.
 
 ## Review Questions
 
@@ -68,3 +69,11 @@ context stores, tool runners, generated writes, rate limits, and audit trails.
 4. Where can the user inspect progress, cancel, correct, or review results?
 5. What happens on timeout, tool failure, duplicate execution, or partial completion?
 6. Is local inference chosen for a measured reason or just architectural taste?
+
+## Provenance
+
+Moved from the predecessor shared thin-AI-client reference at `b0b6510`. Its
+original owning skill was locally adapted from
+`mattpocock/skills@b843cb5ea74b1fe5e58a0fc23cddef9e66076fb8` and
+`wondelai/skills@eff8b3cab2d9afab9dc09c4cc04e80ad9641db29`; D6 moved the local
+guidance without treating either upstream as an automatic refresh source.

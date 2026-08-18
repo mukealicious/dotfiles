@@ -55,14 +55,15 @@ ai/
 │   └── review.body.md      # Shared review body
 └── skills/                 # Portable skills projected into ~/.claude/skills
     ├── build-skill/        # Skill authoring guide
-    ├── code-review/        # Parallel code review
-    ├── dotfiles-dev/       # Dotfiles development guide
-    ├── favicon-generator/  # Favicon generation
+    ├── code-review/        # Proportional advisory review
+    ├── codebase-design/    # Deep modules, interfaces, and seams
+    ├── domain-modeling/    # Domain language and durable decisions
+    ├── grilling/           # Dependency-aware design-tree questioning
+    ├── implement/          # Manual current-session implementation
     ├── librarian/          # Multi-repo exploration
     ├── opensrc/            # External package/repo source context
-    ├── qmd/                # Markdown search
-    ├── spec-planner/       # Dialogue-driven specs
-    └── sprint-plan/        # Sprint planning
+    ├── tdd/                # Red/green vertical slices
+    └── ...                 # See ai/README.md for the complete inventory
 
 claude/
 ├── install.sh              # Symlinks settings.json + configures MCP servers
@@ -71,10 +72,7 @@ claude/
 │   ├── safety-rm.sh              # PreToolUse: rewrites rm to trash
 │   ├── notify-idle.sh            # Stop/Notification: sound + macOS alert
 │   └── tldraw-server-context.sh  # Portable adapter for tldraw's app-managed hook
-├── agents/                 # Subagents (specialized AI advisors)
-│   ├── oracle.md           # Legacy combined agent
-│   ├── librarian.md        # Legacy combined agent
-│   └── review.frontmatter  # Shared-body exemplar metadata
+├── agents/                 # Legacy Claude agents plus shared review metadata
 └── skills/                 # Claude-only overlays (currently empty; shared skills projected here by ai/install.sh)
 ```
 
@@ -97,18 +95,26 @@ Use review to check my recent changes
 
 ## Skills
 
-Shared skills live in `ai/skills/` and are projected to `~/.claude/skills/` at install time. Claude-only overlays in `claude/skills/` remain optional and are currently empty. See `ai/README.md` for the full inventory.
+Shared skills live in `ai/skills/` and are projected to `~/.claude/skills/` at
+install time. Claude-only overlays in `claude/skills/` remain optional and are
+currently empty. See `ai/README.md` for the complete inventory and provenance.
 
-Key skills available via slash command or auto-trigger:
+Key workflow boundaries:
 
 | Skill | Purpose |
 |-------|---------|
-| `code-review` | Parallel code review with architecture validation |
-| `spec-planner` | Dialogue-driven spec development |
-| `sprint-plan` | Break projects into demoable sprints |
-| `opensrc` | Fetch source context for packages and repos |
-| `build-skill` | Guidance for creating new skills |
-| `dotfiles-dev` | Guidance for working with this dotfiles repo |
+| `code-review` | Proportional advisory review and final-pass cleanup |
+| `codebase-design` | Deep-module/interface vocabulary when structural shape matters |
+| `grilling` / `domain-modeling` | Design-tree questions and durable domain language |
+| `tdd` | Red/green slices at agreed behavioral seams |
+| `implement` / `bro` | Manual implementation and plain-language restatement |
+| `framing-doc` / `kickoff-doc` | Distinct shaping documents |
+| `opensrc` / `librarian` | Source-backed external investigation |
+| `build-skill` / `dotfiles-dev` | Skill authoring and repository conventions |
+
+`implement`, `bro`, `grill-me`, and `grill-with-docs` are manual entry points;
+model invocation does not start them automatically. Run `bin/dot` or
+`ai/install.sh` to refresh the projection after editing source skills.
 
 ## Adding New Skills
 

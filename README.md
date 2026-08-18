@@ -179,29 +179,27 @@ Specialized AI advisors with distinct capabilities:
 
 ### AI Skills
 
-Shared skills in `ai/skills/`, available to all agents (Claude, Pi, OpenCode, Codex):
+Shared skills in `ai/skills/` are projected to Claude, Pi, OpenCode, and Codex:
 
-| Skill | Purpose |
-|-------|---------|
-| `code-review` | Parallel review with architecture validation |
-| `spec-planner` | Dialogue-driven spec development |
-| `grill-me` | Stress-test plans through relentless questioning |
-| `opensrc` | Fetch source context for packages and repos |
-| `build-skill` | Create AI agent skills |
-| `dotfiles-dev` | Guidance for this dotfiles system |
-| `qmd` | Hybrid markdown search (BM25 + vectors) |
-| `favicon-generator` | Generate favicons from PNG/SVG |
-| `librarian` | Multi-repository codebase exploration |
+| Skill | Owns |
+|-------|------|
+| `code-review` | Proportional advisory review and final-pass cleanup |
+| `codebase-design` | Deep modules, interfaces, seams, locality, and testability |
+| `grilling` | Dependency-aware design-tree questioning |
+| `domain-modeling` | Domain language, `CONTEXT.md`, and qualifying ADRs |
+| `tdd` | Red/green vertical slices and public-behavior tests |
+| `implement` | Manual current-session implementation of approved specs/tickets |
+| `bro` | Manual plain-language restatement |
+| `framing-doc` / `kickoff-doc` | Evidence-grounded framing and builder-facing shaped territory |
+| `opensrc` / `librarian` | Source-backed external code investigation |
+| `build-skill` / `dotfiles-dev` | Skill authoring and repository conventions |
+| `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
 
-Also includes imported design skills:
-
-- `emil-design-eng` from Emil Kowalski
-- `impeccable` 3.x from Paul Bakaus as the consolidated PRODUCT.md + DESIGN.md design-command router (`/impeccable teach`, `document`, `shape`, `craft`, `live`, `critique`, `audit`, `polish`, and refinements)
-
-Plus plugins: `document-skills` (PDF/XLSX/DOCX/PPTX), `playground` (interactive HTML).
-
-See [ai/README.md](ai/README.md) for the full AI capability inventory and projection model.
-See [docs/mcp-policy.md](docs/mcp-policy.md) for harness-specific MCP ownership.
+Visual and artifact capabilities stay separate: `impeccable` owns product UI/UX,
+`tufte-data-viz` owns quantitative visualization, `visual-deliverables` owns
+self-contained HTML/SVG explainers, and `hunk-review` owns Hunk review sessions.
+See [ai/README.md](ai/README.md) for the full capability inventory, provenance,
+and projection model.
 
 ## Shell Features
 

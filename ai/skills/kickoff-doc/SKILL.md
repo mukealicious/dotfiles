@@ -2,7 +2,7 @@
 name: kickoff-doc
 description: Creates builder-facing kickoff documents from project kickoff transcripts, VTT files, call notes, mockup walkthroughs, or shaped planning conversations. Use when a conversation should become a reference doc describing the frame and shaped territory.
 metadata:
-  watch-sources: rjs/shaping-skills/kickoff-doc@main
+  watch-sources: rjs/shaping-skills/kickoff-doc@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9
 ---
 
 # Kickoff Doc

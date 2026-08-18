@@ -47,3 +47,11 @@ Fix issues that are local, clearly correct, and behavior-preserving:
 - defensive checks that duplicate trusted typed boundaries.
 
 Leave speculative cleanup for a follow-up.
+
+## Provenance
+
+Moved from the predecessor shared final-pass reference at `b0b6510`. Its
+original owning skill was locally adapted from
+`mattpocock/skills@b843cb5ea74b1fe5e58a0fc23cddef9e66076fb8` and
+`wondelai/skills@eff8b3cab2d9afab9dc09c4cc04e80ad9641db29`; D6 moved the
+local guidance without broadening or refreshing those sources.

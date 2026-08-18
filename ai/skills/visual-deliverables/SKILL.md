@@ -64,7 +64,7 @@ Choose Markdown when the output is primarily a durable source of truth: specs, A
 - Use `breadboarding` first when a workflow is fuzzy and needs places, affordances, stores, and wiring before drawing.
 - Use `impeccable` when the artifact is also a frontend/product design surface, not just an explanatory artifact.
 - Use `tufte-data-viz` when quantitative charts or dashboards carry the argument.
-- Use `framing-doc`, `kickoff-doc`, or `spec-planner` when the durable artifact should be Markdown and HTML is only a companion view.
+- Use `framing-doc` or `kickoff-doc` when the durable artifact should be Markdown and HTML is only a companion view.
 
 ## Safety and Sharing
 
