@@ -239,6 +239,15 @@ review = "semantic-diff"
 notes = "Release mechanics upstream for the locally adapted ai/skills/herdr/ skill; compare with herdr --skill"
 
 [[sources]]
+id = "remctl-skill"
+repo = "viticci/remctl"
+path = "SKILL.md"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream RemCTL agent workflow source for the adapted ai/skills/apple-reminders skill"
+
+[[sources]]
 id = "openai-skills"
 repo = "openai/skills"
 path = ""

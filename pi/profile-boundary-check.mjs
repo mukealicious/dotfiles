@@ -46,6 +46,7 @@ const REQUIRED_LOCAL_EXTENSIONS = ["handoff.ts", "notify.ts", "usage-footer.ts"]
 const REQUIRED_THEMES = ["gruvbox-dark.json", "gruvbox-light.json"];
 const REQUIRED_SHARED_SKILLS = [
 	"agent-context",
+	"apple-reminders",
 	"breadboarding",
 	"bro",
 	"build-skill",

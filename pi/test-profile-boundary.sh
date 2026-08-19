@@ -170,9 +170,9 @@ set -e
 [ "$status" -ne 0 ] || fail "missing authored and projected required skill was silently accepted"
 assert_jq "$TMP_ROOT/missing-required-skill.json" '
   all(.profiles[];
-    .resources.projectedSkills.expected == 30 and
-    .resources.projectedSkills.authored == 29 and
-    .resources.projectedSkills.projected == 29 and
+    .resources.projectedSkills.expected == 31 and
+    .resources.projectedSkills.authored == 30 and
+    .resources.projectedSkills.projected == 30 and
     .resources.projectedSkills.safe == false
   )
 '

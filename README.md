@@ -29,7 +29,7 @@ dot -e       # Open dotfiles in editor
 | **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex, Pi |
 | **Window Mgmt** | AeroSpace (i3-like tiling), Ice (menu bar) |
 | **Database** | PostgreSQL 17, Redis |
-| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, agent-browser, surf-cli |
+| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, agent-browser, surf-cli, RemCTL |
 
 ## Architecture
 
@@ -55,6 +55,7 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `pi/` | Pi coding agent config, extensions |
 | `agent-browser/` | Headless browser automation for AI agents |
 | `surf/` | Surf browser lanes using dedicated Brave Beta/Edge agent control |
+| `remctl/` | Pinned RemCTL install and Apple Reminders agent runtime |
 | `ripgrep/` | Ripgrep config and environment setup |
 | `python/` | Python tools via uv |
 | `ruby/` | Ruby config (gemrc, irbrc) |
@@ -197,6 +198,7 @@ Shared skills in `ai/skills/` are projected to Claude, Pi, OpenCode, and Codex:
 | `bro` | Manual plain-language restatement |
 | `framing-doc` / `kickoff-doc` | Evidence-grounded framing and builder-facing shaped territory |
 | `handoff` | Temporary same-process continuation context |
+| `apple-reminders` | Explicit-intent Apple Reminders reads and writes through RemCTL |
 | `herdr` | Managed-pane coordination, attention, and native worktree topology |
 | `opensrc` / `librarian` | Source-backed external code investigation |
 | `build-skill` / `dotfiles-dev` | Skill authoring and repository conventions |

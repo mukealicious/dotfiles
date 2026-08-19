@@ -118,6 +118,7 @@ When `MOJA_GLAVA_CAPTURE_DIR` is set, Hammerspoon has opened a resumable Herdr t
 - Never stage private material in the caller's repository before moving it to the vault.
 - Do not expose secrets, credentials, private keys, or unnecessary personal data.
 - Do not overwrite, delete, or broadly reorganize existing notes without explicit need and permission.
+- A captured TODO or follow-up is not automatically an Apple Reminder. Create one through the `apple-reminders` skill only when the user explicitly asks.
 - Do not commit or push either repository unless explicitly requested.
 - Do not report success when source acquisition, persistence, or a required link failed.
 

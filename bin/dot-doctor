@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck disable=SC1091,SC2088,SC2154
+# shellcheck disable=SC1091,SC2088,SC2153,SC2154
 #
 # dot-doctor — environment diagnostics for dotfiles
 #
@@ -201,6 +201,75 @@ else
   warn "parakeet-mlx not found"
   info "Used by the moja-glava YouTube transcription adapter"
   info "Install: $DOTFILES_ROOT/python/install.sh"
+fi
+
+# ── Apple Reminders ────────────────────────────────────────────
+
+header "Apple Reminders"
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  warn "RemCTL is macOS-only"
+elif ! command -v remctl >/dev/null 2>&1; then
+  fail "remctl not found"
+  info "Fix: $DOTFILES_ROOT/remctl/install.sh"
+else
+  # shellcheck source=../remctl/version.env
+  . "$DOTFILES_ROOT/remctl/version.env"
+  remctl_path="$(command -v remctl)"
+  remctl_version="$(remctl --version 2>/dev/null || true)"
+
+  if [ "$remctl_path" = "$HOME/.local/bin/remctl" ]; then
+    pass "remctl runtime path: $remctl_path"
+  else
+    fail "remctl resolves from an unexpected path: $remctl_path"
+    info "Expected: $HOME/.local/bin/remctl"
+    info "Fix: ensure ~/.local/bin precedes other RemCTL installs on PATH"
+  fi
+
+  if [ "$remctl_version" = "$REMCTL_VERSION" ]; then
+    pass "remctl version: $remctl_version"
+  else
+    fail "remctl version is ${remctl_version:-unknown}; expected $REMCTL_VERSION"
+    info "Fix: $DOTFILES_ROOT/remctl/install.sh"
+  fi
+
+  remctl_python="$(uv python find '>=3.10' 2>/dev/null || true)"
+  if [ -n "$remctl_python" ] && [ "$(head -n 1 "$HOME/.local/bin/remctl" 2>/dev/null || true)" = "#!$remctl_python" ]; then
+    pass "remctl uv Python runtime: $remctl_python"
+  else
+    fail "remctl is not pinned to the expected uv Python 3.10+ runtime"
+    info "Fix: $DOTFILES_ROOT/remctl/install.sh"
+  fi
+
+  if [ -x "$HOME/.local/bin/remctl-bridge" ]; then
+    pass "remctl EventKit bridge"
+  else
+    fail "remctl EventKit bridge is missing"
+    info "Fix: $DOTFILES_ROOT/remctl/install.sh"
+  fi
+
+  if [ -x "$HOME/.local/bin/remctl-private" ]; then
+    pass "remctl private metadata helper"
+  else
+    warn "remctl private metadata helper is missing"
+    info "Private ReminderKit writes will be unavailable; rerun $DOTFILES_ROOT/remctl/install.sh"
+  fi
+
+  if [ -x "$HOME/.local/bin/remctl-permissions" ]; then
+    pass "remctl permission helper"
+  else
+    warn "remctl guided permission helper is missing"
+    info "Fix: $DOTFILES_ROOT/remctl/install.sh"
+  fi
+
+  if [ -f "$HOME/.config/fish/completions/remctl.fish" ]; then
+    pass "remctl Fish completion"
+  else
+    warn "remctl Fish completion is missing"
+    info "Fix: $DOTFILES_ROOT/remctl/install.sh"
+  fi
+
+  info "Reminders permissions are host-scoped; verify when needed with: remctl doctor --for-agent --json"
 fi
 
 # ── Surf browser lanes ─────────────────────────────────────────
