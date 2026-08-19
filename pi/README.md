@@ -61,6 +61,22 @@ All three supported launch commands set `GIT_EDITOR=true`,
 `GIT_SEQUENCE_EDITOR=true`, and `GIT_MERGE_AUTOEDIT=no` only for Pi's child
 process, leaving the interactive shell's Git editor configuration unchanged.
 
+### Profile-boundary evidence
+
+D10 verification is read-only and makes no model calls or cleanup changes:
+
+```bash
+~/.dotfiles/bin/pi-profile-check --json > /tmp/pi-profile-boundary.json
+```
+
+It runs `pi auth check --no-refresh` for work and personal, checks provider and
+profile selection, summarizes profile-owned state and required resources, checks
+profile-scoped Herdr integrations, and classifies the deprecated fallback by
+category, count, and aggregate size. It never prints credentials or fallback
+entry names. A non-zero result is a blocker or manual-review report; inspect the
+JSON before issuing the reported manual deletion command. The command never
+creates, backs up, migrates, or deletes `~/.pi/agent`.
+
 ## Directory Structure
 
 ```

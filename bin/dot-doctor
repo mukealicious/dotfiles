@@ -483,6 +483,13 @@ else
   fail "Hammerspoon personal Pi launcher is missing"
 fi
 
+if [ -x "$DOTFILES_ROOT/bin/pi-profile-check" ]; then
+  pass "Pi profile-boundary evidence checker"
+else
+  fail "Pi profile-boundary evidence checker is missing"
+  info "Expected: $DOTFILES_ROOT/bin/pi-profile-check"
+fi
+
 moja_glava_dir="${MOJA_GLAVA_DIR:-$HOME/Code/moja-glava}"
 if [ -d "$moja_glava_dir" ] && [ -f "$moja_glava_dir/AGENTS.md" ]; then
   pass "Hammerspoon Moja Glava vault"
