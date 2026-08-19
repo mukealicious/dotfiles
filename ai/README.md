@@ -199,6 +199,7 @@ uncertain.
 | `handoff` | Temporary same-process continuation context |
 | `herdr` | Herdr pane/workspace/agent coordination |
 | `hunk-review` | Hunk diff and comment workflow |
+| `impeccable` | Product UI/UX and visual interaction design |
 | `implement` | Manual current-session implementation |
 | `librarian` / `opensrc` | External code discovery and source-backed investigation |
 | `moja-glava` | Durable private knowledge checkpoints |

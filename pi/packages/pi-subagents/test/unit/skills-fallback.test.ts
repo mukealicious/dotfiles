@@ -82,18 +82,53 @@ describe("skills filesystem fallback", () => {
 		assert.match(resolved[0]?.content ?? "", /Run local fallback checks\./);
 	});
 
-	it("classifies package-provided skills as project-package", () => {
+	it("hides and rejects manual-only skills from delegated injection", () => {
+		const skillDir = path.join(tempDir, ".pi", "skills", "manual-only");
+		fs.mkdirSync(skillDir, { recursive: true });
+		fs.writeFileSync(
+			path.join(skillDir, "SKILL.md"),
+			"---\nname: manual-only\ndescription: Manual-only test skill.\ndisable-model-invocation: true # explicit-only\n---\n\nDo not delegate.\n",
+			"utf-8",
+		);
+
+		assert.equal(discoverAvailableSkills(tempDir).some((skill) => skill.name === "manual-only"), false);
+		assert.throws(
+			() => resolveSkills(["manual-only"], tempDir),
+			/manual-only and cannot be injected into a subagent/,
+		);
+	});
+
+	it("fails closed on malformed skill frontmatter", () => {
+		const skillDir = path.join(tempDir, ".pi", "skills", "malformed");
+		fs.mkdirSync(skillDir, { recursive: true });
+		fs.writeFileSync(
+			path.join(skillDir, "SKILL.md"),
+			"---\nname: malformed\ndescription: [unterminated\n---\n\nDo not inject.\n",
+			"utf-8",
+		);
+
+		assert.equal(discoverAvailableSkills(tempDir).some((skill) => skill.name === "malformed"), false);
+		assert.throws(
+			() => resolveSkills(["malformed"], tempDir),
+			/invalid frontmatter and cannot be injected into a subagent/,
+		);
+	});
+
+	it("does not discover installed project packages unless settings declare them", () => {
 		makeProjectPackageSkill(tempDir, "test-skill-package", "pkg-skill", "Use package skill.");
 
 		const skills = discoverAvailableSkills(tempDir);
-		const discovered = skills.find((skill) => skill.name === "pkg-skill");
-		assert.ok(discovered, "expected pkg-skill to be discovered");
-		assert.equal(discovered?.source, "project-package");
+		assert.equal(skills.some((skill) => skill.name === "pkg-skill"), false);
 	});
 
-	it("prefers project skills over project-package skills with the same name", () => {
+	it("prefers project skills over settings-declared project-package skills with the same name", () => {
 		makeProjectPackageSkill(tempDir, "test-skill-package", "shared-skill", "Package version");
 		makeProjectSkill(tempDir, "shared-skill", "Project version");
+		fs.writeFileSync(
+			path.join(tempDir, ".pi", "settings.json"),
+			JSON.stringify({ packages: ["npm:test-skill-package@1.0.0"] }, null, 2),
+			"utf-8",
+		);
 
 		const { resolved, missing } = resolveSkills(["shared-skill"], tempDir);
 		assert.deepEqual(missing, []);
@@ -139,24 +174,78 @@ describe("skills filesystem fallback", () => {
 		assert.equal(resolved[0]?.source, "project-package");
 	});
 
-	it("discovers skills from the current cwd package", () => {
+	it("lets a project package override disable the same profile package", () => {
+		const profileDir = path.join(tempDir, "profile");
+		const userPackageRoot = path.join(profileDir, "npm", "node_modules", "shared-package");
+		const projectPackageRoot = path.join(tempDir, ".pi", "npm", "node_modules", "shared-package");
+		process.env.PI_CODING_AGENT_DIR = profileDir;
+		makePackageSkill(userPackageRoot, "profile-copy", "Profile package skill.", "shared-package");
+		makePackageSkill(projectPackageRoot, "project-copy", "Project package skill.", "shared-package");
+		fs.mkdirSync(path.join(tempDir, ".pi"), { recursive: true });
+		fs.writeFileSync(
+			path.join(profileDir, "settings.json"),
+			JSON.stringify({ packages: ["npm:shared-package@1.0.0"] }, null, 2),
+			"utf-8",
+		);
+		fs.writeFileSync(
+			path.join(tempDir, ".pi", "settings.json"),
+			JSON.stringify({ packages: [{ source: "npm:shared-package@2.0.0", skills: [] }] }, null, 2),
+			"utf-8",
+		);
+		clearSkillCache();
+
+		const { resolved, missing } = resolveSkills(["profile-copy", "project-copy"], tempDir);
+		assert.deepEqual(resolved, []);
+		assert.deepEqual(missing, ["profile-copy", "project-copy"]);
+	});
+
+	it("applies project autoload deltas over the same profile package", () => {
+		const profileDir = path.join(tempDir, "profile");
+		const userPackageRoot = path.join(profileDir, "npm", "node_modules", "shared-package");
+		process.env.PI_CODING_AGENT_DIR = profileDir;
+		makePackageSkill(userPackageRoot, "allowed", "Allowed profile package skill.", "shared-package");
+		makePackageSkill(userPackageRoot, "blocked", "Blocked profile package skill.", "shared-package");
+		fs.mkdirSync(path.join(tempDir, ".pi"), { recursive: true });
+		fs.writeFileSync(
+			path.join(profileDir, "settings.json"),
+			JSON.stringify({ packages: ["npm:shared-package@1.0.0"] }, null, 2),
+			"utf-8",
+		);
+		fs.writeFileSync(
+			path.join(tempDir, ".pi", "settings.json"),
+			JSON.stringify({
+				packages: [{
+					source: "npm:shared-package@2.0.0",
+					autoload: false,
+					skills: ["-skills/blocked/SKILL.md"],
+				}],
+			}, null, 2),
+			"utf-8",
+		);
+		clearSkillCache();
+
+		const { resolved, missing } = resolveSkills(["allowed", "blocked"], tempDir);
+		assert.deepEqual(resolved.map((skill) => skill.name), ["allowed"]);
+		assert.deepEqual(missing, ["blocked"]);
+	});
+
+	it("does not discover the current cwd package unless settings declare it", () => {
 		makePackageSkill(tempDir, "cwd-package-skill", "Cwd package skill.");
 
 		const { resolved, missing } = resolveSkills(["cwd-package-skill"], tempDir);
-		assert.deepEqual(missing, []);
-		assert.equal(resolved.length, 1);
-		assert.equal(resolved[0]?.source, "project-package");
+		assert.deepEqual(resolved, []);
+		assert.deepEqual(missing, ["cwd-package-skill"]);
 	});
 
 	it("falls back to the runtime cwd when the execution cwd lacks the skill", () => {
 		const nestedDir = path.join(tempDir, "nested");
 		fs.mkdirSync(nestedDir, { recursive: true });
-		makePackageSkill(tempDir, "runtime-fallback-skill", "Runtime fallback skill.");
+		makeProjectSkill(tempDir, "runtime-fallback-skill", "Runtime fallback skill.");
 
 		const { resolved, missing } = resolveSkillsWithFallback(["runtime-fallback-skill"], nestedDir, tempDir);
 		assert.deepEqual(missing, []);
 		assert.equal(resolved.length, 1);
-		assert.equal(resolved[0]?.source, "project-package");
+		assert.equal(resolved[0]?.source, "project");
 	});
 
 	it("discovers skills from user settings packages", async () => {

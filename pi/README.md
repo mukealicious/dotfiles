@@ -99,7 +99,8 @@ pi/
 │   ├── python             # → uv run python (blocks -m pip, -m venv)
 │   └── python3            # → uv run python (blocks -m pip, -m venv)
 └── themes/
-    └── gruvbox-light.json  # Custom color theme
+    ├── gruvbox-dark.json   # Selected custom color theme
+    └── gruvbox-light.json  # Alternate custom color theme
 ```
 
 ## Configuration
@@ -127,7 +128,7 @@ Tracked baseline defaults:
 
 - **Work profile**: OpenAI `gpt-5.5` via API key
 - **Personal profile**: OpenAI Codex `gpt-5.5` via OAuth subscription
-- **Theme**: Gruvbox Light
+- **Themes**: Gruvbox Dark (selected) and Gruvbox Light (available)
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` plus tldraw offline's app-managed skill at `~/skills/tldraw-offline` when installed; missing external skill paths are harmless
 - **Instructions**: `ai/install.sh` stages `.ai-runtime/pi/AGENTS.md`, validates it, then links it into both profiles
 - **Agents**: `ai/install.sh` stages `.ai-runtime/pi/agents/`, validates it, then links managed files into each profile-local agent directory
@@ -186,8 +187,10 @@ profile's `extensions/` directory by `install.sh`.
 Registers `/handoff [focus]`. The command invokes the manual-only shared handoff
 skill, waits for its agent turn, preserves the source JSONL branch, navigates back
 to the first user message with `summarize: true`, clears restored editor text, and
-continues automatically from the temporary handoff. Cancellation or failure leaves
-the prior branch and any handoff artifact available and reports the failure.
+continues automatically from the temporary handoff. Cancellation or an aborted
+handoff turn leaves the prior branch and any handoff artifact available and
+reports the failure. The command clears only the restored source prompt; a draft
+that Pi preserved during navigation remains in the editor.
 
 The handoff stays in the current Pi/Herdr process, so its active profile, working
 directory, pane identity, and Git state carry through naturally. Specs and other

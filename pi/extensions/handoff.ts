@@ -1,3 +1,4 @@
+import type { AssistantMessage } from "@earendil-works/pi-ai";
 import type { ExtensionAPI, SessionEntry } from "@earendil-works/pi-coding-agent";
 
 const HANDOFF_AGENT_START_TIMEOUT_MS = 30_000;
@@ -13,10 +14,29 @@ function buildContinueFromHandoffPrompt(
 	return `Open the handoff document identified in the branch summary. Resume the work by performing its next unfinished step.\n\n${sourceBranchInstructions}`;
 }
 
-function findFirstUserMessageEntryId(entries: readonly SessionEntry[]): string | undefined {
-	for (const entry of entries) {
-		if (entry.type === "message" && entry.message.role === "user") {
-			return entry.id;
+function userMessageEditorText(entry: SessionEntry): string | undefined {
+	if (entry.type !== "message" || entry.message.role !== "user") return undefined;
+	if (typeof entry.message.content === "string") return entry.message.content;
+	return entry.message.content
+		.filter((part): part is { type: "text"; text: string } => part.type === "text")
+		.map((part) => part.text)
+		.join("");
+}
+
+function findFirstUserMessageEntry(entries: readonly SessionEntry[]): SessionEntry | undefined {
+	return entries.find((entry) => userMessageEditorText(entry) !== undefined);
+}
+
+function findTerminalHandoffAssistant(
+	entries: readonly SessionEntry[],
+	previousLeafId: string,
+): (Extract<SessionEntry, { type: "message" }> & { message: AssistantMessage }) | undefined {
+	const previousLeafIndex = entries.findIndex((entry) => entry.id === previousLeafId);
+	if (previousLeafIndex < 0) return undefined;
+	for (let index = entries.length - 1; index > previousLeafIndex; index -= 1) {
+		const entry = entries[index];
+		if (entry?.type === "message" && entry.message.role === "assistant") {
+			return entry as Extract<SessionEntry, { type: "message" }> & { message: AssistantMessage };
 		}
 	}
 	return undefined;
@@ -84,11 +104,16 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 					return;
 				}
 
-				const firstUserMessageEntryId = findFirstUserMessageEntryId(
+				const firstUserMessageEntry = findFirstUserMessageEntry(
 					ctx.sessionManager.getBranch(),
 				);
-				if (!firstUserMessageEntryId) {
+				if (!firstUserMessageEntry) {
 					ctx.ui.notify("There is no conversation to hand off", "warning");
+					return;
+				}
+				const previousLeafId = ctx.sessionManager.getLeafId();
+				if (!previousLeafId) {
+					ctx.ui.notify("Handoff source branch has no leaf entry", "error");
 					return;
 				}
 
@@ -102,6 +127,16 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 				await agentStarted;
 				await ctx.waitForIdle();
 
+				const handoffAssistant = findTerminalHandoffAssistant(
+					ctx.sessionManager.getBranch(),
+					previousLeafId,
+				);
+				if (!handoffAssistant || handoffAssistant.message.stopReason !== "stop") {
+					const reason = handoffAssistant?.message.stopReason ?? "missing result";
+					ctx.ui.notify(`Handoff document turn did not complete (${reason}); source branch retained`, "warning");
+					return;
+				}
+
 				const sourceLeafEntryId = ctx.sessionManager.getLeafId();
 				if (!sourceLeafEntryId) {
 					ctx.ui.notify("Handoff source branch has no leaf entry", "error");
@@ -109,7 +144,8 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 				}
 				const sessionFile = ctx.sessionManager.getSessionFile();
 
-				const navigation = await ctx.navigateTree(firstUserMessageEntryId, {
+				const editorTextBeforeNavigation = ctx.ui.getEditorText();
+				const navigation = await ctx.navigateTree(firstUserMessageEntry.id, {
 					summarize: true,
 					customInstructions: buildBranchSummaryInstructions(focus),
 				});
@@ -118,7 +154,14 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 					return;
 				}
 
-				ctx.ui.setEditorText("");
+				const restoredEditorText = userMessageEditorText(firstUserMessageEntry);
+				if (
+					editorTextBeforeNavigation.trim() === ""
+					&& restoredEditorText !== undefined
+					&& ctx.ui.getEditorText() === restoredEditorText
+				) {
+					ctx.ui.setEditorText("");
+				}
 				pi.sendUserMessage(
 					buildContinueFromHandoffPrompt(sessionFile, sourceLeafEntryId),
 				);

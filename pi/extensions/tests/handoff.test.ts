@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { InMemoryCredentialStore, type UserMessage } from "@earendil-works/pi-ai";
+import { type AssistantMessage, InMemoryCredentialStore, type StopReason, type UserMessage } from "@earendil-works/pi-ai";
 import {
 	discoverAndLoadExtensions,
 	ExtensionRunner,
@@ -26,7 +26,35 @@ function userMessage(text: string): UserMessage {
 	};
 }
 
-async function createHandoffHarness(cwd: string) {
+function assistantMessage(stopReason: StopReason): AssistantMessage {
+	return {
+		role: "assistant",
+		content: [{ type: "text", text: "Handoff written." }],
+		api: "openai-responses",
+		provider: "openai",
+		model: "test-model",
+		usage: {
+			input: 0,
+			output: 0,
+			cacheRead: 0,
+			cacheWrite: 0,
+			totalTokens: 0,
+			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+		},
+		stopReason,
+		timestamp: Date.now(),
+	};
+}
+
+async function createHandoffHarness(
+	cwd: string,
+	harnessOptions: {
+		handoffStopReason?: StopReason;
+		editorBeforeNavigation?: string;
+		editorAfterNavigation?: string;
+		sessionDir?: string;
+	} = {},
+) {
 	const credentials = new InMemoryCredentialStore();
 	const modelRuntime = await ModelRuntime.create({
 		credentials,
@@ -37,7 +65,7 @@ async function createHandoffHarness(cwd: string) {
 	assert.ok(model, "the bundled model catalog should not be empty");
 	await credentials.modify(model.provider, async () => ({ type: "api_key", key: "test-key" }));
 
-	const sessionManager = SessionManager.create(cwd, join(cwd, ".sessions"));
+	const sessionManager = SessionManager.create(cwd, harnessOptions.sessionDir ?? join(cwd, ".sessions"));
 	const loaded = await discoverAndLoadExtensions([extensionPath], cwd, join(cwd, ".agent"));
 	assert.deepEqual(loaded.errors, []);
 
@@ -56,12 +84,17 @@ async function createHandoffHarness(cwd: string) {
 			readonly expandPromptTemplates?: boolean;
 		};
 	}> = [];
+	let handoffAssistantEntryId: string | undefined;
 	loaded.runtime.sendUserMessage = (content, options) => {
 		if (typeof content !== "string") {
 			throw new Error("Handoff test received unexpected image content");
 		}
 		sentUserMessages.push({ content, ...(options ? { options } : {}) });
 		if (content.startsWith("/skill:handoff")) {
+			sessionManager.appendMessage(userMessage(content));
+			handoffAssistantEntryId = sessionManager.appendMessage(
+				assistantMessage(harnessOptions.handoffStopReason ?? "stop"),
+			);
 			queueMicrotask(() => void runner.emit({ type: "agent_start" }));
 		}
 	};
@@ -80,6 +113,7 @@ async function createHandoffHarness(cwd: string) {
 		getSystemPrompt: () => "",
 	});
 
+	let editorText = harnessOptions.editorBeforeNavigation ?? "";
 	const navigations: Array<{
 		readonly targetId: string;
 		readonly options?: {
@@ -98,6 +132,13 @@ async function createHandoffHarness(cwd: string) {
 		fork: async () => ({ cancelled: false }),
 		navigateTree: async (targetId, options) => {
 			navigations.push({ targetId, ...(options ? { options } : {}) });
+			const target = sessionManager.getEntry(targetId);
+			const targetText = target?.type === "message" && target.message.role === "user"
+				? (Array.isArray(target.message.content)
+					? target.message.content.filter((part) => part.type === "text").map((part) => part.text).join("")
+					: target.message.content)
+				: "";
+			editorText = harnessOptions.editorAfterNavigation ?? targetText;
 			return { cancelled: false };
 		},
 		switchSession: async () => ({ cancelled: false }),
@@ -110,7 +151,11 @@ async function createHandoffHarness(cwd: string) {
 	runner.setUIContext({
 		...runner.getUIContext(),
 		notify: (message, type) => notifications.push({ message, ...(type ? { type } : {}) }),
-		setEditorText: (value) => editorValues.push(value),
+		getEditorText: () => editorText,
+		setEditorText: (value) => {
+			editorText = value;
+			editorValues.push(value);
+		},
 	});
 
 	return {
@@ -121,6 +166,7 @@ async function createHandoffHarness(cwd: string) {
 		sentUserMessages,
 		sessionManager,
 		waitForIdleCalls: () => waitForIdleCalls,
+		handoffAssistantEntryId: () => handoffAssistantEntryId,
 	};
 }
 
@@ -132,14 +178,16 @@ test("/handoff runs the handoff skill, summarizes to the first message, and cont
 		const firstUserMessageEntryId = harness.sessionManager.appendMessage(
 			userMessage("Implement the feature"),
 		);
-		const sourceLeafEntryId = harness.sessionManager.appendMessage(userMessage("Use tests"));
+		harness.sessionManager.appendMessage(userMessage("Use tests"));
 
 		const command = harness.runner.getCommand("handoff");
 		assert.ok(command, "/handoff should be registered");
 		await command.handler("focus on error recovery", harness.runner.createCommandContext());
 
 		const sessionFile = harness.sessionManager.getSessionFile();
+		const sourceLeafEntryId = harness.handoffAssistantEntryId();
 		assert.ok(sessionFile);
+		assert.ok(sourceLeafEntryId);
 		assert.deepEqual(harness.sentUserMessages, [
 			{
 				content: "/skill:handoff focus on error recovery",
@@ -183,6 +231,72 @@ test("/handoff accepts no focus prompt", async () => {
 	}
 });
 
+test("/handoff retains the source branch when the handoff turn is aborted", async () => {
+	const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-"));
+
+	try {
+		const harness = await createHandoffHarness(cwd, { handoffStopReason: "aborted" });
+		harness.sessionManager.appendMessage(userMessage("Implement the feature"));
+		const command = harness.runner.getCommand("handoff");
+		assert.ok(command);
+
+		await command.handler("", harness.runner.createCommandContext());
+
+		assert.equal(harness.sentUserMessages.length, 1);
+		assert.deepEqual(harness.navigations, []);
+		assert.deepEqual(harness.editorValues, []);
+		assert.equal(harness.sessionManager.getLeafId(), harness.handoffAssistantEntryId());
+		assert.deepEqual(harness.notifications, [
+			{
+				message: "Handoff document turn did not complete (aborted); source branch retained",
+				type: "warning",
+			},
+		]);
+	} finally {
+		await rm(cwd, { recursive: true, force: true });
+	}
+});
+
+test("/handoff preserves a draft that navigation did not replace", async () => {
+	const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-"));
+
+	try {
+		const harness = await createHandoffHarness(cwd, { editorAfterNavigation: "keep this draft" });
+		harness.sessionManager.appendMessage(userMessage("Implement the feature"));
+		const command = harness.runner.getCommand("handoff");
+		assert.ok(command);
+
+		await command.handler("", harness.runner.createCommandContext());
+
+		assert.deepEqual(harness.editorValues, []);
+		assert.equal(harness.sentUserMessages.length, 2);
+	} finally {
+		await rm(cwd, { recursive: true, force: true });
+	}
+});
+
+test("/handoff does not clear a preexisting draft that equals the restored prompt", async () => {
+	const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-"));
+
+	try {
+		const prompt = "Implement the feature";
+		const harness = await createHandoffHarness(cwd, {
+			editorBeforeNavigation: prompt,
+			editorAfterNavigation: prompt,
+		});
+		harness.sessionManager.appendMessage(userMessage(prompt));
+		const command = harness.runner.getCommand("handoff");
+		assert.ok(command);
+
+		await command.handler("", harness.runner.createCommandContext());
+
+		assert.deepEqual(harness.editorValues, []);
+		assert.equal(harness.sentUserMessages.length, 2);
+	} finally {
+		await rm(cwd, { recursive: true, force: true });
+	}
+});
+
 test("/handoff warns when there is no conversation", async () => {
 	const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-"));
 
@@ -204,6 +318,7 @@ test("/handoff warns when there is no conversation", async () => {
 
 test("/handoff preserves profile, cwd, Herdr identity, and dirty Git state in-process", async () => {
 	const cwd = await realpath(await mkdtemp(join(tmpdir(), "pi-handoff-")));
+	const sessionDir = await realpath(await mkdtemp(join(tmpdir(), "pi-handoff-sessions-")));
 	const previousCwd = process.cwd();
 	const trackedEnvironment = {
 		PI_CODING_AGENT_DIR: process.env.PI_CODING_AGENT_DIR,
@@ -229,7 +344,7 @@ test("/handoff preserves profile, cwd, Herdr identity, and dirty Git state in-pr
 		}
 		process.chdir(cwd);
 
-		const harness = await createHandoffHarness(cwd);
+		const harness = await createHandoffHarness(cwd, { sessionDir });
 		harness.sessionManager.appendMessage(userMessage("Continue without changing process state"));
 		const statusBefore = execFileSync("git", ["status", "--porcelain=1", "--untracked-files=all"], {
 			cwd,
@@ -264,5 +379,6 @@ test("/handoff preserves profile, cwd, Herdr identity, and dirty Git state in-pr
 			}
 		}
 		await rm(cwd, { recursive: true, force: true });
+		await rm(sessionDir, { recursive: true, force: true });
 	}
 });

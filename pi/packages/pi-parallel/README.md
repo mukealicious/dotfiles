@@ -20,16 +20,14 @@ npm install -g parallel-web-cli
 parallel-cli login
 ```
 
-### 2. Install the extension
+### 2. Enable the local package
+
+This dotfiles repository vendors the package at `pi/packages/pi-parallel` and
+lists that path in both profile settings. Run the topic installer to materialize
+the settings; do not clone another copy into the unsupported fallback profile.
 
 ```bash
-pi install git:github.com/HazAT/pi-parallel
-```
-
-Or manually:
-
-```bash
-git clone https://github.com/HazAT/pi-parallel ~/.pi/agent/extensions/pi-parallel
+~/.dotfiles/pi/install.sh
 ```
 
 ### 3. Verify

@@ -103,6 +103,12 @@ function writePackageSkill(packageRoot: string, skillName: string): void {
 		`---\nname: ${skillName}\ndescription: test skill\n---\nbody\n`,
 		"utf-8",
 	);
+	fs.mkdirSync(path.join(packageRoot, ".pi"), { recursive: true });
+	fs.writeFileSync(
+		path.join(packageRoot, ".pi", "settings.json"),
+		JSON.stringify({ packages: [".."] }, null, 2),
+		"utf-8",
+	);
 }
 
 describe("single sync execution", { skip: !available ? "pi packages not available" : undefined }, () => {

@@ -41,6 +41,41 @@ const MITSUPI_SKILLS = [
 	"skills/uv/SKILL.md",
 ];
 const REQUIRED_LOCAL_PACKAGES = ["pi-exa", "pi-parallel", "pi-openai-fast", "pi-subagents"];
+const REQUIRED_MANAGED_AGENTS = ["review.md"];
+const REQUIRED_LOCAL_EXTENSIONS = ["handoff.ts", "notify.ts", "usage-footer.ts"];
+const REQUIRED_THEMES = ["gruvbox-dark.json", "gruvbox-light.json"];
+const REQUIRED_SHARED_SKILLS = [
+	"agent-context",
+	"breadboarding",
+	"bro",
+	"build-skill",
+	"code-review",
+	"codebase-design",
+	"domain-modeling",
+	"dotfiles-dev",
+	"flares",
+	"framing-doc",
+	"grill-me",
+	"grill-with-docs",
+	"grilling",
+	"handoff",
+	"herdr",
+	"hunk-review",
+	"impeccable",
+	"implement",
+	"kickoff-doc",
+	"librarian",
+	"moja-glava",
+	"opensrc",
+	"post-mortem",
+	"production-readiness",
+	"qmd",
+	"surf-browser",
+	"tdd",
+	"tufte-data-viz",
+	"upstream-review",
+	"visual-deliverables",
+];
 const FALLBACK_CATEGORIES = {
 	historical: "unsupported_historical_sessions_state",
 	cache: "cache",
@@ -48,19 +83,18 @@ const FALLBACK_CATEGORIES = {
 	unknown: "unknown_user_owned",
 };
 const KNOWN_STALE_FALLBACK_CHILDREN = {
-	agents: new Set(["researcher.md", "review.md"]),
-	extensions: new Set([
-		"cloudflare-approval.ts",
-		"context-hp.ts",
-		"cost.ts",
-		"herdr-agent-state.ts",
-		"notify.ts",
-		"pi-openai-fast.json",
-		"usage-footer.ts",
-		"watchdog.ts",
+	agents: new Map([["researcher.md", "symlink"], ["review.md", "file"]]),
+	extensions: new Map([
+		["cloudflare-approval.ts", "symlink"],
+		["context-hp.ts", "symlink"],
+		["cost.ts", "symlink"],
+		["herdr-agent-state.ts", "file"],
+		["notify.ts", "symlink"],
+		["pi-openai-fast.json", "file"],
+		["usage-footer.ts", "symlink"],
+		["watchdog.ts", "symlink"],
 	]),
-	skills: new Set(["tldraw-offline"]),
-	themes: new Set(["gruvbox-dark.json", "gruvbox-light.json"]),
+	themes: new Map([["gruvbox-dark.json", "symlink"], ["gruvbox-light.json", "symlink"]]),
 };
 const DEFAULT_LARGE_SESSION_BYTES = 1024 * 1024 * 1024;
 const MAX_SCAN_ENTRIES = 1_000_000;
@@ -186,13 +220,17 @@ function emptySummary(filePath) {
 		symlinks: 0,
 		bytes: 0,
 		fallbackCrossings: 0,
+		externalCrossings: 0,
 		unresolved: 0,
 		errors: 0,
 		truncated: false,
 	};
 }
 
-function summarizeTree(filePath, fallbackRoot, { required = true, maxEntries = MAX_SCAN_ENTRIES } = {}) {
+function summarizeTree(filePath, fallbackRoot, { required = true, maxEntries = MAX_SCAN_ENTRIES, ownerRoot } = {}) {
+	const resolvedOwnerRoot = ownerRoot
+		? (pathSafety(ownerRoot, fallbackRoot).resolved || path.resolve(ownerRoot))
+		: undefined;
 	const initial = safeLstat(filePath);
 	if (!initial.stat) {
 		const summary = emptySummary(filePath);
@@ -220,6 +258,7 @@ function summarizeTree(filePath, fallbackRoot, { required = true, maxEntries = M
 		summary.entries += 1;
 		const safety = pathSafety(current, fallbackRoot);
 		if (safety.fallbackCrossing) summary.fallbackCrossings += 1;
+		if (resolvedOwnerRoot && safety.resolved && !isWithin(resolvedOwnerRoot, safety.resolved)) summary.externalCrossings += 1;
 		if (safety.unresolved || safety.loop) summary.unresolved += 1;
 		if (stat.isSymbolicLink()) {
 			summary.symlinks += 1;
@@ -243,7 +282,7 @@ function summarizeTree(filePath, fallbackRoot, { required = true, maxEntries = M
 		}
 	}
 
-	summary.safe = summary.fallbackCrossings === 0 && summary.unresolved === 0 && summary.errors === 0 && !summary.truncated;
+	summary.safe = summary.fallbackCrossings === 0 && summary.externalCrossings === 0 && summary.unresolved === 0 && summary.errors === 0 && !summary.truncated;
 	return summary;
 }
 
@@ -276,6 +315,7 @@ function summarizePath(filePath, fallbackRoot, { required = true } = {}) {
 		symlinks: stat.isSymbolicLink() ? 1 : 0,
 		bytes: stat.isFile() ? stat.size : 0,
 		fallbackCrossings: status.fallbackCrossing ? 1 : 0,
+		externalCrossings: 0,
 		unresolved: status.unresolved || status.loop ? 1 : 0,
 		errors: 0,
 		truncated: false,
@@ -340,6 +380,7 @@ function aggregateSummaries(summaries, filePath = "") {
 		result.symlinks += summary.symlinks;
 		result.bytes += summary.bytes;
 		result.fallbackCrossings += summary.fallbackCrossings;
+		result.externalCrossings += summary.externalCrossings;
 		result.unresolved += summary.unresolved;
 		result.errors += summary.errors;
 		result.truncated ||= summary.truncated;
@@ -356,6 +397,7 @@ function resourceResult(summary, extra = {}) {
 		entries: summary.entries,
 		bytes: summary.bytes,
 		fallbackCrossings: summary.fallbackCrossings,
+		externalCrossings: summary.externalCrossings,
 		unresolved: summary.unresolved,
 		errors: summary.errors,
 		truncated: summary.truncated,
@@ -504,21 +546,91 @@ function sourceBoundary(repo) {
 	};
 }
 
-function classifyFallbackEntry(relativePath) {
-	const [top, child] = relativePath.split(path.sep);
-	if (["sessions", "run-history.jsonl", "history.jsonl", "auth.json", "modes.json", "trust.json"].includes(top)) {
+function fallbackEntryKind(stat) {
+	if (stat.isDirectory()) return "directory";
+	if (stat.isSymbolicLink()) return "symlink";
+	if (stat.isFile()) return "file";
+	return "other";
+}
+
+function readSmallFallbackText(filePath, stat) {
+	if (!stat.isFile() || stat.size > 128 * 1024) return undefined;
+	try {
+		return fs.readFileSync(filePath, "utf8");
+	} catch {
+		return undefined;
+	}
+}
+
+function hasKnownStaleFileIdentity(relativePath, filePath, stat) {
+	const content = readSmallFallbackText(filePath, stat);
+	if (content === undefined) return false;
+	if (relativePath === "AGENTS.md") {
+		return content.includes("Managed by ~/.dotfiles/ai/install.sh");
+	}
+	if (relativePath === path.join("agents", "review.md")) {
+		return content.includes("# Managed by ~/.dotfiles/ai/install.sh")
+			&& /^name:\s*review\s*$/m.test(content);
+	}
+	if (relativePath === path.join("extensions", "herdr-agent-state.ts")) {
+		return content.startsWith("// installed by herdr\n// managed by herdr;");
+	}
+	if (relativePath === path.join("extensions", "pi-openai-fast.json")) {
+		try {
+			const config = JSON.parse(content);
+			const keys = Object.keys(config).sort();
+			return keys.every((key) => ["active", "persistState", "supportedModels"].includes(key))
+				&& typeof config.active === "boolean"
+				&& typeof config.persistState === "boolean"
+				&& Array.isArray(config.supportedModels)
+				&& config.supportedModels.every((model) => typeof model === "string");
+		} catch {
+			return false;
+		}
+	}
+	if (relativePath === path.join("skills", "tldraw-offline", "SKILL.md")) {
+		return content.includes("<!-- installed-by:tldraw-desktop-agent-skills -->")
+			&& /^name:\s*tldraw-offline\s*$/m.test(content);
+	}
+	return false;
+}
+
+function classifyFallbackEntry(relativePath, filePath, stat) {
+	const [top, child, grandchild, ...rest] = relativePath.split(path.sep);
+	if (["sessions", "run-history.jsonl", "history.jsonl", "auth.json", "settings.json", "modes.json", "trust.json"].includes(top)) {
 		return FALLBACK_CATEGORIES.historical;
 	}
 	if (["node_modules", "git", "models-store.json", "mcp-cache.json", "cache", "caches"].includes(top)) {
 		return FALLBACK_CATEGORIES.cache;
 	}
-	if (top in KNOWN_STALE_FALLBACK_CHILDREN) {
-		if (!child || KNOWN_STALE_FALLBACK_CHILDREN[top].has(child)) return FALLBACK_CATEGORIES.stale;
+	if (top === "skills") {
+		if (!child && stat.isDirectory()) return FALLBACK_CATEGORIES.stale;
+		if (child === "tldraw-offline" && !grandchild && stat.isDirectory()) return FALLBACK_CATEGORIES.stale;
+		if (
+			child === "tldraw-offline"
+			&& grandchild === "SKILL.md"
+			&& rest.length === 0
+			&& hasKnownStaleFileIdentity(relativePath, filePath, stat)
+		) return FALLBACK_CATEGORIES.stale;
 		return FALLBACK_CATEGORIES.unknown;
 	}
+	const staleChildren = KNOWN_STALE_FALLBACK_CHILDREN[top];
+	if (staleChildren) {
+		if (!child && stat.isDirectory()) return FALLBACK_CATEGORIES.stale;
+		if (grandchild || rest.length > 0) return FALLBACK_CATEGORIES.unknown;
+		const expectedKind = staleChildren.get(child);
+		if (expectedKind !== fallbackEntryKind(stat)) return FALLBACK_CATEGORIES.unknown;
+		if (expectedKind === "file" && !hasKnownStaleFileIdentity(relativePath, filePath, stat)) {
+			return FALLBACK_CATEGORIES.unknown;
+		}
+		return FALLBACK_CATEGORIES.stale;
+	}
+	if (top === "AGENTS.md") {
+		return hasKnownStaleFileIdentity(relativePath, filePath, stat)
+			? FALLBACK_CATEGORIES.stale
+			: FALLBACK_CATEGORIES.unknown;
+	}
 	if ([
-		"AGENTS.md",
-		"settings.json",
 		"mcp.json",
 		"package.json",
 		"package-lock.json",
@@ -532,7 +644,7 @@ function classifyFallbackEntry(relativePath) {
 		"watchdog.ts",
 		"researcher.md",
 		"review.md",
-	].includes(top)) return FALLBACK_CATEGORIES.stale;
+	].includes(top) && stat.isSymbolicLink()) return FALLBACK_CATEGORIES.stale;
 	return FALLBACK_CATEGORIES.unknown;
 }
 
@@ -569,7 +681,9 @@ function fallbackInventory(fallbackRoot) {
 			continue;
 		}
 		entries += 1;
-		const category = current.relativePath ? classifyFallbackEntry(current.relativePath) : FALLBACK_CATEGORIES.stale;
+		const category = current.relativePath
+			? classifyFallbackEntry(current.relativePath, current.filePath, stat)
+			: FALLBACK_CATEGORIES.stale;
 		if (!categoryMap.has(category)) categoryMap.set(category, { category, entries: 0, files: 0, directories: 0, symlinks: 0, bytes: 0 });
 		const item = categoryMap.get(category);
 		item.entries += 1;
@@ -668,10 +782,12 @@ function authProbe(profile, options, configuredProvider) {
 	const providerMatched = parsed?.provider === profile.provider;
 	const status = parsed?.status === "ready" || parsed?.status === "not_ready" ? parsed.status : command.error ? "command_failed" : "invalid_response";
 	const commandRan = command.ran;
-	const usable = providerMatched && status === "ready";
+	const commandSucceeded = commandRan && command.exitCode === 0;
+	const usable = commandSucceeded && providerMatched && status === "ready";
 	return {
 		wrapper: wrapperPath,
 		commandRan,
+		commandSucceeded,
 		commandExitCode: command.exitCode,
 		configuredProvider,
 		provider: parsed?.provider || "",
@@ -711,7 +827,7 @@ function buildProfile(profile, options, fallbackRoot, sourceInfo, otherProfileSt
 	const settings = settingsInfo.settings || {};
 	const profilePath = (relative) => path.join(profileRoot, relative);
 
-	const stateNames = [
+	const knownStateNames = [
 		"auth.json",
 		"herdr-agent-state.ts",
 		"settings.json",
@@ -730,9 +846,22 @@ function buildProfile(profile, options, fallbackRoot, sourceInfo, otherProfileSt
 		"package.json",
 		"package-lock.json",
 	];
+	const discoveredStateNames = listNames(profileRoot).filter((name) => name !== "AGENTS.md");
+	const stateNames = [...new Set([...knownStateNames, ...discoveredStateNames])].sort();
+	const externallyManagedResourceDirs = new Set(["agents", "extensions", "themes"]);
 	const state = {};
 	for (const name of stateNames) {
-		state[name] = summarizePath(profilePath(name), fallbackRoot, { required: false });
+		const statePath = profilePath(name);
+		const { stat } = safeLstat(statePath);
+		state[name] = stat?.isDirectory() && !stat.isSymbolicLink()
+			? summarizeTree(statePath, fallbackRoot, {
+				required: false,
+				...(externallyManagedResourceDirs.has(name) ? {} : { ownerRoot: profileRoot }),
+			})
+			: summarizePath(statePath, fallbackRoot, { required: false });
+		if (externallyManagedResourceDirs.has(name) && state[name].present) {
+			state[name].safe = state[name].fallbackCrossings === 0 && state[name].errors === 0 && !state[name].truncated;
+		}
 	}
 	const sessionSummary = summarizeTree(profilePath("sessions"), fallbackRoot, { required: false });
 	const session = {
@@ -747,7 +876,11 @@ function buildProfile(profile, options, fallbackRoot, sourceInfo, otherProfileSt
 	};
 
 	const managedSourceRoot = path.join(options.repo, ".ai-runtime", "pi", "agents");
-	const managedNames = listNames(managedSourceRoot, (name) => name.endsWith(".md"));
+	const authoredManagedNames = listNames(path.join(options.repo, "pi", "agents"), (name) => name.endsWith(".frontmatter"))
+		.map((name) => name.replace(/\.frontmatter$/, ".md"));
+	const generatedManagedNames = listNames(managedSourceRoot, (name) => name.endsWith(".md"));
+	const managedManifestCurrent = REQUIRED_MANAGED_AGENTS.every((name) => authoredManagedNames.includes(name) && generatedManagedNames.includes(name));
+	const managedNames = REQUIRED_MANAGED_AGENTS;
 	const managedTargetRoot = profilePath("agents");
 	const managedTargetSummary = summarizeTree(managedTargetRoot, fallbackRoot, { required: true });
 	const managedLinks = managedNames.map((name) => expectedLink(path.join(managedSourceRoot, name), path.join(managedTargetRoot, name), fallbackRoot));
@@ -760,13 +893,14 @@ function buildProfile(profile, options, fallbackRoot, sourceInfo, otherProfileSt
 	const managedAgents = {
 		path: managedTargetRoot,
 		sourcePath: managedSourceRoot,
+		manifestCurrent: managedManifestCurrent,
 		present: managedTargetSummary.present,
 		entries: managedTargetSummary.entries,
 		bytes: managedTargetSummary.bytes,
 		unresolved: managedTargetSummary.unresolved,
 		errors: managedTargetSummary.errors,
 		truncated: managedTargetSummary.truncated,
-		safe: managedTargetSummary.safe && managedLinks.every((item) => item.safe) && customAgentOwnership.every(Boolean),
+		safe: managedManifestCurrent && managedTargetSummary.safe && managedLinks.every((item) => item.safe) && customAgentOwnership.every(Boolean),
 		expected: managedNames.length,
 		linked: managedLinks.filter((item) => item.matches).length,
 		missing: managedLinks.filter((item) => !item.present).length,
@@ -802,38 +936,45 @@ function buildProfile(profile, options, fallbackRoot, sourceInfo, otherProfileSt
 		};
 	});
 	const authoredSkillRoot = path.join(options.repo, "ai", "skills");
-	const expectedSkillNames = listNames(authoredSkillRoot, (name) => fs.existsSync(path.join(authoredSkillRoot, name, "SKILL.md")));
-	const generatedSkillStatuses = expectedSkillNames.map((name) => summarizePath(path.join(generatedSkillRoot, name, "SKILL.md"), fallbackRoot, { required: true }));
+	const authoredSkillStatuses = REQUIRED_SHARED_SKILLS.map((name) => summarizePath(path.join(authoredSkillRoot, name, "SKILL.md"), fallbackRoot, { required: true }));
+	const generatedSkillStatuses = REQUIRED_SHARED_SKILLS.map((name) => summarizePath(path.join(generatedSkillRoot, name, "SKILL.md"), fallbackRoot, { required: true }));
 	const generatedRootConfigured = skillRoots.some((skillRoot) => path.resolve(skillRoot) === path.resolve(generatedSkillRoot));
 	const projectedSkills = {
 		configured: configuredSkills.length,
 		roots: projectedSkillResults,
 		generatedRootConfigured,
-		expected: expectedSkillNames.length,
+		expected: REQUIRED_SHARED_SKILLS.length,
+		authored: authoredSkillStatuses.filter((item) => item.present).length,
 		projected: generatedSkillStatuses.filter((item) => item.present).length,
 		missing: generatedSkillStatuses.filter((item) => !item.present).length,
 		safe: generatedRootConfigured
 			&& projectedSkillResults.every((item) => item.safe)
+			&& authoredSkillStatuses.every((item) => item.safe)
 			&& generatedSkillStatuses.every((item) => item.safe),
 		fallbackCrossings: projectedSkillResults.reduce((sum, item) => sum + item.fallbackCrossings, 0)
+			+ authoredSkillStatuses.reduce((sum, item) => sum + item.fallbackCrossings, 0)
 			+ generatedSkillStatuses.reduce((sum, item) => sum + item.fallbackCrossings, 0),
 	};
 
 	const localExtensionSource = path.join(options.repo, "pi", "extensions");
 	const localExtensionTarget = profilePath("extensions");
 	const localExtensionSummary = summarizeTree(localExtensionTarget, fallbackRoot, { required: true });
-	const localExtensionNames = listNames(localExtensionSource, (name) => name.endsWith(".ts"));
+	const authoredLocalExtensionNames = listNames(localExtensionSource, (name) => name.endsWith(".ts"));
+	const localExtensionManifestCurrent = REQUIRED_LOCAL_EXTENSIONS.every((name) => authoredLocalExtensionNames.includes(name));
+	const localExtensionNames = REQUIRED_LOCAL_EXTENSIONS;
 	const localExtensionLinks = localExtensionNames.map((name) => expectedLink(path.join(localExtensionSource, name), path.join(localExtensionTarget, name), fallbackRoot));
 	const localExtensions = {
 		path: localExtensionTarget,
 		sourcePath: localExtensionSource,
 		...resourceResult(localExtensionSummary),
+		manifestCurrent: localExtensionManifestCurrent,
 		expected: localExtensionNames.length,
 		linked: localExtensionLinks.filter((item) => item.matches).length,
 		missing: localExtensionLinks.filter((item) => !item.present).length,
 		misdirected: localExtensionLinks.filter((item) => item.present && !item.matches).length,
 		unmanagedUnresolved: Math.max(0, localExtensionSummary.unresolved - localExtensionLinks.filter((item) => item.unresolved).length),
-		safe: localExtensionSummary.fallbackCrossings === 0
+		safe: localExtensionManifestCurrent
+			&& localExtensionSummary.fallbackCrossings === 0
 			&& localExtensionSummary.errors === 0
 			&& !localExtensionSummary.truncated
 			&& localExtensionLinks.every((item) => item.safe),
@@ -842,7 +983,9 @@ function buildProfile(profile, options, fallbackRoot, sourceInfo, otherProfileSt
 	const themeSourceRoot = path.join(options.repo, "pi", "themes");
 	const themeTargetRoot = profilePath("themes");
 	const themeSummary = summarizeTree(themeTargetRoot, fallbackRoot, { required: true });
-	const themeNames = listNames(themeSourceRoot, (name) => name.endsWith(".json"));
+	const authoredThemeNames = listNames(themeSourceRoot, (name) => name.endsWith(".json"));
+	const themeManifestCurrent = REQUIRED_THEMES.every((name) => authoredThemeNames.includes(name));
+	const themeNames = REQUIRED_THEMES;
 	const themeLinks = themeNames.map((name) => expectedLink(path.join(themeSourceRoot, name), path.join(themeTargetRoot, name), fallbackRoot));
 	const selectedTheme = typeof settings.theme === "string" ? settings.theme : "";
 	const selectedThemePath = selectedTheme ? path.join(themeTargetRoot, `${selectedTheme}.json`) : "";
@@ -850,12 +993,13 @@ function buildProfile(profile, options, fallbackRoot, sourceInfo, otherProfileSt
 	const themes = {
 		path: themeTargetRoot,
 		...resourceResult(themeSummary),
+		manifestCurrent: themeManifestCurrent,
 		expected: themeNames.length,
 		linked: themeLinks.filter((item) => item.matches).length,
 		selected: selectedTheme,
 		selectedPresent: selectedThemeStatus.present,
 		selectedSafe: selectedThemeStatus.safe,
-		safe: themeSummary.safe && themeLinks.every((item) => item.safe) && selectedThemeStatus.safe,
+		safe: themeManifestCurrent && themeSummary.safe && themeLinks.every((item) => item.safe) && selectedThemeStatus.safe,
 	};
 
 	const packageEntries = Array.isArray(settings.packages) ? settings.packages : [];
@@ -979,7 +1123,7 @@ function buildProfile(profile, options, fallbackRoot, sourceInfo, otherProfileSt
 	const profilePass = providerConfigured
 		&& auth.usable
 		&& auth.providerMatched
-		&& auth.commandRan
+		&& auth.commandSucceeded
 		&& stateSafe
 		&& instructions.safe
 		&& managedAgents.safe
@@ -1001,10 +1145,11 @@ function buildProfile(profile, options, fallbackRoot, sourceInfo, otherProfileSt
 				expectedProfile: profile.name,
 				wrapper: auth.wrapper,
 				wrapperCommandRan: auth.commandRan,
+				wrapperCommandSucceeded: auth.commandSucceeded,
 				providerConfigured,
 				providerObserved: auth.provider,
 				providerMatched: auth.providerMatched,
-				verified: sourceInfo.wrappers[profile.name]?.boundProfile === true && providerConfigured && auth.commandRan && auth.providerMatched,
+				verified: sourceInfo.wrappers[profile.name]?.boundProfile === true && providerConfigured && auth.commandSucceeded && auth.providerMatched,
 			},
 			auth,
 		},
@@ -1028,7 +1173,7 @@ function buildProfile(profile, options, fallbackRoot, sourceInfo, otherProfileSt
 			herdr,
 		},
 		criteria: {
-			launchSelection: sourceInfo.wrappers[profile.name]?.boundProfile === true && providerConfigured && auth.commandRan && auth.providerMatched,
+			launchSelection: sourceInfo.wrappers[profile.name]?.boundProfile === true && providerConfigured && auth.commandSucceeded && auth.providerMatched,
 			authUsable: auth.usable,
 			stateOwned: stateSafe,
 			resourcesSafe: instructions.safe && managedAgents.safe && projectedSkills.safe && localExtensions.safe && themes.safe && dependencies.safe && packages.safe && mitsupi.safe && handoff.safe,
@@ -1043,7 +1188,10 @@ function statePathOwned(summary, profileRoot, name, fallbackRoot) {
 	if (name === "node_modules") return summary.safe;
 	const status = pathSafety(summary.path, fallbackRoot);
 	const ownerRoot = pathSafety(profileRoot, fallbackRoot).resolved || path.resolve(profileRoot);
-	return status.safe && Boolean(status.resolved) && isWithin(ownerRoot, status.resolved);
+	const resourceDirSafe = new Set(["agents", "extensions", "themes"]).has(name)
+		? summary.fallbackCrossings === 0 && summary.errors === 0 && !summary.truncated
+		: summary.safe;
+	return resourceDirSafe && status.safe && Boolean(status.resolved) && isWithin(ownerRoot, status.resolved);
 }
 
 function stateSafeForProfile(summaries, profileRoot, fallbackRoot) {

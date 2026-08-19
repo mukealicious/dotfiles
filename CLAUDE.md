@@ -93,12 +93,15 @@ codex mcp remove context7
 
 ## Pi Coding Agent
 
-Pi config lives in `pi/` and is symlinked to `~/.pi/agent/`. See `pi/README.md`.
+Pi config lives in `pi/`; supported launches select either `~/.pi/work` or
+`~/.pi/personal`. Shared generated instructions, agents, and skills live under
+`.ai-runtime/pi/`; local installers do not configure `~/.pi/agent`. See
+`pi/README.md`.
 
 Key features:
-- Discovers shared skills via `settings.json` path config
-- `notify.ts` extension sends desktop notifications (OSC 777)
-- mitsupi package provides uv interceptor, /answer, /review, /todos, /files
+- Discovers shared skills via profile `settings.json` path config
+- `notify.ts` sends the non-Herdr OSC notification fallback
+- Curated Mitsupi resources provide `/answer`, `/review`, `/todos`, `/files`, and the allowlisted skills
 
 ## Shell Scripting Conventions
 
@@ -136,7 +139,7 @@ Default rule: put install logic in `[topic]/install.sh`; only move upward into `
 
 ## Anti-Patterns
 
-- Edit files under `~/.claude/`, `~/.pi/agent/`, or `~/.config/opencode/` directly — edit source files in this repo, run `dot` to install
+- Edit installer-managed files under `~/.claude/`, `.ai-runtime/`, `~/.pi/work/`, `~/.pi/personal/`, or `~/.config/opencode/` directly — edit their source files in this repo, then run the owning installer
 - Author shared skills in `.agents/skills/` or `.claude/skills/` — these are installer-managed runtime outputs
 - Add topic-specific logic to `script/install` or `bin/dot` unless orchestration requires it
 - Create multiple scripts that manage the same config directory

@@ -249,6 +249,12 @@ describe("fork context execution wiring", { skip: !available ? "subagent executo
 			`---\nname: ${skillName}\ndescription: test skill\n---\nbody\n`,
 			"utf-8",
 		);
+		fs.mkdirSync(path.join(packageRoot, ".pi"), { recursive: true });
+		fs.writeFileSync(
+			path.join(packageRoot, ".pi", "settings.json"),
+			JSON.stringify({ packages: [".."] }, null, 2),
+			"utf-8",
+		);
 	}
 
 	function makeCtx(sessionManager: SessionManagerStub) {

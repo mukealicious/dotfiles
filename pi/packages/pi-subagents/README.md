@@ -401,10 +401,12 @@ role has depth zero. Pi thinking levels are `off`, `minimal`, `low`, `medium`,
 management and clarify selectors, model suffixes, saved chains, async payloads,
 and child launch arguments.
 
-Skill fallback discovery follows Pi's settings boundary: settings-declared
-package resource filters are applied before package skills enter the selector.
-Project package manifests remain available, while unrelated active-profile and
-global npm package roots are not scanned opportunistically.
+Skill fallback discovery follows Pi's settings boundary: only
+settings-declared packages contribute package skills, and their resource filters
+are applied before skills enter the selector. Undeclared project, active-profile,
+and global package roots are not scanned opportunistically. Skills marked
+`disable-model-invocation: true` stay manual-only and cannot be injected into a
+subagent.
 
 ## Diagnostics and troubleshooting
 

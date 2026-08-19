@@ -7,7 +7,8 @@
 - Routed role defaults through provider-neutral `gpt-5.6` IDs: Luna/high for scout, Terra/high for researcher, Luna/max for worker, and Sol/xhigh for review.
 - Added Pi's native `max` thinking level to subagent argument handling and manager/clarify selectors.
 - Made ordinary custom agents and templates default to `maxSubagentDepth: 0`.
-- Made skill fallback discovery honor settings-declared package resource filters while retaining project packages and ignoring unrelated profile/global npm roots.
+- Made skill fallback discovery honor settings-declared package resource filters and ignore undeclared project, profile, and global package roots.
+- Hid and rejected manual-only skills from delegated skill injection.
 
 ### Fixed
 - Enforced read-only scout/review output and progress boundaries before parent-side session or output writes, including parallel and chain requests.

@@ -409,13 +409,17 @@ if command -v herdr >/dev/null 2>&1; then
   personal_integrations="$(PI_CODING_AGENT_DIR="$HOME/.pi/personal" herdr integration status 2>/dev/null || true)"
   work_integrations="$(PI_CODING_AGENT_DIR="$HOME/.pi/work" herdr integration status 2>/dev/null || true)"
 
-  if [ -d "$HOME/.pi/personal" ] && ! printf '%s\n' "$personal_integrations" | grep -q '^pi: current ';
-  then
+  if [ ! -d "$HOME/.pi/personal" ]; then
+    fail "required Pi personal profile is missing"
+    integration_issues=1
+  elif ! printf '%s\n' "$personal_integrations" | grep -q '^pi: current '; then
     warn "Herdr Pi personal integration is missing or outdated"
     integration_issues=1
   fi
-  if [ -d "$HOME/.pi/work" ] && ! printf '%s\n' "$work_integrations" | grep -q '^pi: current ';
-  then
+  if [ ! -d "$HOME/.pi/work" ]; then
+    fail "required Pi work profile is missing"
+    integration_issues=1
+  elif ! printf '%s\n' "$work_integrations" | grep -q '^pi: current '; then
     warn "Herdr Pi work integration is missing or outdated"
     integration_issues=1
   fi

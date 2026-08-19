@@ -124,7 +124,10 @@ PI_PROFILE_CHECK_HERDR_COMMAND="$FAKE_BIN/herdr" \
   "$ROOT/bin/pi-profile-check" --home "$HOME_ROOT" --repo "$ROOT" --large-session-bytes 1 > "$TMP_ROOT/absent.json"
 status=$?
 set -e
-[ "$status" -eq 0 ] || fail "profile check failed for the healthy fixture"
+if [ "$status" -ne 0 ]; then
+  jq '{blockers, profiles: [.profiles[] | {name, criteria, stateFailures: (.state.paths | to_entries | map(select(.value.owned == false or .value.safe == false)) | map(.key)), resourceFailures: (.resources | to_entries | map(select(.value.safe == false)) | map(.key))}]}' "$TMP_ROOT/absent.json" >&2
+  fail "profile check failed for the healthy fixture"
+fi
 [ ! -e "$HOME_ROOT/.pi/agent" ] || fail "profile check created the absent fallback"
 assert_jq "$TMP_ROOT/absent.json" '
   .deletion.status == "pass" and
@@ -137,6 +140,7 @@ assert_jq "$TMP_ROOT/absent.json" '
     .resources.mitsupi.safe and
     .resources.handoff.safe and
     .resources.projectedSkills.generatedRootConfigured and
+    (.resources.projectedSkills.expected == .resources.projectedSkills.authored) and
     (.resources.projectedSkills.expected == .resources.projectedSkills.projected) and
     (.resources.packages.required == .resources.packages.requiredConfigured) and
     (.resources.packages.required == .resources.packages.requiredPresent)
@@ -151,6 +155,50 @@ assert_jq "$TMP_ROOT/absent.json" '
   all(.sourceBoundary.sources[]; .operationalDependency == false)
 '
 
+# Fixed required manifests fail even when an authored skill and its projection disappear together.
+BROKEN_REPO="$TMP_ROOT/broken-repo"
+mkdir -p "$BROKEN_REPO/ai" "$BROKEN_REPO/.ai-runtime/pi"
+cp -R "$ROOT/ai/skills" "$BROKEN_REPO/ai/skills"
+cp -R "$ROOT/.ai-runtime/pi/skills" "$BROKEN_REPO/.ai-runtime/pi/skills"
+rm -rf "$BROKEN_REPO/ai/skills/code-review" "$BROKEN_REPO/.ai-runtime/pi/skills/code-review"
+set +e
+PI_PROFILE_CHECK_PI_COMMAND="$FAKE_BIN/pi" \
+PI_PROFILE_CHECK_HERDR_COMMAND="$FAKE_BIN/herdr" \
+  "$ROOT/bin/pi-profile-check" --home "$HOME_ROOT" --repo "$BROKEN_REPO" > "$TMP_ROOT/missing-required-skill.json"
+status=$?
+set -e
+[ "$status" -ne 0 ] || fail "missing authored and projected required skill was silently accepted"
+assert_jq "$TMP_ROOT/missing-required-skill.json" '
+  all(.profiles[];
+    .resources.projectedSkills.expected == 30 and
+    .resources.projectedSkills.authored == 29 and
+    .resources.projectedSkills.projected == 29 and
+    .resources.projectedSkills.safe == false
+  )
+'
+
+# Ready-looking JSON from a failed auth command must not pass launch/auth checks.
+cat > "$FAKE_BIN/pi-failed" <<'EOF'
+#!/bin/sh
+provider="openai"
+case "$PI_CODING_AGENT_DIR" in
+  */personal) provider="openai-codex" ;;
+esac
+printf '{"status":"ready","provider":"%s","authType":"api_key"}\n' "$provider"
+exit 1
+EOF
+chmod +x "$FAKE_BIN/pi-failed"
+set +e
+PI_PROFILE_CHECK_PI_COMMAND="$FAKE_BIN/pi-failed" \
+PI_PROFILE_CHECK_HERDR_COMMAND="$FAKE_BIN/herdr" \
+  "$ROOT/bin/pi-profile-check" --home "$HOME_ROOT" --repo "$ROOT" > "$TMP_ROOT/failed-auth.json"
+status=$?
+set -e
+[ "$status" -ne 0 ] || fail "failed auth command with ready JSON was silently accepted"
+assert_jq "$TMP_ROOT/failed-auth.json" '
+  all(.profiles[]; (.launch.auth.commandSucceeded == false) and (.launch.auth.usable == false))
+'
+
 # Session evidence is metadata-only and offers an optional manual cleanup hint.
 printf 'session metadata\n' > "$HOME_ROOT/.pi/work/sessions/work.jsonl"
 printf 'personal session metadata\n' > "$HOME_ROOT/.pi/personal/sessions/personal.jsonl"
@@ -163,13 +211,15 @@ assert_jq "$TMP_ROOT/sessions.json" '
 
 # Known fallback categories are classified without printing entry names.
 mkdir -p "$HOME_ROOT/.pi/agent/sessions" "$HOME_ROOT/.pi/agent/cache" \
-  "$HOME_ROOT/.pi/agent/git/package-cache" "$HOME_ROOT/.pi/agent/skills/tldraw-offline"
+  "$HOME_ROOT/.pi/agent/git/package-cache" "$HOME_ROOT/.pi/agent/skills/tldraw-offline" \
+  "$HOME_ROOT/.pi/agent/extensions"
 printf 'old session\n' > "$HOME_ROOT/.pi/agent/sessions/old.jsonl"
 printf 'cache\n' > "$HOME_ROOT/.pi/agent/cache/index"
 printf 'git package cache\n' > "$HOME_ROOT/.pi/agent/git/package-cache/index"
-printf 'stale generated resource\n' > "$HOME_ROOT/.pi/agent/AGENTS.md"
-printf 'stale generated skill\n' > "$HOME_ROOT/.pi/agent/skills/tldraw-offline/SKILL.md"
+printf '%s\n' '<!-- Managed by ~/.dotfiles/ai/install.sh. Edit source files instead. -->' > "$HOME_ROOT/.pi/agent/AGENTS.md"
+printf '%s\n' '---' 'name: tldraw-offline' 'description: fixture' '---' '<!-- installed-by:tldraw-desktop-agent-skills -->' > "$HOME_ROOT/.pi/agent/skills/tldraw-offline/SKILL.md"
 printf '{}\n' > "$HOME_ROOT/.pi/agent/auth.json"
+ln -s "$ROOT/pi/extensions/notify.ts" "$HOME_ROOT/.pi/agent/extensions/notify.ts"
 FALLBACK_BEFORE="$(tar -C "$HOME_ROOT/.pi/agent" -cf - . | shasum -a 256 | awk '{print $1}')"
 PI_PROFILE_CHECK_PI_COMMAND="$FAKE_BIN/pi" \
 PI_PROFILE_CHECK_HERDR_COMMAND="$FAKE_BIN/herdr" \
@@ -184,6 +234,54 @@ assert_jq "$TMP_ROOT/known-fallback.json" '
   (.fallback.unknownUserOwnedData == false) and
   (.deletion.status == "pass")
 '
+
+# A known generated name with the wrong file kind is treated as user-owned data.
+rm "$HOME_ROOT/.pi/agent/extensions/notify.ts"
+printf 'custom replacement\n' > "$HOME_ROOT/.pi/agent/extensions/notify.ts"
+set +e
+PI_PROFILE_CHECK_PI_COMMAND="$FAKE_BIN/pi" \
+PI_PROFILE_CHECK_HERDR_COMMAND="$FAKE_BIN/herdr" \
+  "$ROOT/bin/pi-profile-check" --home "$HOME_ROOT" --repo "$ROOT" > "$TMP_ROOT/replaced-known-fallback.json"
+status=$?
+set -e
+[ "$status" -ne 0 ] || fail "custom replacement at a known fallback path was silently accepted"
+assert_jq "$TMP_ROOT/replaced-known-fallback.json" '
+  .fallback.unknownUserOwnedData and .deletion.status == "manual_review"
+'
+if grep -Fq 'notify.ts' "$TMP_ROOT/replaced-known-fallback.json" || grep -Fq 'custom replacement' "$TMP_ROOT/replaced-known-fallback.json"; then
+  fail "fallback evidence exposed a replaced entry name or content"
+fi
+rm "$HOME_ROOT/.pi/agent/extensions/notify.ts"
+ln -s "$ROOT/pi/extensions/notify.ts" "$HOME_ROOT/.pi/agent/extensions/notify.ts"
+
+# Nested mutable-state links into the fallback or another profile are hard blockers.
+ln -s "$HOME_ROOT/.pi/agent/sessions" "$HOME_ROOT/.pi/work/sessions/fallback-link"
+set +e
+PI_PROFILE_CHECK_PI_COMMAND="$FAKE_BIN/pi" \
+PI_PROFILE_CHECK_HERDR_COMMAND="$FAKE_BIN/herdr" \
+  "$ROOT/bin/pi-profile-check" --home "$HOME_ROOT" --repo "$ROOT" > "$TMP_ROOT/nested-fallback.json"
+status=$?
+set -e
+[ "$status" -ne 0 ] || fail "nested fallback state crossing was silently accepted"
+assert_jq "$TMP_ROOT/nested-fallback.json" '
+  (.profiles[] | select(.name == "work") | .criteria.stateOwned == false) and
+  (.profiles[] | select(.name == "work") | .state.paths.sessions.fallbackCrossings > 0)
+'
+rm "$HOME_ROOT/.pi/work/sessions/fallback-link"
+
+ln -s "$HOME_ROOT/.pi/personal/sessions" "$HOME_ROOT/.pi/work/sessions/personal-link"
+set +e
+PI_PROFILE_CHECK_PI_COMMAND="$FAKE_BIN/pi" \
+PI_PROFILE_CHECK_HERDR_COMMAND="$FAKE_BIN/herdr" \
+  "$ROOT/bin/pi-profile-check" --home "$HOME_ROOT" --repo "$ROOT" > "$TMP_ROOT/cross-profile-state.json"
+status=$?
+set -e
+[ "$status" -ne 0 ] || fail "nested cross-profile state crossing was silently accepted"
+assert_jq "$TMP_ROOT/cross-profile-state.json" '
+  (.profiles[] | select(.name == "work") | .criteria.stateOwned == false) and
+  (.profiles[] | select(.name == "work") | .state.paths.sessions.externalCrossings > 0)
+'
+rm "$HOME_ROOT/.pi/work/sessions/personal-link"
 
 # A required resource that traverses the fallback is a hard blocker.
 rm "$HOME_ROOT/.pi/work/AGENTS.md"

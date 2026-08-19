@@ -5,6 +5,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { parseFrontmatter, stripFrontmatter } from "@earendil-works/pi-coding-agent";
 import { resolveActiveProfileDir } from "./profile-paths.ts";
 
 export type SkillSource =
@@ -23,6 +24,8 @@ export interface ResolvedSkill {
 	path: string;
 	content: string;
 	source: SkillSource;
+	disableModelInvocation: boolean;
+	metadataValid: boolean;
 }
 
 interface SkillCacheEntry {
@@ -35,6 +38,8 @@ interface CachedSkillEntry {
 	filePath: string;
 	source: SkillSource;
 	description?: string;
+	disableModelInvocation: boolean;
+	metadataValid: boolean;
 	order: number;
 }
 
@@ -66,16 +71,6 @@ const SOURCE_PRIORITY: Record<SkillSource, number> = {
 	unknown: 0,
 };
 
-function stripSkillFrontmatter(content: string): string {
-	const normalized = content.replace(/\r\n/g, "\n");
-	if (!normalized.startsWith("---")) return normalized;
-
-	const endIndex = normalized.indexOf("\n---", 3);
-	if (endIndex === -1) return normalized;
-
-	return normalized.slice(endIndex + 4).trim();
-}
-
 function isWithinPath(filePath: string, dir: string): boolean {
 	const relative = path.relative(dir, filePath);
 	return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
@@ -93,14 +88,6 @@ function readOptionalJsonFile(filePath: string, label: string): unknown {
 		throw new Error(`Failed to read ${label} '${filePath}': ${message}`, {
 			cause: error instanceof Error ? error : undefined,
 		});
-	}
-}
-
-function readJsonFileBestEffort(filePath: string): unknown {
-	try {
-		return JSON.parse(fs.readFileSync(filePath, "utf-8"));
-	} catch {
-		return null;
 	}
 }
 
@@ -224,9 +211,36 @@ function collectPackageSkillFiles(resourcePath: string, visited = new Set<string
 	return files;
 }
 
-function extractSkillPathsFromPackageRoot(packageRoot: string, source: SkillSource, userPatterns?: string[], bestEffort = false): SkillSearchPath[] {
+function applyPackageDelta(
+	allFiles: string[],
+	enabledFiles: string[],
+	patterns: string[],
+	packageRoot: string,
+): string[] {
+	const enabled = new Set(enabledFiles);
+	for (const pattern of patterns) {
+		const prefix = pattern[0];
+		const target = prefix === "+" || prefix === "-" || prefix === "!" ? pattern.slice(1) : pattern;
+		const exact = prefix === "+" || prefix === "-";
+		const include = prefix !== "-" && prefix !== "!";
+		for (const filePath of allFiles) {
+			if (!matchesPackagePattern(filePath, target, packageRoot, exact)) continue;
+			if (include) enabled.add(filePath);
+			else enabled.delete(filePath);
+		}
+	}
+	return allFiles.filter((filePath) => enabled.has(filePath));
+}
+
+function extractSkillPathsFromPackageRoot(
+	packageRoot: string,
+	source: SkillSource,
+	userPatterns?: string[],
+	deltaPatterns?: string[],
+	deltaStartsDisabled = false,
+): SkillSearchPath[] {
 	const packageJsonPath = path.join(packageRoot, "package.json");
-	const pkg = bestEffort ? readJsonFileBestEffort(packageJsonPath) : readOptionalJsonFile(packageJsonPath, "package manifest");
+	const pkg = readOptionalJsonFile(packageJsonPath, "package manifest");
 	if (!pkg || typeof pkg !== "object" || Array.isArray(pkg)) return [];
 	const pi = (pkg as { pi?: unknown }).pi;
 	if (!pi || typeof pi !== "object" || Array.isArray(pi)) return [];
@@ -240,46 +254,17 @@ function extractSkillPathsFromPackageRoot(packageRoot: string, source: SkillSour
 	const manifestFiles = manifestPatterns.length === 0
 		? allFiles
 		: allFiles.filter((filePath) => isEnabledByPackagePatterns(filePath, manifestPatterns, packageRoot));
-	if (userPatterns !== undefined && userPatterns.length === 0) return [];
-	const enabledFiles = userPatterns === undefined
-		? manifestFiles
-		: manifestFiles.filter((filePath) => isEnabledByPackagePatterns(filePath, userPatterns, packageRoot));
+	let enabledFiles = deltaStartsDisabled
+		? []
+		: userPatterns === undefined
+			? manifestFiles
+			: userPatterns.length === 0
+				? []
+				: manifestFiles.filter((filePath) => isEnabledByPackagePatterns(filePath, userPatterns, packageRoot));
+	if (deltaPatterns && deltaPatterns.length > 0) {
+		enabledFiles = applyPackageDelta(manifestFiles, enabledFiles, deltaPatterns, packageRoot);
+	}
 	return enabledFiles.map((filePath) => ({ path: filePath, source }));
-}
-
-function collectProjectPackageSkillPaths(cwd: string): SkillSearchPath[] {
-	const packagesRoot = path.join(cwd, CONFIG_DIR, "npm", "node_modules");
-	if (!fs.existsSync(packagesRoot)) return [];
-
-	let entries: fs.Dirent[];
-	try {
-		entries = fs.readdirSync(packagesRoot, { withFileTypes: true });
-	} catch {
-		return [];
-	}
-
-	const results: SkillSearchPath[] = [];
-	for (const entry of entries) {
-		if (entry.name.startsWith(".")) continue;
-		if (entry.name.startsWith("@")) {
-			const scopeRoot = path.join(packagesRoot, entry.name);
-			let scopedEntries: fs.Dirent[];
-			try {
-				scopedEntries = fs.readdirSync(scopeRoot, { withFileTypes: true });
-			} catch {
-				continue;
-			}
-			for (const scopedEntry of scopedEntries) {
-				if (scopedEntry.name.startsWith(".")) continue;
-				if (!scopedEntry.isDirectory() && !scopedEntry.isSymbolicLink()) continue;
-				results.push(...extractSkillPathsFromPackageRoot(path.join(scopeRoot, scopedEntry.name), "project-package", undefined, true));
-			}
-			continue;
-		}
-		if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
-		results.push(...extractSkillPathsFromPackageRoot(path.join(packagesRoot, entry.name), "project-package", undefined, true));
-	}
-	return results;
 }
 
 function collectSettingsSkillPaths(cwd: string): SkillSearchPath[] {
@@ -383,37 +368,122 @@ function resolveSettingsPackageRoot(source: string, baseDir: string): string | u
 	return undefined;
 }
 
+function settingsPackageIdentity(source: string, baseDir: string): string | undefined {
+	const trimmed = source.trim();
+	if (trimmed.startsWith("npm:")) {
+		const packageName = parseNpmPackageName(trimmed);
+		return packageName ? `npm:${packageName}` : undefined;
+	}
+	if (trimmed.startsWith("git:")) {
+		const parsed = parseGitPackagePath(trimmed);
+		return parsed ? `git:${parsed.host}/${parsed.repoPath}` : undefined;
+	}
+	const packageRoot = resolveSettingsPackageRoot(trimmed, baseDir);
+	return packageRoot ? `local:${path.resolve(packageRoot)}` : undefined;
+}
+
+interface SettingsPackageEntry {
+	source: string;
+	base: string;
+	skillSource: SkillSource;
+	identity: string;
+	skillPatterns?: string[];
+	autoloadDisabled: boolean;
+}
+
+function readSettingsPackageEntries(
+	file: string,
+	base: string,
+	skillSource: SkillSource,
+): SettingsPackageEntry[] {
+	const settings = readOptionalJsonFile(file, "skills settings file");
+	if (!settings || typeof settings !== "object" || Array.isArray(settings)) return [];
+	const packages = (settings as { packages?: unknown }).packages;
+	if (!Array.isArray(packages)) return [];
+
+	const entries: SettingsPackageEntry[] = [];
+	for (const entry of packages) {
+		const source = typeof entry === "string"
+			? entry
+			: typeof entry === "object" && entry !== null && typeof (entry as { source?: unknown }).source === "string"
+				? (entry as { source: string }).source
+				: undefined;
+		if (!source) continue;
+		const identity = settingsPackageIdentity(source, base);
+		if (!identity) continue;
+		const packageSkills = typeof entry === "object" && entry !== null
+			? (entry as { skills?: unknown }).skills
+			: undefined;
+		const skillPatterns = Array.isArray(packageSkills)
+			? packageSkills.filter((pattern): pattern is string => typeof pattern === "string")
+			: undefined;
+		entries.push({
+			source,
+			base,
+			skillSource,
+			identity,
+			skillPatterns,
+			autoloadDisabled: typeof entry === "object" && entry !== null && (entry as { autoload?: unknown }).autoload === false,
+		});
+	}
+	return entries;
+}
+
+function dedupeSettingsPackageEntries(entries: SettingsPackageEntry[]): SettingsPackageEntry[] {
+	const byIdentity = new Map<string, SettingsPackageEntry>();
+	for (const entry of entries) byIdentity.set(entry.identity, entry);
+	return [...byIdentity.values()];
+}
+
 function collectSettingsPackageSkillPaths(cwd: string): SkillSearchPath[] {
-	const settingsFiles = [
-		{ file: path.join(cwd, CONFIG_DIR, "settings.json"), base: path.join(cwd, CONFIG_DIR), source: "project-package" as const },
-		{ file: path.join(getAgentDir(), "settings.json"), base: getAgentDir(), source: "user-package" as const },
-	];
+	const projectEntries = dedupeSettingsPackageEntries(readSettingsPackageEntries(
+		path.join(cwd, CONFIG_DIR, "settings.json"),
+		path.join(cwd, CONFIG_DIR),
+		"project-package",
+	));
+	const userEntries = dedupeSettingsPackageEntries(readSettingsPackageEntries(
+		path.join(getAgentDir(), "settings.json"),
+		getAgentDir(),
+		"user-package",
+	));
+	const userByIdentity = new Map(userEntries.map((entry) => [entry.identity, entry]));
+	const projectIdentities = new Set(projectEntries.map((entry) => entry.identity));
 	const results: SkillSearchPath[] = [];
 
-	for (const { file, base, source } of settingsFiles) {
-		const settings = readOptionalJsonFile(file, "skills settings file");
-		if (!settings || typeof settings !== "object" || Array.isArray(settings)) continue;
-		const packages = (settings as { packages?: unknown }).packages;
-		if (!Array.isArray(packages)) continue;
-
-		for (const entry of packages) {
-			const packageSource = typeof entry === "string"
-				? entry
-				: typeof entry === "object" && entry !== null && typeof (entry as { source?: unknown }).source === "string"
-					? (entry as { source: string }).source
-					: undefined;
-			if (!packageSource) continue;
-
-			const packageRoot = resolveSettingsPackageRoot(packageSource, base);
+	for (const projectEntry of projectEntries) {
+		const userEntry = userByIdentity.get(projectEntry.identity);
+		if (projectEntry.autoloadDisabled) {
+			const baseEntry = userEntry ?? projectEntry;
+			const packageRoot = resolveSettingsPackageRoot(baseEntry.source, baseEntry.base);
 			if (!packageRoot) continue;
-			const packageSkills = typeof entry === "object" && entry !== null
-				? (entry as { skills?: unknown }).skills
-				: undefined;
-			const skillPatterns = Array.isArray(packageSkills)
-				? packageSkills.filter((pattern): pattern is string => typeof pattern === "string")
-				: undefined;
-			results.push(...extractSkillPathsFromPackageRoot(packageRoot, source, skillPatterns));
+			results.push(...extractSkillPathsFromPackageRoot(
+				packageRoot,
+				"project-package",
+				userEntry?.skillPatterns,
+				projectEntry.skillPatterns,
+				userEntry === undefined,
+			));
+			continue;
 		}
+
+		const packageRoot = resolveSettingsPackageRoot(projectEntry.source, projectEntry.base);
+		if (!packageRoot) continue;
+		results.push(...extractSkillPathsFromPackageRoot(
+			packageRoot,
+			projectEntry.skillSource,
+			projectEntry.skillPatterns,
+		));
+	}
+
+	for (const userEntry of userEntries) {
+		if (projectIdentities.has(userEntry.identity)) continue;
+		const packageRoot = resolveSettingsPackageRoot(userEntry.source, userEntry.base);
+		if (!packageRoot) continue;
+		results.push(...extractSkillPathsFromPackageRoot(
+			packageRoot,
+			userEntry.skillSource,
+			userEntry.skillPatterns,
+		));
 	}
 
 	return results;
@@ -425,9 +495,7 @@ function buildSkillPaths(cwd: string): SkillSearchPath[] {
 		{ path: path.join(cwd, ".agents", "skills"), source: "project" },
 		{ path: path.join(getAgentDir(), "skills"), source: "user" },
 		{ path: path.join(os.homedir(), ".agents", "skills"), source: "user" },
-		...collectProjectPackageSkillPaths(cwd),
 		...collectSettingsPackageSkillPaths(cwd),
-		...extractSkillPathsFromPackageRoot(cwd, "project-package"),
 		...collectSettingsSkillPaths(cwd),
 	];
 
@@ -473,22 +541,30 @@ function chooseHigherPrioritySkill(existing: CachedSkillEntry | undefined, candi
 	return candidate.order < existing.order ? candidate : existing;
 }
 
-function maybeReadSkillDescription(filePath: string): string | undefined {
+interface SkillMetadata {
+	description?: string;
+	disableModelInvocation: boolean;
+	metadataValid: boolean;
+}
+
+function parseSkillMetadata(content: string): SkillMetadata {
 	try {
-		const content = fs.readFileSync(filePath, "utf-8");
-		const normalized = content.replace(/\r\n/g, "\n");
-		if (!normalized.startsWith("---")) return undefined;
-
-		const endIndex = normalized.indexOf("\n---", 3);
-		if (endIndex === -1) return undefined;
-
-		const frontmatter = normalized.slice(3, endIndex).trim();
-		const match = frontmatter.match(/^description:\s*(.+)$/m);
-		if (!match) return undefined;
-		return match[1]?.trim().replace(/^['\"]|['\"]$/g, "");
+		const { frontmatter } = parseFrontmatter<Record<string, unknown>>(content);
+		return {
+			...(typeof frontmatter.description === "string" ? { description: frontmatter.description } : {}),
+			disableModelInvocation: frontmatter["disable-model-invocation"] === true,
+			metadataValid: true,
+		};
 	} catch {
-		// Description parsing is best-effort metadata extraction.
-		return undefined;
+		return { disableModelInvocation: true, metadataValid: false };
+	}
+}
+
+function maybeReadSkillMetadata(filePath: string): SkillMetadata {
+	try {
+		return parseSkillMetadata(fs.readFileSync(filePath, "utf-8"));
+	} catch {
+		return { disableModelInvocation: true, metadataValid: false };
 	}
 }
 
@@ -502,11 +578,12 @@ function collectFilesystemSkills(cwd: string, skillPaths: SkillSearchPath[]): Ca
 		if (seen.has(resolvedFile)) return;
 		if (!fs.existsSync(resolvedFile)) return;
 		seen.add(resolvedFile);
+		const metadata = maybeReadSkillMetadata(resolvedFile);
 		entries.push({
 			name,
 			filePath: resolvedFile,
 			source: inferSkillSource(resolvedFile, cwd, sourceHint),
-			description: maybeReadSkillDescription(resolvedFile),
+			...metadata,
 			order: order++,
 		});
 	};
@@ -608,12 +685,14 @@ export function readSkill(
 		}
 
 		const raw = fs.readFileSync(skillPath, "utf-8");
-		const content = stripSkillFrontmatter(raw);
+		const metadata = parseSkillMetadata(raw);
 		const skill: ResolvedSkill = {
 			name: skillName,
 			path: skillPath,
-			content,
+			content: metadata.metadataValid ? stripFrontmatter(raw).trim() : raw,
 			source,
+			disableModelInvocation: metadata.disableModelInvocation,
+			metadataValid: metadata.metadataValid,
 		};
 
 		skillCache.set(skillPath, { mtime: stat.mtimeMs, skill });
@@ -647,6 +726,12 @@ export function resolveSkills(
 		}
 
 		const skill = readSkill(trimmed, location.path, location.source);
+		if (skill && !skill.metadataValid) {
+			throw new Error(`Skill '${trimmed}' has invalid frontmatter and cannot be injected into a subagent`);
+		}
+		if (skill?.disableModelInvocation) {
+			throw new Error(`Skill '${trimmed}' is manual-only and cannot be injected into a subagent`);
+		}
 		if (skill) {
 			resolved.push(skill);
 		} else {
@@ -714,6 +799,7 @@ export function discoverAvailableSkills(cwd: string): Array<{
 }> {
 	const skills = getCachedSkills(cwd);
 	return skills
+		.filter((skill) => skill.metadataValid && !skill.disableModelInvocation)
 		.map((s) => ({
 			name: s.name,
 			source: s.source,
