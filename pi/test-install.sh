@@ -64,6 +64,8 @@ cat > "$FAKE_BIN/parallel-cli" <<'EOF'
 EOF
 chmod +x "$HOME_ROOT/.bun/bin/pi" "$FAKE_BIN/mise" "$FAKE_BIN/npm" "$FAKE_BIN/parallel-cli"
 
+# These sparse fixtures contain patch context only; neither is typechecked or
+# executed by the installer tests.
 PROMPT_EDITOR_FIXTURE="$TMP_ROOT/prompt-editor.fixture.ts"
 cat > "$PROMPT_EDITOR_FIXTURE" <<'EOF'
 // Mitsupi 1.6.0 prompt-editor fixture
@@ -95,6 +97,9 @@ const MODE_UI_BACK = "Back";
 const ALL_THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
 const THINKING_UNSET_LABEL = "(don't change)";
 
+function isDefaultModeName(name: string): boolean {
+  return name === "default";
+}
 async function pickModelForModeUI(
   ctx: ExtensionContext,
   spec: ModeSpec,
@@ -120,10 +125,72 @@ async function pickModelForModeUI(
   });
 }
 EOF
+# Keep the sparse fixture at its upstream source lines. macOS `patch -F 0`
+# requires the hunk positions as well as exact context.
+awk '
+  NR == 3 { for (i = 1; i <= 243; i++) print "" }
+  NR == 10 { for (i = 1; i <= 19; i++) print "" }
+  NR == 23 { for (i = 1; i <= 324; i++) print "" }
+  NR == 33 { for (i = 1; i <= 242; i++) print "" }
+  { print }
+' "$PROMPT_EDITOR_FIXTURE" > "$PROMPT_EDITOR_FIXTURE.tmp"
+mv "$PROMPT_EDITOR_FIXTURE.tmp" "$PROMPT_EDITOR_FIXTURE"
 # The upstream file uses tabs; keep the fixture's patch context byte-for-byte
 # compatible while keeping this shell fixture readable above.
 sed -e 's/^      /\t\t\t/' -e 's/^    /\t\t/' -e 's/^  /\t/' "$PROMPT_EDITOR_FIXTURE" > "$PROMPT_EDITOR_FIXTURE.tmp"
 mv "$PROMPT_EDITOR_FIXTURE.tmp" "$PROMPT_EDITOR_FIXTURE"
+
+FILES_SHORTCUT_FIXTURE="$TMP_ROOT/files-shortcut.fixture.ts"
+cat > "$FILES_SHORTCUT_FIXTURE" <<'EOF'
+const runFileBrowser = async (_pi: unknown, _ctx: unknown): Promise<void> => {};
+
+export default function (pi: any): void {
+	pi.registerShortcut("ctrl+shift+o", {
+		handler: async (ctx: any) => {
+			await runFileBrowser(pi, ctx);
+		},
+	});
+
+	pi.registerShortcut("ctrl+shift+f", {
+		description: "Reveal the latest file reference in Finder",
+		handler: async (ctx) => {
+			const entries = ctx.sessionManager.getBranch();
+			const latest = findLatestFileReference(entries, ctx.cwd);
+
+			if (!latest) {
+				ctx.ui.notify("No file reference found in the session", "warning");
+				return;
+			}
+
+			const canonical = toCanonicalPath(latest.path);
+			if (!canonical) {
+				ctx.ui.notify(`File not found: ${latest.display}`, "error");
+				return;
+			}
+
+			await revealPath(pi, ctx, {
+				canonicalPath: canonical.canonicalPath,
+				resolvedPath: canonical.canonicalPath,
+				displayPath: latest.display,
+				exists: true,
+				isDirectory: canonical.isDirectory,
+				status: undefined,
+				inRepo: false,
+				isTracked: false,
+				isReferenced: true,
+				hasSessionChange: false,
+				lastTimestamp: 0,
+			});
+		},
+	});
+
+	pi.registerShortcut("ctrl+shift+r", {
+		description: "Quick Look the latest file reference",
+EOF
+# Match the source line that starts the patch hunk without retaining the rest
+# of Mitsupi's files extension in this hermetic fixture.
+awk 'BEGIN { for (i = 1; i <= 1037; i++) print "" } { print }' "$FILES_SHORTCUT_FIXTURE" > "$FILES_SHORTCUT_FIXTURE.tmp"
+mv "$FILES_SHORTCUT_FIXTURE.tmp" "$FILES_SHORTCUT_FIXTURE"
 
 make_mitsupi_copy() {
   home="$1"
@@ -149,7 +216,8 @@ EOF
   else
     sed 's/"xhigh"/"broken"/g' "$PROMPT_EDITOR_FIXTURE" > "$package_dir/extensions/prompt-editor.ts"
   fi
-  for extension in answer context files multi-edit todos uv whimsical btw review control go-to-bed loop notify session-breakdown split-fork; do
+  cp "$FILES_SHORTCUT_FIXTURE" "$package_dir/extensions/files.ts"
+  for extension in answer context multi-edit todos uv whimsical btw review control go-to-bed loop notify session-breakdown split-fork; do
     : > "$package_dir/extensions/$extension.ts"
   done
   for skill in apple-mail commit github google-workspace mermaid pi-share sentry summarize uv anachb frontend-design ghidra librarian native-web-search oebb-scotty openscad tmux update-changelog web-browser; do
@@ -163,6 +231,13 @@ EOF
 for profile in work personal; do
   make_mitsupi_copy "$HOME_ROOT" "$profile" "1.6.0" original
 done
+
+# Simulate an existing installation: prompt-editor was patched by an earlier
+# installer run while files.ts remains unpatched.
+(
+  cd "$HOME_ROOT/.pi/personal/npm/node_modules/mitsupi"
+  patch -p1 -N -t < "$REPO/pi/patches/mitsupi-1.6.0-prompt-editor.patch"
+) >/dev/null
 
 for profile in work personal; do
   mkdir -p "$HOME_ROOT/.pi/$profile/extensions"
@@ -193,7 +268,9 @@ assert_contains "$TMP_ROOT/first.log" 'Removed retired managed extension link: w
 assert_contains "$TMP_ROOT/first.log" 'Preserving user-owned extension entry: personal/extensions/cost.ts'
 assert_contains "$TMP_ROOT/first.log" 'Preserving user-owned extension entry: personal/extensions/watchdog.ts'
 assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 prompt-editor patch for work'
-assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 prompt-editor patch for personal'
+assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 files shortcut patch for work'
+assert_contains "$TMP_ROOT/first.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for personal'
+assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 files shortcut patch for personal'
 
 EXPECTED_EXTENSIONS='["extensions/answer.ts","extensions/context.ts","extensions/files.ts","extensions/multi-edit.ts","extensions/prompt-editor.ts","extensions/todos.ts","extensions/uv.ts","extensions/whimsical.ts","extensions/btw.ts","extensions/review.ts"]'
 EXPECTED_SKILLS='["skills/apple-mail/SKILL.md","skills/commit/SKILL.md","skills/github/SKILL.md","skills/google-workspace/SKILL.md","skills/mermaid/SKILL.md","skills/pi-share/SKILL.md","skills/sentry/SKILL.md","skills/summarize/SKILL.md","skills/uv/SKILL.md"]'
@@ -227,6 +304,10 @@ for profile in work personal; do
   assert_contains "$snapshot" 'getAvailableSnapshot: () => ctx.modelRegistry.getAvailable()'
   assert_contains "$snapshot" 'modelRuntimeAdapter as any'
   assert_not_contains "$snapshot" 'ctx.modelRegistry as any'
+  files_snapshot="$TMP_ROOT/$profile-files.patched.ts"
+  cp "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/files.ts" "$files_snapshot"
+  assert_not_contains "$files_snapshot" 'ctrl+shift+f'
+  assert_not_contains "$files_snapshot" 'Reveal the latest file reference in Finder'
 done
 
 # Mitsupi's mode-picker compatibility and `max` support are local patches;
@@ -246,9 +327,12 @@ run_install "$HOME_ROOT" "$TMP_ROOT/second.log"
 assert_contains "$TMP_ROOT/second.log" 'Preserving unmanaged extension link: personal/extensions/cost.ts'
 assert_contains "$TMP_ROOT/second.log" 'Preserving dead unmanaged extension link: work/extensions/watchdog.ts'
 assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for work'
+assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 files shortcut patch already applied for work'
 assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for personal'
+assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 files shortcut patch already applied for personal'
 for profile in work personal; do
-  cmp -s "$TMP_ROOT/$profile-prompt-editor.patched.ts" "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/prompt-editor.ts" || fail "$profile Mitsupi patch is not idempotent"
+  cmp -s "$TMP_ROOT/$profile-prompt-editor.patched.ts" "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/prompt-editor.ts" || fail "$profile Mitsupi prompt-editor patch is not idempotent"
+  cmp -s "$TMP_ROOT/$profile-files.patched.ts" "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/files.ts" || fail "$profile Mitsupi files shortcut patch is not idempotent"
 done
 
 # A third run has no managed retired links left to remove.
@@ -287,6 +371,24 @@ assert_contains "$TMP_ROOT/unknown-context.log" 'Unknown Mitsupi 1.6.0 prompt-ed
 [ ! -e "$UNKNOWN_CONTEXT_HOME/.pi/work/settings.json" ] || fail "unknown context mutated work settings"
 [ ! -e "$UNKNOWN_CONTEXT_HOME/.pi/personal/settings.json" ] || fail "unknown context mutated personal settings"
 [ "$(grep -Fc '"xhigh"' "$UNKNOWN_CONTEXT_HOME/.pi/work/npm/node_modules/mitsupi/extensions/prompt-editor.ts")" -eq 2 ] || fail "unknown context mutated work Mitsupi copy"
+
+# A one-line change in patch context must not be accepted through patch fuzz.
+UNKNOWN_FILES_CONTEXT_HOME="$TMP_ROOT/unknown-files-context-home"
+mkdir -p "$UNKNOWN_FILES_CONTEXT_HOME/.bun/bin"
+cp "$HOME_ROOT/.bun/bin/pi" "$UNKNOWN_FILES_CONTEXT_HOME/.bun/bin/pi"
+make_mitsupi_copy "$UNKNOWN_FILES_CONTEXT_HOME" work "1.6.0" original
+make_mitsupi_copy "$UNKNOWN_FILES_CONTEXT_HOME" personal "1.6.0" original
+unknown_files_extension="$UNKNOWN_FILES_CONTEXT_HOME/.pi/personal/npm/node_modules/mitsupi/extensions/files.ts"
+sed 's/Quick Look the latest file reference/Changed test context/' "$unknown_files_extension" > "$unknown_files_extension.tmp"
+mv "$unknown_files_extension.tmp" "$unknown_files_extension"
+if run_install "$UNKNOWN_FILES_CONTEXT_HOME" "$TMP_ROOT/unknown-files-context.log"; then
+  fail "unknown files context unexpectedly passed preflight"
+fi
+assert_contains "$TMP_ROOT/unknown-files-context.log" 'Unknown Mitsupi 1.6.0 files shortcut context'
+[ ! -e "$UNKNOWN_FILES_CONTEXT_HOME/.pi/work/settings.json" ] || fail "unknown files context mutated work settings"
+[ ! -e "$UNKNOWN_FILES_CONTEXT_HOME/.pi/personal/settings.json" ] || fail "unknown files context mutated personal settings"
+assert_contains "$unknown_files_extension" 'Changed test context'
+assert_contains "$unknown_files_extension" 'ctrl+shift+f'
 
 OLD_PI_HOME="$TMP_ROOT/old-pi-home"
 mkdir -p "$OLD_PI_HOME/.bun/bin"

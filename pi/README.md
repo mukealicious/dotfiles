@@ -233,14 +233,17 @@ return through `/end-review` with a summary or an explicit fix prompt. `/btw`
 is for non-mutating tangents; its in-memory child is not separately visible to
 Herdr, so the pane may appear idle and no separate completion toast is expected.
 
-`pi/install.sh` applies the tracked `pi/patches/mitsupi-1.6.0-prompt-editor.patch`
+`pi/install.sh` applies the tracked prompt-editor and files-shortcut patches
 only after both profile copies pass the exact version/context preflight. The
-patch adds Pi's native `max` thinking level to Mitsupi's mode editor, adapts
-its model picker to the current Pi runtime contract, and keeps a fresh
-profile's required `default` mode from creating a latency-named `fast` mode.
-Personal mode calibration is runtime state: use Mitsupi's
-`/mode` UI in `~/.pi/personal`: choose **Configure modes…**, keep **default**,
-add **light**, **standard**, and **deep**, then use **Change model** and
+prompt-editor patch adds Pi's native `max` thinking level to Mitsupi's mode
+editor, adapts its model picker to the current Pi runtime contract, and keeps a
+fresh profile's required `default` mode from creating a latency-named `fast`
+mode. The files-shortcut patch removes Mitsupi's `Ctrl+Shift+F` Finder reveal
+binding so Pi retains its built-in transcript search; `/files` and the other
+Mitsupi file shortcuts remain available. Personal mode calibration is runtime
+state: use Mitsupi's `/mode` UI in `~/.pi/personal`: choose **Configure
+modes…**, keep **default**, add **light**, **standard**, and **deep**, then use
+**Change model** and
 **Change thinking level** to set `light` `openai-codex/gpt-5.6-luna`/`max`,
 `standard` `openai-codex/gpt-5.6-terra`/`max`, `default`
 `openai-codex/gpt-5.6-sol`/`xhigh`, and `deep`

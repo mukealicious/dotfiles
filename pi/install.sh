@@ -32,7 +32,8 @@ PI_PACKAGE="@earendil-works/pi-coding-agent"
 PI_BIN="$HOME/.bun/bin/pi"
 MIN_PI_VERSION="0.80.6"
 MITSUPI_PACKAGE="npm:mitsupi@1.6.0"
-MITSUPI_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-prompt-editor.patch"
+MITSUPI_PROMPT_EDITOR_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-prompt-editor.patch"
+MITSUPI_FILES_SHORTCUT_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-files-shortcut.patch"
 
 if [ ! -x "$PI_BIN" ]; then
   log_info "Installing Pi coding agent ($PI_PACKAGE)..."
@@ -58,8 +59,13 @@ if ! command -v patch >/dev/null 2>&1; then
   exit 1
 fi
 
-if [ ! -f "$MITSUPI_PATCH" ]; then
-  log_error "Mitsupi compatibility patch is missing: $MITSUPI_PATCH"
+if [ ! -f "$MITSUPI_PROMPT_EDITOR_PATCH" ]; then
+  log_error "Mitsupi compatibility patch is missing: $MITSUPI_PROMPT_EDITOR_PATCH"
+  exit 1
+fi
+
+if [ ! -f "$MITSUPI_FILES_SHORTCUT_PATCH" ]; then
+  log_error "Mitsupi compatibility patch is missing: $MITSUPI_FILES_SHORTCUT_PATCH"
   exit 1
 fi
 
@@ -96,6 +102,19 @@ mitsupi_package_dir() {
   printf '%s/.pi/%s/npm/node_modules/mitsupi\n' "$HOME" "$1"
 }
 
+check_mitsupi_patch_context() {
+  if (cd "$1" && patch -p1 -N -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
+    return 0
+  fi
+  if (cd "$1" && patch -R -p1 -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
+    return 0
+  fi
+
+  log_error "Unknown Mitsupi 1.6.0 $4 context for $2: $5"
+  log_hint "Refusing to mutate either profile; inspect the installed package before retrying"
+  exit 1
+}
+
 check_mitsupi_package_copy() {
   profile_name="$1"
   package_dir="$(mitsupi_package_dir "$profile_name")"
@@ -109,6 +128,7 @@ check_mitsupi_package_copy() {
 
   package_json="$package_dir/package.json"
   prompt_editor="$package_dir/extensions/prompt-editor.ts"
+  files_extension="$package_dir/extensions/files.ts"
   if [ ! -f "$package_json" ] || ! jq -e --arg version "1.6.0" '.name == "mitsupi" and .version == $version' "$package_json" >/dev/null 2>&1; then
     log_error "Mitsupi $profile_name copy is not exactly version 1.6.0: $package_dir"
     log_hint "Remove or reinstall only this profile's package with PI_CODING_AGENT_DIR=$HOME/.pi/$profile_name pi install $MITSUPI_PACKAGE"
@@ -118,19 +138,14 @@ check_mitsupi_package_copy() {
     log_error "Mitsupi $profile_name prompt-editor context is missing: $prompt_editor"
     exit 1
   fi
-
-  if (cd "$package_dir" && patch -p1 -N -t --dry-run < "$MITSUPI_PATCH") >/dev/null 2>&1; then
-    log_success "Validated unpatched Mitsupi 1.6.0 context for $profile_name"
-    return 0
-  fi
-  if (cd "$package_dir" && patch -R -p1 -t --dry-run < "$MITSUPI_PATCH") >/dev/null 2>&1; then
-    log_success "Validated patched Mitsupi 1.6.0 context for $profile_name"
-    return 0
+  if [ ! -f "$files_extension" ]; then
+    log_error "Mitsupi $profile_name files context is missing: $files_extension"
+    exit 1
   fi
 
-  log_error "Unknown Mitsupi 1.6.0 prompt-editor context for $profile_name: $prompt_editor"
-  log_hint "Refusing to mutate either profile; inspect the installed package before retrying"
-  exit 1
+  check_mitsupi_patch_context "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_PATCH" "prompt-editor" "$prompt_editor"
+  check_mitsupi_patch_context "$package_dir" "$profile_name" "$MITSUPI_FILES_SHORTCUT_PATCH" "files shortcut" "$files_extension"
+  log_success "Validated Mitsupi 1.6.0 patch contexts for $profile_name"
 }
 
 preflight_mitsupi_copies() {
@@ -152,18 +167,23 @@ ensure_mitsupi_package() {
   done
 }
 
-apply_mitsupi_patch() {
+apply_mitsupi_patch_file() {
+  if (cd "$1" && patch -p1 -N -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
+    (cd "$1" && patch -p1 -N -F 0 -t < "$3") >/dev/null
+    log_success "Applied Mitsupi 1.6.0 $4 patch for $2"
+  elif (cd "$1" && patch -R -p1 -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
+    log_success "Mitsupi 1.6.0 $4 patch already applied for $2"
+  else
+    log_error "Mitsupi 1.6.0 $4 context changed after preflight for $2"
+    exit 1
+  fi
+}
+
+apply_mitsupi_patches() {
   for profile_name in work personal; do
     package_dir="$(mitsupi_package_dir "$profile_name")"
-    if (cd "$package_dir" && patch -p1 -N -t --dry-run < "$MITSUPI_PATCH") >/dev/null 2>&1; then
-      (cd "$package_dir" && patch -p1 -N -t < "$MITSUPI_PATCH") >/dev/null
-      log_success "Applied Mitsupi 1.6.0 prompt-editor patch for $profile_name"
-    elif (cd "$package_dir" && patch -R -p1 -t --dry-run < "$MITSUPI_PATCH") >/dev/null 2>&1; then
-      log_success "Mitsupi 1.6.0 prompt-editor patch already applied for $profile_name"
-    else
-      log_error "Mitsupi 1.6.0 context changed after preflight for $profile_name"
-      exit 1
-    fi
+    apply_mitsupi_patch_file "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_PATCH" "prompt-editor"
+    apply_mitsupi_patch_file "$package_dir" "$profile_name" "$MITSUPI_FILES_SHORTCUT_PATCH" "files shortcut"
   done
 }
 
@@ -332,7 +352,7 @@ PACKAGES="
 
 ensure_mitsupi_package
 preflight_mitsupi_copies
-apply_mitsupi_patch
+apply_mitsupi_patches
 
 log_info "Installing Pi packages..."
 for pkg in $PACKAGES; do
