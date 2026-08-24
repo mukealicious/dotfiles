@@ -684,7 +684,7 @@ function fallbackInventory(fallbackRoot) {
 		entries += 1;
 		const category = current.relativePath
 			? classifyFallbackEntry(current.relativePath, current.filePath, stat)
-			: FALLBACK_CATEGORIES.stale;
+			: stat.isDirectory() ? FALLBACK_CATEGORIES.stale : FALLBACK_CATEGORIES.unknown;
 		if (!categoryMap.has(category)) categoryMap.set(category, { category, entries: 0, files: 0, directories: 0, symlinks: 0, bytes: 0 });
 		const item = categoryMap.get(category);
 		item.entries += 1;
@@ -1284,7 +1284,7 @@ function main() {
 		deletion: {
 			safe: status === "pass",
 			status,
-			manualCommand: `rm -rf -- ${shellQuote(fallbackRoot)}`,
+			manualCommand: status === "pass" ? `rm -rf -- ${shellQuote(fallbackRoot)}` : null,
 			automationPerformed: false,
 			backupPerformed: false,
 			migrationPerformed: false,

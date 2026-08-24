@@ -11,7 +11,8 @@
 - Hid and rejected manual-only skills from delegated skill injection.
 
 ### Fixed
-- Enforced read-only scout/review output and progress boundaries before parent-side session or output writes, including parallel and chain requests.
+- Enforced read-only scout/review output and progress boundaries before and after clarification.
+- Prevented agent management and clarification from writing through linked managed definitions.
 - Kept explicit tool allowlists authoritative when an intercom bridge is active.
 - Replaced invalid flexible TypeBox schemas with compiler-safe unions and documented doctor diagnostics.
 
@@ -22,7 +23,7 @@
 - Serialized only the child Pi initialization phase so parallel subagents cannot lose their shared auth snapshot while a sibling refreshes OAuth credentials; model work still runs concurrently after startup.
 
 ### Removed
-- Removed builtin context-builder, reviewer, planner, oracle, and delegate roles plus packaged prompt shortcuts.
+- Removed builtin context-builder, reviewer, planner, oracle, and delegate roles, their obsolete creation templates, and packaged prompt shortcuts.
 
 ## [0.20.1] - 2026-04-27
 

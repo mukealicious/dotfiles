@@ -10,7 +10,7 @@ import type { Component, TUI } from "@earendil-works/pi-tui";
 import { matchesKey, visibleWidth, truncateToWidth } from "@earendil-works/pi-tui";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AgentConfig, ChainConfig, ChainStepConfig } from "./agents.ts";
+import { isEditableDefinition, type AgentConfig, type ChainConfig, type ChainStepConfig } from "./agents.ts";
 import type { ResolvedStepBehavior } from "./settings.ts";
 import type { TextEditorState } from "./text-editor.ts";
 import { createEditorState, ensureCursorVisible, getCursorDisplayPos, handleEditorInput, renderEditor, wrapText } from "./text-editor.ts";
@@ -371,6 +371,10 @@ export class ChainClarifyComponent implements Component {
 		const agent = this.agentConfigs[stepIndex];
 		if (!agent?.filePath) {
 			this.showSaveMessage("Agent file not found", "error");
+			return;
+		}
+		if (!isEditableDefinition(agent)) {
+			this.showSaveMessage("Linked or managed agents cannot be edited directly", "error");
 			return;
 		}
 

@@ -42,6 +42,11 @@ import {
 import { inspectSubagentStatus } from "./run-status.ts";
 import { applyForceTopLevelAsyncOverride } from "./top-level-async.ts";
 import {
+	CANONICAL_READ_ONLY_ROLE_TOOLS,
+	isMechanicallyReadOnly,
+	readOnlyOverrideError,
+} from "./role-boundaries.ts";
+import {
 	cleanupWorktrees,
 	createWorktrees,
 	diffWorktrees,
@@ -326,13 +331,6 @@ async function maybeBuildForegroundIntercomReceipt(input: {
 	};
 }
 
-const CANONICAL_READ_ONLY_ROLE_TOOLS: Record<string, string[]> = {
-	scout: ["read", "grep", "find", "ls"],
-	researcher: ["read", "web_search", "web_fetch", "deep_research", "batch_enrich", "exa_search"],
-	review: ["read", "grep", "find", "ls"],
-};
-const READ_ONLY_TOOLS = new Set(Object.values(CANONICAL_READ_ONLY_ROLE_TOOLS).flat());
-
 function enforceReadOnlyRoleBoundary(agent: AgentConfig): AgentConfig {
 	const canonicalTools = CANONICAL_READ_ONLY_ROLE_TOOLS[agent.name];
 	const bounded = canonicalTools
@@ -348,36 +346,15 @@ function enforceReadOnlyRoleBoundary(agent: AgentConfig): AgentConfig {
 	};
 }
 
-function isMechanicallyReadOnly(agent: AgentConfig | undefined): boolean {
-	if (!agent || agent.tools === undefined || agent.mcpDirectTools?.length) return false;
-	return agent.tools.every((tool) => READ_ONLY_TOOLS.has(tool));
-}
-
-function readonlyOverrideError(
-	agent: AgentConfig | undefined,
-	value: object,
-	label: string,
-): string | undefined {
-	if (!isMechanicallyReadOnly(agent)) return undefined;
-	const request = value as Record<string, unknown>;
-	const overrides = [
-		...(Object.hasOwn(request, "output") ? ["output"] : []),
-		...(Object.hasOwn(request, "progress") ? ["progress"] : []),
-	];
-	return overrides.length > 0
-		? `Read-only agent '${agent.name}' does not allow explicit ${overrides.join(" or ")} overrides (${label}).`
-		: undefined;
-}
-
 function validateReadOnlyOverrides(params: SubagentParamsLike, agents: AgentConfig[]): string | undefined {
 	const resolveAgent = (name: string) => agents.find((agent) => agent.name === name);
 	if (params.agent) {
-		const error = readonlyOverrideError(resolveAgent(params.agent), params, "single run");
+		const error = readOnlyOverrideError(resolveAgent(params.agent), params, "single run");
 		if (error) return error;
 	}
 	for (let i = 0; i < params.tasks?.length; i++) {
 		const task = params.tasks[i]!;
-		const error = readonlyOverrideError(resolveAgent(task.agent), task, `parallel task ${i + 1}`);
+		const error = readOnlyOverrideError(resolveAgent(task.agent), task, `parallel task ${i + 1}`);
 		if (error) return error;
 	}
 	for (let stepIndex = 0; stepIndex < params.chain?.length; stepIndex++) {
@@ -385,13 +362,13 @@ function validateReadOnlyOverrides(params: SubagentParamsLike, agents: AgentConf
 		if (isParallelStep(step)) {
 			for (let taskIndex = 0; taskIndex < step.parallel.length; taskIndex++) {
 				const task = step.parallel[taskIndex]!;
-				const error = readonlyOverrideError(resolveAgent(task.agent), task, `chain step ${stepIndex + 1}, parallel task ${taskIndex + 1}`);
+				const error = readOnlyOverrideError(resolveAgent(task.agent), task, `chain step ${stepIndex + 1}, parallel task ${taskIndex + 1}`);
 				if (error) return error;
 			}
 			continue;
 		}
 		const sequential = step as SequentialStep;
-		const error = readonlyOverrideError(resolveAgent(sequential.agent), sequential, `chain step ${stepIndex + 1}`);
+		const error = readOnlyOverrideError(resolveAgent(sequential.agent), sequential, `chain step ${stepIndex + 1}`);
 		if (error) return error;
 	}
 	return undefined;
@@ -1235,6 +1212,8 @@ async function runParallelPath(data: ExecutionContextData, deps: ExecutorDeps): 
 		taskTexts = result.templates;
 		for (let i = 0; i < result.behaviorOverrides.length; i++) {
 			const override = result.behaviorOverrides[i];
+			const boundaryError = readOnlyOverrideError(agentConfigs[i], override ?? {}, `parallel clarification task ${i + 1}`);
+			if (boundaryError) return buildRequestedModeError(params, boundaryError);
 			if (override?.model) {
 				modelOverrides[i] = override.model;
 				behaviorOverrides[i]!.model = override.model;
@@ -1502,6 +1481,8 @@ async function runSinglePath(data: ExecutionContextData, deps: ExecutorDeps): Pr
 
 		task = result.templates[0]!;
 		const override = result.behaviorOverrides[0];
+		const boundaryError = readOnlyOverrideError(agentConfig, override ?? {}, "single clarification");
+		if (boundaryError) return buildRequestedModeError(params, boundaryError);
 		if (override?.model) modelOverride = override.model;
 		if (override?.output !== undefined) effectiveOutput = override.output;
 		if (override?.skills !== undefined) skillOverride = override.skills;

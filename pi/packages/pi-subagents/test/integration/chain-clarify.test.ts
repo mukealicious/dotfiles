@@ -14,10 +14,12 @@ interface ClarifyTestComponent {
 	selectedStep: number;
 	modelSelectedIndex: number;
 	filteredModels: ClarifyTestModel[];
+	behaviorOverrides: Map<number, { model?: string }>;
 	getEffectiveModel(stepIndex: number): string;
 	applyThinkingLevel(level: "high" | "max"): void;
 	enterModelSelector(): void;
 	handleModelSelectorInput(data: string): void;
+	saveOverridesToAgent(): void;
 }
 
 interface ClarifyTestModule {
@@ -60,6 +62,45 @@ describe("chain clarify model display", { skip: !available ? "pi packages not av
 			else process.env.HOME = previousHome;
 			if (previousProfile === undefined) delete process.env.PI_CODING_AGENT_DIR;
 			else process.env.PI_CODING_AGENT_DIR = previousProfile;
+			fs.rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("does not save behavior overrides through a linked agent definition", () => {
+		const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-chain-clarify-linked-"));
+		const generated = path.join(root, "generated-review.md");
+		const linked = path.join(root, "review.md");
+		const original = `---\nname: review\ndescription: Managed review\n---\n\nReview changes.\n`;
+		try {
+			fs.writeFileSync(generated, original);
+			fs.symlinkSync(generated, linked);
+			const component = new ChainClarifyComponent(
+				{ requestRender() {} },
+				{ fg(_key: string, text: string) { return text; } },
+				[{
+					name: "review",
+					description: "Managed review",
+					systemPrompt: "Review changes.",
+					systemPromptMode: "replace",
+					inheritProjectContext: false,
+					inheritSkills: false,
+					source: "user",
+					filePath: linked,
+				}],
+				["Task"],
+				"Task",
+				undefined,
+				[{ output: false, reads: false, progress: false, skills: [] }],
+				[],
+				undefined,
+				[],
+				() => {},
+				"single",
+			);
+			component.behaviorOverrides.set(0, { model: "openai/test" });
+			component.saveOverridesToAgent();
+			assert.equal(fs.readFileSync(generated, "utf-8"), original);
+		} finally {
 			fs.rmSync(root, { recursive: true, force: true });
 		}
 	});

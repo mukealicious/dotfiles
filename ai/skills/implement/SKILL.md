@@ -14,12 +14,12 @@ approved the governing spec or ticket.
 
 1. Validate the approved spec or ticket against the current checkout before
    editing. Surface missing approval, contradictory requirements, or scope drift.
-2. Implement small checked slices at agreed behavioral seams. Use `/skill:tdd`
-   where useful; run focused tests and typechecks throughout, then the relevant
-   full validation at the end.
+2. Implement small checked slices at agreed behavioral seams. Use the `tdd`
+   skill where useful; run focused tests and typechecks throughout, then the
+   relevant full validation at the end.
 3. Stay in this session. Do not automatically delegate, create a generic plan,
    or write progress/context/plan artifacts unless the approved work explicitly
-   requires one. Invoke `/skill:code-review` only when proportional review would
-   help; review remains advisory and read-only.
+   requires one. Invoke the `code-review` skill only when proportional review
+   would help; review remains advisory and read-only.
 4. Never commit, push, or create a PR unless the user separately requests that
    exact action. Report changed paths, validation, and remaining risks honestly.

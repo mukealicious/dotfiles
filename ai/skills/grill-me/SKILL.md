@@ -10,7 +10,7 @@ metadata:
 
 # Grill Me
 
-This is a thin manual entry point. When the user invokes `/skill:grill-me`, follow
+This is a thin manual entry point. When the user invokes this skill, follow
 [grilling](../grilling/SKILL.md) for the complete dependency-aware design-tree
 workflow.
 

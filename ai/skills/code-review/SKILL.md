@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Review code changes proportionally for correctness, security, structure, and production risk. Use when reviewing a PR, recent commit, or uncommitted diff, or when the user explicitly invokes /skill:code-review.
+description: Review code changes proportionally for correctness, security, structure, and production risk. Use when reviewing a PR, recent commit, or uncommitted diff, or when the user explicitly asks for code review.
 references:
   - references/final-pass.md
   - ../codebase-design/SKILL.md

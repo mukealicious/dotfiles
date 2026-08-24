@@ -3,10 +3,16 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
+import { TEMPLATE_ITEMS } from "../../agent-templates.ts";
 
 const packageDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 describe("published package surface", () => {
+	it("does not expose obsolete role templates", () => {
+		const names = TEMPLATE_ITEMS.flatMap((item) => item.type === "agent" ? [item.name] : []);
+		assert.deepEqual(names, ["Blank", "Scout"]);
+	});
+
 	it("does not expose removed prompt shortcuts", () => {
 		const manifest = JSON.parse(fs.readFileSync(path.join(packageDir, "package.json"), "utf-8")) as {
 			files?: string[];

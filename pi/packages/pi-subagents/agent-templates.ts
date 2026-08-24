@@ -34,26 +34,6 @@ export const TEMPLATE_ITEMS: TemplateItem[] = [
 			maxSubagentDepth: 0,
 		},
 	},
-	{
-		type: "agent",
-		name: "Code Reviewer",
-		config: {
-			description: "Reviews code for bugs, style, and correctness",
-			systemPrompt: "You are a code review agent. Examine the code changes or files provided and identify bugs, style issues, performance concerns, and correctness problems. Be specific — cite line numbers and explain why each issue matters.",
-			tools: [...ORDINARY_LEAF_TOOLS],
-			maxSubagentDepth: 0,
-		},
-	},
-	{
-		type: "agent",
-		name: "Planner",
-		config: {
-			description: "Creates implementation plans from requirements",
-			systemPrompt: "You are a planning agent. Given a task or requirements, create a detailed implementation plan. Break the work into concrete steps, identify which files need changes, and note any risks or dependencies.",
-			tools: [...ORDINARY_LEAF_TOOLS],
-			maxSubagentDepth: 0,
-		},
-	},
 	{ type: "separator", label: "Chains" },
 	{ type: "chain", name: "Blank Chain", description: "Empty chain to configure" },
 ];

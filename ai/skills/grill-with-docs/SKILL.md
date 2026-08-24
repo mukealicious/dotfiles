@@ -13,8 +13,7 @@ references:
 
 # Grill With Docs
 
-This is a thin manual composition. When the user invokes
-`/skill:grill-with-docs`:
+This is a thin manual composition. When the user invokes this skill:
 
 1. Follow [grilling](../grilling/SKILL.md) for the dependency-aware design tree
    and batched frontier questions.

@@ -36,18 +36,6 @@ AI-shaped residue without reopening scope.
 - Could a caller use the new interface without reading the implementation?
 - Did the change add configuration that callers should not decide?
 
-## What To Fix Automatically
-
-Fix issues that are local, clearly correct, and behavior-preserving:
-
-- dead code and debug residue;
-- unnecessary wrappers or pass-through helpers;
-- widened or duplicated types;
-- obvious naming/placement drift;
-- defensive checks that duplicate trusted typed boundaries.
-
-Leave speculative cleanup for a follow-up.
-
 ## Provenance
 
 Moved from the predecessor shared final-pass reference at `b0b6510`. Its

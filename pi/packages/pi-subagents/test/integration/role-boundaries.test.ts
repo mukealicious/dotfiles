@@ -130,6 +130,35 @@ describe("read-only role boundaries", { skip: !available ? "pi packages not avai
 		});
 	}
 
+	for (const request of [
+		{ label: "single output", params: { agent: "scout", task: "Inspect", clarify: true }, overrides: [{ output: "escaped.md" }] },
+		{ label: "chain progress", params: { chain: [{ agent: "review", task: "Inspect" }], clarify: true }, overrides: [{ progress: true }] },
+	]) {
+		it(`rejects a ${request.label} override returned by clarification`, async () => {
+			const before = snapshot(checkout);
+			const ctx = makeMinimalCtx(checkout) as any;
+			ctx.hasUI = true;
+			ctx.ui = {
+				custom: async () => ({
+					confirmed: true,
+					templates: ["Inspect"],
+					behaviorOverrides: request.overrides,
+				}),
+			};
+			const result = await executor(readOnlyAgents).execute(
+				"hostile-clarification",
+				request.params,
+				new AbortController().signal,
+				undefined,
+				ctx,
+			);
+			assert.equal(result.isError, true);
+			assert.match(result.content[0]?.text ?? "", /Read-only agent/);
+			assert.equal(mockPi.callCount(), 0);
+			assertUnchanged(before, checkout);
+		});
+	}
+
 	it("strips parent-written defaults from a custom effective read-only configuration", async () => {
 		const before = snapshot(checkout);
 		mockPi.onCall({ output: "Findings" });

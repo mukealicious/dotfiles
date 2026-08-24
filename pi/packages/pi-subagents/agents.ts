@@ -116,6 +116,15 @@ export interface ChainConfig {
 	extraFields?: Record<string, string>;
 }
 
+export function isEditableDefinition(definition: Pick<AgentConfig, "source" | "filePath">): boolean {
+	if (definition.source === "builtin") return false;
+	try {
+		return !fs.lstatSync(definition.filePath).isSymbolicLink();
+	} catch {
+		return false;
+	}
+}
+
 export interface AgentDiscoveryResult {
 	agents: AgentConfig[];
 	projectAgentsDir: string | null;

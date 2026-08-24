@@ -12,6 +12,7 @@ import {
 	defaultInheritSkills,
 	defaultSystemPromptMode,
 	discoverAgentsAll,
+	isEditableDefinition,
 } from "./agents.ts";
 import { serializeAgent } from "./agent-serializer.ts";
 import { serializeChain } from "./chain-serializer.ts";
@@ -295,8 +296,11 @@ function resolveTarget<T extends { source: AgentSource; filePath: string }>(
 	cwd: string,
 	scopeHint?: string,
 ): T | AgentToolResult<Details> {
-	const mutable = matches.filter((m) => m.source !== "builtin");
+	const mutable = matches.filter(isEditableDefinition);
 	if (mutable.length === 0) {
+		if (matches.some((match) => match.source !== "builtin")) {
+			return result(`${kind === "agent" ? "Agent" : "Chain"} '${name}' is linked or managed and cannot be modified directly. Clone it to create an editable definition.`, true);
+		}
 		if (matches.length > 0) {
 			return result(`${kind === "agent" ? "Agent" : "Chain"} '${name}' is builtin and cannot be modified. Create a same-named ${kind} in user or project scope to override it.`, true);
 		}

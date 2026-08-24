@@ -74,6 +74,33 @@ describe("agent management config parsing", () => {
 		assert.doesNotMatch(content, /^extensions:/m);
 	});
 
+	it("rejects updates and deletion of linked managed agents", () => {
+		const savedProfile = process.env.PI_CODING_AGENT_DIR;
+		const profile = path.join(tempDir, "personal");
+		const agentsDir = path.join(profile, "agents");
+		const generated = path.join(tempDir, "generated-review.md");
+		const original = `---\nname: review\ndescription: Managed review\n---\n\nReview changes.\n`;
+		fs.mkdirSync(agentsDir, { recursive: true });
+		fs.writeFileSync(generated, original);
+		fs.symlinkSync(generated, path.join(agentsDir, "review.md"));
+		const ctx = { cwd: tempDir, modelRegistry: { getAvailable: () => [] } };
+
+		try {
+			process.env.PI_CODING_AGENT_DIR = profile;
+			const update = handleUpdate({ agent: "review", agentScope: "user", config: { description: "Changed" } }, ctx);
+			assert.equal(update.isError, true);
+			assert.match(readText(update), /linked or managed/);
+			const deletion = handleDelete({ agent: "review", agentScope: "user" }, ctx);
+			assert.equal(deletion.isError, true);
+			assert.match(readText(deletion), /linked or managed/);
+			assert.equal(fs.readFileSync(generated, "utf-8"), original);
+			assert.equal(fs.lstatSync(path.join(agentsDir, "review.md")).isSymbolicLink(), true);
+		} finally {
+			if (savedProfile === undefined) delete process.env.PI_CODING_AGENT_DIR;
+			else process.env.PI_CODING_AGENT_DIR = savedProfile;
+		}
+	});
+
 	it("keeps user agent CRUD in the active profile's real agents directory", () => {
 		const savedProfile = process.env.PI_CODING_AGENT_DIR;
 		const work = path.join(tempDir, "work");

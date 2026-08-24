@@ -263,13 +263,6 @@ Shell shims in `pi/intercepted-commands/` that print helpful error messages redi
 
 **Note**: mitsupi bundles its own intercepted-commands, so these local shims serve as fallbacks and are available for non-Pi agents.
 
-## Skill Collisions
-
-Some shared skills (`commit` and `uv`) intentionally collide with Mitsupi's
-bundled copies. The explicit Mitsupi allowlist owns those names in Pi; other
-bundled skills, including `librarian`, `frontend-design`, `web-browser`, and
-the approved filtered skills, are not exposed.
-
 ## Packages
 
 Pi packages loaded by this setup:

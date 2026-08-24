@@ -70,6 +70,19 @@ assert_file_contains "$FAIL_REPO/.ai-runtime/pi/AGENTS.md" "previous generated t
 [ "$(readlink "$FAIL_HOME/.pi/work/AGENTS.md")" = "$FAIL_HOME/.pi/agent/AGENTS.md" ] || fail "failed stage changed work instruction link"
 [ "$(readlink "$FAIL_HOME/.pi/personal/agents")" = "$FAIL_HOME/.pi/agent/agents" ] || fail "failed stage changed personal agents link"
 
+# An incomplete stage must fail validation without replacing the active tree.
+EMPTY_REPO="$TMP_ROOT/empty-agent-repo"
+EMPTY_HOME="$TMP_ROOT/empty-agent-home"
+make_test_repo "$EMPTY_REPO"
+prepare_legacy_profiles "$EMPTY_HOME" "$EMPTY_REPO"
+rm "$EMPTY_REPO/ai/agents/review.body.md"
+if HOME="$EMPTY_HOME" PATH="$TEST_PATH" sh "$EMPTY_REPO/ai/install.sh" >"$TMP_ROOT/empty-agent.log" 2>&1; then
+  fail "agent-less staged Pi tree unexpectedly succeeded"
+fi
+assert_file_contains "$TMP_ROOT/empty-agent.log" "staged Pi tree contains no managed agents"
+assert_file_contains "$EMPTY_REPO/.ai-runtime/pi/AGENTS.md" "previous generated tree"
+[ "$(readlink "$EMPTY_HOME/.pi/work/AGENTS.md")" = "$EMPTY_HOME/.pi/agent/AGENTS.md" ] || fail "agent-less stage changed work instruction link"
+
 # Exact legacy links migrate, while custom profile-local agents and chains stay
 # in their own real directories. A same-name regular file must stop the run.
 SUCCESS_REPO="$TMP_ROOT/success-repo"
@@ -85,6 +98,11 @@ for profile in work personal; do
 done
 [ -f "$SUCCESS_REPO/.ai-runtime/pi/skills/handoff/SKILL.md" ] || fail "handoff skill was not projected into Pi runtime"
 assert_file_contains "$SUCCESS_REPO/.ai-runtime/pi/skills/handoff/SKILL.md" "temporary handoff"
+for provider in codex claude-code opencode; do
+  if grep -R -Fq '/skill:' "$SUCCESS_REPO/.ai-runtime/$provider/skills"; then
+    fail "$provider skill projection contains Pi-only /skill syntax"
+  fi
+done
 [ -f "$SUCCESS_HOME/.pi/agent/AGENTS.md" ] || fail "legacy fallback was modified"
 printf '%s\n' 'work custom agent' > "$SUCCESS_HOME/.pi/work/agents/custom.md"
 printf '%s\n' 'work custom chain' > "$SUCCESS_HOME/.pi/work/agents/custom.chain.md"

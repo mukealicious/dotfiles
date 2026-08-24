@@ -346,14 +346,14 @@ is_exact_symlink() {
 validate_staged_pi_tree() {
   tree="$1"
 
-  [ -f "$tree/AGENTS.md" ] || pi_profile_error "staged Pi tree is missing AGENTS.md"
-  [ -d "$tree/agents" ] || pi_profile_error "staged Pi tree is missing agents/"
-  [ -d "$tree/skills" ] || pi_profile_error "staged Pi tree is missing skills/"
+  [ -f "$tree/AGENTS.md" ] || { pi_profile_error "staged Pi tree is missing AGENTS.md"; return 1; }
+  [ -d "$tree/agents" ] || { pi_profile_error "staged Pi tree is missing agents/"; return 1; }
+  [ -d "$tree/skills" ] || { pi_profile_error "staged Pi tree is missing skills/"; return 1; }
 
   set -- "$tree/agents"/*.md
-  [ -f "$1" ] || pi_profile_error "staged Pi tree contains no managed agents"
+  [ -f "$1" ] || { pi_profile_error "staged Pi tree contains no managed agents"; return 1; }
   set -- "$tree/skills"/*
-  [ -e "$1" ] || pi_profile_error "staged Pi tree contains no projected skills"
+  [ -e "$1" ] || { pi_profile_error "staged Pi tree contains no projected skills"; return 1; }
 }
 
 preflight_pi_profile() {

@@ -131,6 +131,7 @@ fi
 [ ! -e "$HOME_ROOT/.pi/agent" ] || fail "profile check created the absent fallback"
 assert_jq "$TMP_ROOT/absent.json" '
   .deletion.status == "pass" and
+  (.deletion.manualCommand | startswith("rm -rf -- ")) and
   .deletion.automationPerformed == false and
   .fallback.present == false and
   (.profiles | length) == 2 and
@@ -196,6 +197,8 @@ status=$?
 set -e
 [ "$status" -ne 0 ] || fail "failed auth command with ready JSON was silently accepted"
 assert_jq "$TMP_ROOT/failed-auth.json" '
+  (.deletion.status == "blocked") and
+  (.deletion.manualCommand == null) and
   all(.profiles[]; (.launch.auth.commandSucceeded == false) and (.launch.auth.usable == false))
 '
 
@@ -232,7 +235,8 @@ assert_jq "$TMP_ROOT/known-fallback.json" '
   (.fallback.categories | map(.category) | index("cache")) and
   (.fallback.categories | map(.category) | index("stale_generated_resources_integration")) and
   (.fallback.unknownUserOwnedData == false) and
-  (.deletion.status == "pass")
+  (.deletion.status == "pass") and
+  (.deletion.manualCommand | startswith("rm -rf -- "))
 '
 
 # A known generated name with the wrong file kind is treated as user-owned data.
@@ -246,7 +250,9 @@ status=$?
 set -e
 [ "$status" -ne 0 ] || fail "custom replacement at a known fallback path was silently accepted"
 assert_jq "$TMP_ROOT/replaced-known-fallback.json" '
-  .fallback.unknownUserOwnedData and .deletion.status == "manual_review"
+  .fallback.unknownUserOwnedData and
+  .deletion.status == "manual_review" and
+  .deletion.manualCommand == null
 '
 if grep -Fq 'notify.ts' "$TMP_ROOT/replaced-known-fallback.json" || grep -Fq 'custom replacement' "$TMP_ROOT/replaced-known-fallback.json"; then
   fail "fallback evidence exposed a replaced entry name or content"
@@ -314,14 +320,31 @@ assert_jq "$TMP_ROOT/unknown-fallback.json" '
   .fallback.unknownUserOwnedData and
   .fallback.manualReviewRequired and
   .deletion.status == "manual_review" and
+  .deletion.manualCommand == null and
   (.blockers | index("fallback:unknown_user_owned"))
 '
 if grep -Fq 'private-custom.ts' "$TMP_ROOT/unknown-fallback.json" || grep -Fq 'user review' "$TMP_ROOT/unknown-fallback.json"; then
   fail "fallback evidence exposed an entry name or content"
 fi
 
-# The probe is read-only: deleting the test fixture is the only cleanup here.
+# A non-directory fallback root is user-owned data, never disposable state.
 rm -rf "$HOME_ROOT/.pi/agent"
+printf 'user file\n' > "$HOME_ROOT/.pi/agent"
+set +e
+PI_PROFILE_CHECK_PI_COMMAND="$FAKE_BIN/pi" \
+PI_PROFILE_CHECK_HERDR_COMMAND="$FAKE_BIN/herdr" \
+  "$ROOT/bin/pi-profile-check" --home "$HOME_ROOT" --repo "$ROOT" > "$TMP_ROOT/fallback-file.json"
+status=$?
+set -e
+[ "$status" -ne 0 ] || fail "fallback file was silently accepted"
+assert_jq "$TMP_ROOT/fallback-file.json" '
+  .fallback.unknownUserOwnedData and
+  .deletion.status == "manual_review" and
+  .deletion.manualCommand == null
+'
+
+# The probe is read-only: deleting the test fixture is the only cleanup here.
+rm "$HOME_ROOT/.pi/agent"
 [ ! -e "$HOME_ROOT/.pi/agent" ] || fail "test fallback cleanup failed"
 
 echo "Pi profile-boundary evidence tests passed"
