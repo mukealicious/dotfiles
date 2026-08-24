@@ -12,6 +12,7 @@ import {
 	defaultInheritSkills,
 	defaultSystemPromptMode,
 	discoverAgentsAll,
+	isEditableDefinition,
 } from "./agents.ts";
 import { serializeAgent } from "./agent-serializer.ts";
 import { serializeChain } from "./chain-serializer.ts";
@@ -21,6 +22,7 @@ import type { Details } from "./types.ts";
 type ManagementAction = "list" | "get" | "create" | "update" | "delete";
 type ManagementScope = "user" | "project";
 type ManagementContext = Pick<ExtensionContext, "cwd" | "modelRegistry">;
+const ORDINARY_LEAF_TOOLS = ["read", "grep", "find", "ls"];
 
 interface ManagementParams {
 	action?: string;
@@ -227,7 +229,10 @@ function applyAgentConfig(target: AgentConfig, cfg: Record<string, unknown>): st
 		} else return "config.fallbackModels must be a comma-separated string, string array, or false when provided.";
 	}
 	if (hasKey(cfg, "tools")) {
-		if (cfg.tools === false || cfg.tools === "") { target.tools = undefined; target.mcpDirectTools = undefined; }
+		if (cfg.tools === false || cfg.tools === "") {
+			target.tools = [...ORDINARY_LEAF_TOOLS];
+			target.mcpDirectTools = undefined;
+		}
 		else if (typeof cfg.tools === "string") { const parsed = parseTools(cfg.tools); target.tools = parsed.tools; target.mcpDirectTools = parsed.mcpDirectTools; }
 		else return "config.tools must be a comma-separated string or false when provided.";
 	}
@@ -291,8 +296,11 @@ function resolveTarget<T extends { source: AgentSource; filePath: string }>(
 	cwd: string,
 	scopeHint?: string,
 ): T | AgentToolResult<Details> {
-	const mutable = matches.filter((m) => m.source !== "builtin");
+	const mutable = matches.filter(isEditableDefinition);
 	if (mutable.length === 0) {
+		if (matches.some((match) => match.source !== "builtin")) {
+			return result(`${kind === "agent" ? "Agent" : "Chain"} '${name}' is linked or managed and cannot be modified directly. Clone it to create an editable definition.`, true);
+		}
 		if (matches.length > 0) {
 			return result(`${kind === "agent" ? "Agent" : "Chain"} '${name}' is builtin and cannot be modified. Create a same-named ${kind} in user or project scope to override it.`, true);
 		}
@@ -455,6 +463,8 @@ export function handleCreate(params: ManagementParams, ctx: ManagementContext): 
 		systemPromptMode: defaultSystemPromptMode(name),
 		inheritProjectContext: defaultInheritProjectContext(name),
 		inheritSkills: defaultInheritSkills(),
+		tools: [...ORDINARY_LEAF_TOOLS],
+		maxSubagentDepth: 0,
 	};
 	const applyError = applyAgentConfig(agent, cfg);
 	if (applyError) return result(applyError, true);

@@ -228,7 +228,7 @@ function toDelegationUpdate(requestId: string, update: PromptTemplateBridgeResul
 				: undefined;
 		return {
 			index: entry.index,
-			agent: entry.agent ?? "delegate",
+			agent: entry.agent ?? "unknown",
 			status: entry.status,
 			currentTool: entry.currentTool,
 			currentToolArgs: entry.currentToolArgs,

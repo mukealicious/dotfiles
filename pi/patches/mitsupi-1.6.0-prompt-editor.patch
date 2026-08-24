@@ -1,0 +1,51 @@
+--- a/extensions/prompt-editor.ts
++++ b/extensions/prompt-editor.ts
+@@ -246,7 +246,7 @@
+ 	if (typeof level !== "string") return undefined;
+ 	const v = level as ThinkingLevel;
+ 	// Keep the list local to avoid importing internal enums.
+-	const allowed: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
++	const allowed: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
+ 	return allowed.includes(v) ? v : undefined;
+ }
+ 
+@@ -276,8 +276,6 @@
+ 		modes: {
+ 			// Forced default mode
+ 			default: { ...base },
+-			// Convenience mode (user can delete/rename)
+-			fast: { ...base, thinkingLevel: "off" },
+ 		},
+ 	};
+ }
+@@ -610,7 +608,7 @@
+ const MODE_UI_ADD = "Add mode…";
+ const MODE_UI_BACK = "Back";
+ 
+-const ALL_THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
++const ALL_THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
+ const THINKING_UNSET_LABEL = "(don't change)";
+ 
+ function isDefaultModeName(name: string): boolean {
+@@ -866,6 +864,12 @@
+ 
+ 	const settingsManager = SettingsManager.inMemory();
+ 	const currentModel = spec.provider && spec.modelId ? ctx.modelRegistry.find(spec.provider, spec.modelId) : ctx.model;
++	const modelRuntimeAdapter = {
++		getAvailableSnapshot: () => ctx.modelRegistry.getAvailable(),
++		getModel: (provider: string, modelId: string) => ctx.modelRegistry.find(provider, modelId),
++		refresh: (options?: Parameters<typeof ctx.modelRegistry.refresh>[0]) => ctx.modelRegistry.refresh(options),
++		getError: () => ctx.modelRegistry.getError(),
++	};
+ 
+ 	const scopedModels: Array<{ model: any; thinkingLevel: string }> = [];
+ 
+@@ -874,7 +878,7 @@
+ 			tui,
+ 			currentModel,
+ 			settingsManager,
+-			ctx.modelRegistry as any,
++			modelRuntimeAdapter as any,
+ 			scopedModels as any,
+ 			(model) => done({ provider: model.provider, modelId: model.id }),
+ 			() => done(undefined),

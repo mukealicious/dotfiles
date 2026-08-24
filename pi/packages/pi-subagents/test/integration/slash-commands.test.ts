@@ -102,8 +102,10 @@ async function withIsolatedHome<T>(fn: () => Promise<T>): Promise<T> {
 	const home = fs.mkdtempSync(path.join(os.tmpdir(), "pi-slash-home-"));
 	const previousHome = process.env.HOME;
 	const previousUserProfile = process.env.USERPROFILE;
+	const previousProfile = process.env.PI_CODING_AGENT_DIR;
 	process.env.HOME = home;
 	process.env.USERPROFILE = home;
+	process.env.PI_CODING_AGENT_DIR = path.join(home, ".pi", "personal");
 	try {
 		return await fn();
 	} finally {
@@ -111,6 +113,8 @@ async function withIsolatedHome<T>(fn: () => Promise<T>): Promise<T> {
 		else process.env.HOME = previousHome;
 		if (previousUserProfile === undefined) delete process.env.USERPROFILE;
 		else process.env.USERPROFILE = previousUserProfile;
+		if (previousProfile === undefined) delete process.env.PI_CODING_AGENT_DIR;
+		else process.env.PI_CODING_AGENT_DIR = previousProfile;
 		fs.rmSync(home, { recursive: true, force: true });
 	}
 }
@@ -627,7 +631,7 @@ Project chain task
 `);
 
 			const { params } = await captureSlashCommandParams("run-chain", "review-flow -- Shared task", root, () => {
-				const userAgentsDir = path.join(os.homedir(), ".agents");
+				const userAgentsDir = path.join(process.env.PI_CODING_AGENT_DIR!, "agents");
 				fs.mkdirSync(userAgentsDir, { recursive: true });
 				fs.writeFileSync(path.join(userAgentsDir, "review-flow.chain.md"), `---
 name: review-flow

@@ -30,6 +30,10 @@ fi
 
 PI_PACKAGE="@earendil-works/pi-coding-agent"
 PI_BIN="$HOME/.bun/bin/pi"
+MIN_PI_VERSION="0.80.6"
+MITSUPI_PACKAGE="npm:mitsupi@1.6.0"
+MITSUPI_PROMPT_EDITOR_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-prompt-editor.patch"
+MITSUPI_FILES_SHORTCUT_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-files-shortcut.patch"
 
 if [ ! -x "$PI_BIN" ]; then
   log_info "Installing Pi coding agent ($PI_PACKAGE)..."
@@ -43,6 +47,151 @@ if [ ! -x "$PI_BIN" ]; then
 fi
 
 log_info "Setting up Pi coding agent..."
+
+if ! command -v jq >/dev/null 2>&1; then
+  log_error "jq is required for Pi setup"
+  log_hint "Install it with: brew install jq"
+  exit 1
+fi
+
+if ! command -v patch >/dev/null 2>&1; then
+  log_error "patch is required to apply the Mitsupi compatibility patch"
+  exit 1
+fi
+
+if [ ! -f "$MITSUPI_PROMPT_EDITOR_PATCH" ]; then
+  log_error "Mitsupi compatibility patch is missing: $MITSUPI_PROMPT_EDITOR_PATCH"
+  exit 1
+fi
+
+if [ ! -f "$MITSUPI_FILES_SHORTCUT_PATCH" ]; then
+  log_error "Mitsupi compatibility patch is missing: $MITSUPI_FILES_SHORTCUT_PATCH"
+  exit 1
+fi
+
+pi_version_at_least() {
+  actual="$1"
+  minimum="$2"
+  awk -v actual="$actual" -v minimum="$minimum" '
+    BEGIN {
+      split(actual, a, ".")
+      split(minimum, b, ".")
+      for (i = 1; i <= 3; i++) {
+        if ((a[i] + 0) > (b[i] + 0)) exit 0
+        if ((a[i] + 0) < (b[i] + 0)) exit 1
+      }
+      exit 0
+    }
+  '
+}
+
+check_pi_version() {
+  pi_version="$($PI_BIN --version 2>/dev/null | sed -n 's/.*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' | head -n 1)"
+  if [ -z "$pi_version" ]; then
+    log_error "Unable to determine Pi version; Pi >= $MIN_PI_VERSION is required"
+    exit 1
+  fi
+  if ! pi_version_at_least "$pi_version" "$MIN_PI_VERSION"; then
+    log_error "Pi $pi_version is too old; Pi >= $MIN_PI_VERSION is required for native max thinking"
+    exit 1
+  fi
+  log_success "Pi $pi_version supports native max thinking"
+}
+
+mitsupi_package_dir() {
+  printf '%s/.pi/%s/npm/node_modules/mitsupi\n' "$HOME" "$1"
+}
+
+check_mitsupi_patch_context() {
+  if (cd "$1" && patch -p1 -N -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
+    return 0
+  fi
+  if (cd "$1" && patch -R -p1 -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
+    return 0
+  fi
+
+  log_error "Unknown Mitsupi 1.6.0 $4 context for $2: $5"
+  log_hint "Refusing to mutate either profile; inspect the installed package before retrying"
+  exit 1
+}
+
+check_mitsupi_package_copy() {
+  profile_name="$1"
+  package_dir="$(mitsupi_package_dir "$profile_name")"
+
+  # A missing package is installed below. An existing package, including a
+  # malformed directory, must be validated before any profile is mutated.
+  if [ ! -e "$package_dir" ] && [ ! -L "$package_dir" ]; then
+    log_info "Mitsupi is not installed for $profile_name yet"
+    return 0
+  fi
+
+  package_json="$package_dir/package.json"
+  prompt_editor="$package_dir/extensions/prompt-editor.ts"
+  files_extension="$package_dir/extensions/files.ts"
+  if [ ! -f "$package_json" ] || ! jq -e --arg version "1.6.0" '.name == "mitsupi" and .version == $version' "$package_json" >/dev/null 2>&1; then
+    log_error "Mitsupi $profile_name copy is not exactly version 1.6.0: $package_dir"
+    log_hint "Remove or reinstall only this profile's package with PI_CODING_AGENT_DIR=$HOME/.pi/$profile_name pi install $MITSUPI_PACKAGE"
+    exit 1
+  fi
+  if [ ! -f "$prompt_editor" ]; then
+    log_error "Mitsupi $profile_name prompt-editor context is missing: $prompt_editor"
+    exit 1
+  fi
+  if [ ! -f "$files_extension" ]; then
+    log_error "Mitsupi $profile_name files context is missing: $files_extension"
+    exit 1
+  fi
+
+  check_mitsupi_patch_context "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_PATCH" "prompt-editor" "$prompt_editor"
+  check_mitsupi_patch_context "$package_dir" "$profile_name" "$MITSUPI_FILES_SHORTCUT_PATCH" "files shortcut" "$files_extension"
+  log_success "Validated Mitsupi 1.6.0 patch contexts for $profile_name"
+}
+
+preflight_mitsupi_copies() {
+  check_mitsupi_package_copy work
+  check_mitsupi_package_copy personal
+}
+
+ensure_mitsupi_package() {
+  for profile_name in work personal; do
+    package_dir="$(mitsupi_package_dir "$profile_name")"
+    if [ -d "$package_dir" ]; then
+      continue
+    fi
+    log_info "Installing $MITSUPI_PACKAGE for $profile_name..."
+    if ! PI_CODING_AGENT_DIR="$HOME/.pi/$profile_name" mise exec -C "$DOTFILES_ROOT" -- "$PI_BIN" install "$MITSUPI_PACKAGE"; then
+      log_error "Failed to install $MITSUPI_PACKAGE for $profile_name"
+      exit 1
+    fi
+  done
+}
+
+apply_mitsupi_patch_file() {
+  if (cd "$1" && patch -p1 -N -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
+    (cd "$1" && patch -p1 -N -F 0 -t < "$3") >/dev/null
+    log_success "Applied Mitsupi 1.6.0 $4 patch for $2"
+  elif (cd "$1" && patch -R -p1 -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
+    log_success "Mitsupi 1.6.0 $4 patch already applied for $2"
+  else
+    log_error "Mitsupi 1.6.0 $4 context changed after preflight for $2"
+    exit 1
+  fi
+}
+
+apply_mitsupi_patches() {
+  for profile_name in work personal; do
+    package_dir="$(mitsupi_package_dir "$profile_name")"
+    apply_mitsupi_patch_file "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_PATCH" "prompt-editor"
+    apply_mitsupi_patch_file "$package_dir" "$profile_name" "$MITSUPI_FILES_SHORTCUT_PATCH" "files shortcut"
+  done
+}
+
+# Validate both existing copies before setup, package installation, or any
+# profile link/settings mutation. Missing copies are the only allowed state;
+# they are installed and validated again before the patch is applied.
+check_pi_version
+preflight_mitsupi_copies
 
 # Pi persists interactive model choices and changelog state in settings.json.
 # Materialize a writable runtime file instead of symlinking it into Git. Repo
@@ -130,20 +279,40 @@ setup_pi_profile() {
   fi
 }
 
-# Shared backing store for global Pi resources (assembled AGENTS.md, agents/).
-# Not a user-facing profile — pi dispatches to work or personal.
-setup_pi_profile "$HOME/.pi/agent" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/agent"
+# D4 retires these installer-managed extension links. Match the exact absolute
+# source path that previous installer runs created, including links that are
+# now dead because the source was deleted. Never remove user-owned files,
+# directories, or links to another live source.
+remove_retired_extension_link() {
+  profile_dir="$1"
+  profile_name="$2"
+  extension_name="$3"
+  extension_source="$DOTFILES_ROOT/pi/extensions/$extension_name"
+  extension_target="$profile_dir/extensions/$extension_name"
+  extension_label="$profile_name/extensions/$extension_name"
+
+  if [ -L "$extension_target" ]; then
+    if [ "$(readlink "$extension_target")" = "$extension_source" ]; then
+      rm "$extension_target"
+      log_success "Removed retired managed extension link: $extension_label"
+    elif [ -e "$extension_target" ]; then
+      log_warn "Preserving unmanaged extension link: $extension_label"
+    else
+      log_warn "Preserving dead unmanaged extension link: $extension_label"
+    fi
+  elif [ -e "$extension_target" ]; then
+    log_warn "Preserving user-owned extension entry: $extension_label"
+  fi
+}
+
 setup_pi_profile "$HOME/.pi/work" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/work"
 setup_pi_profile "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/settings.personal.json" "$HOME/.pi/personal"
 
-# Seed the personal profile with existing shared OAuth credentials on first split.
-if [ -e "$HOME/.pi/agent/auth.json" ]; then
-  if [ ! -s "$HOME/.pi/personal/auth.json" ] || [ "$(tr -d '[:space:]' < "$HOME/.pi/personal/auth.json" 2>/dev/null)" = "{}" ]; then
-    cp "$HOME/.pi/agent/auth.json" "$HOME/.pi/personal/auth.json"
-    chmod 600 "$HOME/.pi/personal/auth.json"
-    log_success "Seeded ~/.pi/personal/auth.json from ~/.pi/agent/auth.json"
-  fi
-fi
+for profile_name in work personal; do
+  profile_dir="$HOME/.pi/$profile_name"
+  remove_retired_extension_link "$profile_dir" "$profile_name" cost.ts
+  remove_retired_extension_link "$profile_dir" "$profile_name" watchdog.ts
+done
 
 # Install researcher support CLI required by pi-parallel.
 # Upstream documents Homebrew, but the published tap does not currently
@@ -179,8 +348,11 @@ PACKAGES="
   $DOTFILES_ROOT/pi/packages/pi-parallel
   $DOTFILES_ROOT/pi/packages/pi-openai-fast
   $DOTFILES_ROOT/pi/packages/pi-subagents
-  npm:mitsupi
 "
+
+ensure_mitsupi_package
+preflight_mitsupi_copies
+apply_mitsupi_patches
 
 log_info "Installing Pi packages..."
 for pkg in $PACKAGES; do

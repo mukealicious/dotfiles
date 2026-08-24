@@ -88,9 +88,9 @@ describe("SubagentParams schema", { skip: !available ? "typebox not available" :
 		assert.ok(taskCountSchema, "tasks[].count schema should exist");
 		assert.equal(taskCountSchema.minimum, 1);
 		assert.match(String(taskCountSchema.description ?? ""), /repeat/i);
-		assert.deepEqual(taskSchema?.output?.type, ["string", "boolean"]);
-		assert.deepEqual(taskSchema?.reads?.type, ["array", "boolean"]);
-		assert.deepEqual(taskSchema?.reads?.items, { type: "string" });
+		assert.deepEqual(taskSchema?.output?.anyOf?.map((item) => item.type), ["string", "boolean"]);
+		assert.deepEqual(taskSchema?.reads?.anyOf?.map((item) => item.type), ["array", "boolean"]);
+		assert.deepEqual(taskSchema?.reads?.anyOf?.[0]?.items, { type: "string" });
 		assert.equal(taskSchema?.progress?.type, "boolean");
 
 		const concurrencySchema = SubagentParams?.properties?.concurrency;
@@ -141,7 +141,7 @@ describe("SubagentParams schema", { skip: !available ? "typebox not available" :
 				if (!current.value || typeof current.value !== "object") continue;
 
 				const node = current.value as JsonSchemaNode;
-				if (Object.hasOwn(node, "description") && !Object.hasOwn(node, "type")) {
+				if (Object.hasOwn(node, "description") && !Object.hasOwn(node, "type") && !Object.hasOwn(node, "anyOf")) {
 					descriptionOnlyPaths.push(current.path);
 				}
 
@@ -191,17 +191,17 @@ describe("SubagentParams schema", { skip: !available ? "typebox not available" :
 	it("uses explicit types for flexible fields and chain items", () => {
 		const skillSchema = SubagentParams?.properties?.skill;
 		assert.ok(skillSchema, "skill schema should exist");
-		assert.deepEqual(skillSchema.type, ["string", "array", "boolean"]);
-		assert.deepEqual(skillSchema.items, { type: "string" });
+		assert.deepEqual(skillSchema.anyOf?.map((item) => item.type), ["string", "array", "boolean"]);
+		assert.deepEqual(skillSchema.anyOf?.[1]?.items, { type: "string" });
 
 		const outputSchema = SubagentParams?.properties?.output;
 		assert.ok(outputSchema, "output schema should exist");
-		assert.deepEqual(outputSchema.type, ["string", "boolean"]);
+		assert.deepEqual(outputSchema.anyOf?.map((item) => item.type), ["string", "boolean"]);
 
 		const configSchema = SubagentParams?.properties?.config;
 		assert.ok(configSchema, "config schema should exist");
-		assert.deepEqual(configSchema.type, ["object", "string"]);
-		assert.equal(configSchema.additionalProperties, true);
+		assert.deepEqual(configSchema.anyOf?.map((item) => item.type), ["object", "string"]);
+		assert.equal(configSchema.anyOf?.[0]?.additionalProperties, true);
 
 		const chainItem = SubagentParams?.properties?.chain?.items;
 		assert.ok(chainItem, "chain item schema should exist");
@@ -211,9 +211,9 @@ describe("SubagentParams schema", { skip: !available ? "typebox not available" :
 		assert.equal(chainItem.properties?.agent?.type, "string");
 		assert.equal(chainItem.properties?.parallel?.type, "array");
 		assert.equal((chainItem.properties?.parallel?.items as { properties?: Record<string, JsonSchemaNode> } | undefined)?.properties?.agent?.type, "string");
-		assert.deepEqual(chainItem.properties?.output?.type, ["string", "boolean"]);
-		assert.deepEqual(chainItem.properties?.reads?.type, ["array", "boolean"]);
-		assert.deepEqual(chainItem.properties?.reads?.items, { type: "string" });
+		assert.deepEqual(chainItem.properties?.output?.anyOf?.map((item) => item.type), ["string", "boolean"]);
+		assert.deepEqual(chainItem.properties?.reads?.anyOf?.map((item) => item.type), ["array", "boolean"]);
+		assert.deepEqual(chainItem.properties?.reads?.anyOf?.[0]?.items, { type: "string" });
 	});
 
 	it("validates representative flexible field values with TypeBox compiler", () => {
@@ -223,13 +223,13 @@ describe("SubagentParams schema", { skip: !available ? "typebox not available" :
 		const validValues = [
 			{ skill: "review" },
 			{ skill: false },
-			{ tasks: [{ agent: "reviewer", task: "check this", skill: "review" }] },
-			{ tasks: [{ agent: "reviewer", task: "check this", skill: false }] },
-			{ tasks: [{ agent: "reviewer", task: "check this", output: "review.md", reads: ["input.md"], progress: true }] },
-			{ chain: [{ agent: "reviewer", reads: false }] },
-			{ chain: [{ parallel: [{ agent: "reviewer", reads: false, skill: false }] }] },
-			{ config: { name: "reviewer", description: "Review things" } },
-			{ config: JSON.stringify({ name: "reviewer", description: "Review things" }) },
+			{ tasks: [{ agent: "scout", task: "check this", skill: "review" }] },
+			{ tasks: [{ agent: "scout", task: "check this", skill: false }] },
+			{ tasks: [{ agent: "scout", task: "check this", output: "review.md", reads: ["input.md"], progress: true }] },
+			{ chain: [{ agent: "scout", reads: false }] },
+			{ chain: [{ parallel: [{ agent: "scout", reads: false, skill: false }] }] },
+			{ config: { name: "scout", description: "Review things" } },
+			{ config: JSON.stringify({ name: "scout", description: "Review things" }) },
 		];
 
 		for (const value of validValues) {

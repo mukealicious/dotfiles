@@ -22,42 +22,33 @@
     "~/.dotfiles/pi/packages/pi-openai-fast",
     "~/.dotfiles/pi/packages/pi-subagents",
     {
-      "source": "npm:mitsupi",
+      "source": "npm:mitsupi@1.6.0",
+      "extensions": [
+        "extensions/answer.ts",
+        "extensions/context.ts",
+        "extensions/files.ts",
+        "extensions/multi-edit.ts",
+        "extensions/prompt-editor.ts",
+        "extensions/todos.ts",
+        "extensions/uv.ts",
+        "extensions/whimsical.ts",
+        "extensions/btw.ts",
+        "extensions/review.ts"
+      ],
       "skills": [
-        "-skills/frontend-design/SKILL.md",
-        "-skills/librarian/SKILL.md",
-        "-skills/native-web-search/SKILL.md",
-        "-skills/web-browser/SKILL.md"
-      ]
+        "skills/apple-mail/SKILL.md",
+        "skills/commit/SKILL.md",
+        "skills/github/SKILL.md",
+        "skills/google-workspace/SKILL.md",
+        "skills/mermaid/SKILL.md",
+        "skills/pi-share/SKILL.md",
+        "skills/sentry/SKILL.md",
+        "skills/summarize/SKILL.md",
+        "skills/uv/SKILL.md"
+      ],
+      "prompts": [],
+      "themes": []
     }
   ],
-  "hideThinkingBlock": false,
-  "subagents": {
-    "agentOverrides": {
-      "scout": {
-        "model": "openai/gpt-5.6-luna",
-        "thinking": "high"
-      },
-      "context-builder": {
-        "model": "openai/gpt-5.6-terra",
-        "thinking": "high"
-      },
-      "worker": {
-        "model": "openai/gpt-5.6-terra",
-        "thinking": "high"
-      },
-      "planner": {
-        "model": "openai/gpt-5.6-terra",
-        "thinking": "max"
-      },
-      "reviewer": {
-        "model": "openai/gpt-5.6-terra",
-        "thinking": "max"
-      },
-      "oracle": {
-        "model": "openai/gpt-5.6-terra",
-        "thinking": "max"
-      }
-    }
-  }
+  "hideThinkingBlock": false
 }

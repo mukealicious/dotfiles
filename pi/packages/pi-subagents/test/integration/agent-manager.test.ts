@@ -94,6 +94,33 @@ describe("agent manager", () => {
 		assert.equal(fs.existsSync(path.join(agentsDir, "beta.md")), true);
 	});
 
+	it("does not write through linked agent definitions", () => {
+		const root = createTempRoot("pi-agent-manager-linked-");
+		const agentsDir = path.join(root, ".pi", "agents");
+		const generated = path.join(root, "generated-review.md");
+		const original = `---\nname: managed-review\ndescription: Managed review\nsystemPromptMode: replace\ninheritProjectContext: false\ninheritSkills: false\n---\n\nReview changes.\n`;
+		fs.mkdirSync(agentsDir, { recursive: true });
+		fs.writeFileSync(generated, original);
+		fs.symlinkSync(generated, path.join(agentsDir, "managed-review.md"));
+
+		const component = new AgentManagerComponent(
+			{ requestRender() {} } as { requestRender(): void },
+			theme(),
+			{ ...discoverAgentsAll(root), cwd: root },
+			[],
+			[],
+			() => {},
+		);
+		const entry = component["agents"].find((candidate) => candidate.config.name === "managed-review");
+		assert.ok(entry);
+		component["enterEdit"](entry);
+		component["editState"].draft.description = "Changed";
+
+		assert.equal(component["saveEdit"](), false);
+		assert.match(component["editState"].error ?? "", /cannot be edited directly/);
+		assert.equal(fs.readFileSync(generated, "utf-8"), original);
+	});
+
 	it("does not expose builtin-only disabled editing for regular agents", () => {
 		const root = createTempRoot("pi-agent-manager-fields-");
 		const agentsDir = path.join(root, ".pi", "agents");

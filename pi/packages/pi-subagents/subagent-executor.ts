@@ -42,6 +42,11 @@ import {
 import { inspectSubagentStatus } from "./run-status.ts";
 import { applyForceTopLevelAsyncOverride } from "./top-level-async.ts";
 import {
+	CANONICAL_READ_ONLY_ROLE_TOOLS,
+	isMechanicallyReadOnly,
+	readOnlyOverrideError,
+} from "./role-boundaries.ts";
+import {
 	cleanupWorktrees,
 	createWorktrees,
 	diffWorktrees,
@@ -324,6 +329,49 @@ async function maybeBuildForegroundIntercomReceipt(input: {
 		text: formatSubagentResultReceipt({ mode: input.mode, runId: input.runId, payload }),
 		details: stripDetailsOutputsForIntercomReceipt(input.details),
 	};
+}
+
+function enforceReadOnlyRoleBoundary(agent: AgentConfig): AgentConfig {
+	const canonicalTools = CANONICAL_READ_ONLY_ROLE_TOOLS[agent.name];
+	const bounded = canonicalTools
+		? { ...agent, tools: [...canonicalTools], mcpDirectTools: undefined }
+		: agent;
+	if (!isMechanicallyReadOnly(bounded)) return bounded;
+	return {
+		...bounded,
+		output: undefined,
+		defaultReads: canonicalTools ? undefined : bounded.defaultReads,
+		defaultProgress: false,
+		maxSubagentDepth: 0,
+	};
+}
+
+function validateReadOnlyOverrides(params: SubagentParamsLike, agents: AgentConfig[]): string | undefined {
+	const resolveAgent = (name: string) => agents.find((agent) => agent.name === name);
+	if (params.agent) {
+		const error = readOnlyOverrideError(resolveAgent(params.agent), params, "single run");
+		if (error) return error;
+	}
+	for (let i = 0; i < params.tasks?.length; i++) {
+		const task = params.tasks[i]!;
+		const error = readOnlyOverrideError(resolveAgent(task.agent), task, `parallel task ${i + 1}`);
+		if (error) return error;
+	}
+	for (let stepIndex = 0; stepIndex < params.chain?.length; stepIndex++) {
+		const step = params.chain[stepIndex]!;
+		if (isParallelStep(step)) {
+			for (let taskIndex = 0; taskIndex < step.parallel.length; taskIndex++) {
+				const task = step.parallel[taskIndex]!;
+				const error = readOnlyOverrideError(resolveAgent(task.agent), task, `chain step ${stepIndex + 1}, parallel task ${taskIndex + 1}`);
+				if (error) return error;
+			}
+			continue;
+		}
+		const sequential = step as SequentialStep;
+		const error = readOnlyOverrideError(resolveAgent(sequential.agent), sequential, `chain step ${stepIndex + 1}`);
+		if (error) return error;
+	}
+	return undefined;
 }
 
 function validateExecutionInput(
@@ -1164,6 +1212,8 @@ async function runParallelPath(data: ExecutionContextData, deps: ExecutorDeps): 
 		taskTexts = result.templates;
 		for (let i = 0; i < result.behaviorOverrides.length; i++) {
 			const override = result.behaviorOverrides[i];
+			const boundaryError = readOnlyOverrideError(agentConfigs[i], override ?? {}, `parallel clarification task ${i + 1}`);
+			if (boundaryError) return buildRequestedModeError(params, boundaryError);
 			if (override?.model) {
 				modelOverrides[i] = override.model;
 				behaviorOverrides[i]!.model = override.model;
@@ -1431,6 +1481,8 @@ async function runSinglePath(data: ExecutionContextData, deps: ExecutorDeps): Pr
 
 		task = result.templates[0]!;
 		const override = result.behaviorOverrides[0];
+		const boundaryError = readOnlyOverrideError(agentConfig, override ?? {}, "single clarification");
+		if (boundaryError) return buildRequestedModeError(params, boundaryError);
 		if (override?.model) modelOverride = override.model;
 		if (override?.output !== undefined) effectiveOutput = override.output;
 		if (override?.skills !== undefined) skillOverride = override.skills;
@@ -1754,9 +1806,10 @@ export function createSubagentExecutor(deps: ExecutorDeps): {
 			context: effectiveParams.context,
 			orchestratorTarget: sessionName,
 		});
+		const boundedAgents = discoveredAgents.map(enforceReadOnlyRoleBoundary);
 		const agents = intercomBridge.active
-			? discoveredAgents.map((agent) => applyIntercomBridgeToAgent(agent, intercomBridge))
-			: discoveredAgents;
+			? boundedAgents.map((agent) => applyIntercomBridgeToAgent(agent, intercomBridge))
+			: boundedAgents;
 		const runId = randomUUID().slice(0, 8);
 		const shareEnabled = effectiveParams.share === true;
 		const hasChain = (effectiveParams.chain?.length ?? 0) > 0;
@@ -1776,6 +1829,8 @@ export function createSubagentExecutor(deps: ExecutorDeps): {
 			allowClarifyTaskPrompt,
 		);
 		if (validationError) return validationError;
+		const readOnlyOverrideError = validateReadOnlyOverrides(effectiveParams, agents);
+		if (readOnlyOverrideError) return buildRequestedModeError(effectiveParams, readOnlyOverrideError);
 
 		let sessionFileForIndex: (idx?: number) => string | undefined = () => undefined;
 		try {

@@ -3,25 +3,28 @@
  */
 
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { KNOWN_FIELDS } from "./agent-serializer.ts";
 import { parseChain } from "./chain-serializer.ts";
 import { mergeAgentsForScope } from "./agent-selection.ts";
 import { parseFrontmatter } from "./frontmatter.ts";
+import { resolveActiveProfileDir } from "./profile-paths.ts";
+
+export { resolveActiveProfileDir as getActiveAgentDir } from "./profile-paths.ts";
 
 export type AgentScope = "user" | "project" | "both";
 
 export type AgentSource = "builtin" | "user" | "project";
 export type SystemPromptMode = "append" | "replace";
+const ORDINARY_LEAF_TOOLS = ["read", "grep", "find", "ls"];
 
-export function defaultSystemPromptMode(name: string): SystemPromptMode {
-	return name === "delegate" ? "append" : "replace";
+export function defaultSystemPromptMode(_name: string): SystemPromptMode {
+	return "replace";
 }
 
-export function defaultInheritProjectContext(name: string): boolean {
-	return name === "delegate";
+export function defaultInheritProjectContext(_name: string): boolean {
+	return false;
 }
 
 export function defaultInheritSkills(): boolean {
@@ -113,6 +116,15 @@ export interface ChainConfig {
 	extraFields?: Record<string, string>;
 }
 
+export function isEditableDefinition(definition: Pick<AgentConfig, "source" | "filePath">): boolean {
+	if (definition.source === "builtin") return false;
+	try {
+		return !fs.lstatSync(definition.filePath).isSymbolicLink();
+	} catch {
+		return false;
+	}
+}
+
 export interface AgentDiscoveryResult {
 	agents: AgentConfig[];
 	projectAgentsDir: string | null;
@@ -199,11 +211,7 @@ function findNearestProjectRoot(cwd: string): string | null {
 }
 
 export function getUserAgentSettingsPath(): string {
-	return path.join(getActiveAgentDir(), "settings.json");
-}
-
-export function getActiveAgentDir(): string {
-	return process.env.PI_CODING_AGENT_DIR || path.join(os.homedir(), ".pi", "agent");
+	return path.join(resolveActiveProfileDir(), "settings.json");
 }
 
 export function getProjectAgentSettingsPath(cwd: string): string | null {
@@ -587,11 +595,12 @@ function loadAgentsFromDir(dir: string, source: AgentSource): AgentConfig[] {
 		}
 
 		const parsedMaxSubagentDepth = Number(frontmatter.maxSubagentDepth);
+		const ordinaryAgentWithoutTools = source !== "builtin" && tools.length === 0 && mcpDirectTools.length === 0;
 
 		agents.push({
 			name: frontmatter.name,
 			description: frontmatter.description,
-			tools: tools.length > 0 ? tools : undefined,
+			tools: tools.length > 0 ? tools : ordinaryAgentWithoutTools ? [...ORDINARY_LEAF_TOOLS] : undefined,
 			mcpDirectTools: mcpDirectTools.length > 0 ? mcpDirectTools : undefined,
 			model: frontmatter.model,
 			fallbackModels: fallbackModels && fallbackModels.length > 0 ? fallbackModels : undefined,
@@ -611,7 +620,7 @@ function loadAgentsFromDir(dir: string, source: AgentSource): AgentConfig[] {
 			maxSubagentDepth:
 				Number.isInteger(parsedMaxSubagentDepth) && parsedMaxSubagentDepth >= 0
 					? parsedMaxSubagentDepth
-					: undefined,
+					: source === "builtin" ? undefined : 0,
 			extraFields: Object.keys(extraFields).length > 0 ? extraFields : undefined,
 		});
 	}
@@ -681,8 +690,7 @@ function resolveNearestProjectAgentDirs(cwd: string): { readDirs: string[]; pref
 const BUILTIN_AGENTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "agents");
 
 export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryResult {
-	const userDirOld = path.join(getActiveAgentDir(), "agents");
-	const userDirNew = path.join(os.homedir(), ".agents");
+	const userDir = path.join(resolveActiveProfileDir(), "agents");
 	const { readDirs: projectAgentDirs, preferredDir: projectAgentsDir } = resolveNearestProjectAgentDirs(cwd);
 	const userSettingsPath = getUserAgentSettingsPath();
 	const projectSettingsPath = getProjectAgentSettingsPath(cwd);
@@ -697,9 +705,7 @@ export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryRe
 		projectSettingsPath,
 	);
 
-	const userAgentsOld = scope === "project" ? [] : loadAgentsFromDir(userDirOld, "user");
-	const userAgentsNew = scope === "project" ? [] : loadAgentsFromDir(userDirNew, "user");
-	const userAgents = [...userAgentsOld, ...userAgentsNew];
+	const userAgents = scope === "project" ? [] : loadAgentsFromDir(userDir, "user");
 
 	const projectAgents = scope === "user" ? [] : projectAgentDirs.flatMap((dir) => loadAgentsFromDir(dir, "project"));
 	const agents = mergeAgentsForScope(scope, userAgents, projectAgents, builtinAgents)
@@ -718,8 +724,7 @@ export function discoverAgentsAll(cwd: string): {
 	userSettingsPath: string;
 	projectSettingsPath: string | null;
 } {
-	const userDirOld = path.join(getActiveAgentDir(), "agents");
-	const userDirNew = path.join(os.homedir(), ".agents");
+	const userDir = path.join(resolveActiveProfileDir(), "agents");
 	const { readDirs: projectDirs, preferredDir: projectDir } = resolveNearestProjectAgentDirs(cwd);
 	const userSettingsPath = getUserAgentSettingsPath();
 	const projectSettingsPath = getProjectAgentSettingsPath(cwd);
@@ -733,10 +738,7 @@ export function discoverAgentsAll(cwd: string): {
 		userSettingsPath,
 		projectSettingsPath,
 	);
-	const user = [
-		...loadAgentsFromDir(userDirOld, "user"),
-		...loadAgentsFromDir(userDirNew, "user"),
-	];
+	const user = loadAgentsFromDir(userDir, "user");
 	const projectMap = new Map<string, AgentConfig>();
 	for (const dir of projectDirs) {
 		for (const agent of loadAgentsFromDir(dir, "project")) {
@@ -752,12 +754,9 @@ export function discoverAgentsAll(cwd: string): {
 		}
 	}
 	const chains = [
-		...loadChainsFromDir(userDirOld, "user"),
-		...loadChainsFromDir(userDirNew, "user"),
+		...loadChainsFromDir(userDir, "user"),
 		...Array.from(chainMap.values()),
 	];
-
-	const userDir = fs.existsSync(userDirNew) ? userDirNew : userDirOld;
 
 	return { builtin, user, project, chains, userDir, projectDir, userSettingsPath, projectSettingsPath };
 }

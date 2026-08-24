@@ -1,80 +1,52 @@
 ---
 name: code-review
-description: Review code changes using parallel review agents. Use when reviewing PRs, recent commits, or uncommitted changes. Invoke with /code-review or when asked to review code. Use engineering-patterns for structural/module-depth findings and production-readiness for service/reliability risks.
+description: Review code changes proportionally for correctness, security, structure, and production risk. Use when reviewing a PR, recent commit, or uncommitted diff, or when the user explicitly asks for code review.
 references:
-  - ../engineering-patterns/references/deep-modules.md
-  - ../engineering-patterns/references/final-pass.md
+  - references/final-pass.md
+  - ../codebase-design/SKILL.md
   - ../production-readiness/references/resilience-checklist.md
 ---
 
 # Code Review
 
-Review code changes by running three independent reviews in parallel, correlating findings by severity, then validating with an architecture-level review pass. Use provided user guidance to steer the review and focus on specific code paths, changes, or areas of concern.
+Review changes as an advisory, read-only workflow. The parent session or worker
+owns fixes, integration, approvals, and final validation; reviewers do not edit,
+commit, push, or create a PR.
 
 ## Workflow
 
-1. **Determine scope** — what to review:
-   - If PR number/URL provided: fetch with `gh pr view` / `gh pr diff`
-   - If uncommitted changes exist: review those (`git diff HEAD`)
-   - Otherwise: review last commit (`git show HEAD`)
+1. Determine the review scope: a supplied PR, the uncommitted diff, or the
+   requested recent commits. Read the changed files and enough surrounding code
+   to verify each finding.
+2. Scale the review to risk:
+   - **Small, local, low-risk change:** use one reviewer.
+   - **Substantial, cross-module, or higher-risk change:** use two or three
+     reviewers with distinct lenses such as correctness, security, structure,
+     or production behavior.
+   - Add a specialist security, production-readiness, or codebase-design lens
+     only when the change crosses that risk boundary. There is no mandatory
+     fourth architecture pass.
+3. Correlate evidence-backed findings by severity. Confirm or dismiss findings
+   against the surrounding code instead of reporting speculation.
+4. Run the [final-pass checklist](references/final-pass.md) before returning the
+   report. Use [codebase-design](../codebase-design/SKILL.md) vocabulary for
+   structural/interface findings and
+   [production-readiness](../production-readiness/references/resilience-checklist.md)
+   for service, data, async, deployment, or external-dependency risk.
+5. Return a concise unified report. Findings include severity, exact path and
+   line when available, evidence, and a suggested fix. State what was not
+   verified.
 
-2. **Run 3 independent reviews in parallel** — each gets the same diff but reviews independently, focusing on bugs, security, and structure. Each review outputs findings with severity, file path, line number, and suggested fix.
+## Severity
 
-3. **Correlate findings** by severity:
-   - **Critical** — Will cause data loss, security breach, or system failure
-   - **High** — Likely to cause bugs in production
-   - **Medium** — Could cause issues under certain conditions
-   - **Low** — Minor improvements, best practices
+- **Critical:** data loss, security breach, or system failure.
+- **High:** likely production bug or broken contract.
+- **Medium:** conditional correctness, maintainability, or operational risk.
+- **Low:** minor improvement or non-blocking suggestion.
 
-4. **Architecture validation** — Send correlated findings to an architecture-level reviewer for a deep accuracy/correctness review. The reviewer evaluates each finding against surrounding code, subsystems, abstractions, and overall architecture. Apply any recommendations (upgrade, downgrade, or dismiss findings). **NEVER SKIP ARCHITECTURE REVIEW.**
+## Review principles
 
-5. **Structural and production lenses** — For structural concerns, use
-   `engineering-patterns` vocabulary: module, interface, depth, shallow module,
-   seam, adapter, locality, leverage, deletion test. For service, data, async,
-   external dependency, or deployment concerns, use `production-readiness`.
-
-6. **Output unified report** — deduplicated, grouped by severity, with file paths, line numbers, and suggested fixes.
-
-## Usage
-
-```
-/code-review              # Review uncommitted changes or last commit
-/code-review 123          # Review PR #123
-/code-review --last 3     # Review last 3 commits
-```
-
-## Output Format
-
-```markdown
-## Code Review Summary
-
-**Scope:** {uncommitted changes | PR #X | last N commits}
-**Files reviewed:** {count}
-
-### Critical Issues
-- **[file:line]** Description. Fix: suggestion.
-
-### High Priority
-- **[file:line]** Description. Fix: suggestion.
-
-### Medium Priority
-- **[file:line]** Description. Fix: suggestion.
-
-### Low Priority / Suggestions
-- **[file:line]** Description.
-
-### Summary
-{1-2 sentences: overall assessment}
-```
-
-## Review Principles
-
-- **Be certain** — Don't flag something unless you've investigated
-- **Full context** — Read entire files, not just diffs
-- **No style zealotry** — Focus on bugs, not preferences
-- **Realistic scenarios** — Don't invent hypothetical edge cases
-- **Matter-of-fact** — No flattery, no hedging
-- **Structural clarity** — When structure is the issue, explain how it affects
-  locality, leverage, test surface, or blast radius
-- **Production behavior** — When code crosses a boundary, check timeout, retry,
-  idempotency, observability, migration, and rollback behavior
+- Be certain: investigate before flagging.
+- Review public behavior and contracts, not just implementation style.
+- Prefer the smallest clear fix and preserve local ownership boundaries.
+- Keep findings advisory; confirmed fixes return to the parent or worker.

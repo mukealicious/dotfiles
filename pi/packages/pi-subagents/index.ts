@@ -8,7 +8,7 @@
  * Modes: single (agent + task), parallel (tasks[]), chain (chain[] with {previous})
  * Toggle: async parameter (default: false, configurable via config.json)
  *
- * Config file: ~/.pi/agent/extensions/subagent/config.json
+ * Config file: $PI_CODING_AGENT_DIR/extensions/subagent/config.json
  *   { "asyncByDefault": true, "forceTopLevelAsync": true, "maxSubagentDepth": 1, "intercomBridge": { "mode": "always", "instructionFile": "./intercom-bridge.md" }, "worktreeSetupHook": "./scripts/setup-worktree.mjs" }
  */
 
@@ -34,10 +34,11 @@ import { clearSlashSnapshots, getSlashRenderableSnapshot, resolveSlashMessageDet
 import { inspectSubagentStatus } from "./run-status.ts";
 import registerSubagentNotify, { type SubagentNotifyDetails } from "./notify.ts";
 import { formatDuration, shortenPath } from "./formatters.ts";
+import { loadConfig } from "./config.ts";
+export { getSubagentConfigPath, loadConfig } from "./config.ts";
 import {
 	type ControlEvent,
 	type Details,
-	type ExtensionConfig,
 	type SubagentState,
 	ASYNC_DIR,
 	DEFAULT_ARTIFACT_CONFIG,
@@ -51,8 +52,8 @@ import {
 
 /**
  * Derive subagent session base directory from parent session file.
- * If parent session is ~/.pi/agent/sessions/abc123.jsonl,
- * returns ~/.pi/agent/sessions/abc123/ as the base.
+ * If parent session is $PI_CODING_AGENT_DIR/sessions/abc123.jsonl,
+ * returns $PI_CODING_AGENT_DIR/sessions/abc123/ as the base.
  * Callers add runId to create the actual session root: abc123/{runId}/
  * Falls back to a unique temp directory if no parent session.
  */
@@ -63,18 +64,6 @@ function getSubagentSessionRoot(parentSessionFile: string | null): string {
 		return path.join(sessionsDir, baseName);
 	}
 	return fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagent-session-"));
-}
-
-function loadConfig(): ExtensionConfig {
-	const configPath = path.join(os.homedir(), ".pi", "agent", "extensions", "subagent", "config.json");
-	try {
-		if (fs.existsSync(configPath)) {
-			return JSON.parse(fs.readFileSync(configPath, "utf-8")) as ExtensionConfig;
-		}
-	} catch (error) {
-		console.error(`Failed to load subagent config from '${configPath}':`, error);
-	}
-	return {};
 }
 
 function expandTilde(p: string): string {

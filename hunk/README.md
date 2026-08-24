@@ -47,6 +47,19 @@ hunk session review --repo . --json
 hunk session comment list --repo .
 ```
 
+## Spec review loop
+
+Use Markdown plus Hunk for durable spec review; do not add a second planning or
+annotation runtime:
+
+1. Open `hunk diff --watch` so tracked and untracked Markdown is visible.
+2. The agent reads current user comments with
+   `hunk session comment list --repo . --type user`.
+3. The agent edits the same spec, then reloads the live review. Empty comments
+   never imply approval; implementation starts only after direct user approval.
+4. Hunk owns user-facing annotations. `/skill:code-review` remains the separate
+   advisory code-review workflow, not a mandatory follow-up.
+
 ## Git opt-in aliases
 
 The Git config includes opt-in Hunk-pager aliases:

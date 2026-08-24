@@ -2,3 +2,9 @@
 name: review
 description: Code reviewer focusing on bugs, security, and structure. Use for PR reviews or after code changes.
 tools: read, grep, find, ls
+model: gpt-5.6-sol
+thinking: xhigh
+systemPromptMode: replace
+inheritProjectContext: true
+inheritSkills: false
+maxSubagentDepth: 0

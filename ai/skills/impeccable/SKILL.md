@@ -1,11 +1,11 @@
 ---
 name: impeccable
-description: "Use for frontend/UI design or redesign, UX/a11y/visual critique, product screens, components, design systems, responsive polish, motion, copy, or making interfaces bolder/quieter. Not for backend-only work; use emil-design-eng only when Emil Kowalski is requested."
+description: "Use for frontend/UI design or redesign, UX/a11y/visual critique, product screens, components, design systems, responsive polish, motion, copy, or making interfaces bolder/quieter. Not for backend-only work."
 argument-hint: "[{{command_hint}}] [target]"
 user-invocable: true
 version: 3.0.0
 metadata:
-  watch-sources: pbakaus/impeccable/source/skills/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759
+  watch-sources: pbakaus/impeccable/.agents/skills/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759
 allowed-tools:
   - Bash(npx impeccable *)
 license: Apache 2.0. Based on Anthropic's frontend-design skill. See NOTICE.md for attribution.

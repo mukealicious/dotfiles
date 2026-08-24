@@ -2,56 +2,152 @@
 
 set -e
 
-BIN_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)"
+BIN_DIR="$(CDPATH='' cd -- "$(dirname "$0")" && pwd -P)"
+PI_BIN="$HOME/.bun/bin/pi"
+DOTFILES_ROOT="$(CDPATH='' cd -- "$BIN_DIR/.." && pwd -P)"
 
-# If a Pi child process inherits an explicit agent dir, keep it in the
-# same profile instead of falling back to PI_DEFAULT_PROFILE. This matters
-# for tools like pi-subagents, which spawn `pi` from inside a running session.
-case "${PI_CODING_AGENT_DIR:-}" in
-  "$HOME/.pi/personal")
-    exec "$BIN_DIR/pi-personal" "$@"
-    ;;
-  "$HOME/.pi/work")
-    exec "$BIN_DIR/pi-work" "$@"
-    ;;
-esac
-
-# Herdr restores panes with commands like `pi --session ~/.pi/personal/...`.
-# In a fresh terminal that command may not carry PI_CODING_AGENT_DIR, so infer
-# the wrapper from the session path before falling back to the machine default.
-expect_session_path=0
-for arg in "$@"; do
-  if [ "$expect_session_path" -eq 1 ]; then
-    case "$arg" in
-      "$HOME/.pi/personal"/*)
-        exec "$BIN_DIR/pi-personal" "$@"
-        ;;
-      "$HOME/.pi/work"/*)
-        exec "$BIN_DIR/pi-work" "$@"
-        ;;
-    esac
-    expect_session_path=0
-    continue
-  fi
-
-  case "$arg" in
-    --session)
-      expect_session_path=1
+session_profile() {
+  case "$1" in
+    "$HOME/.pi/personal"/*)
+      printf 'personal\n'
       ;;
-    --session="$HOME/.pi/personal"/*)
-      exec "$BIN_DIR/pi-personal" "$@"
-      ;;
-    --session="$HOME/.pi/work"/*)
-      exec "$BIN_DIR/pi-work" "$@"
+    "$HOME/.pi/work"/*)
+      printf 'work\n'
       ;;
   esac
-done
+}
 
-case "${PI_DEFAULT_PROFILE:-work}" in
-  personal)
-    exec "$BIN_DIR/pi-personal" "$@"
-    ;;
-  *)
-    exec "$BIN_DIR/pi-work" "$@"
-    ;;
-esac
+selected_session_profile() {
+  recognized_session_profile=''
+  expect_session_path=0
+
+  for arg in "$@"; do
+    if [ "$expect_session_path" -eq 1 ]; then
+      candidate="$(session_profile "$arg")"
+      expect_session_path=0
+    else
+      candidate=''
+      case "$arg" in
+        --session)
+          expect_session_path=1
+          continue
+          ;;
+        --session=*)
+          candidate="$(session_profile "${arg#--session=}")"
+          ;;
+      esac
+    fi
+
+    [ -n "$candidate" ] || continue
+    if [ -n "$recognized_session_profile" ] && [ "$recognized_session_profile" != "$candidate" ]; then
+      echo "pi: session paths select both work and personal profiles; use sessions from one profile" >&2
+      return 1
+    fi
+    recognized_session_profile="$candidate"
+  done
+
+  printf '%s\n' "$recognized_session_profile"
+}
+
+launch_pi() {
+  profile="$1"
+  shift
+
+  export PI_CODING_AGENT_DIR="$HOME/.pi/$profile"
+  export GIT_EDITOR=true
+  export GIT_SEQUENCE_EDITOR=true
+  export GIT_MERGE_AUTOEDIT=no
+
+  if [ ! -x "$PI_BIN" ]; then
+    echo "pi-$profile: expected binary at $PI_BIN" >&2
+    exit 1
+  fi
+
+  if ! command -v mise >/dev/null 2>&1; then
+    echo "pi-$profile: mise is required to run Pi with the managed Node runtime" >&2
+    exit 1
+  fi
+
+  node_bin="$(mise which -C "$DOTFILES_ROOT" node 2>/dev/null || true)"
+  if [ -z "$node_bin" ] || [ ! -x "$node_bin" ]; then
+    echo "pi-$profile: the mise-managed Node runtime is not installed" >&2
+    echo "Fix: run $DOTFILES_ROOT/mise/install.sh" >&2
+    exit 1
+  fi
+
+  if [ "$profile" = "personal" ]; then
+    unset OPENAI_API_KEY
+    unset OPENAI_OP_REF
+    exec "$node_bin" "$PI_BIN" "$@"
+  fi
+
+  if [ -n "${OPENAI_API_KEY:-}" ]; then
+    export OPENAI_API_KEY
+    exec "$node_bin" "$PI_BIN" "$@"
+  fi
+
+  if [ -z "${OPENAI_OP_REF:-}" ]; then
+    echo "pi-work: set OPENAI_API_KEY or OPENAI_OP_REF for work mode" >&2
+    exit 1
+  fi
+
+  if ! command -v op >/dev/null 2>&1; then
+    echo "pi-work: 1Password CLI 'op' is not installed" >&2
+    exit 1
+  fi
+
+  OPENAI_API_KEY="$(op read "$OPENAI_OP_REF")" || {
+    echo "pi-work: failed to load OPENAI_API_KEY from 1Password via OPENAI_OP_REF" >&2
+    exit 1
+  }
+
+  if [ -z "$OPENAI_API_KEY" ]; then
+    echo "pi-work: OPENAI_OP_REF returned an empty secret" >&2
+    exit 1
+  fi
+
+  export OPENAI_API_KEY
+  exec "$node_bin" "$PI_BIN" "$@"
+}
+
+dispatch_pi() {
+  session_profile_value="$(selected_session_profile "$@")" || exit 1
+
+  case "${PI_WRAPPER_PROFILE:-}" in
+    work|personal)
+      selected_profile="$PI_WRAPPER_PROFILE"
+      ;;
+    '')
+      case "${PI_CODING_AGENT_DIR:-}" in
+        "$HOME/.pi/work") selected_profile=work ;;
+        "$HOME/.pi/personal") selected_profile=personal ;;
+        *)
+          if [ -n "$session_profile_value" ]; then
+            selected_profile="$session_profile_value"
+          else
+            case "${PI_DEFAULT_PROFILE:-work}" in
+              personal) selected_profile=personal ;;
+              *) selected_profile=work ;;
+            esac
+          fi
+          ;;
+      esac
+      ;;
+    *)
+      echo "pi: invalid wrapper profile '$PI_WRAPPER_PROFILE'" >&2
+      exit 1
+      ;;
+  esac
+
+  if [ -n "$session_profile_value" ] && [ "$session_profile_value" != "$selected_profile" ]; then
+    echo "pi: session path belongs to $session_profile_value profile, but selected profile is $selected_profile" >&2
+    exit 1
+  fi
+
+  unset PI_DISPATCH_LIBRARY PI_WRAPPER_PROFILE
+  launch_pi "$selected_profile" "$@"
+}
+
+if [ "${PI_DISPATCH_LIBRARY:-}" != "1" ]; then
+  dispatch_pi "$@"
+fi

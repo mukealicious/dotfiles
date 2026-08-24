@@ -9,6 +9,7 @@ import {
 	defaultInheritSkills,
 	defaultSystemPromptMode,
 	discoverAgentsAll,
+	isEditableDefinition,
 	removeBuiltinAgentOverride,
 	saveBuiltinAgentOverride,
 	type AgentConfig,
@@ -265,6 +266,7 @@ export class AgentManagerComponent implements Component {
 			}
 		}
 		if (!edit.draft.name || !edit.draft.description) { edit.error = "Name and description are required."; return false; }
+		if (!entry.isNew && !isEditableDefinition(entry.config)) { edit.error = "Linked or managed agents cannot be edited directly. Clone this agent first."; return false; }
 		let filePath = entry.config.filePath;
 		if (entry.isNew) {
 			const dir = edit.draft.source === "project" ? this.agentData.projectDir : this.agentData.userDir;
@@ -307,6 +309,7 @@ export class AgentManagerComponent implements Component {
 
 	private saveChainEdit(): boolean {
 		const state = this.chainEditState; const entry = this.getChainEntry(this.currentChainId); if (!state || !entry) return false;
+		if (!isEditableDefinition(entry.config)) { state.error = "Linked or managed chains cannot be edited directly. Clone this chain first."; return false; }
 		try { const parsed = parseChain(state.editor.buffer, entry.config.source, entry.config.filePath); fs.writeFileSync(entry.config.filePath, serializeChain(parsed), "utf-8"); entry.config = parsed; state.error = undefined; return true; }
 		catch (err) { state.error = err instanceof Error ? err.message : "Failed to save chain."; return false; }
 	}
@@ -426,6 +429,8 @@ export class AgentManagerComponent implements Component {
 				systemPromptMode: defaultSystemPromptMode(name),
 				inheritProjectContext: defaultInheritProjectContext(name),
 				inheritSkills: defaultInheritSkills(),
+				tools: ["read", "grep", "find", "ls"],
+				maxSubagentDepth: 0,
 				source: state.scope,
 				filePath: "",
 				...templateConfig,
@@ -619,7 +624,12 @@ export class AgentManagerComponent implements Component {
 			case "open-detail": { const agent = this.getAgentEntry(action.id); if (agent) { this.enterDetail(agent); return; } const chain = this.getChainEntry(action.id); if (chain) this.enterChainDetail(chain); return; }
 			case "clone": if (this.getAgentEntry(action.id)) this.enterNameInput("clone-agent", action.id); else if (this.getChainEntry(action.id)) this.enterNameInput("clone-chain", action.id); return;
 			case "new": this.enterTemplateSelect(); return;
-			case "delete": { if (this.isBuiltin(action.id)) { this.statusMessage = { text: "Builtin agents cannot be deleted. Clone to user scope to override.", type: "error" }; return; } this.confirmDeleteId = action.id; this.screen = "confirm-delete"; return; }
+			case "delete": {
+				if (this.isBuiltin(action.id)) { this.statusMessage = { text: "Builtin agents cannot be deleted. Clone to user scope to override.", type: "error" }; return; }
+				const definition = this.getAgentEntry(action.id)?.config ?? this.getChainEntry(action.id)?.config;
+				if (definition && !isEditableDefinition(definition)) { this.statusMessage = { text: "Linked or managed definitions cannot be deleted directly.", type: "error" }; return; }
+				this.confirmDeleteId = action.id; this.screen = "confirm-delete"; return;
+			}
 			case "run-chain": {
 				const disabled = this.disabledAgentEntries(action.ids);
 				if (disabled.length > 0) {

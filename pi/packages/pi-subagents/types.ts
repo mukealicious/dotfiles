@@ -2,11 +2,12 @@
  * Type definitions for the subagent extension
  */
 
-import * as os from "node:os";
 import * as path from "node:path";
 import type { Message } from "@earendil-works/pi-ai";
 import type { FSWatcher } from "node:fs";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { resolveProfileTempRoot } from "./profile-paths.ts";
+export { resolveProfileTempScopeId, resolveTempScopeId } from "./profile-paths.ts";
 
 // ============================================================================
 // Basic Types
@@ -194,7 +195,7 @@ export interface Details {
 		artifactPath?: string;
 	};
 	// Chain metadata for observability
-	chainAgents?: string[];      // Agent names in order, e.g., ["scout", "planner"]
+	chainAgents?: string[];      // Agent names in order, e.g., ["scout", "worker"]
 	totalSteps?: number;         // Total steps in chain
 	currentStepIndex?: number;   // 0-indexed current step (for running chains)
 }
@@ -420,62 +421,9 @@ export const DEFAULT_ARTIFACT_CONFIG: ArtifactConfig = {
 	cleanupDays: 7,
 };
 
-function sanitizeTempScopeSegment(value: string): string {
-	const sanitized = value
-		.trim()
-		.replace(/[^A-Za-z0-9._-]+/g, "-")
-		.replace(/^-+|-+$/g, "");
-	return sanitized || "unknown";
-}
-
-export function resolveTempScopeId(options?: {
-	env?: NodeJS.ProcessEnv;
-	getuid?: (() => number) | undefined;
-	userInfo?: (() => { username?: string | null }) | undefined;
-	homedir?: (() => string) | undefined;
-}): string {
-	const env = options?.env ?? process.env;
-	const getuid = options && Object.hasOwn(options, "getuid")
-		? options.getuid
-		: process.getuid?.bind(process);
-	if (typeof getuid === "function") {
-		return `uid-${getuid()}`;
-	}
-
-	for (const key of ["USERNAME", "USER", "LOGNAME"] as const) {
-		const value = env[key];
-		if (value) return `user-${sanitizeTempScopeSegment(value)}`;
-	}
-
-	const userInfo = options && Object.hasOwn(options, "userInfo")
-		? options.userInfo
-		: os.userInfo;
-	try {
-		const username = userInfo?.().username;
-		if (username) return `user-${sanitizeTempScopeSegment(username)}`;
-	} catch {
-		// Fall through to home-directory-based scoping.
-	}
-
-	const homedir = env.USERPROFILE ?? env.HOME;
-	if (homedir) return `home-${sanitizeTempScopeSegment(homedir)}`;
-
-	const resolveHomedir = options && Object.hasOwn(options, "homedir")
-		? options.homedir
-		: os.homedir;
-	try {
-		const fallbackHomedir = resolveHomedir?.();
-		if (fallbackHomedir) return `home-${sanitizeTempScopeSegment(fallbackHomedir)}`;
-	} catch {
-		// Fall through to the last-resort shared scope.
-	}
-
-	return "shared";
-}
-
 export const MAX_PARALLEL = 8;
 export const MAX_CONCURRENCY = 4;
-export const TEMP_ROOT_DIR = path.join(os.tmpdir(), `pi-subagents-${resolveTempScopeId()}`);
+export const TEMP_ROOT_DIR = resolveProfileTempRoot();
 export const RESULTS_DIR = path.join(TEMP_ROOT_DIR, "async-subagent-results");
 export const ASYNC_DIR = path.join(TEMP_ROOT_DIR, "async-subagent-runs");
 export const CHAIN_RUNS_DIR = path.join(TEMP_ROOT_DIR, "chain-runs");

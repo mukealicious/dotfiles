@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type {
 	BeforeProviderRequestEvent,
 	ExtensionAPI,
@@ -8,7 +8,7 @@ import type {
 	ExtensionContext,
 	RegisteredCommand,
 } from "@earendil-works/pi-coding-agent";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import piOpenAIFast, { _test } from "../extensions/index.js";
 
 type RegisteredFlag = {
@@ -136,6 +136,33 @@ function getRegisteredHandler(mockPi: MockPi, eventName: string): (event: unknow
 }
 
 describe("pi-openai-fast", () => {
+	beforeEach(() => {
+		vi.stubEnv("PI_CODING_AGENT_DIR", "");
+	});
+
+	it("isolates global config between work and personal profiles and retains the fallback", () => {
+		const { cwd, homeDir, cleanup } = createTempWorkspace();
+		try {
+			const work = join(homeDir, ".pi", "work");
+			const personal = join(homeDir, ".pi", "personal");
+			vi.stubEnv("PI_CODING_AGENT_DIR", work);
+			const workConfig = _test.resolveFastConfig(cwd);
+			vi.stubEnv("PI_CODING_AGENT_DIR", personal);
+			const personalConfig = _test.resolveFastConfig(cwd);
+			vi.stubEnv("PI_CODING_AGENT_DIR", "");
+			vi.stubEnv("HOME", homeDir);
+			const fallbackConfig = _test.resolveFastConfig(cwd);
+
+			expect(workConfig.configPath).toBe(join(work, "extensions", _test.FAST_CONFIG_BASENAME));
+			expect(personalConfig.configPath).toBe(join(personal, "extensions", _test.FAST_CONFIG_BASENAME));
+			expect(fallbackConfig.configPath).toBe(join(homeDir, ".pi", "agent", "extensions", _test.FAST_CONFIG_BASENAME));
+			expect(workConfig.configPath).not.toBe(personalConfig.configPath);
+			expect(workConfig.configPath).not.toBe(fallbackConfig.configPath);
+		} finally {
+			cleanup();
+		}
+	});
+
 	it("registers the fast command and flag", () => {
 		const mockPi = createMockPi();
 		piOpenAIFast(mockPi as unknown as ExtensionAPI);
@@ -202,7 +229,7 @@ describe("pi-openai-fast", () => {
 			);
 			expect(payload).toEqual({ input: "hello", service_tier: "priority" });
 
-			const { globalConfigPath } = _test.getConfigPaths(cwd, homeDir);
+			const { globalConfigPath } = _test.getConfigPaths(cwd, join(homeDir, ".pi", "agent"));
 			expect(JSON.parse(readFileSync(globalConfigPath, "utf-8"))).toEqual({
 				persistState: true,
 				active: true,
@@ -253,8 +280,8 @@ describe("pi-openai-fast", () => {
 		const { cwd, homeDir, cleanup } = createTempWorkspace();
 		try {
 			vi.stubEnv("HOME", homeDir);
-			const { globalConfigPath } = _test.getConfigPaths(cwd, homeDir);
-			mkdirSync(join(homeDir, ".pi", "agent", "extensions"), { recursive: true });
+			const { globalConfigPath } = _test.getConfigPaths(cwd, join(homeDir, ".pi", "agent"));
+			mkdirSync(dirname(globalConfigPath), { recursive: true });
 			writeFileSync(
 				globalConfigPath,
 				`${JSON.stringify({ persistState: true, active: true, supportedModels: ["openai/gpt-5.5"] }, null, 2)}\n`,
@@ -291,8 +318,8 @@ describe("pi-openai-fast", () => {
 		const { cwd, homeDir, cleanup } = createTempWorkspace();
 		try {
 			vi.stubEnv("HOME", homeDir);
-			const { globalConfigPath } = _test.getConfigPaths(cwd, homeDir);
-			mkdirSync(join(homeDir, ".pi", "agent", "extensions"), { recursive: true });
+			const { globalConfigPath } = _test.getConfigPaths(cwd, join(homeDir, ".pi", "agent"));
+			mkdirSync(dirname(globalConfigPath), { recursive: true });
 			writeFileSync(globalConfigPath, `${JSON.stringify({ persistState: true, active: false }, null, 2)}\n`, "utf-8");
 
 			const mockPi = createMockPi();
@@ -331,8 +358,8 @@ describe("pi-openai-fast", () => {
 		const { cwd, homeDir, cleanup } = createTempWorkspace();
 		try {
 			vi.stubEnv("HOME", homeDir);
-			const { globalConfigPath } = _test.getConfigPaths(cwd, homeDir);
-			mkdirSync(join(homeDir, ".pi", "agent", "extensions"), { recursive: true });
+			const { globalConfigPath } = _test.getConfigPaths(cwd, join(homeDir, ".pi", "agent"));
+			mkdirSync(dirname(globalConfigPath), { recursive: true });
 			writeFileSync(
 				globalConfigPath,
 				`${JSON.stringify({ persistState: true, active: true, supportedModels: ["openai/gpt-5.5"] }, null, 2)}\n`,
@@ -401,8 +428,8 @@ describe("pi-openai-fast", () => {
 				},
 			];
 
-			const { globalConfigPath } = _test.getConfigPaths(cwd, homeDir);
-			mkdirSync(join(homeDir, ".pi", "agent", "extensions"), { recursive: true });
+			const { globalConfigPath } = _test.getConfigPaths(cwd, join(homeDir, ".pi", "agent"));
+			mkdirSync(dirname(globalConfigPath), { recursive: true });
 			writeFileSync(globalConfigPath, `${JSON.stringify({ persistState: true, active: false }, null, 2)}\n`, "utf-8");
 
 			const restoredPi = createMockPi();

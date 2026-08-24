@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import * as path from "node:path";
 import { describe, it } from "node:test";
 import {
+	resolveActiveProfileDir,
+	resolveProfileTempRoot,
+} from "../../profile-paths.ts";
+import {
 	ASYNC_DIR,
 	CHAIN_RUNS_DIR,
 	RESULTS_DIR,
@@ -10,6 +14,25 @@ import {
 	getAsyncConfigPath,
 	resolveTempScopeId,
 } from "../../types.ts";
+
+describe("resolveActiveProfileDir", () => {
+	it("uses the selected Pi profile", () => {
+		assert.equal(
+			resolveActiveProfileDir({
+				env: { PI_CODING_AGENT_DIR: "/profiles/personal" },
+				homedir: () => "/home/alice",
+			}),
+			"/profiles/personal",
+		);
+	});
+
+	it("preserves the upstream fallback when no profile is selected", () => {
+		assert.equal(
+			resolveActiveProfileDir({ env: {}, homedir: () => "/home/alice" }),
+			path.join("/home/alice", ".pi", "agent"),
+		);
+	});
+});
 
 describe("resolveTempScopeId", () => {
 	it("prefers uid when available", () => {
@@ -52,8 +75,40 @@ describe("resolveTempScopeId", () => {
 	});
 });
 
-describe("shared temp paths", () => {
-	it("anchors shared temp directories under one scoped root", () => {
+describe("profile temp paths", () => {
+	it("gives work, personal, and fallback profiles stable isolated roots", () => {
+		const common = {
+			getuid: () => 501,
+			homedir: () => "/home/alice",
+			tmpdir: () => "/tmp",
+		};
+		const work = resolveProfileTempRoot({
+			...common,
+			env: { PI_CODING_AGENT_DIR: "/home/alice/.pi/work" },
+		});
+		const personal = resolveProfileTempRoot({
+			...common,
+			env: { PI_CODING_AGENT_DIR: "/home/alice/.pi/personal" },
+		});
+		const fallback = resolveProfileTempRoot({ ...common, env: {} });
+
+		assert.equal(
+			work,
+			resolveProfileTempRoot({
+				...common,
+				env: { PI_CODING_AGENT_DIR: "/home/alice/.pi/work" },
+			}),
+		);
+		assert.notEqual(work, personal);
+		assert.notEqual(work, fallback);
+		assert.notEqual(personal, fallback);
+		assert.match(path.basename(work), /^pi-subagents-uid-501-work-[a-f0-9]{12}$/);
+		assert.match(path.basename(personal), /^pi-subagents-uid-501-personal-[a-f0-9]{12}$/);
+		assert.match(path.basename(fallback), /^pi-subagents-uid-501-agent-[a-f0-9]{12}$/);
+	});
+
+	it("anchors runtime temp directories under the active profile root", () => {
+		assert.equal(TEMP_ROOT_DIR, resolveProfileTempRoot());
 		assert.equal(path.dirname(RESULTS_DIR), TEMP_ROOT_DIR);
 		assert.equal(path.dirname(ASYNC_DIR), TEMP_ROOT_DIR);
 		assert.equal(path.dirname(CHAIN_RUNS_DIR), TEMP_ROOT_DIR);

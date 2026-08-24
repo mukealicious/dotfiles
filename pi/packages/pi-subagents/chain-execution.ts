@@ -55,6 +55,7 @@ import {
 	resolveChildMaxSubagentDepth,
 } from "./types.ts";
 import { resolveModelCandidate } from "./model-fallback.ts";
+import { readOnlyOverrideError } from "./role-boundaries.ts";
 
 interface ChainExecutionDetailsInput {
 	results: SingleResult[];
@@ -446,6 +447,26 @@ export async function executeChain(params: ChainExecutionParams): Promise<ChainE
 				content: [{ type: "text", text: "Chain cancelled" }],
 				details: { mode: "chain", results: [] },
 			};
+		}
+
+		for (let index = 0; index < result.behaviorOverrides.length; index++) {
+			const boundaryError = readOnlyOverrideError(
+				agentConfigs[index],
+				result.behaviorOverrides[index] ?? {},
+				`chain clarification step ${index + 1}`,
+			);
+			if (boundaryError) {
+				removeChainDir(chainDir);
+				return buildChainExecutionErrorResult(boundaryError, {
+					results: [],
+					includeProgress,
+					allProgress: [],
+					allArtifactPaths: [],
+					artifactsDir,
+					chainAgents,
+					totalSteps,
+				});
+			}
 		}
 
 		if (result.runInBackground) {

@@ -47,66 +47,41 @@ This repo keeps upstream context close to the local artifact, then uses an optio
 
 The review system is intentionally manual: no auto-install, no auto-sync, no background polling.
 
-### Imported Upstreams
+### Retained upstream sources
 
-Some shared skills are intentionally vendored from upstream sources instead of being repo-authored from scratch.
+Some shared skills are intentionally adapted from reviewed upstream snapshots.
+The finite D6 source/SHA/disposition record is
+[`specs/pi-profile-and-skill-simplification-D6-retained-skill-audit.md`](../specs/pi-profile-and-skill-simplification-D6-retained-skill-audit.md).
+This document and the metadata beside each skill are provenance records, not an
+auto-sync mechanism.
 
-| Upstream | Local scope | Why it is here |
+| Upstream | Local scope | Ownership |
 |---|---|---|
-| `mattpocock/skills` | `ai/skills/grill-me/`, `ai/skills/grill-with-docs/`, `ai/skills/improve-codebase-architecture/` | Preserve compact planning, domain-model, and architecture-review workflows as portable shared skills |
-| `emilkowalski/skill` | `ai/skills/emil-design-eng/` | Preserve Emil Kowalski's design-engineering guidance as an exact upstream skill we can experiment with and review over time |
-| `pbakaus/impeccable` | `ai/skills/impeccable/` | Use Impeccable 3.x as the consolidated design-command router for PRODUCT.md + DESIGN.md workflows |
-| `plannotator/effective-html`, `ThariqS/html-effectiveness` | `ai/skills/visual-deliverables/` | Adapt HTML-with-a-strong-visual-bias workflows into a portable skill with curated one-file HTML/SVG examples |
+| `dmmulroy/.dotfiles@f9f7aa1a3638d6bfb6fa0b94fd110185534a2895` | `grilling`, `domain-modeling`, `tdd`, `implement`, `bro`, `handoff` | Grilling, domain docs, TDD, manual implementation, plain-language restatement, and temporary handoffs |
+| `viticci/remctl@5dedddab08d63361a62f2c81fe60acc707287e15` | `apple-reminders` | Agent-safe Apple Reminders reads, explicit-intent writes, and verification through RemCTL |
+| `mattpocock/skills@9c9f36ccd3995266cd675468af71639c8dde1ec5` | `codebase-design`, thin `grill-me`, thin `grill-with-docs` | Deep-module/interface vocabulary and manual entry-point provenance |
+| `rjs/shaping-skills@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9` | `framing-doc`, `kickoff-doc`, `breadboarding` | Framing, shaped kickoff territory, and breadboarding |
+| `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | `impeccable` | Product UI/UX and visual interaction design |
+| `plannotator/effective-html`, `ThariqS/html-effectiveness` | `visual-deliverables` | Self-contained HTML/SVG explainers and curated examples |
+| Pinned maintenance/research influences | `post-mortem`, `production-readiness`, `tufte-data-viz`, `herdr`, `hunk-review` | Retrospectives, production risk, quantitative visualization, Herdr, and Hunk |
 
-Rules for imported upstreams:
+Rules for retained upstreams:
 
-- keep the shared source in `ai/skills/` as close to upstream as practical
-- use `metadata.watch-sources` for skill/file provenance, `VENDORED_FROM.md` for vendored directories, and `ai/watchlist.toml` for optional batch drift review
-- resolve provider-specific placeholders during projection into `.ai-runtime/`, not by editing the vendored source to one harness
-- prefer exact-copy-first adoption; adapt later only after real usage teaches us what is worth changing
+- keep the shared source in `ai/skills/` as close to the reviewed source as practical;
+- use `metadata.watch-sources` and `VENDORED_FROM.md` for exact provenance, with `ai/watchlist.toml` for optional manual drift review;
+- resolve provider-specific placeholders during projection, not by editing the source to one harness;
+- adopt only an explicitly reviewed snapshot or local owner-boundary adaptation; never auto-sync current upstream.
 
 #### Adding upstream provenance or a watched source
 
-If the source maps to one local file, add `metadata.watch-sources` to that file's frontmatter. If it maps to a vendored directory, add or update that directory's `VENDORED_FROM.md`.
+If the source maps to one local file, add `metadata.watch-sources` to that file's
+frontmatter. If it maps to a vendored directory, add or update that directory's
+`VENDORED_FROM.md`. If it belongs in batch review, add one narrow `[[sources]]`
+entry to `ai/watchlist.toml` and verify it with `bin/ai-watch --source <id>`.
 
-If the upstream should be checked as part of batch review, edit `ai/watchlist.toml` and add one `[[sources]]` entry.
-
-Minimal checklist:
-
-- choose a stable `id` for CLI filtering
-- set `repo` to `owner/repo`
-- set `path` to the specific upstream subpath you care about, or `""` for repo root
-- use `branch = "main"` unless the upstream uses something else
-- choose `kind` from `skill`, `repo`, `docs`, `topic`, `package`, or `other`
-- add a short `notes` line explaining why this source matters here
-
-Example:
-
-```toml
-[[sources]]
-id = "example-skill"
-repo = "owner/repo"
-path = "skills/example-skill"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Candidate upstream skill to compare against a local shared skill"
-```
-
-Guidance:
-
-- prefer the narrowest useful `path`; smaller scopes produce less review noise
-- use `kind = "skill"` for a reusable skill or instruction package, `kind = "repo"` for broad inspiration sources
-- if a local `SKILL.md` should compare directly to upstream later, add `metadata.watch-sources` in that skill frontmatter
-- if a vendored directory should compare directly to upstream later, add `metadata.watch-sources` in `VENDORED_FROM.md`
-
-Verify a new entry with:
-
-```bash
-bin/ai-watch --source <id>
-```
-
-The same rule now applies to assembled agent runtime files under `~/.claude/agents/` and `~/.pi/agent/agents/`: edit the split source files in the repo, not the installed outputs.
+The same rule applies to assembled agent runtime files under `~/.claude/agents/`
+and managed links in each Pi profile: edit split source files in the repo, not
+installed outputs.
 
 ### Shared Instructions
 
@@ -121,9 +96,9 @@ Current install targets:
 | Installed file | Composition |
 |---|---|
 | `~/.claude/CLAUDE.md` | `ai/instructions/base.md` + `claude/instructions/appendix.md` |
-| `~/.pi/agent/AGENTS.md` | `ai/instructions/base.md` + `pi/instructions/appendix.md` |
-| `~/.pi/work/AGENTS.md` | symlink → `~/.pi/agent/AGENTS.md` |
-| `~/.pi/personal/AGENTS.md` | symlink → `~/.pi/agent/AGENTS.md` |
+| `.ai-runtime/pi/AGENTS.md` | `ai/instructions/base.md` + `pi/instructions/appendix.md` |
+| `~/.pi/work/AGENTS.md` | symlink → `.ai-runtime/pi/AGENTS.md` |
+| `~/.pi/personal/AGENTS.md` | symlink → `.ai-runtime/pi/AGENTS.md` |
 | `~/.config/opencode/AGENTS.md` | `ai/instructions/base.md` + `opencode/instructions/appendix.md` |
 | `~/.codex/instructions.md` | `ai/instructions/base.md` |
 | `~/.gemini/GEMINI.md` | `ai/instructions/base.md` |
@@ -145,7 +120,7 @@ Agent Assembly Status:
 
 | Capability | Shared source | Harness metadata | Installed outputs |
 |---|---|---|---|
-| `review` | `ai/agents/review.body.md` | `claude/agents/review.frontmatter`, `pi/agents/review.frontmatter` | `~/.claude/agents/review.md`, `~/.pi/agent/agents/review.md` |
+| `review` | `ai/agents/review.body.md` | `claude/agents/review.frontmatter`, `pi/agents/review.frontmatter` | `~/.claude/agents/review.md`, `.ai-runtime/pi/agents/review.md`, and managed links in each Pi profile |
 
 `oracle` and `librarian` remain legacy combined Claude agent files for now. The repo is intentionally hybrid, and more agent migrations are optional rather than the default direction.
 
@@ -198,59 +173,61 @@ Skills with scripts should use Node/Bun built-in APIs (WebSocket, fs, path, chil
 
 Keep the skill in `ai/skills/` when the core workflow works without harness-native primitives. Add a harness-specific overlay only when it contributes small, optional runtime glue rather than a second copy of the core instructions.
 
-If the shared skill stands on its own, delete the wrapper instead of keeping two near-duplicate skills. Planning is the canonical example: keep durable planning workflows in shared skills such as `spec-planner` and `grill-me` instead of preserving narrow, overlapping wrappers.
+If the shared skill stands on its own, keep one owner instead of preserving
+near-duplicate wrappers. `grilling` owns reusable questioning; `grill-me` and
+`grill-with-docs` are thin manual entry points. `codebase-design` owns structural
+and interface language; TDD consults it only when interface shape is genuinely
+uncertain.
 
 ## Skill Inventory
 
-### Shared (`ai/skills/`)
+### Retained shared skills
 
-Most shared skills are repo-authored portable workflows. Imported skills are different:
+| Skill | Owner / purpose |
+|---|---|
+| `agent-context` | Repo-local `AGENTS.md` guidance |
+| `apple-reminders` | Explicit-intent Apple Reminders reads and writes through RemCTL |
+| `breadboarding` | Workflow places, affordances, stores, and wiring |
+| `bro` | Manual plain-language restatement |
+| `build-skill` | `SKILL.md` authoring and validation |
+| `code-review` | Proportional advisory review and final-pass cleanup |
+| `codebase-design` | Deep modules, interfaces, seams, locality, and testability |
+| `domain-modeling` | Domain terminology, `CONTEXT.md`, and qualifying ADRs |
+| `dotfiles-dev` | Dotfiles implementation conventions |
+| `framing-doc` / `kickoff-doc` | Evidence-grounded framing and shaped kickoff territory |
+| `flares` | Cloudflare-native mini-apps and thin AI-client guidance |
+| `grill-me` / `grill-with-docs` | Thin manual entries into grilling and domain modeling |
+| `grilling` | Dependency-aware design-tree questioning |
+| `handoff` | Temporary same-process continuation context |
+| `herdr` | Herdr pane/workspace/agent coordination |
+| `hunk-review` | Hunk diff and comment workflow |
+| `impeccable` | Product UI/UX and visual interaction design |
+| `implement` | Manual current-session implementation |
+| `librarian` / `opensrc` | External code discovery and source-backed investigation |
+| `moja-glava` | Durable private knowledge checkpoints |
+| `post-mortem` | Session lessons and agent-context improvements |
+| `production-readiness` | Service, data, deployment, and reliability risk |
+| `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
+| `tdd` | Red/green vertical slices and public-behavior tests |
+| `tufte-data-viz` | Quantitative visualization judgment |
+| `upstream-review` | Manual provenance and adoption decisions |
+| `visual-deliverables` | Self-contained HTML/SVG explainers |
 
-- `grill-me`, `grill-with-docs`, and `improve-codebase-architecture` are vendored from `mattpocock/skills`
-- `emil-design-eng` is vendored from `emilkowalski/skill`
-- Impeccable 3.x is vendored exact-copy-first from `pbakaus/impeccable/source/skills/impeccable/`
-- `engineering-patterns`, `production-readiness`, and `tufte-data-viz` are locally curated skills adapted from pinned upstream sources
-- provider-specific placeholders stay in `ai/skills/` source and are resolved during projection into `.ai-runtime/`
-- upstream sources stay pinned through `metadata.watch-sources`, `VENDORED_FROM.md`, and `ai/watchlist.toml`
+`framing-doc` and `kickoff-doc` remain distinct: framing captures the evidence
+grounded “why” before shaping; kickoff records builder-facing shaped territory
+after shaping.
 
-### Repo-Authored Shared Skills
+### One-owner capability boundaries
 
-| Skill | Type | Description |
-|---|---|---|
-| `build-skill` | Instruction-only | Create effective skills for AI coding agents |
-| `code-review` | Instruction-only | Parallel code review with architecture validation |
-| `dotfiles-dev` | Instruction-only | Guide for working with dotfiles |
-| `engineering-patterns` | Instruction-only | Agent-native engineering doctrine: deep modules, vertical slices, safe refactoring, final cleanup, production boundaries |
-| `favicon-generator` | Scripts | Generate optimized favicons (ImageMagick) |
-| `librarian` | Instruction-only | Multi-repository codebase exploration |
-| `moja-glava` | Workflow + script | Save, study, recall, and resume sources or agent-session checkpoints through the private Moja Glava knowledge base |
-| `opensrc` | Instruction-only | Fetch source context for external packages and repositories |
-| `production-readiness` | Instruction-only | Review services and integrations for resilience, observability, migrations, capacity, and rollback |
-| `qmd` | Instruction-only | Hybrid markdown search (BM25 + vectors + LLM) |
-| `spec-planner` | Instruction-only | Dialogue-driven spec development with iterative refinement |
-| `tufte-data-viz` | Instruction-only | Tufte-style data visualization design and review |
-| `upstream-review` | Instruction-only | Review upstream provenance and watched sources against local artifacts |
-| `visual-deliverables` | Reference-heavy | Create self-contained HTML/SVG artifacts for architecture maps, explainers, review surfaces, planning boards, and small interactive workbenches |
-
-### Imported Skills
-
-| Skill | Upstream | Description |
-|---|---|---|
-| `grill-me` | `mattpocock/skills` | Stress-test plans and designs through relentless questioning |
-| `grill-with-docs` | `mattpocock/skills` | Stress-test plans against project language and documented decisions while updating `CONTEXT.md`/ADRs |
-| `improve-codebase-architecture` | `mattpocock/skills` | Find architecture deepening opportunities using domain language and ADRs |
-| `emil-design-eng` | `emilkowalski/skill` | Emil Kowalski's design engineering philosophy for UI polish and motion |
-| `impeccable` | `pbakaus/impeccable` | Consolidated 3.x design-command router: PRODUCT.md + DESIGN.md setup, document, shape, craft, live browser iteration, critique, audit, polish, and focused refinements |
-
-Suggested mental model:
-
-- use `/impeccable teach` when a project lacks PRODUCT.md / DESIGN.md context
-- use `/impeccable document` to reverse-engineer DESIGN.md from an existing codebase
-- use `/impeccable shape` before building ambiguous UI, or `/impeccable craft` for shape-then-build
-- use `/impeccable live` for browser-picked visual iteration against source code
-- use `/impeccable critique` or `/impeccable audit` to diagnose before changing code
-- use focused subcommands like `animate`, `typeset`, `colorize`, `harden`, `bolder`, `quieter`, or `distill`
-- finish with `/impeccable polish`
+- **Visual:** `impeccable` owns product UI/UX; `tufte-data-viz` owns quantitative
+  graphics; `visual-deliverables` owns self-contained HTML/SVG explainers;
+  Mermaid owns text-native diagrams; `tldraw-offline` owns the editable local canvas.
+- **Research:** `researcher` gathers delegated evidence; `qmd` searches local
+  Markdown; `opensrc` acquires snapshots; `librarian` analyzes external code;
+  `summarize` ingests documents; `surf-browser` operates authenticated browsing.
+- **Maintenance:** `upstream-review` decides adoption; `post-mortem` identifies
+  lessons; `agent-context` owns `AGENTS.md`; `build-skill` owns `SKILL.md`;
+  `dotfiles-dev` owns repository conventions; `hunk-review` owns Hunk annotations.
 
 ### Claude-Specific (`claude/skills/`)
 
@@ -262,11 +239,13 @@ Custom extensions symlinked by `pi/install.sh`. Third-party extensions installed
 
 | Extension | Type | Description |
 |---|---|---|
-| `notify.ts` | Lifecycle hook | Desktop notification via OSC 777 on agent completion (WezTerm) |
+| `handoff.ts` | Command | `/handoff` writes temporary continuation context and resumes on a summarized tree branch |
+| `notify.ts` | Lifecycle hook | Non-Herdr desktop notification via OSC 777; suppressed under `HERDR_ENV=1` |
+| `usage-footer.ts` | UI footer | Model/provider, token, context, cost, and Codex subscription usage details |
 
 | Package | Source | Provides |
 |---|---|---|
-| `npm:mitsupi` | Armin Ronacher | /answer, /review, /todos, /files, /context, uv interceptor |
+| `npm:mitsupi@1.6.0` | Armin Ronacher | Curated `/answer`, `/context`, `/files`, `/multi-edit`, `/prompt-editor`, `/todos`, `/uv`, `/whimsical`, manual `/btw` and `/review`, plus the nine allowlisted skills; prompts/themes disabled |
 
 ### Intercepted Commands (`pi/intercepted-commands/`)
 
@@ -307,11 +286,12 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 - **Instruction File**: `~/.gemini/GEMINI.md` (assembled from shared base)
 
 ### Pi Coding Agent (pi)
-- **Provider**: Anthropic (via @earendil-works/pi-coding-agent)
-- **Profiles**: `pi-work` and `pi-personal` — `pi` dispatches based on `PI_DEFAULT_PROFILE`
+- **Provider**: OpenAI — work uses its profile-scoped API-key flow; personal uses its profile-scoped Codex OAuth flow
+- **Profiles**: exactly `pi-work` and `pi-personal` — `pi` dispatches based on `PI_DEFAULT_PROFILE`
 - **Config**: tracked `pi/settings.{work,personal}.json` baselines are materialized into writable profile settings so Pi can persist model changes without dirtying Git
-- **Instruction File**: `~/.pi/agent/AGENTS.md` (assembled), symlinked into both profiles
-- **Agents**: `~/.pi/agent/agents/` (assembled), symlinked into both profiles
+- **Instruction File**: `.ai-runtime/pi/AGENTS.md` (assembled), linked into both profiles
+- **Agents**: `.ai-runtime/pi/agents/` (assembled), linked file-by-file into each real profile-local `agents/` directory; custom agents and chains remain profile-local
+- **Herdr**: official generated Pi integrations are refreshed only with a profile-scoped `herdr integration install pi`; local OSC notifications are suppressed inside Herdr
 - **Aliases**: `pi-work-print`, `pi-personal-print`
 
 ## Instruction Composition

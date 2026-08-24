@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { describe, it } from "node:test";
 import { tryImport } from "../support/helpers.ts";
 
@@ -11,14 +14,23 @@ interface ClarifyTestComponent {
 	selectedStep: number;
 	modelSelectedIndex: number;
 	filteredModels: ClarifyTestModel[];
+	behaviorOverrides: Map<number, { model?: string }>;
 	getEffectiveModel(stepIndex: number): string;
-	applyThinkingLevel(level: "high"): void;
+	applyThinkingLevel(level: "high" | "max"): void;
 	enterModelSelector(): void;
 	handleModelSelectorInput(data: string): void;
+	saveOverridesToAgent(): void;
 }
 
 interface ClarifyTestModule {
 	ChainClarifyComponent: new (...args: unknown[]) => ClarifyTestComponent;
+	saveChain: (config: {
+		name: string;
+		description: string;
+		source: "user";
+		filePath: string;
+		steps: Array<{ agent: string; task: string }>;
+	}) => string;
 }
 
 const clarifyMod = await tryImport<ClarifyTestModule>("./chain-clarify.ts");
@@ -26,6 +38,73 @@ const available = !!clarifyMod;
 const ChainClarifyComponent = clarifyMod?.ChainClarifyComponent;
 
 describe("chain clarify model display", { skip: !available ? "pi packages not available" : undefined }, () => {
+	it("saves chains in the active profile and retains the no-environment fallback", () => {
+		const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-chain-save-profile-"));
+		const previousHome = process.env.HOME;
+		const previousProfile = process.env.PI_CODING_AGENT_DIR;
+		try {
+			const work = path.join(root, "work");
+			const personal = path.join(root, "personal");
+			for (const profile of [work, personal]) {
+				process.env.PI_CODING_AGENT_DIR = profile;
+				const saved = clarifyMod!.saveChain({ name: path.basename(profile), description: "Saved chain", source: "user", filePath: "", steps: [{ agent: "worker", task: "Do work" }] });
+				assert.equal(saved, path.join(profile, "agents", `${path.basename(profile)}.chain.md`));
+				assert.equal(fs.existsSync(saved), true);
+			}
+
+			process.env.HOME = root;
+			delete process.env.PI_CODING_AGENT_DIR;
+			const saved = clarifyMod!.saveChain({ name: "fallback", description: "Saved chain", source: "user", filePath: "", steps: [{ agent: "worker", task: "Do work" }] });
+			assert.equal(saved, path.join(root, ".pi", "agent", "agents", "fallback.chain.md"));
+			assert.equal(fs.existsSync(saved), true);
+		} finally {
+			if (previousHome === undefined) delete process.env.HOME;
+			else process.env.HOME = previousHome;
+			if (previousProfile === undefined) delete process.env.PI_CODING_AGENT_DIR;
+			else process.env.PI_CODING_AGENT_DIR = previousProfile;
+			fs.rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("does not save behavior overrides through a linked agent definition", () => {
+		const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-chain-clarify-linked-"));
+		const generated = path.join(root, "generated-review.md");
+		const linked = path.join(root, "review.md");
+		const original = `---\nname: review\ndescription: Managed review\n---\n\nReview changes.\n`;
+		try {
+			fs.writeFileSync(generated, original);
+			fs.symlinkSync(generated, linked);
+			const component = new ChainClarifyComponent(
+				{ requestRender() {} },
+				{ fg(_key: string, text: string) { return text; } },
+				[{
+					name: "review",
+					description: "Managed review",
+					systemPrompt: "Review changes.",
+					systemPromptMode: "replace",
+					inheritProjectContext: false,
+					inheritSkills: false,
+					source: "user",
+					filePath: linked,
+				}],
+				["Task"],
+				"Task",
+				undefined,
+				[{ output: false, reads: false, progress: false, skills: [] }],
+				[],
+				undefined,
+				[],
+				() => {},
+				"single",
+			);
+			component.behaviorOverrides.set(0, { model: "openai/test" });
+			component.saveOverridesToAgent();
+			assert.equal(fs.readFileSync(generated, "utf-8"), original);
+		} finally {
+			fs.rmSync(root, { recursive: true, force: true });
+		}
+	});
+
 	it("keeps the preferred provider visible after applying thinking to a bare model", () => {
 		const component = new ChainClarifyComponent(
 			{ requestRender() {} },
@@ -59,6 +138,8 @@ describe("chain clarify model display", { skip: !available ? "pi packages not av
 		component.editingStep = 0;
 		component.applyThinkingLevel("high");
 		assert.equal(component.getEffectiveModel(0), "github-copilot/gpt-5-mini:high");
+		component.applyThinkingLevel("max");
+		assert.equal(component.getEffectiveModel(0), "github-copilot/gpt-5-mini:max");
 	});
 
 	it("keeps the current model selected and preserves thinking when switching models", () => {

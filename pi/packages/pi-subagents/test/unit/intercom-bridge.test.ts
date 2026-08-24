@@ -248,18 +248,22 @@ describe("applyIntercomBridgeToAgent", () => {
 		instruction: "Intercom orchestration channel:\n- Need a decision or blocked: intercom({ action: \"ask\", to: \"main\", message: \"<question>\" })\n- Blocked/update: intercom({ action: \"send\", to: \"main\", message: \"UPDATE: <summary>\" })",
 	};
 
-	it("injects intercom tool and prompt instructions", () => {
-		const updated = applyIntercomBridgeToAgent(makeAgent({ tools: ["read", "bash"] }), activeBridge);
-		assert.deepEqual(updated.tools, ["read", "bash", "intercom"]);
+	it("does not widen an explicit tool allowlist", () => {
+		const agent = makeAgent({ tools: ["read", "grep", "find", "ls"] });
+		assert.equal(applyIntercomBridgeToAgent(agent, activeBridge), agent);
+	});
+
+	it("injects instructions only when intercom is already authorized", () => {
+		const updated = applyIntercomBridgeToAgent(makeAgent({ tools: ["read", "intercom"] }), activeBridge);
+		assert.deepEqual(updated.tools, ["read", "intercom"]);
 		assert.match(updated.systemPrompt, /Intercom orchestration channel:/);
 		assert.match(updated.systemPrompt, /action: "ask"/);
 	});
 
-	it("is idempotent", () => {
-		const first = applyIntercomBridgeToAgent(makeAgent({ tools: ["read"] }), activeBridge);
-		const second = applyIntercomBridgeToAgent(first, activeBridge);
-		assert.equal(second.tools?.filter((tool) => tool === "intercom").length, 1);
-		assert.equal(second.systemPrompt, first.systemPrompt);
+	it("keeps unrestricted agents unrestricted", () => {
+		const updated = applyIntercomBridgeToAgent(makeAgent(), activeBridge);
+		assert.equal(updated.tools, undefined);
+		assert.match(updated.systemPrompt, /Intercom orchestration channel:/);
 	});
 
 	it("does not inject when extension sandbox excludes intercom", () => {

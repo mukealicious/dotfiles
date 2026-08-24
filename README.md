@@ -29,7 +29,7 @@ dot -e       # Open dotfiles in editor
 | **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex, Pi |
 | **Window Mgmt** | AeroSpace (i3-like tiling), Ice (menu bar) |
 | **Database** | PostgreSQL 17, Redis |
-| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, agent-browser, surf-cli |
+| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, agent-browser, surf-cli, RemCTL |
 
 ## Architecture
 
@@ -55,6 +55,7 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `pi/` | Pi coding agent config, extensions |
 | `agent-browser/` | Headless browser automation for AI agents |
 | `surf/` | Surf browser lanes using dedicated Brave Beta/Edge agent control |
+| `remctl/` | Pinned RemCTL install and Apple Reminders agent runtime |
 | `ripgrep/` | Ripgrep config and environment setup |
 | `python/` | Python tools via uv |
 | `ruby/` | Ruby config (gemrc, irbrc) |
@@ -145,11 +146,16 @@ Shared guidance now lives in `ai/instructions/base.md`, with small harness appen
 `ai/install.sh` assembles the final installed instruction files:
 
 - `~/.claude/CLAUDE.md` = shared base + Claude appendix
-- `~/.pi/agent/AGENTS.md` = shared base + Pi appendix
+- `.ai-runtime/pi/AGENTS.md` = shared base + Pi appendix, linked from both Pi profiles
 - `~/.config/opencode/AGENTS.md` = shared base + OpenCode appendix
 - `~/.codex/instructions.md` and `~/.gemini/GEMINI.md` = shared base only
 
 `~/.AGENTS.md` remains a base-only compatibility output rather than the main source of truth.
+
+Pi has exactly two supported profiles, `~/.pi/work` and `~/.pi/personal`; the
+`pi`, `pi-work`, and `pi-personal` launchers select one explicitly. Shared
+instructions and managed agents are staged under `.ai-runtime/pi/`, while
+profile-local settings, packages, sessions, and custom agents remain separate.
 
 The primary portability model is shared instructions plus shared skills. Harness-native `agents/` formats are optional and used only when a tool materially benefits from named agent metadata.
 
@@ -179,29 +185,30 @@ Specialized AI advisors with distinct capabilities:
 
 ### AI Skills
 
-Shared skills in `ai/skills/`, available to all agents (Claude, Pi, OpenCode, Codex):
+Shared skills in `ai/skills/` are projected to Claude, Pi, OpenCode, and Codex:
 
-| Skill | Purpose |
-|-------|---------|
-| `code-review` | Parallel review with architecture validation |
-| `spec-planner` | Dialogue-driven spec development |
-| `grill-me` | Stress-test plans through relentless questioning |
-| `opensrc` | Fetch source context for packages and repos |
-| `build-skill` | Create AI agent skills |
-| `dotfiles-dev` | Guidance for this dotfiles system |
-| `qmd` | Hybrid markdown search (BM25 + vectors) |
-| `favicon-generator` | Generate favicons from PNG/SVG |
-| `librarian` | Multi-repository codebase exploration |
+| Skill | Owns |
+|-------|------|
+| `code-review` | Proportional advisory review and final-pass cleanup |
+| `codebase-design` | Deep modules, interfaces, seams, locality, and testability |
+| `grilling` | Dependency-aware design-tree questioning |
+| `domain-modeling` | Domain language, `CONTEXT.md`, and qualifying ADRs |
+| `tdd` | Red/green vertical slices and public-behavior tests |
+| `implement` | Manual current-session implementation of approved specs/tickets |
+| `bro` | Manual plain-language restatement |
+| `framing-doc` / `kickoff-doc` | Evidence-grounded framing and builder-facing shaped territory |
+| `handoff` | Temporary same-process continuation context |
+| `apple-reminders` | Explicit-intent Apple Reminders reads and writes through RemCTL |
+| `herdr` | Managed-pane coordination, attention, and native worktree topology |
+| `opensrc` / `librarian` | Source-backed external code investigation |
+| `build-skill` / `dotfiles-dev` | Skill authoring and repository conventions |
+| `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
 
-Also includes imported design skills:
-
-- `emil-design-eng` from Emil Kowalski
-- `impeccable` 3.x from Paul Bakaus as the consolidated PRODUCT.md + DESIGN.md design-command router (`/impeccable teach`, `document`, `shape`, `craft`, `live`, `critique`, `audit`, `polish`, and refinements)
-
-Plus plugins: `document-skills` (PDF/XLSX/DOCX/PPTX), `playground` (interactive HTML).
-
-See [ai/README.md](ai/README.md) for the full AI capability inventory and projection model.
-See [docs/mcp-policy.md](docs/mcp-policy.md) for harness-specific MCP ownership.
+Visual and artifact capabilities stay separate: `impeccable` owns product UI/UX,
+`tufte-data-viz` owns quantitative visualization, `visual-deliverables` owns
+self-contained HTML/SVG explainers, and `hunk-review` owns Hunk review sessions.
+See [ai/README.md](ai/README.md) for the full capability inventory, provenance,
+and projection model.
 
 ## Shell Features
 

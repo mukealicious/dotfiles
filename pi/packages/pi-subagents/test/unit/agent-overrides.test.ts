@@ -48,22 +48,22 @@ describe("builtin agent overrides", () => {
 		writeJson(path.join(profileDir, "settings.json"), {
 			subagents: {
 				agentOverrides: {
-					reviewer: { model: "openai-codex/gpt-5.6-terra" },
+					scout: { model: "openai-codex/gpt-5.6-terra" },
 				},
 			},
 		});
 
 		assert.equal(getActiveAgentDir(), profileDir);
 		assert.equal(getUserAgentSettingsPath(), path.join(profileDir, "settings.json"));
-		const reviewer = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "reviewer");
-		assert.equal(reviewer?.model, "openai-codex/gpt-5.6-terra");
+		const scout = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "scout");
+		assert.equal(scout?.model, "openai-codex/gpt-5.6-terra");
 	});
 
 	it("applies user settings overrides to builtin agents", () => {
 		writeJson(path.join(tempHome, ".pi", "agent", "settings.json"), {
 			subagents: {
 				agentOverrides: {
-					reviewer: {
+					scout: {
 						model: "openai/gpt-5.4",
 						thinking: "xhigh",
 						systemPromptMode: "replace",
@@ -74,60 +74,60 @@ describe("builtin agent overrides", () => {
 			},
 		});
 
-		const reviewer = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "reviewer");
-		assert.ok(reviewer);
-		assert.equal(reviewer.source, "builtin");
-		assert.equal(reviewer.model, "openai/gpt-5.4");
-		assert.equal(reviewer.thinking, "xhigh");
-		assert.equal(reviewer.systemPromptMode, "replace");
-		assert.equal(reviewer.inheritProjectContext, true);
-		assert.equal(reviewer.inheritSkills, true);
-		assert.equal(reviewer.override?.scope, "user");
-		assert.equal(reviewer.override?.path, path.join(tempHome, ".pi", "agent", "settings.json"));
+		const scout = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "scout");
+		assert.ok(scout);
+		assert.equal(scout.source, "builtin");
+		assert.equal(scout.model, "openai/gpt-5.4");
+		assert.equal(scout.thinking, "xhigh");
+		assert.equal(scout.systemPromptMode, "replace");
+		assert.equal(scout.inheritProjectContext, true);
+		assert.equal(scout.inheritSkills, true);
+		assert.equal(scout.override?.scope, "user");
+		assert.equal(scout.override?.path, path.join(tempHome, ".pi", "agent", "settings.json"));
 	});
 
 	it("prefers project settings overrides over user settings overrides", () => {
 		fs.mkdirSync(path.join(tempProject, ".pi"), { recursive: true });
 		writeJson(path.join(tempHome, ".pi", "agent", "settings.json"), {
-			subagents: { agentOverrides: { reviewer: { model: "openai/gpt-5.4" } } },
+			subagents: { agentOverrides: { scout: { model: "openai/gpt-5.4" } } },
 		});
 		writeJson(path.join(tempProject, ".pi", "settings.json"), {
-			subagents: { agentOverrides: { reviewer: { model: "openai-codex/gpt-5.4-mini", thinking: "high" } } },
+			subagents: { agentOverrides: { scout: { model: "openai-codex/gpt-5.4-mini", thinking: "high" } } },
 		});
 
-		const reviewer = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "reviewer");
-		assert.ok(reviewer);
-		assert.equal(reviewer.model, "openai-codex/gpt-5.4-mini");
-		assert.equal(reviewer.thinking, "high");
-		assert.equal(reviewer.override?.scope, "project");
-		assert.equal(reviewer.override?.path, path.join(tempProject, ".pi", "settings.json"));
+		const scout = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "scout");
+		assert.ok(scout);
+		assert.equal(scout.model, "openai-codex/gpt-5.4-mini");
+		assert.equal(scout.thinking, "high");
+		assert.equal(scout.override?.scope, "project");
+		assert.equal(scout.override?.path, path.join(tempProject, ".pi", "settings.json"));
 	});
 
 	it("does not apply project settings overrides when scope is user", () => {
 		fs.mkdirSync(path.join(tempProject, ".pi"), { recursive: true });
 		writeJson(path.join(tempHome, ".pi", "agent", "settings.json"), {
-			subagents: { agentOverrides: { reviewer: { model: "openai/gpt-5.4" } } },
+			subagents: { agentOverrides: { scout: { model: "openai/gpt-5.4" } } },
 		});
 		writeJson(path.join(tempProject, ".pi", "settings.json"), {
-			subagents: { agentOverrides: { reviewer: { model: "openai-codex/gpt-5.4-mini" } } },
+			subagents: { agentOverrides: { scout: { model: "openai-codex/gpt-5.4-mini" } } },
 		});
 
-		const reviewer = discoverAgents(tempProject, "user").agents.find((agent) => agent.name === "reviewer");
-		assert.ok(reviewer);
-		assert.equal(reviewer.model, "openai/gpt-5.4");
-		assert.equal(reviewer.override?.scope, "user");
+		const scout = discoverAgents(tempProject, "user").agents.find((agent) => agent.name === "scout");
+		assert.ok(scout);
+		assert.equal(scout.model, "openai/gpt-5.4");
+		assert.equal(scout.override?.scope, "user");
 	});
 
 	it("does not apply user settings overrides when scope is project", () => {
 		fs.mkdirSync(path.join(tempProject, ".pi"), { recursive: true });
 		writeJson(path.join(tempHome, ".pi", "agent", "settings.json"), {
-			subagents: { agentOverrides: { reviewer: { model: "openai/gpt-5.4" } } },
+			subagents: { agentOverrides: { scout: { model: "openai/gpt-5.4" } } },
 		});
 
-		const reviewer = discoverAgents(tempProject, "project").agents.find((agent) => agent.name === "reviewer");
-		assert.ok(reviewer);
-		assert.notEqual(reviewer.model, "openai/gpt-5.4");
-		assert.equal(reviewer.override, undefined);
+		const scout = discoverAgents(tempProject, "project").agents.find((agent) => agent.name === "scout");
+		assert.ok(scout);
+		assert.notEqual(scout.model, "openai/gpt-5.4");
+		assert.equal(scout.override, undefined);
 	});
 
 	it("does not read malformed out-of-scope settings files", () => {
@@ -135,33 +135,33 @@ describe("builtin agent overrides", () => {
 		fs.mkdirSync(path.join(tempHome, ".pi", "agent"), { recursive: true });
 		fs.writeFileSync(path.join(tempHome, ".pi", "agent", "settings.json"), '{"subagents":', "utf-8");
 		writeJson(path.join(tempProject, ".pi", "settings.json"), {
-			subagents: { agentOverrides: { reviewer: { model: "openai-codex/gpt-5.4-mini" } } },
+			subagents: { agentOverrides: { scout: { model: "openai-codex/gpt-5.4-mini" } } },
 		});
 
-		const reviewer = discoverAgents(tempProject, "project").agents.find((agent) => agent.name === "reviewer");
-		assert.ok(reviewer);
-		assert.equal(reviewer.model, "openai-codex/gpt-5.4-mini");
-		assert.equal(reviewer.override?.scope, "project");
+		const scout = discoverAgents(tempProject, "project").agents.find((agent) => agent.name === "scout");
+		assert.ok(scout);
+		assert.equal(scout.model, "openai-codex/gpt-5.4-mini");
+		assert.equal(scout.override?.scope, "project");
 	});
 
 	it("does not apply builtin settings overrides when a full project agent overrides the builtin", () => {
 		fs.mkdirSync(path.join(tempProject, ".pi"), { recursive: true });
 		writeJson(path.join(tempProject, ".pi", "settings.json"), {
-			subagents: { agentOverrides: { reviewer: { model: "openai/gpt-5.4" } } },
+			subagents: { agentOverrides: { scout: { model: "openai/gpt-5.4" } } },
 		});
-		writeProjectAgent(tempProject, "reviewer", `---\nname: reviewer\ndescription: Project reviewer\nmodel: google/gemini-3-pro\n---\n\nUse the project reviewer.\n`);
+		writeProjectAgent(tempProject, "scout", `---\nname: scout\ndescription: Project scout\nmodel: google/gemini-3-pro\n---\n\nUse the project scout.\n`);
 
-		const reviewer = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "reviewer");
-		assert.ok(reviewer);
-		assert.equal(reviewer.source, "project");
-		assert.equal(reviewer.model, "google/gemini-3-pro");
-		assert.equal(reviewer.override, undefined);
+		const scout = discoverAgents(tempProject, "both").agents.find((agent) => agent.name === "scout");
+		assert.ok(scout);
+		assert.equal(scout.source, "project");
+		assert.equal(scout.model, "google/gemini-3-pro");
+		assert.equal(scout.override, undefined);
 	});
 
 	it("does not create a settings file when removing a non-existent override", () => {
 		const settingsPath = path.join(tempHome, ".pi", "agent", "settings.json");
 		assert.equal(fs.existsSync(settingsPath), false);
-		removeBuiltinAgentOverride(tempProject, "reviewer", "user");
+		removeBuiltinAgentOverride(tempProject, "scout", "user");
 		assert.equal(fs.existsSync(settingsPath), false);
 	});
 
@@ -195,7 +195,7 @@ describe("builtin agent overrides", () => {
 		writeJson(settingsPath, {
 			subagents: {
 				agentOverrides: {
-					reviewer: {
+					scout: {
 						inheritProjectContext: "true",
 					},
 				},
@@ -206,7 +206,7 @@ describe("builtin agent overrides", () => {
 			() => discoverAgents(tempProject, "both"),
 			(error: unknown) => error instanceof Error
 				&& error.message.includes(settingsPath)
-				&& error.message.includes("reviewer")
+				&& error.message.includes("scout")
 				&& error.message.includes("inheritProjectContext"),
 		);
 	});

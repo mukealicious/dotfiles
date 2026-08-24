@@ -40,7 +40,7 @@ pi -e npm:@benvargas/pi-openai-fast --fast
 Config files follow the same project-over-global pattern as the other packages:
 
 - Project: `<repo>/.pi/extensions/pi-openai-fast.json`
-- Global: `~/.pi/agent/extensions/pi-openai-fast.json`
+- Global: `$PI_CODING_AGENT_DIR/extensions/pi-openai-fast.json` (or `~/.pi/agent/extensions/pi-openai-fast.json` only when no profile is selected)
 
 If neither exists, the extension writes a default global config on first run.
 

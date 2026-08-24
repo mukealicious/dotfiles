@@ -4,8 +4,8 @@ description: Reviews diffs through live Hunk terminal sessions. Use when the use
 compatibility: Requires hunk CLI and a live Hunk TUI session for session commands.
 metadata:
   watch-sources: |
-    modem-dev/hunk/skills/hunk-review/SKILL.md@main
-    modem-dev/hunk/docs/agent-workflows.md@main
+    modem-dev/hunk/skills/hunk-review/SKILL.md@8a2e0d86c3696e796eb058d8193e8e553545fb68
+    modem-dev/hunk/docs/agent-workflows.md@8a2e0d86c3696e796eb058d8193e8e553545fb68
 ---
 
 # Hunk Review
@@ -41,6 +41,10 @@ printf '%s\n' '{"comments":[{"filePath":"src/App.tsx","newLine":42,"summary":"Ex
 - Navigate before commenting when walking the user through a review.
 - Keep comments sparse and useful: intent, structure, risk, or follow-up.
 - Use `comment apply` for batches instead of many one-off commands.
+- For Markdown specs, read current user comments with
+  `hunk session comment list --repo . --type user`, edit the same file, and
+  reload the live review. Empty comments are not approval; direct user approval
+  is the gate to implementation.
 - For exact current Hunk CLI guidance, run `hunk skill path` and read that file if available.
 
 ## Common fixes

@@ -25,7 +25,7 @@ export interface CreateEditStateOptions {
 	overrideBase?: BuiltinAgentOverrideBase;
 }
 
-const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh"] as const;
+const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 const FIELD_ORDER = ["name", "description", "model", "fallbackModels", "thinking", "systemPromptMode", "inheritProjectContext", "inheritSkills", "tools", "extensions", "skills", "output", "reads", "progress", "interactive", "prompt"] as const;
 type ThinkingLevel = typeof THINKING_LEVELS[number];
 const PROMPT_VIEWPORT_HEIGHT = 16;
@@ -191,7 +191,8 @@ function renderThinkingPicker(state: EditState, width: number, theme: Theme): st
 		low: "Light reasoning",
 		medium: "Moderate reasoning",
 		high: "Deep reasoning",
-		xhigh: "Maximum reasoning (ultrathink)",
+		xhigh: "Extra-high reasoning",
+		max: "Maximum reasoning",
 	};
 	for (let i = 0; i < THINKING_LEVELS.length; i++) {
 		const level = THINKING_LEVELS[i]!;

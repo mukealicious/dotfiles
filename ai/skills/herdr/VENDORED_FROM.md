@@ -2,9 +2,9 @@
 
 - Upstream: https://github.com/herdrdev/herdr
 - Path: `skills/herdr/SKILL.md`
-- Ref: `v0.8.0`
+- Ref: `v0.8.0` (commit `346411fa21afd297f5ed3b3fa56f9e3fbf7654b7`)
 - Bundled skill SHA-256: `0786182f02ebf92708e09d82d79e4614d1a9c30bfc337643cc2af1d0fb9db29f`
-- Reviewed: 2026-08-10
+- Reviewed: 2026-08-18 against installed Herdr 0.8.0 (`herdr --skill`)
 - License: Apache-2.0
 - Purpose: Shared agent skill for controlling Herdr from inside a Herdr-managed pane.
 

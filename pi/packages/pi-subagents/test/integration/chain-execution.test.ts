@@ -138,6 +138,12 @@ describe("chain execution — sequential", { skip: !available ? "pi packages not
 			`---\nname: ${skillName}\ndescription: test skill\n---\nbody\n`,
 			"utf-8",
 		);
+		fs.mkdirSync(path.join(packageRoot, ".pi"), { recursive: true });
+		fs.writeFileSync(
+			path.join(packageRoot, ".pi", "settings.json"),
+			JSON.stringify({ packages: [".."] }, null, 2),
+			"utf-8",
+		);
 	}
 
 	it("runs a 2-step chain", async () => {

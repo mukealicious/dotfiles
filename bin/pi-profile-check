@@ -1,0 +1,20 @@
+#!/bin/sh
+# Read-only D10 evidence for the supported work/personal Pi profiles.
+set -eu
+
+BIN_DIR="$(CDPATH='' cd -- "$(dirname "$0")" && pwd -P)"
+DOTFILES_ROOT="$(CDPATH='' cd -- "$BIN_DIR/.." && pwd -P)"
+
+if ! command -v mise >/dev/null 2>&1; then
+  echo "pi-profile-check: mise is required" >&2
+  exit 127
+fi
+
+NODE_BIN="$(mise which -C "$DOTFILES_ROOT" node 2>/dev/null || true)"
+if [ -z "$NODE_BIN" ] || [ ! -x "$NODE_BIN" ]; then
+  echo "pi-profile-check: the mise-managed Node runtime is not installed" >&2
+  echo "Fix: run $DOTFILES_ROOT/mise/install.sh" >&2
+  exit 127
+fi
+
+exec "$NODE_BIN" "$DOTFILES_ROOT/pi/profile-boundary-check.mjs" "$@"

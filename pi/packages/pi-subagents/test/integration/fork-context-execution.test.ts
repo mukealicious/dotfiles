@@ -249,6 +249,12 @@ describe("fork context execution wiring", { skip: !available ? "subagent executo
 			`---\nname: ${skillName}\ndescription: test skill\n---\nbody\n`,
 			"utf-8",
 		);
+		fs.mkdirSync(path.join(packageRoot, ".pi"), { recursive: true });
+		fs.writeFileSync(
+			path.join(packageRoot, ".pi", "settings.json"),
+			JSON.stringify({ packages: [".."] }, null, 2),
+			"utf-8",
+		);
 	}
 
 	function makeCtx(sessionManager: SessionManagerStub) {
@@ -776,14 +782,14 @@ describe("fork context execution wiring", { skip: !available ? "subagent executo
 		process.env.USERPROFILE = tempHome;
 		const worktreeDir = path.join(tempDir, "worktree");
 		fs.mkdirSync(worktreeDir, { recursive: true });
-		writeProjectOverride(tempDir, "reviewer", "openai/gpt-5-main");
-		writeProjectOverride(worktreeDir, "reviewer", "openai/gpt-5-worktree");
+		writeProjectOverride(tempDir, "scout", "openai/gpt-5-main");
+		writeProjectOverride(worktreeDir, "scout", "openai/gpt-5-worktree");
 		const executor = makeExecutor();
 
 		try {
 			const result = await executor.execute(
 				"id",
-				{ action: "get", agent: "reviewer", cwd: "worktree" },
+				{ action: "get", agent: "scout", cwd: "worktree" },
 				new AbortController().signal,
 				undefined,
 				makeCtx(makeSessionManagerRecorder().manager),

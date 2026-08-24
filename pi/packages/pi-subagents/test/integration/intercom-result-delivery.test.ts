@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
 import { after, afterEach, before, beforeEach, describe, it } from "node:test";
 import type { MockPi } from "../support/helpers.ts";
@@ -74,18 +73,22 @@ describe("intercom result delivery cutover", { skip: !available ? "executor not 
 	let mockPi: MockPi;
 	let originalHome: string | undefined;
 	let originalUserProfile: string | undefined;
+	let originalProfile: string | undefined;
 
 	before(() => {
 		originalHome = process.env.HOME;
 		originalUserProfile = process.env.USERPROFILE;
+		originalProfile = process.env.PI_CODING_AGENT_DIR;
 		homeDir = createTempDir("pi-subagent-intercom-home-");
+		const profileDir = path.join(homeDir, ".pi", "personal");
 		process.env.HOME = homeDir;
 		process.env.USERPROFILE = homeDir;
+		process.env.PI_CODING_AGENT_DIR = profileDir;
 		mockPi = createMockPi();
 		mockPi.install();
-		fs.mkdirSync(path.join(os.homedir(), ".pi", "agent", "extensions", "pi-intercom"), { recursive: true });
-		fs.mkdirSync(path.join(os.homedir(), ".pi", "agent", "intercom"), { recursive: true });
-		fs.writeFileSync(path.join(os.homedir(), ".pi", "agent", "intercom", "config.json"), JSON.stringify({ enabled: true }), "utf-8");
+		fs.mkdirSync(path.join(profileDir, "extensions", "pi-intercom"), { recursive: true });
+		fs.mkdirSync(path.join(profileDir, "intercom"), { recursive: true });
+		fs.writeFileSync(path.join(profileDir, "intercom", "config.json"), JSON.stringify({ enabled: true }), "utf-8");
 	});
 
 	after(() => {
@@ -94,6 +97,8 @@ describe("intercom result delivery cutover", { skip: !available ? "executor not 
 		else process.env.HOME = originalHome;
 		if (originalUserProfile === undefined) delete process.env.USERPROFILE;
 		else process.env.USERPROFILE = originalUserProfile;
+		if (originalProfile === undefined) delete process.env.PI_CODING_AGENT_DIR;
+		else process.env.PI_CODING_AGENT_DIR = originalProfile;
 		removeTempDir(homeDir);
 	});
 
