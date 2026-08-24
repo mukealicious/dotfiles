@@ -24,5 +24,6 @@ test-results/
 streamdeck/apps/
 streamdeck/layouts/*.local.json
 
-# Agent scratch / research context
+# Agent runtime and scratch state
+.pi/todos/
 .context/
