@@ -2,190 +2,107 @@
 
 ## Selection Guide
 
-| User Intent | Flare Type | Typical Capabilities | Cloudflare Bias | Durable Follow-Up |
-|---|---|---|---|---|
-| "Create a follow-up synthesis + poll" | Group feedback Flare | identity, db, export | DO SQLite for responses, D1 registry, optional Access OTP | Decision note + action items |
-| "Spin up a quick dashboard" | Mini dashboard | manifest, db, files, optional AI | R2 for snapshots/files, DO for annotations, D1 for registry | Snapshot/report or permanent promotion |
-| "Make this code/design understandable" | Interactive explainer | static, optional db/export | Workers Static Assets/R2 bundle, DO only if comments are enabled | Review summary + change list |
-| "Prototype this workflow" | Product/demo app | db, identity, optional realtime | DO for workflow state, Access/private deploy first | Spec decisions or promoted app |
-| "Build a tiny utility" | Personal tool | db/files/export | DO for state, R2 for files, private owner deploy by default | Tool stays live or exports results |
-| "Make it multiplayer/live" | Realtime toy/workbench | realtime, db, identity | DO WebSockets + SQLite; small rooms and hibernation | Optional archive only |
-| "Let people upload/respond" | Intake form/workbench | files, db, identity, export | R2 uploads, DO metadata/quotas, Access/invite gate | Export package + synthesis |
+Choose the smallest shape that demonstrates the intended interaction. Static Flares need no persistence. Interactive V1 Flares declare typed activity rather than a generic database.
 
-## Type: Group Feedback Flare
+| User intent | Shape | Example activity types | Durable follow-up |
+|---|---|---|---|
+| “Collect feedback on this design” | Feedback surface | `design.comment`, `design.reaction` | Review summary and change list |
+| “Run a quick poll or ranking” | Poll/ranking | `poll.vote`, `ranking.submitted` | Decision note with counts/caveats |
+| “Let people answer these questions” | Structured submission | `response.submitted` | JSON/Markdown response export |
+| “Make this easier to understand” | Interactive explainer | Optional `explainer.comment` | Clarifications and next actions |
+| “Spin up a quick dashboard” | Read-only dashboard | Optional `dashboard.annotation` | Snapshot/report |
+| “Prototype this workflow” | Product/demo app | Optional `demo.feedback` | Spec decisions or promoted app |
+| “Build a tiny utility” | Calculator/tool | Optional `result.saved` | Exported result or maintained tool |
 
-Use for transcripts, call notes, planning sessions, design reviews, stakeholder meetings, RFCs, retros.
+## Feedback Surface
 
-Recommended structure:
+Use for transcripts, planning sessions, design reviews, RFCs, retrospectives, and stakeholder follow-up.
 
-```yaml
-title: <meeting/spec name> follow-up
-audience: <people/team/email list>
-source_context:
-  - transcript or notes used
-  - repo/docs used, if any
-identity: named | anonymous | pseudonymous
-expires: <date/time>
-capabilities:
-  identity: true
-  db: true
-  events: true
-  export: true
-sections:
-  synthesis: 5-10 bullets max
-  decisions_detected: reviewable/steerable before sharing
-  open_questions: questions needing group input
-  interaction: poll/ranking/comments/free response
+Good activity definitions:
+
+```text
+design.comment.v1
+  body: string
+  target?: string
+  sentiment?: "support" | "concern" | "question"
+
+poll.vote.v1
+  optionId: string
+  rationale?: string
 ```
 
-Cloudflare defaults:
+Keep source material summarized and purpose-built. Do not publish a raw transcript or private repository context merely because it was input to generation.
 
-- Store votes/comments as documents/events in the Flare Durable Object.
-- Store only registry/search metadata in D1.
-- Use Access OTP allowlists or explicit invite gates for named feedback.
-- Export JSON/Markdown before archiving.
+## Poll or Ranking
 
-## Type: Mini Dashboard
+Use one immutable submission per user action. Do not imply that append-only activity enforces “one final vote per person” unless the platform has an explicit projection or domain rule for that behavior.
 
-Use when an agent can turn source data into a lightweight live view: project status, personal metrics, logs, research coding progress, task burndown, or cost tracking.
+Useful types:
 
-Good defaults:
+- `poll.vote` for one choice;
+- `poll.selection` for multiple choices;
+- `ranking.submitted` for an ordered list;
+- `poll.comment` for optional rationale.
 
-- read-only first;
-- visible data freshness timestamp;
-- export/snapshot button;
-- no auto-refresh unless needed;
-- clear distinction between generated summary and raw data.
+The UI can show optimistic confirmation, but authoritative totals and eligibility remain server-owned concerns.
 
-Cloudflare defaults:
+## Structured Submission
 
-- Use R2 for source snapshots and exported report bundles.
-- Use the Durable Object only for annotations, saved filters, comments, and lightweight mutable state.
-- Use Workflows only when refresh/summarize/publish is a durable multi-step lifecycle.
-
-## Type: Interactive Explainer
-
-Use when context includes a codebase, architecture, process, decision tree, or dataset that needs interaction.
-
-Interactions:
-
-- step-through flow;
-- toggles for variants;
-- annotated diagram;
-- hover/click details;
-- “what is unclear?” comments;
-- “which path should we take?” poll.
-
-Pair with `visual-deliverables` for one-file HTML quality and `breadboarding` for workflow maps.
-
-Cloudflare defaults:
-
-- Keep it static unless comments, votes, or saved views are explicitly useful.
-- If comments are enabled, use the same `db` and `export` capabilities as group feedback Flares.
-
-## Type: Product / Workflow Demo
-
-Use for small prototypes where stakeholders should feel the workflow, not read a spec.
+Use for short forms whose values can be represented as bounded JSON. Create one schema for the domain submission rather than a generic form-record collection.
 
 Examples:
 
-- mocked onboarding flow with state saved locally/platform-side;
-- mini CRM/client portal demo;
-- search/filter/review workbench over a static dataset;
-- prompt/workflow tuner with saved variants.
+- `retro.response` with `wentWell`, `needsChange`, and `action`;
+- `research.coding` with `sourceId`, `code`, and `note`;
+- `decision.input` with `position`, `reasoning`, and `risk`.
 
-Defer backend complexity. Use fake/static data or the zero-config DB until a real integration is necessary.
+File uploads are not part of V1. If files are essential, stop and shape a separate files capability rather than embedding base64 data in activity.
 
-Cloudflare defaults:
+## Interactive Explainer
 
-- Deploy private first.
-- Use DO SQLite for prototype state rather than provisioning a separate database.
-- Promote to a normal maintained app only after the workflow stabilizes.
+Keep the explainer static unless persistent feedback is genuinely useful. Good interactions include step-through flows, toggled variants, annotated diagrams, and local calculations.
 
-## Type: Personal Tool
+If feedback is enabled, declare a narrow type such as `explainer.comment`; do not add a generic database “just in case.” Pair with `visual-deliverables`, `impeccable`, or `breadboarding` when appropriate.
 
-Use for utilities you may keep around:
+## Read-Only Dashboard
 
-- calculators;
-- habit/tracking tools;
-- packing/checklist tools;
-- tiny upload-and-transform tools;
-- personal note/workflow companions.
+Prefer a built snapshot with a visible source/freshness timestamp. V1 does not provide arbitrary platform-side ingestion or scheduled refresh.
 
-If it becomes important or long-lived, promote it out of the ephemeral namespace and give it normal maintenance expectations.
+Optional annotations can use activity, but the underlying dashboard dataset remains part of the packet or an explicitly approved future integration.
 
-Cloudflare defaults:
+## Product / Workflow Demo
 
-- Prefer private owner access.
-- Use R2 only when the tool handles files or produces durable artifacts.
-- Add a clear export path before relying on it for real personal data.
+Use static or fake data to demonstrate the workflow. Activity can collect feedback on steps, copy, or decisions. Do not turn prototype state into a production database contract accidentally.
 
-## Type: Realtime Toy / Workbench
+Promote a useful demo into a maintained application when it gains integrations, destructive actions, durable mutable records, or operational expectations beyond the Flare platform.
 
-Use for multiplayer cursors, live polls, games, collaborative sorting, or shared timers.
+## Personal Tool
 
-Default constraints:
+Calculators and small utilities can stay entirely client-side. Add activity only for outcomes the owner deliberately wants to retain. Do not log every interaction by default.
 
-- small room sizes;
-- rate-limited events;
-- no sensitive data;
-- clear reset/archive behavior;
-- graceful fallback when websockets fail.
+## Deferred Shapes
 
-Cloudflare defaults:
+These require capability design beyond the first platform contract:
 
-- Use one Durable Object room per Flare.
-- Store only durable events/results needed for replay/export; keep cursors/presence ephemeral.
-- Enforce message quotas in the Durable Object.
+| Shape | Missing capability |
+|---|---|
+| Intake with attachments | Files, scanning, quotas, retention, download authorization |
+| Multiplayer/live workbench | Realtime protocol, presence, reconnection, room limits |
+| Editable tracker/CRM | Generic mutable records, concurrency, deletion, migration |
+| Public/community form | Participant auth, abuse prevention, privacy, rate policy |
+| AI workbench | Model boundary, budgets, data-use policy, provenance |
+| Voice surface | Recording consent, media storage, transcription, deletion |
 
-## Type: Intake / Upload Surface
+Do not approximate these with unbounded activity payloads or custom per-Flare backends.
 
-Use when people need to send structured responses, attachments, screenshots, or files to the agent/operator.
+## Close the Loop
 
-Default constraints:
+After a Flare gathers activity, use the owner Console or CLI export to produce:
 
-- file type and size limits;
-- visible retention policy;
-- malware/privacy caveat for downloaded files;
-- export bundle for owner;
-- no raw upload sharing unless reviewed.
-
-Cloudflare defaults:
-
-- Store uploaded blobs in R2 under a per-Flare prefix.
-- Store file metadata and quota counters in the Durable Object.
-- Use Queues for asynchronous file processing/export bundling.
-- Require stronger auth for uploads than for read-only demos.
-
-## Invite / Share Copy Template
-
-```markdown
-Subject: Quick input/request: <Flare title>
-
-I used an agent to create a small Flare for <purpose>:
-
-<link>
-
-What to do:
-1. <primary action>
-2. <secondary action>
-3. <deadline/expiry>
-
-Privacy/data: <named/anonymous/public/unlisted/access-gated>. The Flare stores <data captured> and exports to <durable location>.
-```
-
-## Close-the-Loop Prompt
-
-When a Flare gathers data, ask the agent to produce:
-
-```markdown
-Using the Flare manifest, source context, and exported Flare data, create a concise follow-up note with:
-- what the Flare was for;
-- response/usage count and audience caveats;
-- consensus, patterns, or important outputs;
-- disagreements or anomalies;
+- purpose and audience caveats;
+- response/activity count;
+- patterns, disagreements, and anomalies;
 - decisions confirmed;
 - open questions;
 - recommended next action;
-- appendix with raw/export location.
-```
+- raw JSON/Markdown export location.

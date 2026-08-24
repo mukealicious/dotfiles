@@ -2,120 +2,102 @@
 
 ## Thesis
 
-The evolution of agent outputs is moving through stages:
-
-```text
-Markdown report
-  -> self-contained HTML artifact
-  -> hosted interactive Flare
-  -> hosted Flare with zero-config APIs
-```
-
-The important jump is not “prettier artifacts.” It is giving agents a safe, low-friction way to create **live software surfaces**: tiny apps that can save data, upload files, call AI, use identity, and coordinate people in realtime without each Flare owning backend infrastructure.
-
-## Core Shape
+Flares move agent output from a document into a small live tool without turning every generated artifact into a new backend project:
 
 ```text
 source context + user intent
-  -> agent builds thin static client
-  -> shared Cloudflare platform supplies backend primitives
-  -> human or orchestrator steers scope/data/auth
-  -> Flare is published/shared when approved
-  -> humans or the agent use it
-  -> useful state is exported/promoted to durable context
+  -> framework-agnostic static packet
+  -> shared host and fixed Runtime API
+  -> humans or external agents use the tool
+  -> typed activity is inspected/exported through Console or CLI
+  -> useful outcomes return to durable context
 ```
 
-## What This Borrows From Shopify Quick
+The generated client stays thin. The platform is a deep module: one small activity interface hides identity, schema validation, persistence, idempotency, quotas, provenance, and export.
 
-Shopify Quick’s durable lesson is:
+## What Makes a Flare
 
-- deploy a folder of static files with almost no ceremony;
-- put it behind an appropriate trust boundary;
-- expose a small fixed client-side API for manifest, identity, data, files, AI, realtime, and export;
-- say no to custom backends per app;
-- let visible working examples teach people what is possible.
+A Flare is not merely hosted HTML. It has:
 
-For personal use, the trust boundary is weaker than company SSO, so auth and invite choices need to be explicit per Flare when shared.
+- a stable identity and purpose;
+- immutable packet revisions;
+- immutable deployment history behind a stable target route;
+- revision-declared activity types;
+- a portable static client with no provider credentials;
+- owner-visible activity and export;
+- explicit approval before publication or infrastructure mutation.
 
-## Why This Is More Than “Group Artifacts”
+Humans and external agents can create and use Flares. The platform does not contain a built-in agent, steward, or autonomous lifecycle manager.
 
-Group feedback is one killer use case, but the platform primitive is broader:
+## Why Activity First
 
-| Category | Examples |
-|---|---|
-| Collaborative artifacts | meeting follow-up, RFC feedback, polls, retros |
-| Personal tools | calculators, trackers, tiny dashboards, note workbenches |
-| Demos/prototypes | product mockups, toy apps, games, realtime experiments |
-| Code/context explainers | architecture maps, review surfaces, repo explorers |
-| Agent work surfaces | task-specific UIs the agent creates for itself and humans to co-use |
-| Durable micro-sites | small permanent sites that graduate out of the ephemeral namespace |
+Comments, votes, rankings, form submissions, review notes, and decisions all fit one append-only envelope while retaining domain-specific schemas. A generated client needs only:
 
-The shared API is what makes these possible without turning each flare into a new infrastructure project.
+```js
+await flare.activity.append('design.comment', {
+  body: 'The empty state needs a clearer next action.',
+  target: 'results-panel'
+}, {
+  idempotencyKey: crypto.randomUUID()
+})
+```
+
+The platform derives actor, Flare, revision, deployment, type version, and time. This gives clients substantial behavior through a small interface and avoids prematurely exposing a generic database.
+
+Activity-first does **not** mean every future state is append-only. Editable records, files, realtime rooms, and other capabilities should become separate modules only when repeated use proves their contracts.
 
 ## Product Principles
 
-A Flare does not require a human approval loop at every step. The key property is **steerability**: an agent, human, or orchestrator can inspect what the Flare is doing, redirect it, change its data/auth/export settings, and decide whether it should remain local, be shared, or be promoted.
-
 | Principle | Meaning |
 |---|---|
-| Thin generated clients | Flare code owns presentation and interaction; platform APIs own auth, persistence, realtime, files, secrets, and quotas. |
-| Cloudflare-native primitives | Workers, Durable Objects, R2, D1, Queues, Workflows, Access, Workers AI/AI Gateway, and service bindings before custom backend services. |
-| Fixed client API | Manifest, identity, db, events, files, AI, realtime, and export before bespoke per-Flare endpoints. |
-| Steerability | The agent can build/iterate, while a human or orchestrator can inspect and redirect purpose, data, auth, audience, expiry, and exports. |
-| Ephemeral by default | Most Flares should expire or archive unless intentionally promoted. |
-| Portable context | Store important state/results in Markdown, JSON, SQLite, git, R2/S3 — not only in the live app. |
-| Honest privacy | `public`, `unlisted`, `access-otp`, and `custom-invite` are different claims. Label them clearly. |
-| Promotion path | Useful toys can graduate into permanent sites, but not every artifact deserves permanence. |
+| Thin generated clients | Client code owns presentation; platform APIs own trusted behavior and storage. |
+| Portable packets | `flare.json`, local schemas, and built assets work independently of frontend framework. |
+| Stable lifecycle identity | Redeploy creates a revision/deployment; it does not create a disconnected app or erase history. |
+| Declared activity | Each revision names and schemas the input it accepts. Runtime clients cannot invent types. |
+| External-agent boundary | Agents use the same inspectable CLI/Management API as other operators; there is no embedded agent. |
+| Explicit lifecycle | Archive, purge, migration, publication, and promotion are owner actions, never silent timers. |
+| Honest access | Owner-only, unlisted, invited, and public are distinct claims. V1 is owner-only. |
+| Durable outcomes | JSON/Markdown export lets live activity become notes, tasks, and decisions. |
 
-## The Unit of Work
-
-A Flare is a generated collaboration/application packet:
+## Unit of Work
 
 ```text
 flare/
-  manifest.json        # title, slug, purpose, auth, APIs, expiry
-  index.html           # thin UI
-  app.js               # interaction logic
-  styles.css           # optional
-  schema.json          # data/response shapes
-  exports/             # generated durable outputs, if any
+  flare.json
+  activity-schemas/
+    design.comment.v1.schema.json
+  dist/
+    index.html
+    assets/
 ```
 
-If deployed to Cloudflare, stable platform files should live in Workers Static Assets, generated Flare bundles/uploads/exports can live in R2, and mutable per-Flare state/realtime should live in a per-Flare Durable Object backed by SQLite. D1 is the registry and query index, not the hot path for per-Flare interactions.
+The packet does not include a Worker, database migration, bucket name, Cloudflare account ID, route, token, or mutable deployment status. Those belong to the shared platform and its Management API.
 
-## Namespaces
+## Lifecycle
 
-Use namespace as a product signal:
+```text
+Flare (stable)
+  -> Revision 1 (immutable packet)
+      -> Deployment A (immutable publication)
+  -> Revision 2 (immutable packet)
+      -> Deployment B (immutable publication; stable target now points here)
+  -> Activity history (append-only, records originating revision/deployment)
+```
 
-| Namespace | Meaning |
-|---|---|
-| `local` | draft only, not deployed |
-| `ask.muke.me` | feedback, polls, meeting follow-ups, async questions |
-| `quick.muke.me` | general ephemeral Flares, toys, demos |
-| `labs.muke.me` | experiments worth showing repeatedly |
-| apex/custom path | promoted durable site |
+An old browser tab may retry an already-committed idempotent write, but it cannot create new activity after its deployment has been superseded.
 
-The exact names can change; keep the distinction between ephemeral generated surfaces and promoted durable sites.
+## First Slice
 
-## Good First Slice
-
-Before building a full platform, validate the behavior with:
-
-- a local static Flare preview;
-- a tiny deploy path to one Cloudflare Worker plus Workers Static Assets/R2;
-- one Durable Object SQLite shared data primitive for form/JSON submissions;
-- export back to JSON/Markdown;
-- manual auth/capability/expiry selection in the manifest;
-- no realtime, file uploads, or AI proxy until the loop proves useful.
+The canonical slice order lives in [platform-contract.md](./platform-contract.md). Start with its owner feedback loop before adding cross-Flare feeds, participants, files, realtime, mutable records, or AI.
 
 ## Anti-Patterns
 
-- Treating this as just a prettier Markdown renderer.
-- Building custom backend code for every flare.
-- Publishing raw transcripts or private repo context when a redacted synthesis would do.
-- Letting the agent silently choose audience/auth/privacy for anything shared.
-- Calling unlisted links private.
-- Making the hosted Flare the only copy of important decisions or collected data.
-- Starting with a universal app builder before proving repeated flare types.
-- Routing Flare data-path writes through model calls, REST admin APIs, or public HTTP between platform Workers when bindings/service bindings are available.
-- Treating D1/KV as the default per-Flare realtime state store instead of Durable Objects.
+- Building custom backend code or Cloudflare resources per Flare.
+- Treating Cloudflare MCP as the Runtime or Management API.
+- Starting with generic CRUD, SQL, or event buses instead of one typed activity seam.
+- Letting generated code submit actor, role, timestamps, scope, or type version.
+- Publishing raw transcripts or private repository context when a synthesis is enough.
+- Calling an unlisted link private.
+- Automatically expiring, archiving, purging, migrating, or summarizing user data.
+- Making the hosted Flare the only durable copy of important outcomes.
+- Adding files, realtime, AI, invitations, or public writes before the owner feedback loop works.

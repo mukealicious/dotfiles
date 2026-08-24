@@ -1,193 +1,173 @@
-# Zero-Config API
+# Generated-Client Runtime API
 
 ## Purpose
 
-Flares should not need to create databases, secrets, API keys, upload services, websocket servers, queues, workflows, or auth integrations. They should call a tiny platform SDK exposed by the host.
+Generated Flares use one small, framework-independent SDK. They do not provision storage, handle Cloudflare credentials, submit trusted identity fields, or call the owner Management API.
 
 ```html
-<script src="/_flare/client.js"></script>
+<script src="./_flare/client.js"></script>
 ```
 
 ```js
-const flareInfo = await flare.manifest()
-const me = await flare.identity.me()
-await flare.db.collection('votes').create({ choice: 'A', by: me.id })
-if (flareInfo.capabilities.realtime) {
-  const room = flare.realtime.room('votes')
-  const unsubscribe = room.on('vote-created', event => render(event.payload))
-}
-```
-
-## API Surface
-
-| API | Use | Initial Status |
-|---|---|---|
-| `manifest` | Sanitized purpose, status, capabilities, auth, expiry, data policy | early |
-| `identity` | Current user/session, display name/email when auth provides it | early |
-| `db` | Per-Flare collections/documents or SQLite-backed tables | early |
-| `events` | Append-only activity/audit/domain events, gated by `capabilities.events` | early |
-| `export` | JSON/CSV/Markdown export for owner/agent | early |
-| `files` | Upload/download files scoped to a Flare | later |
-| `ai` | Server-side model proxy with keys hidden from clients | later |
-| `realtime` | WebSockets/subscriptions/presence | later |
-| `registry` | Flare metadata, expiry, admin/status | platform-only |
-
-## Design Rules
-
-- The SDK discovers the current Flare slug from hostname/path or manifest.
-- Flare code never sees provider keys or Cloudflare credentials.
-- API calls are scoped to the current Flare and current identity.
-- The server enforces manifest capability flags, auth, role, expiry, quotas, and schema.
-- Every write has quotas/rate limits.
-- Every API has an export path so hosted state can become durable context.
-- API responses should include stable error codes that generated clients can handle.
-- Prefer boring JSON over clever framework coupling.
-- Hide Cloudflare product details from generated clients unless the user is building the platform itself.
-
-## Minimal SDK Sketch
-
-```ts
-type Role = 'viewer' | 'contributor' | 'owner'
-type AuthMode = 'local' | 'public' | 'unlisted' | 'access-otp' | 'custom-invite'
-type Status = 'draft' | 'private' | 'shared' | 'archived' | 'promoted'
-type Capability = 'identity' | 'db' | 'events' | 'files' | 'ai' | 'realtime' | 'export'
-type CapabilityFlags = Record<Capability, boolean>
-type Identity = { mode: 'anonymous' | 'named' | 'owner'; id: string; role: Role; email?: string; name?: string }
-
-type FlareManifest = {
-  schemaVersion: number
-  title: string; slug: string; purpose: string; status: Status
-  sourceSummary: string[]
-  capabilities: CapabilityFlags
-  auth: { mode: AuthMode; audience: string[]; roles: Record<string, Role> }
-  expiresAt?: string
-  dataPolicy: { captured: string[]; storedIn: string[]; exports: string[]; retention?: string; aiUse?: string }
-  budgets?: Partial<Record<'maxDocuments' | 'maxUploadBytes' | 'maxAiUsd', number>>
-  approvals?: Record<string, boolean>
-  steeringLog?: Array<{ at: string; by: string; change: string }>
-}
-
-type CreateResult<T> = T & { id: string; createdAt: string }
-
-type RealtimeEvent<T = unknown> = {
-  type: string
-  payload: T
-  author?: Identity
-  createdAt: string
-}
-
-type Unsubscribe = () => void
-
-type RealtimeRoom = {
-  on<T>(type: string, handler: (event: RealtimeEvent<T>) => void): Unsubscribe
-  send<T>(type: string, payload: T): Promise<void>
-  close(): void
-}
-
-flare.manifest(): Promise<FlareManifest>
-flare.identity.me(): Promise<Identity>
-
-flare.db.collection(name: string): {
-  create<T>(value: T): Promise<CreateResult<T>>
-  list<T>(options?: { limit?: number; orderBy?: string }): Promise<Array<CreateResult<T>>>
-  get<T>(id: string): Promise<CreateResult<T> | null>
-  update<T>(id: string, patch: Partial<T>): Promise<CreateResult<T>>
-  delete(id: string): Promise<void>
-}
-
-flare.events.append(type: string, value: unknown): Promise<void>
-flare.realtime.room(name?: string): RealtimeRoom
-flare.export.json(): Promise<object>
-flare.export.markdown(): Promise<string>
-```
-
-## Data Model Defaults
-
-For the first slice, a document collection API is easier for flares than exposing SQL directly.
-
-Internally, a Durable Object SQLite store can keep:
-
-```sql
-collections(name TEXT PRIMARY KEY, schema_json TEXT, created_at TEXT)
-documents(id TEXT PRIMARY KEY, collection TEXT, json TEXT, author TEXT, created_at TEXT, updated_at TEXT)
-events(id TEXT PRIMARY KEY, type TEXT, json TEXT, author TEXT, created_at TEXT)
-sessions(session_id TEXT PRIMARY KEY, identity_json TEXT, role TEXT, created_at TEXT, last_seen_at TEXT)
-quotas(subject TEXT, window TEXT, count INTEGER, reset_at TEXT, PRIMARY KEY(subject, window))
-```
-
-Later, advanced Flares can opt into typed schemas or SQL views, but the default should feel like Firebase/Quick. Keep direct SQL server-side; generated clients use document APIs unless the user is explicitly building a developer-facing Flare.
-
-## Identity Modes
-
-| Mode | Meaning |
-|---|---|
-| `anonymous` | No reliable person identity; use per-session IDs and be honest in UI. |
-| `named` | Cloudflare Access or invite gate has verified an email/name. |
-| `owner` | The Flare owner/admin/orchestrator can export or manage state. |
-
-For personal Flares, Cloudflare Access OTP can verify email ownership for known allowlisted recipients. Custom invite links can come later.
-
-The platform should derive `identity.mode` and `role` server-side from Access assertions, signed invite tokens, owner session state, or anonymous session cookies. The client should not self-assign roles.
-
-## AI API
-
-Defer AI until data/files basics work. When added, keep it constrained:
-
-```js
-const result = await flare.ai.chat({
-  messages: [{ role: 'user', content: 'Summarize these responses' }],
-  purpose: 'summarize-flare-responses'
+await flare.activity.append('design.comment', {
+  body: 'The empty state needs a clearer next action.',
+  target: 'results-panel'
+}, {
+  idempotencyKey: crypto.randomUUID()
 })
 ```
 
-Rules:
+Activity is the first deep capability. The SDK stays small while the platform hides identity, schema lookup, validation, persistence, idempotency, quotas, provenance, and export.
 
-- no model keys in client code;
-- Flare-level token budgets;
-- log purpose/cost/latency;
-- do not send sensitive collected data to models without an explicit Flare data policy.
-- route AI calls through Workers AI or AI Gateway/server-side provider bindings, not direct browser calls.
+## V1 Surface
 
-## Realtime API
+```ts
+type JsonPrimitive = string | number | boolean | null
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
 
-Realtime is powerful but not needed for every artifact. Add when the use case needs live collaboration, games, presence, cursors, or live polling.
+type Actor = {
+  kind: 'owner' | 'participant' | 'agent'
+  subject: string
+  displayName?: string
+}
 
-```js
-const room = flare.realtime.room('main')
-const unsubscribe = room.on('cursor', event => updateCursor(event.payload))
-await room.send('cursor', { x, y })
+type ActivityTypeDefinition = {
+  name: string
+  version: number
+  label: string
+}
+
+type ActivityRecord = {
+  id: string
+  flareId: string
+  revisionId: string
+  deploymentId: string
+  type: string
+  typeVersion: number
+  actor: Actor
+  payload: JsonValue
+  createdAt: string
+}
+
+type FlareBootstrap = {
+  title: string
+  purpose: string
+  activityTypes: ActivityTypeDefinition[]
+  actor: Actor
+}
+
+flare.bootstrap(): Promise<FlareBootstrap>
+flare.identity.me(): Promise<Actor>
+
+flare.activity.append<T>(
+  type: string,
+  payload: T,
+  options: { idempotencyKey: string }
+): Promise<ActivityRecord>
+
+flare.activity.list(options?: {
+  type?: string
+  cursor?: string
+  limit?: number
+}): Promise<{ items: ActivityRecord[]; nextCursor?: string }>
 ```
 
-Durable Objects are a natural fit because a Flare can map to one object with WebSocket connections and SQLite state together.
+The SDK holds an opaque deployment context from bootstrap and sends it automatically. Generated code does not choose Flare ID, revision ID, deployment ID, actor, timestamp, or type version.
 
-Realtime messages that change durable state should pass through the same validation path as HTTP writes. Presence/cursor events can stay ephemeral, but anything that should appear in exports needs a durable event/document record.
+## HTTP Mapping
 
-## Quotas From Day One
+| SDK call | Runtime route |
+|---|---|
+| `flare.bootstrap()` | `GET ./_flare/bootstrap` |
+| `flare.identity.me()` | `GET ./_flare/bootstrap` (current actor projection) |
+| `flare.activity.append()` | `POST ./_flare/activity` |
+| `flare.activity.list()` | `GET ./_flare/activity?type=...&cursor=...&limit=...` |
 
-Even personal systems need guardrails:
-
-- max submissions per identity/IP/time window;
-- max documents per collection/Flare;
-- max JSON document size;
-- max files and bytes per Flare;
-- max websocket connections per Flare;
-- AI daily token/cost budget;
-- expiry enforcement for write APIs.
-
-Quota checks belong server-side, ideally in the Flare Durable Object so concurrent writes for the same Flare serialize naturally.
-
-## Error Shape
-
-Use stable error codes so agent-generated clients can recover gracefully:
+Activity append sends:
 
 ```json
 {
-  "error": {
-    "code": "capability_disabled",
-    "message": "This Flare does not allow file uploads.",
-    "retryable": false
+  "type": "design.comment",
+  "payload": {
+    "body": "The empty state needs a clearer next action.",
+    "target": "results-panel"
   }
 }
 ```
 
-Recommended codes: `auth_required`, `forbidden`, `expired`, `capability_disabled`, `quota_exceeded`, `schema_invalid`, and `not_found`.
+`Idempotency-Key` is a required header. Deployment context is an SDK-managed header or token returned by bootstrap; application code must not construct it.
+
+## Runtime Rules
+
+- Type must be declared by the active immutable revision.
+- The platform derives the declared type version.
+- Payload is validated against that revision’s compiled JSON Schema.
+- Payloads are bounded; V1 platform maximum is 16 KiB.
+- Listing is cursor-based and deterministic; generated code must not assume offset pagination.
+- A new write from an old deployment returns `deployment_superseded`; reload/bootstrap before retrying with a new key.
+- A same-key/same-request retry returns the original record, including after redeploy.
+- A same-key/different-request retry returns `idempotency_conflict`.
+- Authorization, quotas, and schema checks are enforced server-side.
+
+## Error Shape
+
+```json
+{
+  "error": {
+    "code": "activity_schema_invalid",
+    "message": "The submitted design.comment payload is invalid.",
+    "retryable": false,
+    "details": {
+      "field": "body"
+    }
+  }
+}
+```
+
+Stable V1 codes:
+
+- `auth_required`
+- `forbidden`
+- `flare_not_found`
+- `revision_not_found`
+- `deployment_not_found`
+- `deployment_superseded`
+- `activity_type_unknown`
+- `activity_schema_invalid`
+- `activity_limit_exceeded`
+- `idempotency_conflict`
+- `rate_limited`
+- `internal_error`
+
+Generated clients should show actionable copy for non-retryable errors and avoid blind retries. The platform must not return success-shaped fallbacks after failed writes.
+
+## Actor Semantics
+
+Actor is server-derived from the authenticated request boundary. The client may display returned identity but cannot assign `kind`, `subject`, role, email, or display name.
+
+V1 is owner-only. The `participant` and `agent` actor kinds reserve a stable envelope for later access designs and CLI-authored activity; they do not imply that public writes or embedded agents exist.
+
+## Owner Operations Are Separate
+
+Generated clients do not receive these Management API capabilities:
+
+- catalog and deployment history;
+- packet plan/apply;
+- authoritative owner export;
+- archive, purge, redaction, schema edit, or access-policy mutation.
+
+The Console and CLI own those workflows through the Management API.
+
+## Deferred Capability Modules
+
+Do not expose placeholder methods for capabilities that are not implemented. Add each as a separate reviewed module only when its domain contract is proven:
+
+| Future module | Must define first |
+|---|---|
+| Mutable records | concurrency, authorization, deletion, migration, export |
+| Files | upload authorization, types/sizes, scanning, retention, download policy |
+| Realtime | durable vs ephemeral messages, reconnect, ordering, room quotas |
+| AI | provider boundary, budgets, private-data policy, provenance, failure behavior |
+| Voice | consent, recording/transcription storage, retention, deletion |
+
+There is no core `flare.db`, `flare.events`, `flare.ai`, or generic custom-endpoint escape hatch in V1.

@@ -1,151 +1,161 @@
-# Steering Contract
+# Flare Steering Contract
 
 ## Goal
 
-Flares should stay open-ended without becoming opaque. A human, agent, or orchestrator must be able to inspect what the Flare is for, what it can do, what data it stores, who can access it, when it expires, and how it can be changed.
+A Flare must be inspectable and redirectable without embedding mutable infrastructure state or secrets in its packet. `flare.json` describes the generated client’s purpose, activity contract, data policy, and limits. Source-review notes, approval, deployment, and access state belong to the plan/apply workflow and platform catalog.
 
-Steerability is not the same as constant approval. Drafting and local iteration can be autonomous. Sharing, inviting, spending meaningful resources, or exposing private context needs an explicit gate.
+Drafting and local iteration can proceed when requested. Publishing, routes/DNS, invitations, resource mutation, and exposure of private context require explicit approval.
 
-## Manifest Fields
-
-Use this as the durable control plane shape. Local drafts can omit fields that are not known yet, but shared Flares should fill them.
+## Canonical `flare.json`
 
 ```json
 {
   "schemaVersion": 1,
+  "slug": "design-review-follow-up",
   "title": "Design review follow-up",
-  "slug": "design-review-2026-06-10",
-  "status": "draft",
-  "purpose": "Collect async feedback on decisions and open questions",
-  "owner": {
-    "name": "Mikey",
-    "email": "owner@example.com"
-  },
-  "sourceSummary": [
-    "Transcript summarized; raw transcript not published",
-    "Repo context from current branch"
-  ],
+  "purpose": "Collect focused comments on the proposed results experience.",
   "capabilities": {
-    "identity": true,
-    "db": true,
-    "events": true,
-    "files": false,
-    "ai": false,
-    "realtime": false,
-    "export": true
+    "activity": true
   },
-  "auth": {
-    "mode": "local",
-    "audience": [],
-    "roles": {
-      "owner@example.com": "owner"
+  "activityTypes": [
+    {
+      "name": "design.comment",
+      "version": 1,
+      "label": "Design comment",
+      "schema": "activity-schemas/design.comment.v1.schema.json"
     }
+  ],
+  "auth": {
+    "mode": "owner-access"
   },
   "dataPolicy": {
-    "captured": ["votes", "comments"],
-    "storedIn": ["Durable Object SQLite"],
-    "exports": ["responses.json", "summary.md"],
-    "retention": "archive after 14 days",
-    "aiUse": "none"
+    "captured": ["comment body", "optional interface target"],
+    "exportFormats": ["json", "markdown"]
   },
-  "budgets": {
-    "maxDocuments": 1000,
-    "maxUploadBytes": 0,
-    "maxAiUsd": 0
-  },
-  "expiresAt": "2026-06-24T00:00:00Z",
-  "approvals": {
-    "publish": false,
-    "invite": false,
-    "aiOverPrivateData": false,
-    "externalScripts": false
-  },
-  "steeringLog": []
+  "limits": {
+    "maxActivityRecords": 1000,
+    "maxActivityPayloadBytes": 16384
+  }
 }
 ```
 
-## Status Model
+Use [the template](../assets/templates/flare.json) as a starting point.
 
-| Status | Meaning | Allowed actions |
-|---|---|---|
-| `draft` | Local or private build, not shareable | Generate, edit, preview, change schema. |
-| `private` | Deployed but owner/admin only | Test platform APIs, export, update auth. |
-| `shared` | Available to intended audience | Collect responses, operate, close loop. |
-| `archived` | Read/export only or offline | Export, summarize, delete according to retention. |
-| `promoted` | Graduated out of ephemeral namespace | Treat as maintained app/site with normal engineering standards. |
+## Field Ownership
 
-## Capability Flags
-
-Capabilities are the platform contract. Generated clients may only call APIs enabled for the current Flare and viewer role.
-
-| Capability | Enables | Default |
-|---|---|---|
-| `identity` | `flare.identity.me()`, role-aware UI | On when shared. |
-| `db` | Document collections | On for interactive Flares. |
-| `events` | Append-only activity, audit, and domain events | On when generated clients call `flare.events`. |
-| `files` | Upload/download scoped R2 objects | Off until needed. |
-| `ai` | Server-side model calls | Off until data policy and budget are explicit. |
-| `realtime` | WebSocket rooms/presence/events | Off until live collaboration needs it. |
-| `export` | Owner/admin JSON/Markdown/CSV exports | On for any persisted data. |
-
-The Worker and Durable Object enforce capability flags. UI checks are helpful but never sufficient.
-
-## Approval Gates
-
-Require explicit user approval before:
-
-- publishing outside the local/private workspace;
-- inviting or emailing people;
-- exposing transcripts, private notes, client data, repo context, or screenshots;
-- sending collected/private data to an AI provider;
-- adding third-party scripts, analytics, fonts, embeds, or CDNs;
-- enabling public uploads or public write APIs;
-- spending meaningful resources or adding recurring jobs.
-
-Approval records should include who approved, what changed, when it happened, and the exact share/invite copy if applicable.
-
-## Steering Operations
-
-A Flare platform should support these operations as manifest changes:
-
-| Operation | Effect |
+| Field | Meaning |
 |---|---|
-| `rename` | Change title/display slug before sharing. |
-| `change-purpose` | Update expected behavior and UI copy. |
-| `enable-capability` | Add `db`, `files`, `ai`, `realtime`, or `export` after policy checks. |
-| `change-auth` | Move `auth.mode` between `local`, `public`, `unlisted`, `access-otp`, and `custom-invite`. |
-| `set-audience` | Add/remove viewers or roles. |
-| `set-expiry` | Change deadline, archive date, or permanence. |
-| `export-now` | Produce durable JSON/Markdown/CSV bundle. |
-| `summarize` | Generate a follow-up note from exports, respecting AI policy. |
-| `archive` | Freeze writes, export, and optionally delete mutable state later. |
-| `promote` | Move into a permanent site/app path with maintained-source expectations. |
+| `schemaVersion` | Packet manifest schema version. |
+| `slug` | Requested stable path name; platform validates uniqueness and format. |
+| `title` | Human-readable name. |
+| `purpose` | One sentence describing what users should do or learn. |
+| `capabilities.activity` | Whether this revision uses the V1 activity Runtime API. |
+| `activityTypes` | Revision-scoped type names, versions, labels, and local schema paths. |
+| `auth.mode` | Access contract requested by the packet; V1 accepts only `owner-access`. |
+| `dataPolicy.captured` | Plain-language description of every collected field. |
+| `dataPolicy.exportFormats` | Owner export formats expected from Management API. |
+| `limits` | Revision-requested bounds, never higher than platform ceilings. |
 
-## Share Gate Template
+The platform derives stable Flare/revision/deployment IDs, owner identity, route, actor, timestamps, checksums, and live status. Do not put those mutable or environment-specific values in `flare.json`.
 
-Before sharing, present:
+Source provenance and privacy review stay beside the packet in local project notes or the deployment plan. They must be presented at approval time but are not published automatically as client manifest data.
 
-```markdown
-Flare: <title>
-Purpose: <one sentence>
-Source used: <summary, with raw/private material called out>
-Auth/audience: <mode and people/domains>
-Data captured: <fields and files>
-Capabilities enabled: <identity/db/files/ai/realtime/export>
-Expiry/archive: <date and behavior>
-Export path: <where owner can get results>
-Share copy:
-<subject/body/link instructions>
+## Activity Type Definitions
+
+Each type has:
+
+- a stable lowercase dotted/dashed name;
+- positive integer version;
+- human label;
+- local JSON Schema Draft 2020-12 file.
+
+Rules:
+
+- One version of a type name per revision.
+- Published `(name, version)` semantics never change; use a new version in a later revision.
+- `$ref` may target only local fragments in the same schema document.
+- Remote/cross-file references and unsupported validator keywords are rejected.
+- Schemas and payloads must remain within platform size/depth bounds.
+- `maxActivityPayloadBytes` may lower but not exceed the 16 KiB platform ceiling.
+- UI labels/help text may evolve with a new revision; server validation remains authoritative.
+
+Example schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["body"],
+  "properties": {
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "target": {
+      "type": "string",
+      "maxLength": 200
+    }
+  }
+}
 ```
 
-Do not call an unlisted link private. Use `unlisted` for bearer-link access, `access-otp` for Cloudflare Access one-time PIN allowlists, and `custom-invite` for app-level signed invitations.
+## Packet and Platform State
 
-## Close The Loop
+| Packet owns | Platform catalog/plan owns |
+|---|---|
+| Purpose, capability, auth request | Stable Flare identity and owner subject |
+| Activity type/schema declarations | Immutable revision checksum/provenance |
+| Built static assets | Stable deployment target and route |
+| Data-policy explanation and limits | Active deployment pointer and history |
+| Requested slug | Access assertions and service-token subjects |
+| - | Source/privacy review and exact approval record |
 
-When a shared Flare has served its purpose:
+This boundary keeps packets portable and secret-free.
 
-1. Export raw state into JSON and any human-readable Markdown/CSV.
-2. Summarize counts, patterns, disagreements, and caveats.
-3. Record decisions and next actions in the relevant durable system.
-4. Archive or promote the Flare intentionally.
-5. Update the manifest status and steering log.
+## Approval Gate
+
+Require explicit owner approval before:
+
+- applying the first or a changed hosted deployment;
+- creating/changing public routes, DNS, Access applications, or policies;
+- exposing transcripts, private notes, client data, repository context, or screenshots;
+- adding external scripts, analytics, fonts, embeds, or CDNs;
+- inviting participants or enabling public writes;
+- adding paid/recurring infrastructure;
+- archiving, purging, redacting, migrating, or deleting stored data.
+
+The plan presented for approval includes:
+
+```markdown
+Flare: <title and stable ID/new>
+Purpose/source: <one sentence each; private material called out>
+Packet: <checksum, size, activity types and captured fields>
+Target: <owner-only route and expected active deployment>
+Changes: <new revision/deployment and infrastructure mutations, if any>
+Data/export: <limits and JSON/Markdown formats>
+Plan hash: <exact approved hash>
+```
+
+Applying requires that exact hash. Changed packet bytes or target state require a new plan.
+
+## Revision Steering
+
+Changes to purpose, UI, activity schema, requested access, or data policy create a new immutable revision when deployed. Do not mutate a published packet in place.
+
+A stable Flare may accumulate many revisions/deployments while keeping one activity history. Activity records retain originating revision/deployment provenance.
+
+## Lifecycle
+
+V1 platform statuses describe catalog state, but no timer changes them automatically. Owner actions may later deploy a new revision, archive a Flare, apply a separately reviewed redaction/purge contract, or promote the generated tool into a maintained application.
+
+Do not promise automatic expiration/deletion or silently run cleanup jobs.
+
+## Future Share Gate
+
+Participant/invite/public modes are deferred, but any future share operation must present exact audience/access, captured activity, route forwarding/indexing behavior, lifecycle, export, and share copy. Never call an unlisted/bearer URL private.
+
+## Close the Loop
+
+Use Console or CLI owner export to produce JSON/Markdown, then record important decisions/actions in their durable system. The live Flare should not be the only copy of consequential outcomes.

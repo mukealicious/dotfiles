@@ -1,0 +1,43 @@
+{
+  // Starting shape only. Verify the current Wrangler schema and replace all
+  // account-specific placeholders in the dedicated platform repository.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flare-host",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-14",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/f/*", "/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "FLARE_OBJECT",
+        "class_name": "FlareObject"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["FlareObject"]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "FLARE_BUCKET",
+      "bucket_name": "flares"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "CATALOG_DB",
+      "database_name": "flare-catalog",
+      "database_id": "<replace-with-d1-database-id>"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
