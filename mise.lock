@@ -36,6 +36,10 @@ url = "https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-x64.tar.gz"
 version = "30.3.0"
 backend = "npm:@antfu/ni"
 
+[[tools."npm:@flue/cli"]]
+version = "2.0.3"
+backend = "npm:@flue/cli"
+
 [[tools."npm:agent-browser"]]
 version = "0.31.2"
 backend = "npm:agent-browser"

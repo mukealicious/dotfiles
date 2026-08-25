@@ -29,7 +29,7 @@ dot -e       # Open dotfiles in editor
 | **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex, Pi |
 | **Window Mgmt** | AeroSpace (i3-like tiling), Ice (menu bar) |
 | **Database** | PostgreSQL 17, Redis |
-| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, agent-browser, surf-cli, RemCTL |
+| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, Flue CLI, agent-browser, surf-cli, RemCTL |
 
 ## Architecture
 
@@ -90,7 +90,7 @@ Use the installer that owns the tool's runtime and failure modes:
 | Native-sensitive Node CLIs | `mise/node-globals.reqs` | npm CLIs with native deps or Node ABI sensitivity, installed under the pinned mise Node runtime |
 | Behavior wrappers | `bin/` | Dotfiles needs to add policy/behavior around an underlying tool; wrappers should win on PATH |
 
-Example: `opensrc` and `agent-browser` are isolated `npm:` tools in `mise.toml`. QMD stays in `mise/node-globals.reqs` because it uses native Node dependencies, while `bin/qmd` owns per-project `.qmd` detection.
+Example: Flue CLI, `opensrc`, and `agent-browser` are isolated `npm:` tools in `mise.toml`. QMD stays in `mise/node-globals.reqs` because it uses native Node dependencies, while `bin/qmd` owns per-project `.qmd` detection.
 
 ### JavaScript Toolchain Policy
 

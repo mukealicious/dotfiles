@@ -10,6 +10,7 @@ bun = "1.3"
 # Durable JavaScript CLIs are isolated mise tools. Packages with install scripts
 # must name the reviewed build explicitly.
 "npm:@antfu/ni" = "30"
+"npm:@flue/cli" = "2.0"
 "npm:opensrc" = { version = "0.7", allow_builds = ["opensrc"] }
 "npm:agent-browser" = { version = "0.31", allow_builds = ["agent-browser"] }
 
