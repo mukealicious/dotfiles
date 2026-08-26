@@ -26,7 +26,18 @@
         "matcher": "Bash"
       }
     ],
-    "SessionStart": [{"matcher":"*","hooks":[{"type":"command","command":"bash '/Users/mikeywills/.claude/hooks/herdr-agent-state.sh' session","timeout":10}]}],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/mukey/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -45,15 +56,6 @@
           {
             "type": "command",
             "command": "sh \"$HOME/.dotfiles/claude/hooks/tldraw-server-context.sh\" SubagentStart"
-          }
-        ]
-      },
-      {
-        "matcher": "tldraw-offline",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh '/Users/mikeywills/skills/tldraw-offline/inject-server-context.sh' SubagentStart"
           }
         ]
       }
