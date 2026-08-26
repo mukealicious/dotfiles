@@ -4,4 +4,4 @@
 # Put ordinary JavaScript CLIs in ../mise.toml as isolated npm: tools instead.
 @tobilu/qmd@2.5.3|better-sqlite3@12.10.0,node-llama-cpp@3.18.1,tree-sitter-go@0.25.0,tree-sitter-python@0.25.0,tree-sitter-rust@0.24.0,tree-sitter-typescript@0.23.2,tree-sitter-javascript@0.23.1
 # Surf uses a Chrome native-messaging host; keep its internal host layout stable.
-surf-cli@2.8.0|esbuild@0.28.1,fsevents@2.3.3
+surf-cli@2.8.0|esbuild@0.28.2,fsevents@2.3.3
