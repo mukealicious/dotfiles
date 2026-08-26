@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "currentMode": "default",
+  "modes": {
+    "light": {
+      "provider": "openai-codex",
+      "modelId": "gpt-5.6-luna",
+      "thinkingLevel": "max"
+    },
+    "standard": {
+      "provider": "openai-codex",
+      "modelId": "gpt-5.6-terra",
+      "thinkingLevel": "max"
+    },
+    "default": {
+      "provider": "openai-codex",
+      "modelId": "gpt-5.6-sol",
+      "thinkingLevel": "xhigh"
+    },
+    "deep": {
+      "provider": "openai-codex",
+      "modelId": "gpt-5.6-sol",
+      "thinkingLevel": "max"
+    }
+  }
+}

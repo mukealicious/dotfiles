@@ -2,8 +2,8 @@
 #
 # Pi Coding Agent Configuration
 #
-# Sets up Pi profile directories, materializes writable settings, and symlinks
-# managed resources. Installs Pi packages via `pi install`.
+# Sets up Pi profile directories, materializes writable settings and personal
+# modes, and symlinks managed resources. Installs Pi packages via `pi install`.
 #
 # Usage:
 #   ./install.sh          # Normal install
@@ -34,6 +34,7 @@ MIN_PI_VERSION="0.80.6"
 MITSUPI_PACKAGE="npm:mitsupi@1.6.0"
 MITSUPI_PROMPT_EDITOR_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-prompt-editor.patch"
 MITSUPI_FILES_SHORTCUT_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-files-shortcut.patch"
+PERSONAL_MODES_BASELINE="$DOTFILES_ROOT/pi/modes.personal.json"
 
 if [ ! -x "$PI_BIN" ]; then
   log_info "Installing Pi coding agent ($PI_PACKAGE)..."
@@ -153,6 +154,40 @@ preflight_mitsupi_copies() {
   check_mitsupi_package_copy personal
 }
 
+validate_pi_modes_baseline() {
+  modes_src="$1"
+  modes_label="$2"
+
+  if [ ! -f "$modes_src" ]; then
+    log_error "$modes_label is missing: $modes_src"
+    exit 1
+  fi
+
+  if ! jq -e '
+    type == "object"
+    and .version == 1
+    and (.currentMode | type == "string" and length > 0)
+    and (.modes | type == "object" and length > 0)
+    and (. as $root | $root.modes | has($root.currentMode))
+    and all(
+      .modes[];
+      type == "object"
+      and (.provider | type == "string" and length > 0)
+      and (.modelId | type == "string" and length > 0)
+      and (
+        .thinkingLevel as $thinking
+        | ["off", "minimal", "low", "medium", "high", "xhigh", "max"]
+        | index($thinking) != null
+      )
+    )
+  ' "$modes_src" >/dev/null 2>&1; then
+    log_error "$modes_label is not a valid Mitsupi modes baseline: $modes_src"
+    exit 1
+  fi
+
+  log_success "Validated $modes_label"
+}
+
 ensure_mitsupi_package() {
   for profile_name in work personal; do
     package_dir="$(mitsupi_package_dir "$profile_name")"
@@ -191,6 +226,7 @@ apply_mitsupi_patches() {
 # profile link/settings mutation. Missing copies are the only allowed state;
 # they are installed and validated again before the patch is applied.
 check_pi_version
+validate_pi_modes_baseline "$PERSONAL_MODES_BASELINE" "personal modes baseline"
 preflight_mitsupi_copies
 
 # Pi persists interactive model choices and changelog state in settings.json.
@@ -243,6 +279,38 @@ materialize_pi_settings() {
   # mv replaces a legacy symlink itself rather than writing through it.
   mv "$settings_tmp" "$settings_dst"
   log_success "Materialized $settings_label"
+}
+
+# Mitsupi writes mode edits atomically, so the runtime path must be a regular,
+# writable file rather than a symlink into Git. The tracked baseline is the
+# durable source of truth and is restored on each installer run.
+materialize_pi_modes() {
+  modes_src="$1"
+  modes_dst="$2"
+  modes_label="$3"
+
+  if [ -e "$modes_dst" ] && [ ! -f "$modes_dst" ]; then
+    log_error "$modes_label exists but is not a modes file"
+    return 1
+  fi
+
+  modes_tmp="$(mktemp "${modes_dst}.tmp.XXXXXX")"
+  if ! cp "$modes_src" "$modes_tmp"; then
+    rm -f "$modes_tmp"
+    log_error "Failed to materialize $modes_label"
+    return 1
+  fi
+  chmod 600 "$modes_tmp"
+
+  if [ ! -L "$modes_dst" ] && [ -f "$modes_dst" ] && cmp -s "$modes_tmp" "$modes_dst"; then
+    chmod 600 "$modes_dst"
+    rm -f "$modes_tmp"
+    return 0
+  fi
+
+  # mv replaces a legacy symlink itself rather than writing through it.
+  mv "$modes_tmp" "$modes_dst"
+  log_success "Materialized $modes_label"
 }
 
 setup_pi_profile() {
@@ -307,6 +375,7 @@ remove_retired_extension_link() {
 
 setup_pi_profile "$HOME/.pi/work" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/work"
 setup_pi_profile "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/settings.personal.json" "$HOME/.pi/personal"
+materialize_pi_modes "$PERSONAL_MODES_BASELINE" "$HOME/.pi/personal/modes.json" "$HOME/.pi/personal/modes.json"
 
 for profile_name in work personal; do
   profile_dir="$HOME/.pi/$profile_name"

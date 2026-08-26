@@ -159,7 +159,7 @@ These are comparison inputs, not trees to copy wholesale. Local topic-owned inst
 
     Filter `control.ts`, `go-to-bed.ts`, `loop.ts`, `notify.ts`, `session-breakdown.ts`, and `split-fork.ts`; filter Mitsupi skills `anachb`, `frontend-design`, `ghidra`, `librarian`, `native-web-search`, `oebb-scotty`, `openscad`, `tmux`, `update-changelog`, and `web-browser`; filter the unused `nightowl` theme. Package files used internally by retained resources remain installed but are not separately exposed. `pi-subagents` resolves skills only from settings-declared packages, applies their resource filters, and does not opportunistically scan unrelated installed or global npm packages.
 57. **Keep one notification fallback.** Local `pi/extensions/notify.ts` remains the non-Herdr OSC fallback and suppresses itself under `HERDR_ENV=1`; Mitsupi `notify.ts` is filtered. Keep `session-breakdown.ts` filtered because it hardcodes `~/.pi/agent/sessions`.
-58. **Make named modes manual capability-depth controls.** `/fast` independently controls service tier and must not alter model, thinking, tools, or workflow. Do not add task-, cost-, or latency-named modes and do not auto-switch the parent. Trial this personal runtime mapping before tracking installer defaults or configuring work mappings:
+58. **Make named modes manual capability-depth controls.** `/fast` independently controls service tier and must not alter model, thinking, tools, or workflow. Do not add task-, cost-, or latency-named modes and do not auto-switch the parent. Track the approved personal mapping as an installer baseline while deferring work-profile mappings:
 
     | Mode | Model | Thinking |
     |---|---|---|
@@ -168,7 +168,7 @@ These are comparison inputs, not trees to copy wholesale. Local topic-owned inst
     | `default` | `gpt-5.6-sol` | `xhigh` |
     | `deep` | `gpt-5.6-sol` | `max` |
 
-    `default` is required by Mitsupi. The user creates and adjusts these entries through Mitsupi's `/mode` UI in the personal profile; `modes.json` remains untracked runtime state. Both profiles eventually use the same mode names, but provider/model mappings may differ. Work mapping stays deferred until work credentials permit model inspection.
+    `default` is required by Mitsupi. `pi/modes.personal.json` owns these entries and `pi/install.sh` materializes a writable `~/.pi/personal/modes.json`; installer runs restore the tracked mapping after any runtime `/mode` edits. Both profiles eventually use the same mode names, but provider/model mappings may differ. Work mapping stays deferred until work credentials permit model inspection.
 59. **Support Pi's native `max` level end to end.** Require Pi `>=0.80.6`; add `max` to repo-owned pi-subagents parsers, selectors, descriptions, and tests. Pin Mitsupi as `npm:mitsupi@1.6.0` while carrying one exact-context patch that accepts `max` and stops a fresh profile from creating the latency-named `fast` mode. Preflight both profile copies before applying the idempotent patch and fail installation on a version/context mismatch. Do not open an upstream contribution. Remove the patch and unpin only after a reviewed release independently supports both behaviors.
 60. **Use capability-appropriate delegated defaults.** Resolve provider names through the active profile and begin with:
 
@@ -208,7 +208,7 @@ These are comparison inputs, not trees to copy wholesale. Local topic-owned inst
 | D4 | M | Consolidate launch precedence/Git behavior and remove dead runtime hooks safely | D2 |
 | D5 | L | Simplify roles, enforce read-only/leaf boundaries, remove prompt pipelines, and apply role model defaults | D2 |
 | D6 | L | Apply the finite skill/workflow inventory, provenance, watch, projection, and documentation changes | D3, D5 |
-| D7 | L | Pin and curate Mitsupi, honor package filters, support `max`, and complete manual personal-mode calibration | D2, D5 |
+| D7 | L | Pin and curate Mitsupi, honor package filters, support `max`, and materialize the tracked personal-mode baseline | D2, D5 |
 | D8 | M | Add the focused handoff skill/extension and tests | D3, D6 |
 | D9 | M | Refresh Herdr integration/attention and run final doctor/inventory/documentation consistency checks | D3, D4, D7, D8 |
 | D10 | M | Validate both profiles independently and issue the manual fallback-deletion report | D9 |
@@ -263,9 +263,10 @@ Until D8 installs the local handoff skill and extension, follow the reviewed ups
 - `pi/packages/pi-subagents/schemas.ts`, `settings.ts`, `single-output.ts`, `intercom-bridge.ts`, `agent-management.ts`, and `agent-templates.ts`
 - package tests that enforce role depth, authoritative tool lists, read-only persistence, provider-neutral model resolution, and `max`
 - `pi/settings.personal.json` and `pi/settings.work.json` Mitsupi resource allowlists
+- `pi/modes.personal.json` tracked personal capability-depth mapping
 - a version-checked local patch under `pi/patches/` for Mitsupi `prompt-editor.ts`
 - `pi/install.sh` package pin, two-profile preflight, patch application, and Pi version guard
-- personal runtime `modes.json`, configured by the user through `/mode`; no tracked baseline until it stabilizes
+- personal runtime `modes.json`, materialized as a writable file from the tracked baseline
 
 ### Skills and review
 
@@ -371,7 +372,7 @@ active_profile_dir = PI_CODING_AGENT_DIR if set
 
 - Mode names express capability depth: `light`, `standard`, required `default`, and `deep`.
 - `/fast` is a separate boolean service-tier control and composes with any supported model.
-- Personal modes are mutable profile state created through `/mode`; the installer neither seeds nor tracks `modes.json`.
+- Personal modes are tracked in `pi/modes.personal.json` and materialized as writable profile state; installer runs restore the baseline after runtime `/mode` edits.
 - A fresh patched profile creates only required `default`, never a latency-named `fast` mode.
 - Parent mode selection never implicitly changes a child's model. Role defaults and explicit subagent overrides own child routing.
 - Any role or mode that specifies `max` uses Pi's native level rather than silently degrading to `xhigh`.
@@ -477,7 +478,7 @@ Review count is a judgment, not a mandatory pipeline.
 - [ ] Local notify remains active outside Herdr and no second `agent_end` notification hook is loaded.
 - [ ] Both settings pin `npm:mitsupi@1.6.0`; the patch accepts `max`, creates no `fast` default mode, is idempotent across both profiles, and fails installation before mutation for an unknown version or context.
 - [ ] No upstream issue, pull request, or other contribution is created.
-- [ ] After the user configures `/mode`, personal runtime modes resolve to Luna/max, Terra/max, Sol/xhigh, and Sol/max under `light`, `standard`, `default`, and `deep`.
+- [ ] The installer materializes personal runtime modes as Luna/max, Terra/max, Sol/xhigh, and Sol/max under `light`, `standard`, `default`, and `deep`.
 - [ ] Selecting a named mode does not toggle `/fast`; toggling `/fast` does not change mode, model, or thinking.
 - [ ] `/review` and `/btw` can be invoked manually but are not wired into implementation, TDD, or review automation; `/loop` is unavailable.
 - [ ] No trial telemetry, counter, deadline, state file, or automatic removal mechanism is added.
@@ -529,7 +530,7 @@ The implementation then reports that deletion is safe and gives the manual comma
 | Skills | Full watchlist pass, shared validator, link/provenance checks, invocation metadata checks, and removed-name searches |
 | TDD/design | Confirm TDD loads real `codebase-design` and optional design-it-twice references resolve |
 | Review | Small and substantial fixture reviews prove proportional routing without write access; manual `/review` remains isolated |
-| Modes | Personal mode smoke checks model/thinking pairs and proves `/fast` independence; work mapping remains deferred |
+| Modes | Installer and personal-mode smoke checks verify the tracked model/thinking pairs and `/fast` independence; work mapping remains deferred |
 | Handoff | Three focused tests plus one same-process continuity smoke |
 | Typecheck | `npm --prefix pi run typecheck` and package-local checks |
 | Projection | Run `ai/install.sh`; inspect `.ai-runtime/pi/` and both profile resource links |
@@ -573,7 +574,6 @@ The Hunk round trip is user-driven: the agent does not launch an interactive Hun
 - Automatically deleting, backing up, or migrating `~/.pi/agent`
 - Automated work/personal session retention or compaction cleanup
 - Automatic task-to-model routing or automatic parent-mode changes
-- Tracking personal named modes as installer defaults before normal-use calibration
 - Work-profile mode mapping until work credentials permit model inspection
 - Removing stable `pi-subagents` engine capabilities
 - A coordinator, planner, oracle, delegate, context-builder, reviewer, or smart-worker role
@@ -593,7 +593,7 @@ After enough normal use of the simplified system:
 
 1. Revisit `grilling`, `codebase-design`, TDD, `/skill:implement`, `framing-doc`, and `kickoff-doc` based on felt usefulness and friction; do not manufacture trial telemetry.
 2. Compare Luna/max workers with explicit Terra/high alternatives using observed first-pass success, elapsed time, steps, and retries, then keep the simpler useful default.
-3. Revisit the personal `light`, `standard`, `default`, and `deep` ladder and track installer defaults only after the useful rungs stabilize.
+3. Revisit the tracked personal `light`, `standard`, `default`, and `deep` ladder and adjust the baseline if normal use changes which rungs are useful.
 4. Inspect work-profile models once credentials are available, then map the same semantic mode names independently.
 5. Revisit Mitsupi `/review` and `/btw`; retain only experiments that establish a unique useful job.
 6. Audit remaining shared skills for automatic versus manual-only invocation.

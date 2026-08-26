@@ -1,5 +1,5 @@
 #!/bin/sh
-# Focused hermetic coverage for retired Pi extension-link cleanup.
+# Focused hermetic coverage for Pi profile materialization and package curation.
 set -eu
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -272,6 +272,21 @@ assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 files shortcut patc
 assert_contains "$TMP_ROOT/first.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for personal'
 assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 files shortcut patch for personal'
 
+PERSONAL_MODES="$HOME_ROOT/.pi/personal/modes.json"
+[ -f "$PERSONAL_MODES" ] || fail "personal modes were not materialized"
+[ ! -L "$PERSONAL_MODES" ] || fail "personal modes must remain a writable runtime file"
+cmp -s "$REPO/pi/modes.personal.json" "$PERSONAL_MODES" || fail "personal modes differ from the tracked baseline"
+[ ! -e "$HOME_ROOT/.pi/work/modes.json" ] || fail "work modes were configured before a work mapping was approved"
+jq -e '
+  .version == 1
+  and .currentMode == "default"
+  and (.modes | keys == ["deep", "default", "light", "standard"])
+  and .modes.light == {provider: "openai-codex", modelId: "gpt-5.6-luna", thinkingLevel: "max"}
+  and .modes.standard == {provider: "openai-codex", modelId: "gpt-5.6-terra", thinkingLevel: "max"}
+  and .modes.default == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "xhigh"}
+  and .modes.deep == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "max"}
+' "$PERSONAL_MODES" >/dev/null || fail "personal mode mapping changed"
+
 EXPECTED_EXTENSIONS='["extensions/answer.ts","extensions/context.ts","extensions/files.ts","extensions/multi-edit.ts","extensions/prompt-editor.ts","extensions/todos.ts","extensions/uv.ts","extensions/whimsical.ts","extensions/btw.ts","extensions/review.ts"]'
 EXPECTED_SKILLS='["skills/apple-mail/SKILL.md","skills/commit/SKILL.md","skills/github/SKILL.md","skills/google-workspace/SKILL.md","skills/mermaid/SKILL.md","skills/pi-share/SKILL.md","skills/sentry/SKILL.md","skills/summarize/SKILL.md","skills/uv/SKILL.md"]'
 for profile in work personal; do
@@ -320,6 +335,10 @@ rm "$HOME_ROOT/.pi/personal/extensions/cost.ts"
 printf 'unmanaged extension\n' > "$TMP_ROOT/unmanaged-cost.ts"
 ln -s "$TMP_ROOT/unmanaged-cost.ts" "$HOME_ROOT/.pi/personal/extensions/cost.ts"
 ln -s "$TMP_ROOT/missing-watchdog.ts" "$HOME_ROOT/.pi/work/extensions/watchdog.ts"
+# Runtime mode edits are allowed between installer runs, but the tracked
+# baseline remains authoritative when dotfiles are reinstalled.
+jq '.modes.default.thinkingLevel = "off" | .modes.fast = .modes.light' "$PERSONAL_MODES" > "$PERSONAL_MODES.tmp"
+mv "$PERSONAL_MODES.tmp" "$PERSONAL_MODES"
 run_install "$HOME_ROOT" "$TMP_ROOT/second.log"
 [ -L "$HOME_ROOT/.pi/personal/extensions/cost.ts" ] || fail "live unmanaged link was removed"
 [ "$(readlink "$HOME_ROOT/.pi/personal/extensions/cost.ts")" = "$TMP_ROOT/unmanaged-cost.ts" ] || fail "live unmanaged link changed"
@@ -330,6 +349,7 @@ assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor patch alread
 assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 files shortcut patch already applied for work'
 assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for personal'
 assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 files shortcut patch already applied for personal'
+cmp -s "$REPO/pi/modes.personal.json" "$PERSONAL_MODES" || fail "installer did not restore the tracked personal modes"
 for profile in work personal; do
   cmp -s "$TMP_ROOT/$profile-prompt-editor.patched.ts" "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/prompt-editor.ts" || fail "$profile Mitsupi prompt-editor patch is not idempotent"
   cmp -s "$TMP_ROOT/$profile-files.patched.ts" "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/files.ts" || fail "$profile Mitsupi files shortcut patch is not idempotent"
@@ -357,6 +377,7 @@ fi
 assert_contains "$TMP_ROOT/unknown-version.log" 'is not exactly version 1.6.0'
 [ ! -e "$UNKNOWN_VERSION_HOME/.pi/work/settings.json" ] || fail "unknown version mutated work settings"
 [ ! -e "$UNKNOWN_VERSION_HOME/.pi/personal/settings.json" ] || fail "unknown version mutated personal settings"
+[ ! -e "$UNKNOWN_VERSION_HOME/.pi/personal/modes.json" ] || fail "unknown version materialized personal modes"
 [ "$(grep -Fc '"xhigh"' "$UNKNOWN_VERSION_HOME/.pi/work/npm/node_modules/mitsupi/extensions/prompt-editor.ts")" -eq 2 ] || fail "unknown version mutated work Mitsupi copy"
 
 UNKNOWN_CONTEXT_HOME="$TMP_ROOT/unknown-context-home"
@@ -370,6 +391,7 @@ fi
 assert_contains "$TMP_ROOT/unknown-context.log" 'Unknown Mitsupi 1.6.0 prompt-editor context'
 [ ! -e "$UNKNOWN_CONTEXT_HOME/.pi/work/settings.json" ] || fail "unknown context mutated work settings"
 [ ! -e "$UNKNOWN_CONTEXT_HOME/.pi/personal/settings.json" ] || fail "unknown context mutated personal settings"
+[ ! -e "$UNKNOWN_CONTEXT_HOME/.pi/personal/modes.json" ] || fail "unknown context materialized personal modes"
 [ "$(grep -Fc '"xhigh"' "$UNKNOWN_CONTEXT_HOME/.pi/work/npm/node_modules/mitsupi/extensions/prompt-editor.ts")" -eq 2 ] || fail "unknown context mutated work Mitsupi copy"
 
 # A one-line change in patch context must not be accepted through patch fuzz.
@@ -387,6 +409,7 @@ fi
 assert_contains "$TMP_ROOT/unknown-files-context.log" 'Unknown Mitsupi 1.6.0 files shortcut context'
 [ ! -e "$UNKNOWN_FILES_CONTEXT_HOME/.pi/work/settings.json" ] || fail "unknown files context mutated work settings"
 [ ! -e "$UNKNOWN_FILES_CONTEXT_HOME/.pi/personal/settings.json" ] || fail "unknown files context mutated personal settings"
+[ ! -e "$UNKNOWN_FILES_CONTEXT_HOME/.pi/personal/modes.json" ] || fail "unknown files context materialized personal modes"
 assert_contains "$unknown_files_extension" 'Changed test context'
 assert_contains "$unknown_files_extension" 'ctrl+shift+f'
 
@@ -400,5 +423,6 @@ if PI_FAKE_VERSION=0.80.5 run_install "$OLD_PI_HOME" "$TMP_ROOT/old-pi.log"; the
 fi
 assert_contains "$TMP_ROOT/old-pi.log" 'Pi 0.80.5 is too old'
 [ ! -e "$OLD_PI_HOME/.pi/work/settings.json" ] || fail "old Pi guard mutated work settings"
+[ ! -e "$OLD_PI_HOME/.pi/personal/modes.json" ] || fail "old Pi guard materialized personal modes"
 
-echo "Pi installer Mitsupi curation, patch, preflight, and retired-extension tests passed"
+echo "Pi installer profile materialization, Mitsupi curation, patch, preflight, and retired-extension tests passed"

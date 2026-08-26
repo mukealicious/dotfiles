@@ -85,7 +85,8 @@ pi/
 │   └── review.frontmatter  # Shared-body review exemplar
 ├── settings.work.json      # Work profile config baseline (OpenAI API key flow)
 ├── settings.personal.json  # Personal profile config baseline (OpenAI Codex OAuth flow)
-├── install.sh              # Materializes settings, symlinks resources, installs packages
+├── modes.personal.json     # Personal Mitsupi capability-depth mode baseline
+├── install.sh              # Materializes settings/modes, symlinks resources, installs packages
 ├── patches/                 # Exact-context local patches for pinned Pi packages
 ├── aliases.fish            # Thin Fish forwarding to bin/pi
 ├── extensions/             # Custom TypeScript extensions
@@ -105,10 +106,12 @@ pi/
 
 ## Configuration
 
-Profile settings are materialized as writable runtime files by `install.sh`:
+Profile settings and personal Mitsupi modes are materialized as writable runtime
+files by `install.sh`:
 
 - `pi/settings.work.json` → `~/.pi/work/settings.json`
 - `pi/settings.personal.json` → `~/.pi/personal/settings.json`
+- `pi/modes.personal.json` → `~/.pi/personal/modes.json`
 
 The tracked files are managed baselines rather than direct symlink targets. Pi writes
 interactive model choices and changelog state back to each profile's runtime file;
@@ -117,6 +120,23 @@ changes. Installer runs refresh repo-managed settings while preserving
 `defaultProvider`, `defaultModel`, `defaultThinkingLevel`, `lastChangelogVersion`, and
 Pi's generated `trackingId`. Edit the tracked baseline for durable non-runtime
 configuration; use Pi normally for per-profile model changes.
+
+The tracked personal modes baseline is authoritative and installer runs restore
+these capability-depth mappings:
+
+| Mode | Model | Thinking |
+|---|---|---|
+| `light` | `openai-codex/gpt-5.6-luna` | `max` |
+| `standard` | `openai-codex/gpt-5.6-terra` | `max` |
+| `default` | `openai-codex/gpt-5.6-sol` | `xhigh` |
+| `deep` | `openai-codex/gpt-5.6-sol` | `max` |
+
+Mitsupi can write temporary adjustments through `/mode` because the runtime file
+is a regular file rather than a Git symlink. Edit `pi/modes.personal.json` for a
+durable change; the next installer run replaces runtime adjustments with the
+tracked baseline. Run `/reload` in an existing Pi session after installing or
+changing the baseline. Work-profile modes remain unconfigured until a separate
+provider/model mapping is approved.
 
 Shared Pi resources are staged and validated under `.ai-runtime/pi/` before they
 replace the active generated tree. Both active profiles then link their
@@ -128,6 +148,8 @@ Tracked baseline defaults:
 
 - **Work profile**: OpenAI `gpt-5.5` via API key
 - **Personal profile**: OpenAI Codex `gpt-5.5` via OAuth subscription
+- **Personal modes**: Luna/max, Terra/max, Sol/xhigh, and Sol/max under
+  `light`, `standard`, `default`, and `deep`
 - **Themes**: Gruvbox Dark (selected) and Gruvbox Light (available)
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` plus tldraw offline's app-managed skill at `~/skills/tldraw-offline` when installed; missing external skill paths are harmless
 - **Instructions**: `ai/install.sh` stages `.ai-runtime/pi/AGENTS.md`, validates it, then links it into both profiles
@@ -240,15 +262,10 @@ editor, adapts its model picker to the current Pi runtime contract, and keeps a
 fresh profile's required `default` mode from creating a latency-named `fast`
 mode. The files-shortcut patch removes Mitsupi's `Ctrl+Shift+F` Finder reveal
 binding so Pi retains its built-in transcript search; `/files` and the other
-Mitsupi file shortcuts remain available. Personal mode calibration is runtime
-state: use Mitsupi's `/mode` UI in `~/.pi/personal`: choose **Configure
-modes…**, keep **default**, add **light**, **standard**, and **deep**, then use
-**Change model** and
-**Change thinking level** to set `light` `openai-codex/gpt-5.6-luna`/`max`,
-`standard` `openai-codex/gpt-5.6-terra`/`max`, `default`
-`openai-codex/gpt-5.6-sol`/`xhigh`, and `deep`
-`openai-codex/gpt-5.6-sol`/`max`. `/fast` remains the independent
-`pi-openai-fast` service-tier toggle.
+Mitsupi file shortcuts remain available. The installer materializes the tracked
+`pi/modes.personal.json` mapping into the personal profile; `/mode` remains the
+manual selector and `/fast` remains the independent `pi-openai-fast`
+service-tier toggle.
 
 The filtered Mitsupi surface includes `control.ts`, `go-to-bed.ts`, `loop.ts`,
 `notify.ts`, `session-breakdown.ts`, `split-fork.ts`, the `anachb`,
