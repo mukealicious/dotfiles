@@ -85,14 +85,16 @@ Tab renaming is low-risk and reversible. Do it without asking.
 | Need | Primitive | Policy |
 |---|---|---|
 | Project/repository context | Workspace | Keep workspace labels project-oriented. Do not rename for each task. |
-| Independent conversation or subcontext | Tab | Give every created tab a task-level label. |
+| Task/topic and primary conversation | Tab | Keep one primary Pi conversation per tab and give the tab a task-level label. |
 | Interactive coding companion | Pane | Split beside the agent, usually 50/50, and label by role, such as `hunk`. |
 | Server, logs, or persistent watcher | Tab | Keep runtime processes out of the coding tab; group related processes as labeled panes in one operational tab. |
-| Specialized autonomous work | Agent pane or subagent harness | Prefer the configured subagent harness for bounded delegation; use a visible pane when the user benefits from watching or interacting with it. |
+| Specialized autonomous work | Agent pane or subagent harness | Prefer the configured subagent harness for bounded delegation; use a visible pane only when it supports the current tab's topic. |
 
 Avoid creating layout clutter. Use the current pane for short commands. Create a
 sibling pane when a tool is directly complementary to the coding conversation.
 Create a separate tab for persistent processes the user may monitor independently.
+Treat tabs as topic boundaries: start separate Pi conversations in separate tabs,
+and keep side-by-side panes scoped to the same topic.
 
 ## Common Layout Recipes
 
