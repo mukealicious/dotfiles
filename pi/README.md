@@ -122,14 +122,15 @@ Pi's generated `trackingId`. Edit the tracked baseline for durable non-runtime
 configuration; use Pi normally for per-profile model changes.
 
 The tracked personal modes baseline is authoritative and installer runs restore
-these capability-depth mappings:
+these capability-depth mappings. Explicit border colors identify modes independently
+of their thinking levels, since several modes intentionally run at `max`:
 
-| Mode | Model | Thinking |
-|---|---|---|
-| `light` | `openai-codex/gpt-5.6-luna` | `max` |
-| `standard` | `openai-codex/gpt-5.6-terra` | `max` |
-| `default` | `openai-codex/gpt-5.6-sol` | `xhigh` |
-| `deep` | `openai-codex/gpt-5.6-sol` | `max` |
+| Mode | Model | Thinking | Border |
+|---|---|---|---|
+| `light` | `openai-codex/gpt-5.6-luna` | `max` | blue (`thinkingLow`) |
+| `standard` | `openai-codex/gpt-5.6-terra` | `max` | aqua (`thinkingMedium`) |
+| `default` | `openai-codex/gpt-5.6-sol` | `xhigh` | purple (`thinkingHigh`) |
+| `deep` | `openai-codex/gpt-5.6-sol` | `max` | red (`thinkingXhigh`) |
 
 Mitsupi can write temporary adjustments through `/mode` because the runtime file
 is a regular file rather than a Git symlink. Edit `pi/modes.personal.json` for a
@@ -258,7 +259,8 @@ Herdr, so the pane may appear idle and no separate completion toast is expected.
 `pi/install.sh` applies the tracked prompt-editor and files-shortcut patches
 only after both profile copies pass the exact version/context preflight. The
 prompt-editor patch adds Pi's native `max` thinking level to Mitsupi's mode
-editor, adapts its model picker to the current Pi runtime contract, and keeps a
+editor, adapts its model picker and theme lifetime to the current Pi runtime
+contract, keeps mode-border colors stable across later renders, and keeps a
 fresh profile's required `default` mode from creating a latency-named `fast`
 mode. The files-shortcut patch removes Mitsupi's `Ctrl+Shift+F` Finder reveal
 binding so Pi retains its built-in transcript search; `/files` and the other

@@ -5,22 +5,26 @@
     "light": {
       "provider": "openai-codex",
       "modelId": "gpt-5.6-luna",
-      "thinkingLevel": "max"
+      "thinkingLevel": "max",
+      "color": "thinkingLow"
     },
     "standard": {
       "provider": "openai-codex",
       "modelId": "gpt-5.6-terra",
-      "thinkingLevel": "max"
+      "thinkingLevel": "max",
+      "color": "thinkingMedium"
     },
     "default": {
       "provider": "openai-codex",
       "modelId": "gpt-5.6-sol",
-      "thinkingLevel": "xhigh"
+      "thinkingLevel": "xhigh",
+      "color": "thinkingHigh"
     },
     "deep": {
       "provider": "openai-codex",
       "modelId": "gpt-5.6-sol",
-      "thinkingLevel": "max"
+      "thinkingLevel": "max",
+      "color": "thinkingXhigh"
     }
   }
 }

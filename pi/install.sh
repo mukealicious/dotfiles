@@ -33,6 +33,7 @@ PI_BIN="$HOME/.bun/bin/pi"
 MIN_PI_VERSION="0.80.6"
 MITSUPI_PACKAGE="npm:mitsupi@1.6.0"
 MITSUPI_PROMPT_EDITOR_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-prompt-editor.patch"
+MITSUPI_PROMPT_EDITOR_THEME_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-prompt-editor-theme.patch"
 MITSUPI_FILES_SHORTCUT_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-files-shortcut.patch"
 PERSONAL_MODES_BASELINE="$DOTFILES_ROOT/pi/modes.personal.json"
 
@@ -62,6 +63,11 @@ fi
 
 if [ ! -f "$MITSUPI_PROMPT_EDITOR_PATCH" ]; then
   log_error "Mitsupi compatibility patch is missing: $MITSUPI_PROMPT_EDITOR_PATCH"
+  exit 1
+fi
+
+if [ ! -f "$MITSUPI_PROMPT_EDITOR_THEME_PATCH" ]; then
+  log_error "Mitsupi compatibility patch is missing: $MITSUPI_PROMPT_EDITOR_THEME_PATCH"
   exit 1
 fi
 
@@ -145,6 +151,7 @@ check_mitsupi_package_copy() {
   fi
 
   check_mitsupi_patch_context "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_PATCH" "prompt-editor" "$prompt_editor"
+  check_mitsupi_patch_context "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_THEME_PATCH" "prompt-editor theme" "$prompt_editor"
   check_mitsupi_patch_context "$package_dir" "$profile_name" "$MITSUPI_FILES_SHORTCUT_PATCH" "files shortcut" "$files_extension"
   log_success "Validated Mitsupi 1.6.0 patch contexts for $profile_name"
 }
@@ -178,6 +185,11 @@ validate_pi_modes_baseline() {
         .thinkingLevel as $thinking
         | ["off", "minimal", "low", "medium", "high", "xhigh", "max"]
         | index($thinking) != null
+      )
+      and (
+        .color as $color
+        | ["thinkingOff", "thinkingMinimal", "thinkingLow", "thinkingMedium", "thinkingHigh", "thinkingXhigh", "thinkingMax"]
+        | index($color) != null
       )
     )
   ' "$modes_src" >/dev/null 2>&1; then
@@ -218,6 +230,7 @@ apply_mitsupi_patches() {
   for profile_name in work personal; do
     package_dir="$(mitsupi_package_dir "$profile_name")"
     apply_mitsupi_patch_file "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_PATCH" "prompt-editor"
+    apply_mitsupi_patch_file "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_THEME_PATCH" "prompt-editor theme"
     apply_mitsupi_patch_file "$package_dir" "$profile_name" "$MITSUPI_FILES_SHORTCUT_PATCH" "files shortcut"
   done
 }

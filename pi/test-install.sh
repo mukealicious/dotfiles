@@ -68,29 +68,52 @@ chmod +x "$HOME_ROOT/.bun/bin/pi" "$FAKE_BIN/mise" "$FAKE_BIN/npm" "$FAKE_BIN/pa
 # executed by the installer tests.
 PROMPT_EDITOR_FIXTURE="$TMP_ROOT/prompt-editor.fixture.ts"
 cat > "$PROMPT_EDITOR_FIXTURE" <<'EOF'
-// Mitsupi 1.6.0 prompt-editor fixture
-function normalizeThinkingLevel(level: unknown): ThinkingLevel | undefined {
-  if (typeof level !== "string") return undefined;
-  const v = level as ThinkingLevel;
-  // Keep the list local to avoid importing internal enums.
-  const allowed: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
-  return allowed.includes(v) ? v : undefined;
+@@line 246
+	if (typeof level !== "string") return undefined;
+	const v = level as ThinkingLevel;
+	// Keep the list local to avoid importing internal enums.
+	const allowed: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+	return allowed.includes(v) ? v : undefined;
 }
 
-function createDefaultModes(): ModesFile {
-  return {
-    version: 1,
-    currentMode: "default",
-    modes: {
-      // Forced default mode
-      default: { ...base },
-      // Convenience mode (user can delete/rename)
-      fast: { ...base, thinkingLevel: "off" },
-    },
-  };
+@@line 276
+		modes: {
+			// Forced default mode
+			default: { ...base },
+			// Convenience mode (user can delete/rename)
+			fast: { ...base, thinkingLevel: "off" },
+		},
+	};
 }
 
-const MODE_UI_CONFIGURE = "Configure modes…";
+@@line 334
+	return Object.keys(modes).filter((name) => name !== CUSTOM_MODE_NAME);
+}
+
+function getModeBorderColor(ctx: ExtensionContext, pi: ExtensionAPI, mode: string): (text: string) => string {
+	const theme = ctx.ui.theme;
+	const spec = runtime.data.modes[mode];
+
+	// Explicit color override in JSON.
+	if (spec?.color) {
+		try {
+			// Validate early so we don't crash during render.
+			theme.getFgAnsi(spec.color as any);
+			return (text: string) => theme.fg(spec.color as any, text);
+		} catch {
+			// fall through to thinking-based colors
+		}
+	}
+
+	// Default: derive from the current thinking level.
+	return theme.getThinkingBorderColor(pi.getThinkingLevel());
+}
+
+function formatModeLabel(mode: string): string {
+	return mode;
+}
+
+@@line 610
 const MODE_UI_ADD = "Add mode…";
 const MODE_UI_BACK = "Back";
 
@@ -98,13 +121,10 @@ const ALL_THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium",
 const THINKING_UNSET_LABEL = "(don't change)";
 
 function isDefaultModeName(name: string): boolean {
-  return name === "default";
+	return name === "default";
 }
-async function pickModelForModeUI(
-  ctx: ExtensionContext,
-  spec: ModeSpec,
-): Promise<{ provider: string; modelId: string } | undefined> {
-  if (!ctx.hasUI) return undefined;
+
+@@line 866
 
   const settingsManager = SettingsManager.inMemory();
   const currentModel = spec.provider && spec.modelId ? ctx.modelRegistry.find(spec.provider, spec.modelId) : ctx.model;
@@ -121,22 +141,45 @@ async function pickModelForModeUI(
       (model) => done({ provider: model.provider, modelId: model.id }),
       () => done(undefined),
     );
-    return selector;
-  });
+		return selector;
+	});
 }
+
+@@line 1143
+}
+
+function setEditor(pi: ExtensionAPI, ctx: ExtensionContext, history: PromptEntry[]) {
+	ctx.ui.setEditorComponent((tui, theme, keybindings) => {
+		const editor = new PromptEditor(tui, theme, keybindings);
+		requestEditorRender = () => editor.requestRenderNow();
+		editor.modeLabelProvider = () => runtime.currentMode;
+		// Keep the mode label color stable (match footer/status bar).
+		editor.modeLabelColor = (text: string) => ctx.ui.theme.fg("dim", text);
+		const borderColor = (text: string) => {
+			const isBashMode = editor.getText().trimStart().startsWith("!");
+			if (isBashMode) {
+				return ctx.ui.theme.getBashModeBorderColor()(text);
+			}
+			return getModeBorderColor(ctx, pi, runtime.currentMode)(text);
+		};
+
+		editor.borderColor = borderColor;
 EOF
-# Keep the sparse fixture at its upstream source lines. macOS `patch -F 0`
-# requires the hunk positions as well as exact context.
+# Keep each sparse context block at its upstream source line. macOS
+# `patch -F 0` requires the hunk positions as well as exact context.
 awk '
-  NR == 3 { for (i = 1; i <= 243; i++) print "" }
-  NR == 10 { for (i = 1; i <= 19; i++) print "" }
-  NR == 23 { for (i = 1; i <= 324; i++) print "" }
-  NR == 33 { for (i = 1; i <= 242; i++) print "" }
-  { print }
+	$1 == "@@line" {
+		target = $2 + 0
+		while (output_line < target - 1) {
+			print ""
+			output_line++
+		}
+		next
+	}
+	{ print; output_line++ }
 ' "$PROMPT_EDITOR_FIXTURE" > "$PROMPT_EDITOR_FIXTURE.tmp"
 mv "$PROMPT_EDITOR_FIXTURE.tmp" "$PROMPT_EDITOR_FIXTURE"
-# The upstream file uses tabs; keep the fixture's patch context byte-for-byte
-# compatible while keeping this shell fixture readable above.
+# The upstream file uses tabs; keep the fixture context byte-for-byte compatible.
 sed -e 's/^      /\t\t\t/' -e 's/^    /\t\t/' -e 's/^  /\t/' "$PROMPT_EDITOR_FIXTURE" > "$PROMPT_EDITOR_FIXTURE.tmp"
 mv "$PROMPT_EDITOR_FIXTURE.tmp" "$PROMPT_EDITOR_FIXTURE"
 
@@ -268,8 +311,10 @@ assert_contains "$TMP_ROOT/first.log" 'Removed retired managed extension link: w
 assert_contains "$TMP_ROOT/first.log" 'Preserving user-owned extension entry: personal/extensions/cost.ts'
 assert_contains "$TMP_ROOT/first.log" 'Preserving user-owned extension entry: personal/extensions/watchdog.ts'
 assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 prompt-editor patch for work'
+assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 prompt-editor theme patch for work'
 assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 files shortcut patch for work'
 assert_contains "$TMP_ROOT/first.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for personal'
+assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 prompt-editor theme patch for personal'
 assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 files shortcut patch for personal'
 
 PERSONAL_MODES="$HOME_ROOT/.pi/personal/modes.json"
@@ -281,10 +326,10 @@ jq -e '
   .version == 1
   and .currentMode == "default"
   and (.modes | keys == ["deep", "default", "light", "standard"])
-  and .modes.light == {provider: "openai-codex", modelId: "gpt-5.6-luna", thinkingLevel: "max"}
-  and .modes.standard == {provider: "openai-codex", modelId: "gpt-5.6-terra", thinkingLevel: "max"}
-  and .modes.default == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "xhigh"}
-  and .modes.deep == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "max"}
+  and .modes.light == {provider: "openai-codex", modelId: "gpt-5.6-luna", thinkingLevel: "max", color: "thinkingLow"}
+  and .modes.standard == {provider: "openai-codex", modelId: "gpt-5.6-terra", thinkingLevel: "max", color: "thinkingMedium"}
+  and .modes.default == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "xhigh", color: "thinkingHigh"}
+  and .modes.deep == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "max", color: "thinkingXhigh"}
 ' "$PERSONAL_MODES" >/dev/null || fail "personal mode mapping changed"
 
 EXPECTED_EXTENSIONS='["extensions/answer.ts","extensions/context.ts","extensions/files.ts","extensions/multi-edit.ts","extensions/prompt-editor.ts","extensions/todos.ts","extensions/uv.ts","extensions/whimsical.ts","extensions/btw.ts","extensions/review.ts"]'
@@ -319,6 +364,10 @@ for profile in work personal; do
   assert_contains "$snapshot" 'getAvailableSnapshot: () => ctx.modelRegistry.getAvailable()'
   assert_contains "$snapshot" 'modelRuntimeAdapter as any'
   assert_not_contains "$snapshot" 'ctx.modelRegistry as any'
+  assert_contains "$snapshot" 'const uiTheme = ctx.ui.theme'
+  assert_contains "$snapshot" 'return getModeBorderColor(uiTheme, pi, runtime.currentMode)(text)'
+  assert_contains "$snapshot" 'return theme.getThinkingBorderColor("off")'
+  assert_not_contains "$snapshot" 'return ctx.ui.theme.getBashModeBorderColor()(text)'
   files_snapshot="$TMP_ROOT/$profile-files.patched.ts"
   cp "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/files.ts" "$files_snapshot"
   assert_not_contains "$files_snapshot" 'ctrl+shift+f'
@@ -346,8 +395,10 @@ run_install "$HOME_ROOT" "$TMP_ROOT/second.log"
 assert_contains "$TMP_ROOT/second.log" 'Preserving unmanaged extension link: personal/extensions/cost.ts'
 assert_contains "$TMP_ROOT/second.log" 'Preserving dead unmanaged extension link: work/extensions/watchdog.ts'
 assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for work'
+assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor theme patch already applied for work'
 assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 files shortcut patch already applied for work'
 assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for personal'
+assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor theme patch already applied for personal'
 assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 files shortcut patch already applied for personal'
 cmp -s "$REPO/pi/modes.personal.json" "$PERSONAL_MODES" || fail "installer did not restore the tracked personal modes"
 for profile in work personal; do
@@ -393,6 +444,23 @@ assert_contains "$TMP_ROOT/unknown-context.log" 'Unknown Mitsupi 1.6.0 prompt-ed
 [ ! -e "$UNKNOWN_CONTEXT_HOME/.pi/personal/settings.json" ] || fail "unknown context mutated personal settings"
 [ ! -e "$UNKNOWN_CONTEXT_HOME/.pi/personal/modes.json" ] || fail "unknown context materialized personal modes"
 [ "$(grep -Fc '"xhigh"' "$UNKNOWN_CONTEXT_HOME/.pi/work/npm/node_modules/mitsupi/extensions/prompt-editor.ts")" -eq 2 ] || fail "unknown context mutated work Mitsupi copy"
+
+UNKNOWN_THEME_CONTEXT_HOME="$TMP_ROOT/unknown-theme-context-home"
+mkdir -p "$UNKNOWN_THEME_CONTEXT_HOME/.bun/bin"
+cp "$HOME_ROOT/.bun/bin/pi" "$UNKNOWN_THEME_CONTEXT_HOME/.bun/bin/pi"
+make_mitsupi_copy "$UNKNOWN_THEME_CONTEXT_HOME" work "1.6.0" original
+make_mitsupi_copy "$UNKNOWN_THEME_CONTEXT_HOME" personal "1.6.0" original
+unknown_theme_extension="$UNKNOWN_THEME_CONTEXT_HOME/.pi/personal/npm/node_modules/mitsupi/extensions/prompt-editor.ts"
+sed 's/match footer\/status bar/changed theme context/' "$unknown_theme_extension" > "$unknown_theme_extension.tmp"
+mv "$unknown_theme_extension.tmp" "$unknown_theme_extension"
+if run_install "$UNKNOWN_THEME_CONTEXT_HOME" "$TMP_ROOT/unknown-theme-context.log"; then
+  fail "unknown prompt-editor theme context unexpectedly passed preflight"
+fi
+assert_contains "$TMP_ROOT/unknown-theme-context.log" 'Unknown Mitsupi 1.6.0 prompt-editor theme context'
+[ ! -e "$UNKNOWN_THEME_CONTEXT_HOME/.pi/work/settings.json" ] || fail "unknown theme context mutated work settings"
+[ ! -e "$UNKNOWN_THEME_CONTEXT_HOME/.pi/personal/settings.json" ] || fail "unknown theme context mutated personal settings"
+[ ! -e "$UNKNOWN_THEME_CONTEXT_HOME/.pi/personal/modes.json" ] || fail "unknown theme context materialized personal modes"
+[ "$(grep -Fc '"xhigh"' "$UNKNOWN_THEME_CONTEXT_HOME/.pi/work/npm/node_modules/mitsupi/extensions/prompt-editor.ts")" -eq 2 ] || fail "unknown theme context mutated work Mitsupi copy"
 
 # A one-line change in patch context must not be accepted through patch fuzz.
 UNKNOWN_FILES_CONTEXT_HOME="$TMP_ROOT/unknown-files-context-home"
