@@ -8,7 +8,10 @@ Installed through the normal dotfiles workflow:
 dot
 ```
 
-`dot` installs Hunk from the top-level `Brewfile`, links `~/.config/hunk/config.toml`, and projects the Fish aliases and `hunk-review` agent skill.
+`dot` installs Hunk from Homebrew core, links `~/.config/hunk/config.toml`,
+installs the pinned
+[`hunk-commit-log`](https://github.com/sadick254/hunk-commit-log)
+extension, and projects the Fish aliases and `hunk-review` agent skill.
 
 ## Daily workflow
 
@@ -32,6 +35,38 @@ Review commits:
 hs
 hunk show HEAD~1
 ```
+
+The commit-log extension adds the commit message and branch history to a
+single-commit review. Use `n`/`p` to move through that history, `h` to toggle
+the commit list, `i` to toggle the message, and `I` to expand it. The audited
+extension revision is pinned in `hunk/install.sh`; update that commit
+deliberately after reviewing upstream changes.
+
+### Review a feature branch commit by commit
+
+`hunk diff --watch` remains a working-tree review, while
+`hunk diff origin/main...HEAD` produces one aggregate branch diff. The commit
+list appears only when reviewing a single commit with `hunk show`.
+
+Set the branch's actual base in that repository's `.hunk/config.toml`:
+
+```toml
+[extension.hunk-commit-log]
+range = "origin/main..HEAD"
+```
+
+Restart Hunk after changing extension configuration, then open a commit in the
+range:
+
+```bash
+hunk show HEAD
+```
+
+Starting at `HEAD`, use `p` to move toward older commits. To read the branch in
+chronological order, click the oldest commit and use `n` to move forward.
+Without a configured range, the extension shows up to 20 recent commits ending
+at the reviewed commit, which may include base-branch history. Do not set the
+range globally because repositories use different base branches.
 
 ## Agent-assisted review
 
