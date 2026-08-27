@@ -26,6 +26,12 @@ PI_CODING_AGENT_DIR="$HOME/.pi/work" herdr integration install pi
 PI_CODING_AGENT_DIR="$HOME/.pi/personal" herdr integration install pi
 ```
 
+Claude settings are shared across machines whose home directory names differ.
+The tracked hook command therefore uses `$HOME`. The installer runs Herdr's
+official Claude integration in a temporary staging directory, then installs the
+generated hook into `~/.claude/hooks/` without writing a host-specific absolute
+path into `claude/settings.json`.
+
 Check each active profile without touching the fallback:
 
 ```bash

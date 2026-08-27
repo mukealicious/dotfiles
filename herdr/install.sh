@@ -2,7 +2,7 @@
 #
 # Herdr Configuration
 #
-# Symlinks the tracked config and refreshes the two supported Pi integrations.
+# Symlinks the tracked config and refreshes supported agent integrations.
 #
 # Usage:
 #   ./install.sh          # Normal install (preserves an existing regular file)
@@ -16,6 +16,20 @@ HERDR_DEST="$HOME/.config/herdr"
 
 # shellcheck disable=SC1091
 . "$DOTFILES_ROOT/lib/symlink.sh"
+
+# Claude's tracked settings are shared by machines with different home paths.
+# Stage Herdr's official installer so it can refresh the generated hook without
+# writing a machine-specific absolute path into claude/settings.json.
+refresh_claude_integration() (
+  staging_dir="$(mktemp -d "${TMPDIR:-/tmp}/herdr-claude.XXXXXX")"
+  trap 'rm -rf "$staging_dir"' EXIT HUP INT TERM
+
+  CLAUDE_CONFIG_DIR="$staging_dir" herdr integration install claude
+  mkdir -p "$HOME/.claude/hooks"
+  install -m 0755 \
+    "$staging_dir/hooks/herdr-agent-state.sh" \
+    "$HOME/.claude/hooks/herdr-agent-state.sh"
+)
 
 FORCE="${FORCE:-false}"
 for arg in "$@"; do
@@ -45,7 +59,7 @@ if command -v herdr >/dev/null 2>&1; then
 
   # Preserve the existing global integrations for other installed agents.
   if command -v claude >/dev/null 2>&1; then
-    herdr integration install claude
+    refresh_claude_integration
   fi
   if command -v codex >/dev/null 2>&1; then
     herdr integration install codex
