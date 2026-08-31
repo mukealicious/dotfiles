@@ -11,19 +11,19 @@
     "standard": {
       "provider": "openai-codex",
       "modelId": "gpt-5.6-terra",
-      "thinkingLevel": "max",
+      "thinkingLevel": "xhigh",
       "color": "thinkingMedium"
     },
     "default": {
       "provider": "openai-codex",
       "modelId": "gpt-5.6-sol",
-      "thinkingLevel": "xhigh",
+      "thinkingLevel": "medium",
       "color": "thinkingHigh"
     },
     "deep": {
       "provider": "openai-codex",
       "modelId": "gpt-5.6-sol",
-      "thinkingLevel": "max",
+      "thinkingLevel": "high",
       "color": "thinkingXhigh"
     }
   }

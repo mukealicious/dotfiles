@@ -123,14 +123,14 @@ configuration; use Pi normally for per-profile model changes.
 
 The tracked personal modes baseline is authoritative and installer runs restore
 these capability-depth mappings. Explicit border colors identify modes independently
-of their thinking levels, since several modes intentionally run at `max`:
+of their thinking levels:
 
 | Mode | Model | Thinking | Border |
 |---|---|---|---|
 | `light` | `openai-codex/gpt-5.6-luna` | `max` | blue (`thinkingLow`) |
-| `standard` | `openai-codex/gpt-5.6-terra` | `max` | aqua (`thinkingMedium`) |
-| `default` | `openai-codex/gpt-5.6-sol` | `xhigh` | purple (`thinkingHigh`) |
-| `deep` | `openai-codex/gpt-5.6-sol` | `max` | red (`thinkingXhigh`) |
+| `standard` | `openai-codex/gpt-5.6-terra` | `xhigh` | aqua (`thinkingMedium`) |
+| `default` | `openai-codex/gpt-5.6-sol` | `medium` | purple (`thinkingHigh`) |
+| `deep` | `openai-codex/gpt-5.6-sol` | `high` | red (`thinkingXhigh`) |
 
 Mitsupi can write temporary adjustments through `/mode` because the runtime file
 is a regular file rather than a Git symlink. Edit `pi/modes.personal.json` for a
@@ -149,7 +149,7 @@ Tracked baseline defaults:
 
 - **Work profile**: OpenAI `gpt-5.5` via API key
 - **Personal profile**: OpenAI Codex `gpt-5.5` via OAuth subscription
-- **Personal modes**: Luna/max, Terra/max, Sol/xhigh, and Sol/max under
+- **Personal modes**: Luna/max, Terra/xhigh, Sol/medium, and Sol/high under
   `light`, `standard`, `default`, and `deep`
 - **Themes**: Gruvbox Dark (selected) and Gruvbox Light (available)
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` plus tldraw offline's app-managed skill at `~/skills/tldraw-offline` when installed; missing external skill paths are harmless

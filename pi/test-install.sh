@@ -327,9 +327,9 @@ jq -e '
   and .currentMode == "default"
   and (.modes | keys == ["deep", "default", "light", "standard"])
   and .modes.light == {provider: "openai-codex", modelId: "gpt-5.6-luna", thinkingLevel: "max", color: "thinkingLow"}
-  and .modes.standard == {provider: "openai-codex", modelId: "gpt-5.6-terra", thinkingLevel: "max", color: "thinkingMedium"}
-  and .modes.default == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "xhigh", color: "thinkingHigh"}
-  and .modes.deep == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "max", color: "thinkingXhigh"}
+  and .modes.standard == {provider: "openai-codex", modelId: "gpt-5.6-terra", thinkingLevel: "xhigh", color: "thinkingMedium"}
+  and .modes.default == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "medium", color: "thinkingHigh"}
+  and .modes.deep == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "high", color: "thinkingXhigh"}
 ' "$PERSONAL_MODES" >/dev/null || fail "personal mode mapping changed"
 
 EXPECTED_EXTENSIONS='["extensions/answer.ts","extensions/context.ts","extensions/files.ts","extensions/multi-edit.ts","extensions/prompt-editor.ts","extensions/todos.ts","extensions/uv.ts","extensions/whimsical.ts","extensions/btw.ts","extensions/review.ts"]'
