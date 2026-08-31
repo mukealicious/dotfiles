@@ -62,6 +62,7 @@ auto-sync mechanism.
 | `mattpocock/skills@9c9f36ccd3995266cd675468af71639c8dde1ec5` | `codebase-design`, thin `grill-me`, thin `grill-with-docs` | Deep-module/interface vocabulary and manual entry-point provenance |
 | `rjs/shaping-skills@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9` | `framing-doc`, `kickoff-doc`, `breadboarding` | Framing, shaped kickoff territory, and breadboarding |
 | `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | `impeccable` | Product UI/UX and visual interaction design |
+| `yanliudesign/mono-color-skill@a08c45df61ae480e2b0d78b978a304e06ba2894e` | `mono-color` | One-ink and controlled two-ink editorial art direction and raster generation |
 | `plannotator/effective-html`, `ThariqS/html-effectiveness` | `visual-deliverables` | Self-contained HTML/SVG explainers and curated examples |
 | Pinned maintenance/research influences | `post-mortem`, `production-readiness`, `tufte-data-viz`, `herdr`, `hunk-review` | Retrospectives, production risk, quantitative visualization, Herdr, and Hunk |
 
@@ -205,6 +206,7 @@ uncertain.
 | `implement` | Manual current-session implementation |
 | `librarian` / `opensrc` | External code discovery and source-backed investigation |
 | `moja-glava` | Durable private knowledge checkpoints |
+| `mono-color` | One-ink and controlled two-ink editorial art direction, raster assets, and production prompts |
 | `post-mortem` | Session lessons and agent-context improvements |
 | `production-readiness` | Service, data, deployment, and reliability risk |
 | `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
@@ -219,7 +221,8 @@ after shaping.
 
 ### One-owner capability boundaries
 
-- **Visual:** `impeccable` owns product UI/UX; `tufte-data-viz` owns quantitative
+- **Visual:** `impeccable` owns product UI/UX; `mono-color` owns one-ink and
+  controlled two-ink editorial art direction and raster assets; `tufte-data-viz` owns quantitative
   graphics; `visual-deliverables` owns self-contained HTML/SVG explainers;
   Mermaid owns text-native diagrams; `tldraw-offline` owns the editable local canvas.
 - **Research:** `researcher` gathers delegated evidence; `qmd` searches local

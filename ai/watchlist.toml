@@ -104,6 +104,15 @@ review = "semantic-diff"
 notes = "Upstream Impeccable 3.x consolidated skill source for ai/skills/impeccable/"
 
 [[sources]]
+id = "mono-color"
+repo = "yanliudesign/mono-color-skill"
+path = ""
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Upstream source for the adapted runtime subset in ai/skills/mono-color/"
+
+[[sources]]
 id = "shaping-framing-doc"
 repo = "rjs/shaping-skills"
 path = "framing-doc"
