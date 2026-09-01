@@ -1,4 +1,7 @@
 import { spawn } from "node:child_process";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -150,32 +153,40 @@ export function runCliWithHeartbeat(
  * elapsed timer in the TUI so the user sees progress without us burning
  * API calls on manual status checks.
  */
-export function pollResearch(
+export async function pollResearch(
   runId: string,
   signal: AbortSignal | undefined,
   onUpdate: OnUpdateCallback,
   startTime: number,
 ): Promise<ResearchResult> {
-  return runCliWithProgress(
-    [
-      "research", "poll", runId,
-      "--timeout", "540",
-      "--poll-interval", String(RESEARCH_POLL_INTERVAL_SECS),
-      "--json",
-    ],
-    signal,
-    (elapsed) =>
-      onUpdate({
-        content: [{ type: "text", text: `⏳ Research running · ${formatElapsed(startTime)} · polling` }],
-        details: {
-          status: "running",
-          run_id: runId,
-          elapsed,
-          poll_interval_seconds: RESEARCH_POLL_INTERVAL_SECS,
-        },
-      }),
-    startTime,
-  ) as Promise<ResearchResult>;
+  // `parallel-cli research poll` always saves a result file. Redirect that
+  // required output away from the caller's repository and remove it afterward.
+  const outputDir = await mkdtemp(join(tmpdir(), "pi-parallel-research-"));
+  try {
+    return await runCliWithProgress(
+      [
+        "research", "poll", runId,
+        "--timeout", "540",
+        "--poll-interval", String(RESEARCH_POLL_INTERVAL_SECS),
+        "--output", join(outputDir, runId),
+        "--json",
+      ],
+      signal,
+      (elapsed) =>
+        onUpdate({
+          content: [{ type: "text", text: `⏳ Research running · ${formatElapsed(startTime)} · polling` }],
+          details: {
+            status: "running",
+            run_id: runId,
+            elapsed,
+            poll_interval_seconds: RESEARCH_POLL_INTERVAL_SECS,
+          },
+        }),
+      startTime,
+    ) as ResearchResult;
+  } finally {
+    await rm(outputDir, { recursive: true, force: true });
+  }
 }
 
 /**

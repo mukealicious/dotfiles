@@ -42,7 +42,7 @@ That's it. The four tools are now available to your agent.
 
 ## How it works
 
-Each tool wraps `parallel-cli` via `spawn()` with JSON output. Search and extract are synchronous — call the CLI, parse the result, done. Research and enrich are async — they fire a `--no-wait` run to get a job ID, then poll for completion with live progress updates streamed back to the TUI.
+Each tool wraps `parallel-cli` via `spawn()` with JSON output. Search and extract are synchronous — call the CLI, parse the result, done. Research and enrich are async — they fire a `--no-wait` run to get a job ID, then poll for completion with live progress updates streamed back to the TUI. The CLI's required research result file is redirected to a temporary directory and removed after polling so tool calls do not leave artifacts in the active repository.
 
 The agent decides which tool to use based on `promptGuidelines` baked into each tool registration — no skill file needed.
 
