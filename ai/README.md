@@ -207,6 +207,7 @@ uncertain.
 | `librarian` / `opensrc` | External code discovery and source-backed investigation |
 | `moja-glava` | Durable private knowledge checkpoints |
 | `mono-color` | One-ink and controlled two-ink editorial art direction, raster assets, and production prompts |
+| `mu-stack` | New-project JS/TS tooling plus project-level StyleX and Effect adoption decisions |
 | `post-mortem` | Session lessons and agent-context improvements |
 | `production-readiness` | Service, data, deployment, and reliability risk |
 | `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
