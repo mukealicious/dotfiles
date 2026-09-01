@@ -99,7 +99,7 @@ check_dotfiles_command() {
 
 header "Critical CLIs"
 
-for cmd in brew fish herdr starship mise node pnpm bun ni yarn uv qmd; do
+for cmd in brew fish herdr starship mise node pnpm bun ni yarn uv qmd portless; do
   if command -v "$cmd" >/dev/null 2>&1; then
     pass "$cmd"
   else

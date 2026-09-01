@@ -54,6 +54,10 @@ backend = "npm:opensrc"
 [tools."npm:opensrc".options]
 allow_builds = '["opensrc"]'
 
+[[tools."npm:portless"]]
+version = "0.15.6"
+backend = "npm:portless"
+
 [[tools.pnpm]]
 version = "11.23.0"
 backend = "aqua:pnpm/pnpm"

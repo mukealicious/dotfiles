@@ -29,7 +29,7 @@ dot -e       # Open dotfiles in editor
 | **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex, Pi |
 | **Window Mgmt** | AeroSpace (i3-like tiling), Ice (menu bar) |
 | **Database** | PostgreSQL 17, Redis |
-| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, Flue CLI, agent-browser, surf-cli, RemCTL |
+| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, Flue CLI, Portless, agent-browser, surf-cli, RemCTL |
 
 ## Architecture
 
