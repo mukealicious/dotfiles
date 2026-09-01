@@ -35,7 +35,7 @@
 
 ## Herdr
 
-- When `HERDR_ENV=1`, load the `herdr` skill at the beginning of the conversation and follow its startup and coordination workflow.
+- At the beginning of every conversation, inspect `HERDR_ENV` before substantive work. When it is `1`, load the `herdr` skill and follow its startup workflow, including renaming the current tab once the user's intent is clear. Do not wait for the user to mention Herdr.
 
 ## Safety and Ownership
 
