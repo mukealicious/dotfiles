@@ -182,7 +182,7 @@ settings do not override these role defaults.
 
 ### Workflow boundaries
 
-- Use Pi `/tree` for sequential, reversible exploration in the current process.
+- Use Pi `/tree` to inspect history, recover context, or deliberately revisit an alternative branch. It is not a required step between handoffs.
 - Use `pi-subagents` for bounded independent reconnaissance, research, implementation,
   or review work; the parent keeps decisions, integration, and validation.
 - Use a Herdr worktree for concurrent filesystem isolation and Hunk review; it is
@@ -193,8 +193,10 @@ settings do not override these role defaults.
   annotations. Mitsupi `/review` remains an optional manual tree-isolated experiment,
   not an automatic sequel.
 - Use `/handoff` for temporary same-process continuation context: it writes the
-  handoff outside the checkout, summarizes the source branch with `/tree`, and
-  continues from that handoff without selecting a new profile or spawning a child.
+  handoff outside the checkout, summarizes the active branch through internal tree
+  navigation, and automatically continues without selecting a new profile or
+  spawning a child. Repeat `/handoff` directly at later phase boundaries; prior
+  summaries remain on the active path.
 - `/skill:grilling`, `/skill:grill-me`, `/skill:grill-with-docs`, `/skill:tdd`,
   `/skill:implement`, and `/skill:bro` are composable workflows. `implement` and
   `bro` are manual-only; implementation stays in the current session, does not
@@ -210,10 +212,12 @@ profile's `extensions/` directory by `install.sh`.
 Registers `/handoff [focus]`. The command invokes the manual-only shared handoff
 skill, waits for its agent turn, preserves the source JSONL branch, navigates back
 to the first user message with `summarize: true`, clears restored editor text, and
-continues automatically from the temporary handoff. Cancellation or an aborted
-handoff turn leaves the prior branch and any handoff artifact available and
-reports the failure. The command clears only the restored source prompt; a draft
-that Pi preserved during navigation remains in the editor.
+continues automatically from the temporary handoff. Repeating `/handoff` continues
+from the active branch; its earlier summaries are already on that path, so the user
+does not navigate with `/tree` between phases. Cancellation or an aborted handoff
+turn leaves the prior branch and any handoff artifact available and reports the
+failure. The command clears only the restored source prompt; a draft that Pi
+preserved during navigation remains in the editor.
 
 The handoff stays in the current Pi/Herdr process, so its active profile, working
 directory, pane identity, and Git state carry through naturally. Specs and other
