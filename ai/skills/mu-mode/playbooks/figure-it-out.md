@@ -36,9 +36,9 @@ Break the task into the smallest coherent units that can each end in evidence. P
 
 Compare concrete alternatives only for consequential uncertainty. Parallelize only across real ownership seams, with separate files, branches, worktrees, or other isolated state where concurrent writes could collide.
 
-Record the phase list in a todo, durable plan, or decision log only when the run needs coordination, auditability, or resumability. In Pi, use its handoff command with the next phase and plan path at meaningful phase boundaries or under context pressure when the run should continue immediately. Repeated handoffs need no manual tree navigation.
+Select relevant specialists and propose meaningful phase boundaries using [Composition and Checkpoints](../references/composition-and-checkpoints.md). Record the phase list in a todo, durable plan, or decision log only when the run needs coordination, auditability, or resumability. Stop at agreed checkpoints with evidence and the recommended next handoff; verification units inside a phase do not each require a pause.
 
-### 3. Run the loop
+### 3. Execute verifiable units
 
 For each unit:
 
@@ -59,3 +59,19 @@ Preserve enough evidence for another person or a resumed session to reconstruct 
 Run the whole definition of done against the real product or artifact. Encode recurring corrections in the strongest appropriate mechanism, such as a type, test, lint rule, metadata constraint, validator, or script.
 
 Report the designed workflow, rigor level, verified evidence, negative or inconclusive findings, and remaining work. If this bespoke workflow recurs, recommend a permanent playbook with a precise trigger and invariant.
+
+## Planning recipe
+
+Use Figure It Out when the deliverable is an engineering plan rather than a bounded factual answer or an authorized implementation. Multi-Phase Plan remains deferred. The outcome is a buildable, evidence-grounded proposal with explicit unknowns and verification criteria, not a mandatory document or a promise that the design is proven.
+
+A useful composition, adapted to what remains uncertain:
+
+- Inspect the repository and existing decisions; distinguish facts, assumptions, constraints, and permissions.
+- Use Grilling for unresolved decisions, not facts retrievable from code or questions already answered.
+- Use Breadboarding when workflow wiring needs to become concrete, then identify demoable vertical slices. Use Domain Modeling for changing terms and relationships, or Codebase Design for uncertain interfaces and test seams.
+- Add Impeccable for UI shape or Production Readiness for operational/data risks. Framing Doc and Kickoff Doc apply only when the requested artifact is grounded in real conversation sources.
+- Propose a sequence with per-phase outcomes, dependencies, verification, open decisions, and meaningful handoff boundaries. Recommend test methods, including TDD only where useful; recommending a seam does not make it approved.
+
+Load selected skills through the [composition guide](../references/composition-and-checkpoints.md), not the entire list. A short plan in conversation can be enough; reference an existing durable plan rather than creating competing records.
+
+Verify the plan against actual code and constraints. At handback, distinguish what was inspected from what still needs an experiment. For planning-only scope, stop and request implementation approval if recommending a build next. If planning and implementation were both requested, preserve that authorization and transition to the appropriate implementation route after any agreed checkpoint; do not reopen settled decisions. Keep planning in this recipe for now. If repeated use reveals a distinct reusable need, propose a dedicated contract for a future scope decision; do not create one as part of the current run.

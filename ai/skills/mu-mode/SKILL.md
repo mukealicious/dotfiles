@@ -19,7 +19,7 @@ After activation:
 
 1. Say `Mu Mode: <route> — <defining contract>`.
 2. Read [principles.md](references/principles.md), then load only the full principle modules named by the route or triggered by the work.
-3. Read the selected playbook when it exists. Preserve its semantic invariants; adapt tools, delegation, worktrees, plans, screenshots, commits, and PRs to the task.
+3. Read [composition-and-checkpoints.md](references/composition-and-checkpoints.md) and the selected playbook when it exists. Preserve the contract and specialist requirements; adapt the suggested methods, tools, delegation, and phase shape to the task.
 4. Carry this contract forward through conversation context until the user exits, disables, or leaves Mu Mode. This is soft continuity, not runtime-enforced state. When using Pi's handoff command, record Mu Mode, the current route, and whether the continuation should stay on it or rematch; make reloading this router the continuation's first step. Reinvoke after other compaction or visible drift when needed.
 5. Treat `new task` as a request to clear the current route and rematch without leaving Mu Mode.
 
@@ -29,7 +29,7 @@ Read [active-playbooks.md](references/active-playbooks.md) and choose the most s
 
 Implemented playbooks are linked from the catalogue. If another active route matches but its file is not present yet, preserve the route's defining contract and use [Figure It Out](playbooks/figure-it-out.md) to design the run. Do not pretend the missing playbook exists.
 
-When no permanent route fits, select Figure It Out. Keep its bespoke workflow proportionate. If the same bespoke shape recurs, propose promoting it to a permanent playbook.
+When no permanent route fits, select Figure It Out. Planning composition lives in its [planning recipe](playbooks/figure-it-out.md); there is no dedicated Planning route. Figure It Out is a legitimate workflow, not a failure to route. Keep its bespoke workflow proportionate. If the same bespoke shape recurs, propose promoting it to a permanent playbook.
 
 The deferred catalogue in [deferred-playbooks.md](references/deferred-playbooks.md) records possible future routes. Do not invoke a deferred route as if it were implemented; Figure It Out may compose its useful semantics without claiming the capability.
 
