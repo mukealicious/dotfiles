@@ -116,10 +116,13 @@ files by `install.sh`:
 The tracked files are managed baselines rather than direct symlink targets. Pi writes
 interactive model choices and changelog state back to each profile's runtime file;
 keeping that file outside Git avoids dirtying the dotfiles worktree whenever a model
-changes. Installer runs refresh repo-managed settings while preserving
-`defaultProvider`, `defaultModel`, `defaultThinkingLevel`, `lastChangelogVersion`, and
-Pi's generated `trackingId`. Edit the tracked baseline for durable non-runtime
-configuration; use Pi normally for per-profile model changes.
+changes. Installer runs preserve `lastChangelogVersion` and Pi's generated
+`trackingId`. Work also preserves `defaultProvider`, `defaultModel`, and
+`defaultThinkingLevel`; personal restores these startup settings from the tracked
+baseline so fresh launches start in `default` mode (Astra/medium). Explicit CLI
+model/thinking options and resumed sessions still take precedence. Interactive
+mode changes remain available; saved startup overrides last until the next install.
+Edit the tracked baseline for durable configuration changes.
 
 The tracked personal modes baseline is authoritative and installer runs restore
 these capability-depth mappings. Explicit border colors identify modes independently
@@ -128,9 +131,9 @@ of their thinking levels:
 | Mode | Model | Thinking | Border |
 |---|---|---|---|
 | `light` | `openai-codex/gpt-5.6-luna` | `max` | blue (`thinkingLow`) |
-| `standard` | `openai-codex/gpt-5.6-terra` | `xhigh` | aqua (`thinkingMedium`) |
-| `default` | `openai-codex/gpt-5.6-sol` | `medium` | purple (`thinkingHigh`) |
-| `deep` | `openai-codex/gpt-5.6-sol` | `high` | red (`thinkingXhigh`) |
+| `standard` | `openai-codex/gpt-5.6-sol` | `medium` | aqua (`thinkingMedium`) |
+| `default` | `openai-codex/gpt-6-astra` | `medium` | purple (`thinkingHigh`) |
+| `deep` | `openai-codex/gpt-6-astra` | `high` | red (`thinkingXhigh`) |
 
 Mitsupi can write temporary adjustments through `/mode` because the runtime file
 is a regular file rather than a Git symlink. Edit `pi/modes.personal.json` for a
@@ -148,8 +151,8 @@ agents; custom agents and chains remain in their owning profile.
 Tracked baseline defaults:
 
 - **Work profile**: OpenAI `gpt-5.5` via API key
-- **Personal profile**: OpenAI Codex `gpt-5.5` via OAuth subscription
-- **Personal modes**: Luna/max, Terra/xhigh, Sol/medium, and Sol/high under
+- **Personal profile**: OpenAI Codex `gpt-6-astra` at medium thinking via OAuth subscription
+- **Personal modes**: Luna/max, Sol/medium, Astra/medium, and Astra/high under
   `light`, `standard`, `default`, and `deep`
 - **Themes**: Gruvbox Dark (selected) and Gruvbox Light (available)
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` plus tldraw offline's app-managed skill at `~/skills/tldraw-offline` when installed; missing external skill paths are harmless
