@@ -116,10 +116,13 @@ files by `install.sh`:
 The tracked files are managed baselines rather than direct symlink targets. Pi writes
 interactive model choices and changelog state back to each profile's runtime file;
 keeping that file outside Git avoids dirtying the dotfiles worktree whenever a model
-changes. Installer runs refresh repo-managed settings while preserving
-`defaultProvider`, `defaultModel`, `defaultThinkingLevel`, `lastChangelogVersion`, and
-Pi's generated `trackingId`. Edit the tracked baseline for durable non-runtime
-configuration; use Pi normally for per-profile model changes.
+changes. Installer runs preserve `lastChangelogVersion` and Pi's generated
+`trackingId`. Work also preserves `defaultProvider`, `defaultModel`, and
+`defaultThinkingLevel`; personal restores these startup settings from the tracked
+baseline so fresh launches start in `default` mode (Astra/medium). Explicit CLI
+model/thinking options and resumed sessions still take precedence. Interactive
+mode changes remain available; saved startup overrides last until the next install.
+Edit the tracked baseline for durable configuration changes.
 
 The tracked personal modes baseline is authoritative and installer runs restore
 these capability-depth mappings. Explicit border colors identify modes independently
@@ -128,9 +131,9 @@ of their thinking levels:
 | Mode | Model | Thinking | Border |
 |---|---|---|---|
 | `light` | `openai-codex/gpt-5.6-luna` | `max` | blue (`thinkingLow`) |
-| `standard` | `openai-codex/gpt-5.6-terra` | `xhigh` | aqua (`thinkingMedium`) |
-| `default` | `openai-codex/gpt-5.6-sol` | `medium` | purple (`thinkingHigh`) |
-| `deep` | `openai-codex/gpt-5.6-sol` | `high` | red (`thinkingXhigh`) |
+| `standard` | `openai-codex/gpt-5.6-sol` | `medium` | aqua (`thinkingMedium`) |
+| `default` | `openai-codex/gpt-6-astra` | `medium` | purple (`thinkingHigh`) |
+| `deep` | `openai-codex/gpt-6-astra` | `high` | red (`thinkingXhigh`) |
 
 Mitsupi can write temporary adjustments through `/mode` because the runtime file
 is a regular file rather than a Git symlink. Edit `pi/modes.personal.json` for a
@@ -148,8 +151,8 @@ agents; custom agents and chains remain in their owning profile.
 Tracked baseline defaults:
 
 - **Work profile**: OpenAI `gpt-5.5` via API key
-- **Personal profile**: OpenAI Codex `gpt-5.5` via OAuth subscription
-- **Personal modes**: Luna/max, Terra/xhigh, Sol/medium, and Sol/high under
+- **Personal profile**: OpenAI Codex `gpt-6-astra` at medium thinking via OAuth subscription
+- **Personal modes**: Luna/max, Sol/medium, Astra/medium, and Astra/high under
   `light`, `standard`, `default`, and `deep`
 - **Themes**: Gruvbox Dark (selected) and Gruvbox Light (available)
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` plus tldraw offline's app-managed skill at `~/skills/tldraw-offline` when installed; missing external skill paths are harmless
@@ -182,7 +185,7 @@ settings do not override these role defaults.
 
 ### Workflow boundaries
 
-- Use Pi `/tree` for sequential, reversible exploration in the current process.
+- Use Pi `/tree` to inspect history, recover context, or deliberately revisit an alternative branch. It is not a required step between handoffs.
 - Use `pi-subagents` for bounded independent reconnaissance, research, implementation,
   or review work; the parent keeps decisions, integration, and validation.
 - Use a Herdr worktree for concurrent filesystem isolation and Hunk review; it is
@@ -193,8 +196,10 @@ settings do not override these role defaults.
   annotations. Mitsupi `/review` remains an optional manual tree-isolated experiment,
   not an automatic sequel.
 - Use `/handoff` for temporary same-process continuation context: it writes the
-  handoff outside the checkout, summarizes the source branch with `/tree`, and
-  continues from that handoff without selecting a new profile or spawning a child.
+  handoff outside the checkout, summarizes the active branch through internal tree
+  navigation, and automatically continues without selecting a new profile or
+  spawning a child. Repeat `/handoff` directly at later phase boundaries; prior
+  summaries are included in the next summary, not guaranteed to remain verbatim.
 - `/skill:grilling`, `/skill:grill-me`, `/skill:grill-with-docs`, `/skill:tdd`,
   `/skill:implement`, and `/skill:bro` are composable workflows. `implement` and
   `bro` are manual-only; implementation stays in the current session, does not
@@ -209,11 +214,33 @@ profile's `extensions/` directory by `install.sh`.
 
 Registers `/handoff [focus]`. The command invokes the manual-only shared handoff
 skill, waits for its agent turn, preserves the source JSONL branch, navigates back
-to the first user message with `summarize: true`, clears restored editor text, and
-continues automatically from the temporary handoff. Cancellation or an aborted
-handoff turn leaves the prior branch and any handoff artifact available and
-reports the failure. The command clears only the restored source prompt; a draft
-that Pi preserved during navigation remains in the editor.
+to the first user message with `summarize: true`, and continues automatically from
+the temporary handoff. Repeating `/handoff` summarizes the active branch, including
+its earlier summaries; they need not remain verbatim. No manual `/tree` navigation
+is needed between phases.
+
+A compact widget above the editor shows document writing, summarization/tree
+switching, and continuation startup with elapsed time. Stages advance only on
+observed lifecycle boundaries; Pi exposes summarization and switching as one
+operation. The widget survives tree redraw and clears when a receipt is recorded.
+
+`handoff source` and `handoff resume ← <source ID>` labels make both branches easy
+to find in `/tree` (including its labeled-only filter). Existing source labels are
+preserved. A persistent, expandable receipt records source/resume IDs, timestamps,
+outcome, and recovery details without adding anything to model context. Progress
+checkpoints also survive reload; an unfinished transaction is reported as
+interrupted, never automatically retried.
+
+**“Continuation started” is not document acceptance or completed work.** It requires
+the continuation prompt's observed agent start, not merely submission. The command
+does not independently verify the artifact path or its acceptance; find the path
+in the source turn or branch summary. `/handoff history` is deferred.
+
+Cancellation, errors, or runtime shutdown retain source history and temporary
+files, with the last observed stage in the receipt. Startup has a 30-second timeout;
+document writing and summarization use Pi's existing cancellation behavior. The
+command clears only the prompt restored by navigation and restores a preexisting
+draft if that prompt replaced it, without overwriting newly typed text.
 
 The handoff stays in the current Pi/Herdr process, so its active profile, working
 directory, pane identity, and Git state carry through naturally. Specs and other

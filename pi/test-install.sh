@@ -327,9 +327,9 @@ jq -e '
   and .currentMode == "default"
   and (.modes | keys == ["deep", "default", "light", "standard"])
   and .modes.light == {provider: "openai-codex", modelId: "gpt-5.6-luna", thinkingLevel: "max", color: "thinkingLow"}
-  and .modes.standard == {provider: "openai-codex", modelId: "gpt-5.6-terra", thinkingLevel: "xhigh", color: "thinkingMedium"}
-  and .modes.default == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "medium", color: "thinkingHigh"}
-  and .modes.deep == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "high", color: "thinkingXhigh"}
+  and .modes.standard == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "medium", color: "thinkingMedium"}
+  and .modes.default == {provider: "openai-codex", modelId: "gpt-6-astra", thinkingLevel: "medium", color: "thinkingHigh"}
+  and .modes.deep == {provider: "openai-codex", modelId: "gpt-6-astra", thinkingLevel: "high", color: "thinkingXhigh"}
 ' "$PERSONAL_MODES" >/dev/null || fail "personal mode mapping changed"
 
 EXPECTED_EXTENSIONS='["extensions/answer.ts","extensions/context.ts","extensions/files.ts","extensions/multi-edit.ts","extensions/prompt-editor.ts","extensions/todos.ts","extensions/uv.ts","extensions/whimsical.ts","extensions/btw.ts","extensions/review.ts"]'
@@ -388,7 +388,23 @@ ln -s "$TMP_ROOT/missing-watchdog.ts" "$HOME_ROOT/.pi/work/extensions/watchdog.t
 # baseline remains authoritative when dotfiles are reinstalled.
 jq '.modes.default.thinkingLevel = "off" | .modes.fast = .modes.light' "$PERSONAL_MODES" > "$PERSONAL_MODES.tmp"
 mv "$PERSONAL_MODES.tmp" "$PERSONAL_MODES"
+for profile in work personal; do
+  settings="$HOME_ROOT/.pi/$profile/settings.json"
+  jq '.defaultProvider = "saved-provider" | .defaultModel = "saved-model" | .defaultThinkingLevel = "high" | .lastChangelogVersion = "saved-version" | .trackingId = "saved-id"' "$settings" > "$settings.tmp"
+  mv "$settings.tmp" "$settings"
+done
 run_install "$HOME_ROOT" "$TMP_ROOT/second.log"
+jq -e --slurpfile modes "$PERSONAL_MODES" '
+  .defaultProvider == $modes[0].modes.default.provider
+  and .defaultModel == $modes[0].modes.default.modelId
+  and .defaultThinkingLevel == $modes[0].modes.default.thinkingLevel
+  and .lastChangelogVersion == "saved-version" and .trackingId == "saved-id"
+' "$HOME_ROOT/.pi/personal/settings.json" >/dev/null || fail "personal startup does not match default mode"
+jq -e '
+  .defaultProvider == "saved-provider" and .defaultModel == "saved-model"
+  and .defaultThinkingLevel == "high"
+  and .lastChangelogVersion == "saved-version" and .trackingId == "saved-id"
+' "$HOME_ROOT/.pi/work/settings.json" >/dev/null || fail "work runtime defaults were not preserved"
 [ -L "$HOME_ROOT/.pi/personal/extensions/cost.ts" ] || fail "live unmanaged link was removed"
 [ "$(readlink "$HOME_ROOT/.pi/personal/extensions/cost.ts")" = "$TMP_ROOT/unmanaged-cost.ts" ] || fail "live unmanaged link changed"
 [ -L "$HOME_ROOT/.pi/work/extensions/watchdog.ts" ] || fail "dead unmanaged link was removed"

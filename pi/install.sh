@@ -264,8 +264,14 @@ materialize_pi_settings() {
 
   settings_tmp="$(mktemp "${settings_dst}.tmp.XXXXXX")"
 
+  runtime_keys='["defaultProvider", "defaultModel", "defaultThinkingLevel", "lastChangelogVersion", "trackingId"]'
+  # Personal startup follows the managed default mode, not an older saved model.
+  if [ "$settings_src" = "$DOTFILES_ROOT/pi/settings.personal.json" ]; then
+    runtime_keys='["lastChangelogVersion", "trackingId"]'
+  fi
+
   if [ -e "$settings_dst" ]; then
-    if ! jq --argjson runtime_keys '["defaultProvider", "defaultModel", "defaultThinkingLevel", "lastChangelogVersion", "trackingId"]' -s '
+    if ! jq --argjson runtime_keys "$runtime_keys" -s '
       .[0] as $managed
       | .[1] as $runtime
       | $managed * (

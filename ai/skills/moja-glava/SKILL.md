@@ -86,8 +86,9 @@ Record only what helps a future return:
 
 - descriptive title and capture date;
 - source repository or context;
-- session ID and home-relative JSONL path;
-- a copyable resume command such as `pi --session <path>`;
+- source harness and its verified native session locator;
+- for Pi, the session ID, home-relative JSONL path, profile, and relevant tree-entry ID;
+- a copyable native resume command when one exists, such as `pi --session <path>`;
 - source URLs, files, capture packet, or related artifacts;
 - current findings, unresolved questions, and a concrete next step.
 
