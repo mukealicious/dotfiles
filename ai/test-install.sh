@@ -98,6 +98,16 @@ for profile in work personal; do
 done
 [ -f "$SUCCESS_REPO/.ai-runtime/pi/skills/handoff/SKILL.md" ] || fail "handoff skill was not projected into Pi runtime"
 assert_file_contains "$SUCCESS_REPO/.ai-runtime/pi/skills/handoff/SKILL.md" "temporary handoff"
+# Progressive disclosure must survive projection with its supporting resources.
+for provider in pi codex claude-code opencode; do
+  skills="$SUCCESS_REPO/.ai-runtime/$provider/skills"
+  for reference in herdr/references/workflows.md mono-color/references/recipe.md mono-color/references/color-and-layout.md mono-color/references/image-and-type.md mono-color/references/composition.md mono-color/references/production.md mono-color/references/inspection.md; do
+    [ -s "$skills/$reference" ] || fail "$provider is missing $reference"
+  done
+  for manual_skill in mu-mode implement; do
+    assert_file_contains "$skills/$manual_skill/SKILL.md" "disable-model-invocation: true"
+  done
+done
 for provider in codex claude-code opencode; do
   if grep -R -Fq '/skill:' "$SUCCESS_REPO/.ai-runtime/$provider/skills"; then
     fail "$provider skill projection contains Pi-only /skill syntax"

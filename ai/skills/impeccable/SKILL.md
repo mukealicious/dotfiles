@@ -13,42 +13,26 @@ license: Apache 2.0. Based on Anthropic's frontend-design skill. See NOTICE.md f
 
 Designs and iterates production-grade frontend interfaces. Real working code, committed design choices, exceptional craft.
 
-## Setup (non-optional)
+## Context and register
 
-Two steps before any design work. Both are required. Skipping either produces generic output that ignores the project.
+Gather context proportionate to the task. For bounded fixes, copy edits, and read-only critiques, use the request, affected UI, existing components, and available project docs. Do not create context files or run `teach` just because a file is missing.
 
-### 1. Context gathering
+For substantial new design or redesign, inspect the project's users, purpose, brand, and visual conventions before committing to a direction. At the project root, case-insensitive:
 
-Two files at the project root, case-insensitive:
+- **PRODUCT.md**, when present: users, brand, tone, anti-references, strategic principles.
+- **DESIGN.md**, when present: colors, typography, elevation, components.
 
-- **PRODUCT.md** — required. Users, brand, tone, anti-references, strategic principles.
-- **DESIGN.md** — optional, strongly recommended. Colors, typography, elevation, components.
-
-Load both in one call:
+Read these files directly for read-only work. The convenience loader below can rename legacy `.impeccable.md` to `PRODUCT.md`; use it only when that migration is within scope:
 
 ```bash
 node {{scripts_path}}/load-context.mjs
 ```
 
-Consume the full JSON output. Never pipe through `head`, `tail`, `grep`, or `jq`.
+Reuse context already loaded this session; refresh it after relevant edits or after `teach`/`document`. `live.mjs` already loads context. Missing or placeholder docs are a context gap, not an automatic blocker: inspect existing code and ask only about unresolved choices that materially affect the result. Use `teach` or `document` when the user requests durable context setup or agrees it is useful for substantial design work.
 
-If the output is already in this session's conversation history, don't re-run. Exceptions requiring a fresh load: you just ran `{{command_prefix}}impeccable teach` or `{{command_prefix}}impeccable document` (they rewrite the files), or the user manually edited one.
+Identify the surface's **register**: **brand** (marketing, landing, campaign, long-form content, portfolio, where design IS the product) or **product** (app UI, admin, dashboard, tool, where design SERVES the product). Infer from the task, then the surface, then PRODUCT.md; a missing register field does not require a setup detour.
 
-`{{command_prefix}}impeccable live` already warms context via `live.mjs` — if you've run `live.mjs`, don't also run `load-context.mjs` this session.
-
-If PRODUCT.md is missing, empty, or placeholder (`[TODO]` markers, <200 chars): run `{{command_prefix}}impeccable teach`, then resume the user's original task with the fresh context.
-
-If DESIGN.md is missing: nudge once per session (*"Run `{{command_prefix}}impeccable document` for more on-brand output"*), then proceed.
-
-### 2. Register
-
-Every design task is **brand** (marketing, landing, campaign, long-form content, portfolio — design IS the product) or **product** (app UI, admin, dashboard, tool — design SERVES the product).
-
-Identify before designing. Priority: (1) cue in the task itself ("landing page" vs "dashboard"); (2) the surface in focus (the page, file, or route being worked on); (3) `register` field in PRODUCT.md. First match wins.
-
-If PRODUCT.md lacks the `register` field (legacy), infer it once from its "Users" and "Product Purpose" sections, then cache the inferred value for the session. Suggest the user run `{{command_prefix}}impeccable teach` to add the field explicitly.
-
-Load the matching reference: [reference/brand.md](reference/brand.md) or [reference/product.md](reference/product.md). The shared design laws below apply to both.
+Load the matching reference when making or evaluating design choices: [reference/brand.md](reference/brand.md) or [reference/product.md](reference/product.md). Apply the shared laws below to the touched surface without expanding a bounded fix into a redesign.
 
 ## Shared design laws
 
@@ -153,9 +137,9 @@ Plus two management commands — `pin <command>` and `unpin <command>`, detailed
 
 1. **No argument** — render the table above as the user-facing command menu, grouped by category. Ask what they'd like to do.
 2. **First word matches a command** — load its reference file and follow its instructions. Everything after the command name is the target.
-3. **First word doesn't match** — general design invocation. Apply the setup steps, shared design laws, and the loaded register reference, using the full argument as context.
+3. **First word doesn't match** — general design invocation. Gather proportionate context and apply the shared design laws and relevant register reference, using the full argument as context.
 
-Setup (context gathering, register) is already loaded by then; sub-commands don't re-invoke `{{command_prefix}}impeccable`.
+Sub-commands reuse available context and don't re-invoke `{{command_prefix}}impeccable` or force context-file setup.
 
 ## Pin / Unpin
 

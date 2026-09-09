@@ -5,7 +5,7 @@ Gathers design context for a project and writes two complementary files at the p
 - **PRODUCT.md** (strategic): register, target users, product purpose, brand personality, anti-references, strategic design principles. Answers "who/what/why".
 - **DESIGN.md** (visual): visual theme, color palette, typography, components, layout. Follows the [Google Stitch DESIGN.md format](https://stitch.withgoogle.com/docs/design-md/format/). Answers "how it looks".
 
-Every other impeccable command reads these files before doing any work.
+Other impeccable commands use these files when relevant and available; their absence does not force this setup flow.
 
 ## Step 1: Load current state
 
@@ -132,6 +132,6 @@ Summarize:
 
 **Critical: re-run the loader to refresh session context.** After writing PRODUCT.md, run `node {{scripts_path}}/load-context.mjs` one final time and let its full JSON output land in conversation. This ensures subsequent commands in this session use the freshly-written PRODUCT.md, not a stale earlier version.
 
-If teach was invoked as a blocker by another impeccable command (e.g. the user ran `/impeccable polish` with no PRODUCT.md), resume that original task now with the fresh context.
+If the user agreed to context setup during another impeccable task, resume that original task now with the fresh context.
 
 Optionally {{ask_instruction}} whether they'd like a brief summary of PRODUCT.md appended to {{config_file}} for easier agent reference. If yes, append a short **Design Context** pointer section there.

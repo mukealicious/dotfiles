@@ -12,16 +12,10 @@ const SPEED_TO_PROCESSOR: Record<string, string> = {
 export const researchTool = {
   name: "deep_research",
   label: "Deep Research",
-  description: "Run an asynchronous deep-research job on a topic using parallel.ai, which searches the web, reads multiple sources, and synthesizes findings into a structured markdown report with cited sources. Unlike web_search (which returns a list of pages), this tool reads and reasons across many sources to produce a cohesive answer. The tool starts a research job, polls for completion automatically, and returns the full synthesized report with source citations. Use this for open-ended questions that require cross-source synthesis: 'what are the tradeoffs of X vs Y', 'current state of Z', 'comprehensive overview of W'. Use web_search instead for quick factual lookups or when you just need to find a specific page. The speed parameter controls depth: fast (default) is cheap and usually sufficient, best produces a thorough report but takes significantly longer.",
-  promptSnippet: "Deep async research that synthesizes across many sources into a cited report. Use fast (default) for most questions, best for comprehensive reports.",
+  description: "Run Parallel research across multiple web sources and return a synthesized Markdown report with citations. Polls automatically and streams progress until completion.",
+  promptSnippet: "Multi-source research synthesized into a cited report.",
   promptGuidelines: [
-    "Call this tool directly as deep_research({...}) — do NOT route through the mcp() tool",
-    "Use for synthesis questions: 'explain the current state of X', 'tradeoffs of Y vs Z', 'comprehensive overview of W'",
-    "Use web_search instead for quick factual lookups or finding specific pages",
-    "Do not fan out multiple deep_research calls for sub-questions unless the user explicitly asked for that cost/depth — prefer a few searches or one synthesis run",
-    "speed=fast (default) is right for almost everything — quick, cheap, good enough",
-    "speed=best only when the user explicitly needs maximum depth or a comprehensive report",
-    "The tool polls automatically and streams progress updates — no manual status checks needed",
+    "Prefer one focused deep_research run at speed='fast'; use 'best' only for explicitly requested comprehensive depth. Do not fan out paid research runs without authorization for that cost/depth.",
   ],
   parameters: Type.Object({
     topic: Type.String({ description: "The research question or topic to investigate. Be specific — 'what are the performance tradeoffs of SQLite vs PostgreSQL for read-heavy web apps' yields better results than just 'SQLite vs PostgreSQL'. The more focused the question, the more relevant the synthesis." }),

@@ -7,203 +7,63 @@ metadata:
 
 # Herdr
 
-Herdr is the terminal workspace manager surrounding the current agent. Use it as
-part of the working environment, not only when the user explicitly mentions it.
+Herdr is the terminal workspace manager surrounding the current agent.
 
-## Execution Context and Guardrails
+## Startup
 
-First check whether the calling process is itself Herdr-managed:
-
-```bash
-test "${HERDR_ENV:-}" = 1
-```
-
-When it is `1`, use `--current` or the injected `HERDR_*` IDs for caller-relative
-operations.
-
-When it is not `1`, there is no caller-relative pane. Do not use `--current`,
-do not infer ownership from UI focus, and do not inspect Herdr merely because a
-socket is available. Out-of-band control is allowed only when the user explicitly
-asks to operate Herdr or a workflow explicitly delegates management of narrowly
-scoped Herdr contexts. Discover live IDs, identify targets by requested workspace,
-repository, labels, or known task-created IDs, and use explicit IDs for every
-operation. If the target remains ambiguous, ask rather than guessing.
-
-In either context, do not inspect, type into, move, or close unrelated panes merely
-because they are visible. Treat them as user-owned unless the user explicitly
-scopes them into the task or the current workflow created them. Re-read live IDs
-before destructive actions.
-
-## Trust the Installed Release
-
-The installed binary is authoritative for CLI syntax. Use `herdr --help` and the
-relevant command group's help when syntax is uncertain. Herdr 0.8 and later also
-provide `herdr --skill`, which prints the upstream skill matched to that binary;
-use it to check release mechanics while retaining this skill's local operating
-policy.
-
-Herdr's top-level `--skill` only prints instructions. When `agent start` includes
-arguments after `--`, those arguments belong to the launched agent—for example,
-a Pi `--skill` argument is a Pi option, not a Herdr option.
-
-For release-specific subcommands, inspect the relevant group with `herdr agent`,
-`herdr pane`, `herdr worktree`, or `herdr integration`; do not run bare `herdr`
-for discovery because it launches or attaches the TUI. Most control commands
-return JSON, so use returned IDs rather than guessing them.
-
-## Start Every Conversation Well
-
-When the calling process is Herdr-managed, rename its current tab once the user's
-intent is clear:
+Check `HERDR_ENV` before substantive work. When it is `1`, identify the calling
+pane and rename its tab once the user's intent is clear:
 
 ```bash
 herdr pane current --current
 herdr tab rename <tab_id-from-response> "π Improve agent ergonomics"
 ```
 
-Out-of-band agents have no current Herdr tab and should not rename one unless the
-user explicitly identifies it as the conversation's target.
+- Use caller-relative `--current` or injected `HERDR_*` IDs, not UI focus.
+- Prefix Pi tabs with `π`; for another reported agent, use its name unless a
+  compact sigil is documented. Omit the prefix when no agent is reported.
+- Use 2–5 task/outcome words after the prefix. Avoid repo names, vague labels,
+  separators, and transient status (`WIP`, `blocked`, `done`).
+- Preserve a useful user-supplied label. Rename again only for a material pivot.
+- Tab renaming is low-risk and reversible; no approval needed.
 
-Choose a stable, scannable label:
+## Identity and ownership
 
-- Prefix Pi agent tabs with the compact `π` sigil, such as
-  `π Fix checkout retries`; do not spell out `pi` or add separator punctuation.
-- For another reported agent, use its name unless a compact sigil is documented;
-  omit the prefix when no agent is reported.
-- Use 2–5 words describing the task or intended outcome after the prefix.
-- Prefer `π Fix checkout retries` over vague labels such as `π Working`.
-- Do not repeat the repository name; the workspace already provides project context.
-- Do not put transient status such as `WIP`, `blocked`, or `done` in the label;
-  Herdr already displays agent status.
-- Rename again only if the conversation materially pivots.
-- Preserve a useful user-supplied label unless the new topic clearly supersedes it.
+When `HERDR_ENV` is not `1`, there is no caller-relative pane. Do not use
+`--current`, infer ownership from UI focus, or inspect Herdr merely because a
+socket is available. Out-of-band control requires an explicit user request or
+narrowly delegated workflow scope. Discover the target by requested workspace,
+repository, labels, or known task-created IDs; operate on explicit live IDs.
+Ask if the target remains ambiguous. Do not rename a conversation tab unless
+it is explicitly identified as the target.
 
-Tab renaming is low-risk and reversible. Do it without asking.
+In either context:
 
-## Use the Right Herdr Primitive
+- Do not inspect, type into, move, close, or repurpose unrelated/user-owned panes
+  without permission. Visibility is not ownership; never send text to an unrelated
+  agent pane.
+- Query only the smallest discovery surface needed for the authorized task.
+- IDs are opaque; moved panes can acquire new workspace-qualified IDs. Re-read
+  live IDs before destructive or cross-pane actions.
+- Use `--no-focus` for background tabs, workspaces, and splits; label what you create.
+- Never interrupt a live process silently. Close only disposable contexts you
+  created, preserving useful output.
 
-| Need | Primitive | Policy |
-|---|---|---|
-| Project/repository context | Workspace | Keep workspace labels project-oriented. Do not rename for each task. |
-| Task/topic and primary conversation | Tab | Keep one primary Pi conversation per tab and give the tab a task-level label. |
-| Interactive coding companion | Pane | Split beside the agent, usually 50/50, and label by role, such as `hunk`. |
-| Server, logs, or persistent watcher | Tab | Keep runtime processes out of the coding tab; group related processes as labeled panes in one operational tab. |
-| Specialized autonomous work | Agent pane or subagent harness | Prefer the configured subagent harness for bounded delegation; use a visible pane only when it supports the current tab's topic. |
+## Task-specific operations
 
-Avoid creating layout clutter. Use the current pane for short commands. Create a
-sibling pane when a tool is directly complementary to the coding conversation.
-Create a separate tab for persistent processes the user may monitor independently.
-Treat tabs as topic boundaries: start separate Pi conversations in separate tabs,
-and keep side-by-side panes scoped to the same topic.
+Use the current pane for short commands. Keep the workspace project-oriented and
+tabs task-oriented. Put interactive companions beside the agent and persistent
+servers/watchers in a separate operational tab. Prefer the configured subagent
+harness for bounded delegation unless visible terminal work adds value.
 
-## Common Layout Recipes
+Read [references/workflows.md](references/workflows.md) when creating layouts,
+opening Hunk (explicit request required), running persistent processes, or
+coordinating agents. Read [references/cli.md](references/cli.md) for command
+syntax, waits, keys, moves, and workspace operations. Neither is required just
+to name the current conversation.
 
-### Coding with Hunk
-
-When the user asks to open Hunk beside the agent, keep the agent on the left and
-create an evenly sized Hunk pane on the right. Do not duplicate an existing Hunk
-pane or session.
-
-```bash
-herdr pane current --current
-herdr pane rename <current-pane-id> "<agent-from-response>"
-herdr pane split --current --direction right --ratio 0.5 --no-focus
-herdr pane rename <new-pane-id> "hunk"
-herdr pane run <new-pane-id> "hunk diff --watch"
-```
-
-Running Hunk's interactive TUI still requires an explicit user request. Keep
-focus on the agent so the user can choose when to enter the Hunk pane.
-
-### Agent and pane waits
-
-Use `herdr agent prompt <target> <text> --wait` for ordinary delegated work. The
-wait settles on the first observed `idle`, `done`, or `blocked` state; do not
-repeat those defaults with `--until`. A prompt sent while an agent is not
-working must produce an observed lifecycle change within five seconds or Herdr
-returns `agent_prompt_stalled`. This tracks lifecycle state, not a particular
-turn, so an already-working turn may satisfy the wait.
-
-Use `--until` only when a specific state matters, and inspect `agent get` and
-`agent read` before responding to `blocked`. Standalone `herdr agent wait`
-without `--until` uses the same settled-state defaults.
-
-`herdr pane wait-output` searches the selected current terminal snapshot
-immediately, including output that already exists, and then polls. Use a
-literal `--match` or Rust `--regex`; select `visible`, `recent`, or
-`recent-unwrapped` with `--source` when needed.
-
-### Servers, Logs, and Watchers
-
-Create a background tab instead of splitting the coding tab:
-
-```bash
-herdr pane current --current
-herdr tab create --workspace <workspace-id-from-response> --label "dev server" --no-focus
-herdr pane rename <new-tab-root-pane-id> "server"
-herdr pane run <new-tab-root-pane-id> "pnpm dev"
-```
-
-If several persistent processes belong together, split that operational tab and
-label panes by role, such as `server`, `logs`, or `worker`. Keep unrelated
-processes in separate tabs.
-
-### Short Commands
-
-Run short tests, builds, and one-off commands in the agent pane unless interaction,
-concurrency, or persistent visibility makes a separate pane or tab useful.
-
-For visible commands and persistent processes:
-
-1. Use repository-native commands.
-2. Keep focus on the conversation with `--no-focus`.
-3. Wait for a meaningful readiness/completion signal when one exists.
-4. Read only enough recent output to verify the result.
-5. Report failures; do not turn them into success-shaped fallbacks.
-6. Do not close the pane or tab automatically if preserving its output is useful.
-   Close only disposable contexts you created, and never interrupt a live process
-   silently.
-
-## Coordination Workflow
-
-Herdr injects `HERDR_WORKSPACE_ID`, `HERDR_TAB_ID`, and `HERDR_PANE_ID` into a
-managed calling pane. Prefer `--current` or those caller IDs over UI focus. Before
-local coordination, run `herdr pane list --workspace "$HERDR_WORKSPACE_ID"` and
-use IDs from the live response; inspect other workspaces only when the user asks.
-
-For explicitly authorized out-of-band work, query the smallest discovery surface
-that can identify the target—for example, `workspace list`, followed by `tab list
---workspace <id>` or `pane list --workspace <id>`—then operate only on explicit
-live IDs belonging to that scope. Never substitute the currently focused UI pane
-for a missing caller identity.
-
-Herdr 0.8 IDs are opaque stable handles and closed IDs are not reused. A moved
-pane can receive a new workspace-qualified ID, so never rely on a guessed ID and
-re-read live state before destructive or cross-pane actions.
-
-Use Herdr coordination when it adds visibility or enables genuine concurrency:
-
-- Wait for a server or build with `herdr pane wait-output`.
-- Wait for a visible sibling agent with `herdr agent wait`.
-- Read completed output with `herdr pane read`.
-- Use a labeled new tab for a distinct investigation that should remain available.
-- Use a labeled split for interactive companions, REPLs, debuggers, or
-  user-visible agents that belong beside the current conversation.
-
-Prefer built-in agent/subagent orchestration when it provides better isolation,
-structured outputs, or parallel execution. Herdr panes are complementary: they
-are best for terminal-native work the user may want to see or resume.
-
-## Safety and Hygiene
-
-- Use `--no-focus` for background tabs, workspaces, and splits.
-- Label every tab or pane you create.
-- Never close or repurpose user-owned contexts without permission.
-- Never send text to an unrelated agent pane.
-- Re-read live IDs immediately before destructive actions.
-- Keep the workspace as the project boundary and tabs as task boundaries.
-
-## Command Reference
-
-Read [references/cli.md](./references/cli.md) when managing layouts, waiting on
-output or agents, sending keys, moving panes, or creating workspaces.
+The installed binary is authoritative: use `herdr --help` and relevant group help
+when syntax is uncertain. `herdr --skill` (0.8+) prints release-matched upstream
+instructions; retain this skill's local operating policy. Do not run bare `herdr`
+for discovery: it launches/attaches the TUI. Arguments after `agent start --`
+belong to the launched agent, not Herdr. Use returned JSON IDs rather than guesses.

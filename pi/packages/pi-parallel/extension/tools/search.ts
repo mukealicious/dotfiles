@@ -24,17 +24,13 @@ function formatSearchResults(query: string, result: SearchResult): string {
 export const searchTool = {
   name: "web_search",
   label: "Web Search",
-  description: "Search the public web with Parallel. Defaults to low-latency, low-cost Turbo mode for ordinary discovery and lookups; use Basic when deeper context is needed and Advanced for complex multi-hop retrieval. Returns ranked pages with LLM-ready excerpts.",
-  promptSnippet: "Use Parallel Turbo first for ordinary public-web discovery and quick current lookups. Escalate to Basic when Turbo is thin, or use Exa for semantic/code discovery and broader multilingual search.",
+  description: "Search the public web with Parallel and return ranked pages with excerpts. Supports date, domain, freshness, and location filters.",
+  promptSnippet: "Public-web discovery and factual lookups with ranked excerpts.",
+  // Single owner of cross-tool search routing in this setup.
   promptGuidelines: [
-    "Call web_search directly — do NOT route it through the mcp() tool",
-    "Default web_search to mode='turbo' for ordinary web discovery, factual lookups, news, and documentation",
-    "Retry web_search with mode='basic' when Turbo returns thin context; reserve mode='advanced' for complex multi-hop retrieval",
-    "Use exa_search for semantic discovery, obscure technical/code material, non-English/Japanese queries, or contradictory Parallel results",
-    "Do not use web_search when you already have a specific URL — use curl or bash instead (raw GitHub URLs, API endpoints, localhost)",
-    "Use deep_research instead of web_search when the answer requires synthesis across many sources",
-    "Use web_search afterDate to scope results to recent content such as news, releases, and changelogs",
-    "web_search returns excerpts; follow up with web_fetch only when a public page needs fuller extraction",
+    "Start ordinary discovery with web_search mode='turbo'; use 'basic' for thin results and 'advanced' for complex multi-hop retrieval. Use exa_search for semantic/code or multilingual discovery, or thin/contradictory Parallel results.",
+    "For known URLs, use bash/curl for raw files, APIs, feeds, downloads, and localhost; use web_fetch for readable extraction of public HTML pages, including rendered content. Search only when discovery is needed.",
+    "Use deep_research for multi-source synthesis and batch_enrich for the same lookup across a list of entities; use web_search for one-off facts.",
   ],
   parameters: Type.Object({
     query: Type.String({ description: "The search query — can be natural language ('how to deploy Next.js on Vercel') or keywords ('Next.js Vercel deployment guide'). More specific queries yield more relevant results." }),

@@ -10,19 +10,19 @@
 ## Communication
 
 - Be concise and direct.
-- Ask only when blocked, when ambiguity materially changes the outcome, or before irreversible, shared, privileged, costly, or production-visible actions.
+- Ask when blocked or ambiguity materially changes the outcome. Obtain approval before irreversible actions, privilege escalation, consequential spending, or changes that affect other people's work or production, unless already explicitly authorized.
 - State consequential assumptions briefly.
 - For durable artifacts such as PRs, handoffs, and architecture docs, prefer compact tables, diagrams, before/after blocks, and review maps.
 - When reporting failure, state what happened, impact, cause if known, next action, and what remains preserved.
 
 ## Working Style
 
-- Default to action on low-risk, reversible work; do not stop at analysis when implementation is clearly requested.
+- For implementation requests, complete the change, run proportionate validation, and fix failures caused by the change within scope. Continue without intermediate approval unless a consequential decision or agreed review gate is reached.
 - Prefer small, validated increments and thin end-to-end slices.
 - Reuse existing helpers and patterns. Avoid unrelated refactors, speculative configurability, and abstractions that do not reduce real complexity.
 - Preserve type safety and existing invariants. Parse and validate inputs at boundaries.
 - Do not swallow errors or replace them with success-shaped fallbacks.
-- Before finishing, run the smallest relevant test, typecheck, lint, build, or targeted command. Say exactly what was not run and why.
+- Validate changes with the smallest relevant test, typecheck, lint, build, or targeted command. Say exactly what was not run and why.
 - Do not change or delete tests merely to make a suite pass.
 
 ## Tooling

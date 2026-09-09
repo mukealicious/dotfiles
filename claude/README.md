@@ -106,15 +106,15 @@ Key workflow boundaries:
 | `code-review` | Proportional advisory review and final-pass cleanup |
 | `codebase-design` | Deep-module/interface vocabulary when structural shape matters |
 | `grilling` / `domain-modeling` | Design-tree questions and durable domain language |
-| `tdd` | Red/green slices at agreed behavioral seams |
+| `tdd` | Test-first slices at public behavioral seams |
 | `implement` / `bro` | Manual implementation and plain-language restatement |
 | `framing-doc` / `kickoff-doc` | Distinct shaping documents |
 | `opensrc` / `librarian` | Source-backed external investigation |
 | `build-skill` / `dotfiles-dev` | Skill authoring and repository conventions |
 
 `implement`, `bro`, `grill-me`, and `grill-with-docs` are manual entry points;
-model invocation does not start them automatically. Run `bin/dot` or
-`ai/install.sh` to refresh the projection after editing source skills.
+model invocation does not start them automatically. Run `ai/install.sh` to
+refresh the projection after editing source skills.
 
 ## Adding New Skills
 
@@ -127,7 +127,7 @@ model invocation does not start them automatically. Run `bin/dot` or
    ---
    ```
 3. Add supporting scripts/resources next to the skill when needed.
-4. Run `bin/dot` to refresh the runtime projections.
+4. Run `ai/install.sh` to refresh the runtime projections.
 
 Default to `ai/skills/`. Use `claude/skills/` only when the skill truly depends on Claude-specific features such as hooks, `$SKILL_DIR`, or subagent-specific runtime behavior.
 
@@ -144,7 +144,7 @@ Prefer the shared-body pattern for new portable agents:
    disallowedTools: Edit, Write
    model: sonnet
    ```
-3. Run `bin/dot` to assemble the installed runtime file.
+3. Run `ai/install.sh` to assemble the installed runtime file.
 
 `oracle` and `librarian` still use the older combined `agents/<name>.md` format until they are migrated.
 
@@ -171,6 +171,25 @@ Or run manually:
 ```bash
 ./claude/install.sh
 ```
+
+## MCP and Hook Maintenance
+
+`claude/install.sh` owns Claude settings and MCP setup; `ai/install.sh` owns
+instructions, skill projections (including Claude overlays), and agent assembly.
+Linear provides project-management access via OAuth. `grep_app` provides
+GitHub-wide code discovery at user scope in `~/.claude.json`; use `opensrc` for
+source-backed investigation. Per-agent MCP scoping is not configured here.
+
+For an old local `context7` installation, these are one-time manual cleanup
+commands, not installer or session-start steps:
+
+```bash
+claude mcp remove --scope user context7
+codex mcp remove context7
+```
+
+The PreToolUse safety hook rewrites guarded `rm` commands to `trash` and asks for
+confirmation. Stop/Notification hooks provide sound and macOS notifications.
 
 ## Documentation
 

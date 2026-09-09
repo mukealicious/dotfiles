@@ -15,16 +15,8 @@ const SPEED_TO_PROCESSOR: Record<string, string> = {
 export const enrichTool = {
   name: "batch_enrich",
   label: "Batch Enrich",
-  description: "Batch-enrich a list of structured entities (companies, people, domains, products, etc.) by looking up web-sourced information for each item concurrently using parallel.ai. Takes an array of objects (or CSV string) as input data and natural language instructions describing what to find, then returns each input row augmented with the requested fields. For example, given [{company: 'Anthropic'}, {company: 'OpenAI'}] with instructions 'Find the CEO and founding year', returns [{input: {company: 'Anthropic'}, output: {ceo: 'Dario Amodei', founding_year: 2021}}, ...]. The tool runs asynchronously, polling for completion automatically. Use this for batch data augmentation tasks — not for general web searches (use web_search) or single-entity lookups (use web_search or deep_research instead).",
-  promptSnippet: "Batch-enrich a list of entities (companies, people, domains) with web-sourced data. Not for single lookups (use web_search).",
-  promptGuidelines: [
-    "Call this tool directly as batch_enrich({...}) — do NOT route through the mcp() tool",
-    "Use when the user has a list of entities and wants to add the same type of information to each one",
-    "data: array of objects with consistent keys, e.g. [{company: 'Anthropic'}, {company: 'OpenAI'}]",
-    "instructions: natural language describing what to find, e.g. 'Find the CEO and founding year'",
-    "Use web_search for one-off lookups — batch_enrich is for batch augmentation of multiple entities",
-    "Results: [{input: {...}, output: {...}}] where output contains the enriched fields",
-  ],
+  description: "Enrich structured entities with the same web-sourced fields using Parallel. Accepts an object array or CSV string plus lookup instructions; returns [{input: {...}, output: {...}}]. Polls automatically until completion.",
+  promptSnippet: "Batch entity enrichment with web-sourced fields.",
   parameters: Type.Object({
     data: Type.Any({ description: "The entities to enrich. Pass an array of objects with consistent keys (e.g. [{company: 'Anthropic'}, {company: 'OpenAI'}]) or a CSV string. Each object represents one entity to look up. Keep keys simple and descriptive — they help the enrichment engine understand what it's looking at." }),
     instructions: Type.String({ description: "Natural language description of what data to find for each entity. Be specific about the fields you want: 'Find the CEO name, founding year, and headquarters city' works better than just 'Find information'. The instructions apply uniformly to every item in the data array." }),

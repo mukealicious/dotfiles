@@ -6,7 +6,7 @@ Mu Mode owns the task contract and continuity; specialist skills own their metho
 
 Choose only skills that reduce a real uncertainty or supply a needed capability. Load each selected skill before using it and honor its requirements; naming a skill is not executing it. The agent makes these choices rather than asking the user to assemble a workflow.
 
-Briefly explain consequential choices: for example, “Breadboarding to trace the cross-app workflow; TDD for the retry seam once confirmed.” Do not narrate every skill read or principle. Skip methods whose work is already settled, including across a handoff.
+Briefly explain consequential choices: for example, “Breadboarding to trace the cross-app workflow; TDD at the existing retry boundary.” Do not narrate every skill read or principle. Skip methods whose work is already settled, including across a handoff.
 
 | Need | Specialist owner | Keep the distinction |
 |---|---|---|
@@ -14,8 +14,8 @@ Briefly explain consequential choices: for example, “Breadboarding to trace th
 | Workflow wiring or demoable slices | [Breadboarding](../../breadboarding/SKILL.md) | Map real affordances, stores, and effects; not a generic task list. |
 | Changing domain terms and relationships | [Domain Modeling](../../domain-modeling/SKILL.md) | CONTEXT.md is a glossary; offer ADRs only for qualifying trade-offs. |
 | Uncertain module interface or test seam | [Codebase Design](../../codebase-design/SKILL.md) | Use its vocabulary; alternative-interface exploration is not a default step. |
-| A chosen test-first implementation | [TDD](../../tdd/SKILL.md) | An optional experiment, not an established user default. Confirm seams before writing tests; preserve already-approved seams. Claim TDD only with red-before-green evidence. |
-| Frontend experience and visual behavior | [Impeccable](../../impeccable/SKILL.md) | Honor its product/design context setup; skip for backend-only work. |
+| A chosen test-first implementation | [TDD](../../tdd/SKILL.md) | An optional experiment, not an established user default. Use established behavioral seams; ask only for consequential unresolved scope/interface choices. Claim TDD only with red-before-green evidence. |
+| Frontend experience and visual behavior | [Impeccable](../../impeccable/SKILL.md) | Gather product/design context proportionate to the task; bounded fixes and critiques need not run setup. Skip for backend-only work. |
 | Operational or persistent-data risk | [Production Readiness](../../production-readiness/SKILL.md) | Check concrete failure modes at the touched boundaries. |
 | Advisory findings on changes | [Code Review](../../code-review/SKILL.md) | Reviewers remain read-only; the parent owns fixes and validation. |
 | Source-grounded conversation artifacts | [Framing Doc](../../framing-doc/SKILL.md), [Kickoff Doc](../../kickoff-doc/SKILL.md) | Read the source; neither is a generic plan generator. |
@@ -26,7 +26,7 @@ These are examples, not an exhaustive required set. Other skills remain availabl
 
 For substantial work, propose a lightweight outline: each phase's intended outcome, evidence needed to finish it, and meaningful handoff boundaries. A few lines in conversation usually suffice. Small tasks stay single-phase; do not require a planning document.
 
-A phase is a coherent result or decision boundary, not every test, slice, or skill change. Verify small units inside a phase without pausing after each one. Revise the outline when evidence warrants it; explain changes to agreed boundaries rather than silently passing them. Stop at agreed checkpoints even when later work is already authorized.
+A phase is a coherent result or decision boundary, not every test, slice, or skill change. Verify small units inside a phase without pausing after each one. Revise the outline when evidence warrants it; explain changes to agreed boundaries rather than silently passing them. Progress checkpoints report evidence without requiring a pause. Stop at explicitly agreed review or handoff gates even when later work is already authorized.
 
 Keep communication compact:
 

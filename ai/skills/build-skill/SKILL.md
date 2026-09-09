@@ -1,6 +1,6 @@
 ---
 name: build-skill
-description: Load FIRST when creating, reviewing, optimizing, or debugging SKILL.md files. Covers skill format, naming, progressive disclosure, and validation.
+description: Create, review, optimize, or debug SKILL.md files. Use for skill format, naming, progressive disclosure, and authoring validation.
 ---
 
 # Building Skills
@@ -59,7 +59,7 @@ Create a skill when:
 
 | Scenario | Do Instead |
 |----------|------------|
-| Single-use instructions | AGENTS.md or inline in conversation |
+| Single-use instructions | Task prompt or conversation, not AGENTS.md |
 | Model already knows domain | Don't add redundant context |
 | < 3 steps, no reuse | Inline instructions |
 | Highly variable workflow | Higher-freedom guidelines |
@@ -94,9 +94,9 @@ Create a skill when:
 | `scripts/validate_skill.sh` | Validate skill structure |
 | `scripts/package_skill.sh` | Create distributable zip |
 
-## Pre-Flight Checklist
+## Authoring Checklist
 
-Before using a skill:
+Before finishing a skill change:
 
 - [ ] SKILL.md starts with `---` (line 1, no blank lines)
 - [ ] `name:` field present, matches directory name

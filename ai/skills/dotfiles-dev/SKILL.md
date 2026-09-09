@@ -26,20 +26,20 @@ Topic-based dotfiles at `~/.dotfiles`. Each directory = one topic (tool/app).
 └── [topic]/      # Tool-specific config
 ```
 
-> For skill architecture, ownership model, key commands, secrets, and common shell/Homebrew tasks, see `CLAUDE.md` and `ai/instructions/base.md`.
+> For skill architecture, ownership model, key commands, secrets, and common shell/Homebrew tasks, see `AGENTS.md`, `ai/README.md`, and `ai/instructions/base.md`.
 
 ### Add a Shared Skill
 
 1. Create `~/.dotfiles/ai/skills/[name]/SKILL.md`
 2. Add frontmatter with `name` and `description`
-3. Run `dot` to project to all agents
+3. Run `ai/install.sh` to refresh shared skill projections
 
 Use `build-skill` skill for detailed guidance on format and progressive disclosure.
 
 ### Add a Claude-Only Skill
 
 1. Create `~/.dotfiles/claude/skills/[name]/SKILL.md`
-2. Run `dot` to project it into Claude runtime directories
+2. Run `ai/install.sh` to project the Claude overlay into its runtime directories
 
 Only do this when the skill uses Claude-specific features such as hooks, `$SKILL_DIR`, plugins, or subagent delegation. Prefer shared skills.
 
@@ -49,7 +49,7 @@ Only do this when the skill uses Claude-specific features such as hooks, `$SKILL
 
 1. Create `~/.dotfiles/[topic]/`
 2. Add files using patterns below
-3. Run `dot` to install
+3. Run the topic's owning installer; use `script/bootstrap` if new `*.symlink` files need linking. Do not run the full `dot` updater just to apply a local change.
 4. If the topic adds `install.sh` and must run before other installers, update `script/install`'s `CORE_INSTALLERS`; otherwise it is auto-discovered in sorted fallback order
 5. If `dot` handles part of that topic directly, keep `bin/dot` and any `script/install --skip` usage in sync
 

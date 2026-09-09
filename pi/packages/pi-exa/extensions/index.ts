@@ -127,15 +127,10 @@ export default function registerExaExtension(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "exa_search",
     label: "Exa Search",
-    description: "Search the public web with Exa. Use this for semantic discovery, obscure technical or code material, broader multilingual search, or as a fallback when Parallel Turbo is thin or contradictory.",
-    promptSnippet: "Use Parallel Turbo first for ordinary web discovery and quick lookups. Use exa_search for semantic/code discovery, broader multilingual search, or as a fallback when Parallel is thin or contradictory.",
+    description: "Search the public web with Exa for semantic, technical/code, and multilingual material. Returns highlights, text, summaries, or URLs.",
+    promptSnippet: "Semantic, technical/code, and multilingual web search.",
     promptGuidelines: [
-      "Call this tool directly as exa_search({...}) — do NOT route through the mcp() tool.",
-      "Use exa_search for semantic discovery, obscure technical/code material, broader multilingual search, or to verify thin or contradictory Parallel results.",
-      "Do NOT use web search for known URLs, raw GitHub files, APIs, localhost, or downloads; use bash/curl for those.",
-      "Use type='auto' with contentMode='highlights' by default; it is the balanced, low-friction path.",
-      "Use type='deep' or 'deep-reasoning' only for harder comparisons or synthesis; use deep_research for broad deep research when the user wants a full research brief.",
-      `If Exa behavior seems stale or contradictory, fetch the canonical Exa coding-agent docs: ${EXA_DOCS_URL}`,
+      `If exa_search behavior seems stale or contradictory, fetch the canonical Exa coding-agent docs: ${EXA_DOCS_URL}`,
     ],
     parameters: Type.Object({
       query: Type.String({ description: "Natural language search query or search objective" }),

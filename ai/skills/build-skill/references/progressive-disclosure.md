@@ -56,7 +56,7 @@ For complex products/domains:
 
 ```
 product/
-|-- README.md           # Overview, quick start (always read first)
+|-- README.md           # Overview, quick start
 |-- api.md              # Runtime APIs, types
 |-- configuration.md    # Setup, config files
 |-- patterns.md         # Best practices, examples
@@ -105,7 +105,7 @@ As mentioned above, to process PDFs...  # BAD: duplicates content
 
 ### "In This Reference" Section
 
-Always include in SKILL.md:
+For skills with supporting files, include task-based navigation in SKILL.md:
 
 ```markdown
 ## In This Reference
