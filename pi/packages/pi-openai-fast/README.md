@@ -60,7 +60,8 @@ Default config:
     "openai/gpt-5.6-terra",
     "openai-codex/gpt-5.6-terra",
     "openai/gpt-5.6-sol",
-    "openai-codex/gpt-5.6-sol"
+    "openai-codex/gpt-5.6-sol",
+    "openai-codex/gpt-6-astra"
   ]
 }
 ```
@@ -78,7 +79,8 @@ Project config overrides global config. `/fast on` and `/fast off` write to the 
 - When `persistState` is enabled, the last `/fast` setting also carries across brand-new pi sessions.
 - Resumed sessions do not override the config-backed startup state.
 - On configured models, fast mode maps to OpenAI `service_tier=priority`.
-- Config files generated with either previous default model list (GPT-5.4 only or GPT-5.4/GPT-5.5) are upgraded automatically. Explicitly customized model lists are preserved.
+- Config files generated with previous default model lists (GPT-5.4 only, through GPT-5.5, or through GPT-5.6 Luna/Terra/Sol) are upgraded automatically. Explicitly customized model lists are preserved.
+- New models are added locally after verifying their exact provider/model ID with Pi's `--list-models` output. When updating the defaults, retain the previous list in `LEGACY_DEFAULT_SUPPORTED_MODEL_KEY_SETS` and add migration and request-payload tests. GPT-6 Astra is currently listed only as `openai-codex/gpt-6-astra`.
 
 ## Uninstall
 

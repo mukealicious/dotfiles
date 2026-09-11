@@ -202,7 +202,7 @@ describe("pi-openai-fast", () => {
 		}
 	});
 
-	it("enables fast mode for supported models and injects the priority service tier", async () => {
+	it.each(["gpt-5.6-terra", "gpt-6-astra"])("enables fast mode for %s and injects the priority service tier", async (id) => {
 		const { cwd, homeDir, cleanup } = createTempWorkspace();
 		try {
 			vi.stubEnv("HOME", homeDir);
@@ -214,14 +214,14 @@ describe("pi-openai-fast", () => {
 			const beforeProviderRequest = getRegisteredHandler(mockPi, "before_provider_request");
 
 			const { ctx, ui } = createMockContext(
-				{ provider: "openai-codex", id: "gpt-5.6-terra" } as ExtensionContext["model"],
+				{ provider: "openai-codex", id } as ExtensionContext["model"],
 				[],
 				cwd,
 			);
 			await command.handler("on", ctx);
 
 			expect(mockPi.appendEntry).not.toHaveBeenCalled();
-			expect(ui.notify).toHaveBeenCalledWith("Fast mode is on for openai-codex/gpt-5.6-terra.", "info");
+			expect(ui.notify).toHaveBeenCalledWith(`Fast mode is on for openai-codex/${id}.`, "info");
 
 			const payload = beforeProviderRequest(
 				{ type: "before_provider_request", payload: { input: "hello" } } as BeforeProviderRequestEvent,

@@ -60,6 +60,18 @@ describe("pi-openai-fast helpers", () => {
 				supportedModels,
 			),
 		).toBe(false);
+		expect(
+			_test.isFastSupportedModel(
+				{ provider: "openai-codex", id: "gpt-6-astra" } as ExtensionContext["model"],
+				supportedModels,
+			),
+		).toBe(true);
+		expect(
+			_test.isFastSupportedModel(
+				{ provider: "openai", id: "gpt-6-astra" } as ExtensionContext["model"],
+				supportedModels,
+			),
+		).toBe(false);
 		expect(_test.isFastSupportedModel(undefined, supportedModels)).toBe(false);
 		expect(_test.describeSupportedModels([])).toBe("none configured");
 	});
@@ -106,6 +118,20 @@ describe("pi-openai-fast helpers", () => {
 				"openai-codex/gpt-5.4",
 				"openai/gpt-5.5",
 				"openai-codex/gpt-5.5",
+			],
+		},
+		{
+			legacyModels: [
+				"openai/gpt-5.4",
+				"openai-codex/gpt-5.4",
+				"openai/gpt-5.5",
+				"openai-codex/gpt-5.5",
+				"openai/gpt-5.6-luna",
+				"openai-codex/gpt-5.6-luna",
+				"openai/gpt-5.6-terra",
+				"openai-codex/gpt-5.6-terra",
+				"openai/gpt-5.6-sol",
+				"openai-codex/gpt-5.6-sol",
 			],
 		},
 	])("upgrades generated legacy default supported model list %#", ({ legacyModels }) => {

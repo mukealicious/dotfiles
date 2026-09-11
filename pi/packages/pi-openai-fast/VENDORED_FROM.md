@@ -14,4 +14,6 @@ This directory is an in-repo vendor copy so Pi can load the package from a local
 
 ## Local divergences
 
+- Maintains the supported-model allowlist locally, including Pi's `openai-codex/gpt-6-astra`, with automatic migration of previous generated defaults while preserving custom lists.
+
 - Global fast-mode configuration follows `PI_CODING_AGENT_DIR`, retaining `~/.pi/agent` only as the no-environment compatibility fallback.
