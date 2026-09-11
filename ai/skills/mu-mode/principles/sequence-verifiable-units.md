@@ -1,11 +1,3 @@
----
-name: principle-sequence-verifiable-units
-description: Breaks multi-step work into small coherent units that each end in evidence. Use for sweeps, migrations, repeated edits, and reviewable delivery sequences.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-sequence-verifiable-units/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Sequence Work into Verifiable Units
 
 Order work so each small coherent unit ends in a state you can check before building on it.

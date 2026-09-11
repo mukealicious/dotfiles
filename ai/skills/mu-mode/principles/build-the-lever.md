@@ -1,11 +1,3 @@
----
-name: principle-build-the-lever
-description: Builds the smallest rerunnable tool that performs or proves repeated, risky, or auditable work. Use when automation materially improves throughput or confidence.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-build-the-lever/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Build the Lever
 
 When repetition, risk, or auditability warrants it, build the smallest deterministic tool that does or proves the work.

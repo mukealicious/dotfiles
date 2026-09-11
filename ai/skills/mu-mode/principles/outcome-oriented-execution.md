@@ -1,11 +1,3 @@
----
-name: principle-outcome-oriented-execution
-description: Keeps rewrites and migrations converging on a verifiable target state. Use when work has explicit phases, compatibility constraints, or tempting temporary architecture.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-outcome-oriented-execution/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Outcome-Oriented Execution
 
 Optimize for the intended, verifiable end state rather than letting transitional machinery become the architecture.

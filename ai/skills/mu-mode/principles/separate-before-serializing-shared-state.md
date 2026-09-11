@@ -1,11 +1,3 @@
----
-name: principle-separate-before-serializing-shared-state
-description: Eliminates shared mutation before adding coordination. Use when concurrent actors may write the same file, branch, key, object, or external resource.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Separate Before Serializing Shared State
 
 When actors may mutate the same state, first ask whether they need one shared write target at all.

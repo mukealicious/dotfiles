@@ -4,7 +4,29 @@ description: Routes explicitly invoked focused engineering work through concrete
 disable-model-invocation: true
 user-invocable: true
 metadata:
-  watch-sources: cursor/plugins/pstack/skills/poteto-mode/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+  watch-sources: |
+    cursor/plugins/pstack/skills/poteto-mode/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-boundary-discipline/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-build-the-lever/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-encode-lessons-in-structure/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-exhaust-the-design-space/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-experience-first/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-fix-root-causes/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-foundational-thinking/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-guard-the-context-window/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-laziness-protocol/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-make-operations-idempotent/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-minimize-reader-load/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-model-the-domain/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-never-block-on-the-human/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-outcome-oriented-execution/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-prove-it-works/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-redesign-from-first-principles/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-sequence-verifiable-units/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-subtract-before-you-add/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
+    cursor/plugins/pstack/skills/principle-type-system-discipline/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
 ---
 
 # Mu Mode
@@ -47,7 +69,7 @@ The deferred catalogue in [deferred-playbooks.md](references/deferred-playbooks.
 - Reversible, low-risk work proceeds without ceremony. Ask only when blocked, when ambiguity materially changes the outcome, or before consequential, privileged, shared, irreversible, costly, or production-visible action.
 - Generic requests to investigate, fix, build, or refactor do not authorize commits, pushes, PRs, merges, deploys, remote deletion, or customer communication.
 - Never use process ritual as a substitute for the route's invariant. Plans and todos are useful only when they improve coordination, auditability, or resumability.
-- Direct invocation of a leaf skill outside Mu Mode remains valid.
+- Principles live in `principles/` as internal documents, not independently invocable skills. Specialist skills such as Code Review remain independently invocable outside Mu Mode.
 
 ## Completion
 

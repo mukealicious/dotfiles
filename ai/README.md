@@ -207,7 +207,7 @@ uncertain.
 | `librarian` / `opensrc` | External code discovery and source-backed investigation |
 | `moja-glava` | Durable private knowledge checkpoints |
 | `mono-color` | One-ink and controlled two-ink editorial art direction, raster assets, and production prompts |
-| `mu-mode` | Explicit concrete-playbook router for focused engineering workflows |
+| `mu-mode` | Explicit concrete-playbook router; playbooks and principles are bundled internal documents, not separate skills |
 | `mu-stack` | New-project JS/TS tooling plus project-level StyleX and Effect adoption decisions |
 | `post-mortem` | Session lessons and agent-context improvements |
 | `production-readiness` | Service, data, deployment, and reliability risk |

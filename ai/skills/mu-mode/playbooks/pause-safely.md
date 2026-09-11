@@ -8,10 +8,10 @@ Reach a trustworthy stopping point, verify the state being left behind, emit a c
 
 Load these principle modules:
 
-- [Guard the Context Window](../../principle-guard-the-context-window/SKILL.md)
-- [Make Operations Idempotent](../../principle-make-operations-idempotent/SKILL.md)
-- [Prove It Works](../../principle-prove-it-works/SKILL.md)
-- [Never Block on the Human](../../principle-never-block-on-the-human/SKILL.md)
+- [Guard the Context Window](../principles/guard-the-context-window.md)
+- [Make Operations Idempotent](../principles/make-operations-idempotent.md)
+- [Prove It Works](../principles/prove-it-works.md)
+- [Never Block on the Human](../principles/never-block-on-the-human.md)
 
 ## Workflow
 

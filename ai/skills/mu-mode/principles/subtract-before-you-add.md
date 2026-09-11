@@ -1,11 +1,3 @@
----
-name: principle-subtract-before-you-add
-description: Simplifies the base before construction. Use when sequencing an addition, refactor, rewrite, or policy change that might compound existing complexity.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-subtract-before-you-add/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Subtract Before You Add
 
 Remove complexity before building on top of it. A smaller base reveals the essential shape and reduces the cost of the next change.

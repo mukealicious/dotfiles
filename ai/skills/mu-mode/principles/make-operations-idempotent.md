@@ -1,11 +1,3 @@
----
-name: principle-make-operations-idempotent
-description: Makes retryable or interruptible operations converge on one correct result. Use for installers, commands, lifecycle actions, and processing loops exposed to partial runs.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-make-operations-idempotent/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Make Operations Idempotent
 
 Design state-changing operations to converge on the correct state regardless of repetition or partial prior execution.

@@ -1,11 +1,3 @@
----
-name: principle-fix-root-causes
-description: Traces reproduced symptoms to the owning failure mechanism instead of masking them. Use when debugging defects, regressions, or restart-sensitive behavior.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-fix-root-causes/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Fix Root Causes
 
 Reproduce the symptom, trace why it occurs, and change the owner of the failure rather than silencing its visible effect.

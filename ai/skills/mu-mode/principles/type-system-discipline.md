@@ -1,11 +1,3 @@
----
-name: principle-type-system-discipline
-description: Uses static types to exclude invalid states and mismatched values. Use when designing typed models, signatures, boundary parsing, or variant handling.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-type-system-discipline/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Type System Discipline
 
 Use the type checker as a proof assistant, not an obstacle to bypass.

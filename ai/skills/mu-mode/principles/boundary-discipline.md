@@ -1,11 +1,3 @@
----
-name: principle-boundary-discipline
-description: Concentrates parsing, validation, and defensive handling at system boundaries. Use when wiring external inputs, errors, configuration, protocols, or framework adapters.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-boundary-discipline/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Boundary Discipline
 
 Treat external data as untrusted at the edge, convert it to the system's internal model once, then let internal logic rely on that contract.

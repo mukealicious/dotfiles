@@ -1,11 +1,3 @@
----
-name: principle-redesign-from-first-principles
-description: Integrates a new requirement as a foundational design input rather than a bolt-on. Use when an existing design must absorb a consequential new constraint.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-redesign-from-first-principles/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Redesign From First Principles
 
 When a consequential requirement arrives, ask what the system would look like if that requirement had existed on day one.

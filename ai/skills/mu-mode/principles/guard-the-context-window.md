@@ -1,11 +1,3 @@
----
-name: principle-guard-the-context-window
-description: Protects reasoning quality by keeping bulk inputs and outputs out of the main thread. Use for large files, verbose commands, broad searches, repeated reads, or fan-out.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-guard-the-context-window/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Guard the Context Window
 
 Context is finite within a session. Spend it on evidence and decisions that affect the current task.

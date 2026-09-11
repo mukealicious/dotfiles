@@ -8,10 +8,10 @@ Reconstruct the authoritative state, materialize or locate the correct working e
 
 Load these principle modules:
 
-- [Guard the Context Window](../../principle-guard-the-context-window/SKILL.md)
-- [Make Operations Idempotent](../../principle-make-operations-idempotent/SKILL.md)
-- [Prove It Works](../../principle-prove-it-works/SKILL.md)
-- [Boundary Discipline](../../principle-boundary-discipline/SKILL.md)
+- [Guard the Context Window](../principles/guard-the-context-window.md)
+- [Make Operations Idempotent](../principles/make-operations-idempotent.md)
+- [Prove It Works](../principles/prove-it-works.md)
+- [Boundary Discipline](../principles/boundary-discipline.md)
 
 ## Workflow
 

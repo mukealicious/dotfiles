@@ -1,11 +1,3 @@
----
-name: principle-encode-lessons-in-structure
-description: Converts recurring corrections into enforceable mechanisms instead of repeated prose. Use when the same instruction, failure, or human correction appears again.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-encode-lessons-in-structure/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Encode Lessons in Structure
 
 A recurring correction belongs in the strongest mechanism the system can support, not another reminder readers may miss.

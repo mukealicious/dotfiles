@@ -6,9 +6,9 @@ Reproduce the reported defect, establish its failure mechanism, fix the root cau
 
 Load these principle modules:
 
-- [Fix Root Causes](../../principle-fix-root-causes/SKILL.md)
-- [Prove It Works](../../principle-prove-it-works/SKILL.md)
-- [Boundary Discipline](../../principle-boundary-discipline/SKILL.md)
+- [Fix Root Causes](../principles/fix-root-causes.md)
+- [Prove It Works](../principles/prove-it-works.md)
+- [Boundary Discipline](../principles/boundary-discipline.md)
 
 Use [Composition and Checkpoints](../references/composition-and-checkpoints.md) for specialist selection, phase boundaries, and authorization-preserving handoffs. Adapt this starting shape to the defect and risk.
 

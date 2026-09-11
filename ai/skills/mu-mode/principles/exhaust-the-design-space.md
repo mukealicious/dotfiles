@@ -1,11 +1,3 @@
----
-name: principle-exhaust-the-design-space
-description: Compares concrete alternatives before a consequential novel choice. Use when architecture, interaction, or product direction has material uncertainty and no clear precedent.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-exhaust-the-design-space/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Exhaust the Design Space
 
 Explore more than one genuinely distinct shape before committing to a consequential decision with no established answer.

@@ -1,11 +1,3 @@
----
-name: principle-never-block-on-the-human
-description: Keeps reversible execution moving without permission pauses. Use when considering a question that evidence, repository context, or a safe experiment can answer.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-never-block-on-the-human/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Never Block on the Human
 
 Proceed on low-risk, reversible work when intent can be inferred or evidence can settle the choice. Present the result and let the human course-correct.

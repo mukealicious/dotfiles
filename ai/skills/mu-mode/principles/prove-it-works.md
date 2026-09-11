@@ -1,11 +1,3 @@
----
-name: principle-prove-it-works
-description: Requires direct evidence from the real artifact or execution path before declaring success. Use when verifying completed work or delegated output.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-prove-it-works/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Prove It Works
 
 Verify the actual result. Compilation, freshness, a proxy signal, or an agent's self-report may support proof but cannot substitute for it.

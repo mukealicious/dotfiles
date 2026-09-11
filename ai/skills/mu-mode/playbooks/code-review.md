@@ -6,9 +6,9 @@ Return prioritized, evidence-backed findings on the requested changes. Review is
 
 Load these principle modules:
 
-- [Minimize Reader Load](../../principle-minimize-reader-load/SKILL.md)
-- [Boundary Discipline](../../principle-boundary-discipline/SKILL.md)
-- [Prove It Works](../../principle-prove-it-works/SKILL.md)
+- [Minimize Reader Load](../principles/minimize-reader-load.md)
+- [Boundary Discipline](../principles/boundary-discipline.md)
+- [Prove It Works](../principles/prove-it-works.md)
 
 Load [Code Review](../../code-review/SKILL.md) for the review workflow, proportional reviewer count, severity, final-pass checklist, and report requirements. Do not duplicate or replace that specialist's workflow here. Use [Composition and Checkpoints](../references/composition-and-checkpoints.md) for continuity and handoffs.
 

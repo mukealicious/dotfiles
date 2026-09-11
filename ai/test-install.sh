@@ -90,7 +90,12 @@ SUCCESS_HOME="$TMP_ROOT/success-home"
 make_test_repo "$SUCCESS_REPO"
 SUCCESS_REPO_PHYSICAL="$(cd "$SUCCESS_REPO" && pwd -P)"
 prepare_legacy_profiles "$SUCCESS_HOME" "$SUCCESS_REPO"
+# Seed the old standalone projection and its installed link to test cleanup.
+mkdir -p "$SUCCESS_REPO/.ai-runtime/claude-code/skills/principle-boundary-discipline" "$SUCCESS_HOME/.claude/skills"
+printf 'old principle skill\n' > "$SUCCESS_REPO/.ai-runtime/claude-code/skills/principle-boundary-discipline/SKILL.md"
+ln -s "$SUCCESS_REPO_PHYSICAL/.ai-runtime/claude-code/skills/principle-boundary-discipline" "$SUCCESS_HOME/.claude/skills/principle-boundary-discipline"
 HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/migration.log" 2>&1
+[ ! -e "$SUCCESS_HOME/.claude/skills/principle-boundary-discipline" ] && [ ! -L "$SUCCESS_HOME/.claude/skills/principle-boundary-discipline" ] || fail "stale installed principle link survived"
 for profile in work personal; do
   [ "$(readlink "$SUCCESS_HOME/.pi/$profile/AGENTS.md")" = "$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/AGENTS.md" ] || fail "$profile instruction link was not migrated"
   [ -d "$SUCCESS_HOME/.pi/$profile/agents" ] && [ ! -L "$SUCCESS_HOME/.pi/$profile/agents" ] || fail "$profile agents directory is not real"
@@ -104,6 +109,15 @@ for provider in pi codex claude-code opencode; do
   for reference in herdr/references/workflows.md mono-color/references/recipe.md mono-color/references/color-and-layout.md mono-color/references/image-and-type.md mono-color/references/composition.md mono-color/references/production.md mono-color/references/inspection.md; do
     [ -s "$skills/$reference" ] || fail "$provider is missing $reference"
   done
+  for principle in "$SUCCESS_REPO/ai/skills/mu-mode/principles"/*.md; do
+    [ -s "$principle" ] || fail "Mu Mode has no bundled principles"
+    name="$(basename "$principle")"
+    cmp -s "$principle" "$skills/mu-mode/principles/$name" || fail "$provider changed or omitted $name"
+  done
+  for standalone in "$skills"/principle-*; do
+    [ ! -e "$standalone" ] || fail "$provider exposes a standalone principle skill"
+  done
+  [ "$(find "$skills/mu-mode" -name SKILL.md | wc -l | tr -d ' ')" = 1 ] || fail "$provider exposes nested Mu Mode skills"
   for manual_skill in mu-mode implement; do
     assert_file_contains "$skills/$manual_skill/SKILL.md" "disable-model-invocation: true"
   done

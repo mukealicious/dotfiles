@@ -6,9 +6,9 @@ Deliver new or changed behavior from an explicit data and interaction shape, ver
 
 Load these principle modules:
 
-- [Model the Domain](../../principle-model-the-domain/SKILL.md)
-- [Experience First](../../principle-experience-first/SKILL.md)
-- [Prove It Works](../../principle-prove-it-works/SKILL.md)
+- [Model the Domain](../principles/model-the-domain.md)
+- [Experience First](../principles/experience-first.md)
+- [Prove It Works](../principles/prove-it-works.md)
 
 Use [Composition and Checkpoints](../references/composition-and-checkpoints.md) for specialist selection, phase boundaries, and authorization-preserving handoffs. The following is a starting shape, not a required pipeline.
 

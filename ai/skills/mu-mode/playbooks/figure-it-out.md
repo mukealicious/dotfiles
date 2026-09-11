@@ -8,14 +8,14 @@ Before substantial implementation, define a falsifiable outcome and a workflow t
 
 Load these principle modules:
 
-- [Foundational Thinking](../../principle-foundational-thinking/SKILL.md)
-- [Exhaust the Design Space](../../principle-exhaust-the-design-space/SKILL.md) when uncertainty is consequential
-- [Build the Lever](../../principle-build-the-lever/SKILL.md) when repetition, risk, or auditability justifies automation
-- [Separate Before Serializing Shared State](../../principle-separate-before-serializing-shared-state/SKILL.md) when work can run concurrently
-- [Prove It Works](../../principle-prove-it-works/SKILL.md)
-- [Sequence Work into Verifiable Units](../../principle-sequence-verifiable-units/SKILL.md)
-- [Never Block on the Human](../../principle-never-block-on-the-human/SKILL.md)
-- [Encode Lessons in Structure](../../principle-encode-lessons-in-structure/SKILL.md) when a correction is likely to recur
+- [Foundational Thinking](../principles/foundational-thinking.md)
+- [Exhaust the Design Space](../principles/exhaust-the-design-space.md) when uncertainty is consequential
+- [Build the Lever](../principles/build-the-lever.md) when repetition, risk, or auditability justifies automation
+- [Separate Before Serializing Shared State](../principles/separate-before-serializing-shared-state.md) when work can run concurrently
+- [Prove It Works](../principles/prove-it-works.md)
+- [Sequence Work into Verifiable Units](../principles/sequence-verifiable-units.md)
+- [Never Block on the Human](../principles/never-block-on-the-human.md)
+- [Encode Lessons in Structure](../principles/encode-lessons-in-structure.md) when a correction is likely to recur
 
 ## Workflow
 

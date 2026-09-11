@@ -1,11 +1,3 @@
----
-name: principle-migrate-callers-then-delete-legacy-apis
-description: Prevents permanent dual API paths during controlled migrations. Use when introducing a replacement interface while known callers still use the old one.
-disable-model-invocation: true
-metadata:
-  watch-sources: cursor/plugins/pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md@73f8be4873ea4ba2b7378243a036d3360c69e04d
----
-
 # Migrate Callers Then Delete Legacy APIs
 
 When callers are under coordinated control, inventory them, migrate them to the chosen interface, and remove the obsolete path in the same migration wave.
