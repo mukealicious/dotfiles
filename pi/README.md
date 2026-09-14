@@ -90,7 +90,7 @@ pi/
 ├── patches/                 # Exact-context local patches for pinned Pi packages
 ├── aliases.fish            # Thin Fish forwarding to bin/pi
 ├── extensions/             # Custom TypeScript extensions
-│   ├── handoff.ts          # Same-process temporary conversation handoff
+│   ├── handoff.ts          # Agent-designed local/external conversation handoffs
 │   ├── notify.ts           # Non-Herdr OSC notification fallback
 │   └── usage-footer.ts      # Token, model, and Codex subscription usage footer
 ├── intercepted-commands/   # Shell shims for Python tooling
@@ -195,11 +195,12 @@ settings do not override these role defaults.
 - Use `/skill:code-review` for proportional advisory review and Hunk for user-facing
   annotations. Mitsupi `/review` remains an optional manual tree-isolated experiment,
   not an automatic sequel.
-- Use `/handoff` for temporary same-process continuation context: it writes the
-  handoff outside the checkout, summarizes the active branch through internal tree
-  navigation, and automatically continues without selecting a new profile or
-  spawning a child. Repeat `/handoff` directly at later phase boundaries; prior
-  summaries are included in the next summary, not guaranteed to remain verbatim.
+- Use `/handoff [intent]` for temporary continuation context. The agent designs
+  local, external/parallel, or document-only handoffs from natural-language intent.
+  Only an explicit local route summarizes/switches the source branch and continues
+  here. External sessions are agent-launched with existing tools, not owned or
+  monitored by the extension. Repeat `/handoff` at later phase boundaries; prior
+  local summaries are included in the next summary, not guaranteed verbatim.
 - `/skill:grilling`, `/skill:grill-me`, `/skill:grill-with-docs`, `/skill:tdd`,
   `/skill:implement`, and `/skill:bro` are composable workflows. `implement` and
   `bro` are manual-only; implementation stays in the current session, does not
@@ -212,28 +213,60 @@ profile's `extensions/` directory by `install.sh`.
 
 ### handoff.ts — Conversation Handoffs
 
-Registers `/handoff [focus]`. The command invokes the manual-only shared handoff
-skill, waits for its agent turn, preserves the source JSONL branch, navigates back
-to the first user message with `summarize: true`, and continues automatically from
-the temporary handoff. Repeating `/handoff` summarizes the active branch, including
-its earlier summaries; they need not remain verbatim. No manual `/tree` navigation
-is needed between phases.
+Registers `/handoff [intent]` and the transaction-scoped `handoff_control` tool.
+The shared handoff skill lets the agent design the topology using existing tools:
+how many sessions, which workspace/tabs, shared versus isolated worktrees, write
+ownership, skills, and shared artifacts. No keyword parser or fixed launcher API.
+
+Before preparing/launching, the agent selects one immutable route:
+
+| Route | Extension behavior |
+|---|---|
+| `here` | After document writing, summarize back to the first user message and start a local continuation |
+| `external` | Record agent-designed destinations/dispatch; retain the source branch and never continue locally |
+| `document` | Record prepared documents without launching or switching branches |
+
+Plain `/handoff` means local continuation unless context requests otherwise, but
+local navigation still requires explicit control data from the agent. Missing or
+invalid routing fails closed rather than guessing. Examples:
+
+- `/handoff continue with validation`
+- `/handoff split method experiments and the comparison viewer into separate tabs in workspace X; share a worktree only with separate write ownership`
+- `/handoff prepare documents for tomorrow; don't launch anything`
+
+For external/document routes, the agent reports each destination incrementally by
+stable ID: `planned`, `prepared`, `launched`, `start-confirmed`, or `failed`. Reports
+replace that destination's fields and preserve other destinations. Prepared/started
+destinations require a readable absolute document path; launches also need a session
+or pane locator. The tool only validates the local file and records reports: it does
+not independently inspect remote sessions. Maximum 16 destinations per handoff.
+Partial dispatch preserves successful siblings, and interruptions retain checkpoints
+without retrying launches. Destination prompts open their document directly, not a
+branch summary that exists only in the source session.
+
+For local handoffs, repeating `/handoff` summarizes the active branch, including its
+earlier summaries; they need not remain verbatim. No manual `/tree` navigation is
+needed between phases.
 
 A compact widget above the editor shows document writing, summarization/tree
-switching, and continuation startup with elapsed time. Stages advance only on
+switching, and continuation startup with elapsed time for the local route; external
+routes show destination reports without local continuation stages. Stages advance only on
 observed lifecycle boundaries; Pi exposes summarization and switching as one
 operation. The widget survives tree redraw and clears when a receipt is recorded.
 
 `handoff source` and `handoff resume ← <source ID>` labels make both branches easy
 to find in `/tree` (including its labeled-only filter). Existing source labels are
-preserved. A persistent, expandable receipt records source/resume IDs, timestamps,
-outcome, and recovery details without adding anything to model context. Progress
+preserved. A persistent, expandable receipt shows the outcome, readable destination
+names, and statuses at a glance. Paths, source/resume IDs, timestamps, verification
+caveats, and recovery details live in the expanded view; failed or interrupted runs
+remain visibly flagged when collapsed. Receipts do not add anything to model context. Progress
 checkpoints also survive reload; an unfinished transaction is reported as
 interrupted, never automatically retried.
 
 **“Continuation started” is not document acceptance or completed work.** It requires
-the continuation prompt's observed agent start, not merely submission. The command
-does not independently verify the artifact path or its acceptance; find the path
+the local continuation prompt's observed agent start, not merely submission. External
+launches/start confirmations are explicitly agent-reported, not independently
+monitored. For local handoffs the command does not verify the artifact path; find it
 in the source turn or branch summary. `/handoff history` is deferred.
 
 Cancellation, errors, or runtime shutdown retain source history and temporary
@@ -242,10 +275,10 @@ document writing and summarization use Pi's existing cancellation behavior. The
 command clears only the prompt restored by navigation and restores a preexisting
 draft if that prompt replaced it, without overwriting newly typed text.
 
-The handoff stays in the current Pi/Herdr process, so its active profile, working
-directory, pane identity, and Git state carry through naturally. Specs and other
-durable project records remain separate from temporary handoffs and Moja Glava
-checkpoints.
+Local handoffs stay in the current Pi/Herdr process, so profile, cwd, pane identity,
+and Git state carry through naturally. External sessions must receive those choices
+explicitly through the agent's launch workflow and outlive the source tab. Specs and
+other durable records remain separate from temporary handoffs and Moja Glava checkpoints.
 
 ### notify.ts — Desktop Notifications
 

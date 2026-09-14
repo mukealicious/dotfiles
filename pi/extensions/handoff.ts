@@ -1,4 +1,6 @@
-import type { AssistantMessage } from "@earendil-works/pi-ai";
+import { accessSync, constants, statSync } from "node:fs";
+import { isAbsolute } from "node:path";
+import { type AssistantMessage, StringEnum, Type } from "@earendil-works/pi-ai";
 import type { ExtensionAPI, ExtensionContext, SessionEntry } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 
@@ -6,7 +8,33 @@ const HANDOFF_STATE = "handoff-state";
 const HANDOFF_RECEIPT = "handoff-receipt";
 const stages = ["Prepare", "Write handoff document", "Summarize and switch branch", "Start continuation"] as const;
 type Stage = typeof stages[number];
-type Outcome = "running" | "started" | "cancelled" | "failed" | "interrupted";
+type Outcome = "running" | "started" | "prepared" | "dispatched" | "partial" | "cancelled" | "failed" | "interrupted";
+const routes = ["here", "external", "document"] as const;
+type Route = typeof routes[number];
+const destinationStatuses = ["planned", "prepared", "launched", "start-confirmed", "failed"] as const;
+const destinationSchema = Type.Object({
+	id: Type.String({ minLength: 1, maxLength: 120, description: "Stable task identifier; repeated reports update this destination" }),
+	document: Type.Optional(Type.String({ minLength: 1, maxLength: 4096, description: "Absolute handoff document path; required once prepared or launched" })),
+	locator: Type.Optional(Type.String({ minLength: 1, maxLength: 4096, description: "Verified destination session/pane locator; required once launched" })),
+	status: StringEnum(destinationStatuses),
+	detail: Type.String({ minLength: 1, maxLength: 2000, description: "Scope, ownership, launch evidence, or failure/recovery notes. No secrets." }),
+});
+type Destination = {
+	id: string;
+	document?: string;
+	locator?: string;
+	status: typeof destinationStatuses[number];
+	detail: string;
+};
+
+function isDestination(value: unknown): value is Destination {
+	if (!value || typeof value !== "object") return false;
+	const data = value as Record<string, unknown>;
+	return typeof data.id === "string" && typeof data.detail === "string"
+		&& destinationStatuses.includes(data.status as Destination["status"])
+		&& [data.document, data.locator].every((v) => v === undefined || typeof v === "string");
+}
+
 interface HandoffTrace {
 	version: 1;
 	startedAt: number;
@@ -17,6 +45,8 @@ interface HandoffTrace {
 	targetId?: string;
 	sessionFile?: string;
 	detail?: string;
+	route?: Route;
+	destinations?: Destination[];
 }
 
 function isTrace(value: unknown): value is HandoffTrace {
@@ -26,25 +56,60 @@ function isTrace(value: unknown): value is HandoffTrace {
 		&& typeof data.updatedAt === "number" && Number.isFinite(data.updatedAt)
 		&& Math.abs(data.startedAt) <= 8.64e15 && Math.abs(data.updatedAt) <= 8.64e15
 		&& typeof data.stage === "string" && stages.includes(data.stage as Stage)
-		&& typeof data.outcome === "string" && ["running", "started", "cancelled", "failed", "interrupted"].includes(data.outcome)
+		&& typeof data.outcome === "string" && ["running", "started", "prepared", "dispatched", "partial", "cancelled", "failed", "interrupted"].includes(data.outcome)
 		&& typeof data.sourceId === "string"
+		&& (data.route === undefined || routes.includes(data.route as Route))
+		&& (data.destinations === undefined || (Array.isArray(data.destinations) && data.destinations.every(isDestination)))
 		&& [data.targetId, data.sessionFile, data.detail].every((v) => v === undefined || typeof v === "string");
 }
 
+const statusLabels: Record<Destination["status"], string> = {
+	planned: "not launched", prepared: "document ready", launched: "launched",
+	"start-confirmed": "start confirmed", failed: "failed",
+};
+
 function receiptText(trace: HandoffTrace, expanded: boolean): string {
-	const outcome = trace.outcome === "started" ? "Continuation started" : `${trace.outcome} at ${trace.stage}`;
-	const lines = [
-		`Handoff · ${outcome} · ${Math.floor((trace.updatedAt - trace.startedAt) / 1000)}s`,
-		`/tree: source ${trace.sourceId}${trace.targetId ? ` → resume ${trace.targetId}` : ""}`,
-	];
-	if (trace.detail) lines.push(trace.detail);
-	if (expanded) lines.push(
-		`Started: ${new Date(trace.startedAt).toISOString()}`,
-		`Updated: ${new Date(trace.updatedAt).toISOString()}`,
-		`Session: ${trace.sessionFile ?? "ephemeral"}`,
-		"Document path: see source turn or branch summary. Acceptance and work completion are not verified.",
-		"Source history and temporary files are retained. Open the handoff to resume; use /tree for recovery.",
-	);
+	const destinations = trace.destinations ?? [];
+	const count = destinations.length;
+	const launched = destinations.filter((d) => d.status === "launched" || d.status === "start-confirmed").length;
+	const confirmed = count > 0 && destinations.every((d) => d.status === "start-confirmed");
+	const outcome = trace.outcome === "started" ? "Continuation started"
+		: trace.outcome === "prepared" ? `${count} document${count === 1 ? "" : "s"} ready`
+		: trace.outcome === "dispatched" ? `${count} session${count === 1 ? "" : "s"} ${confirmed ? "started" : "launched"}`
+		: trace.outcome === "partial" ? `${launched} of ${count} sessions launched`
+		: trace.outcome === "failed" ? "Needs attention"
+		: trace.outcome === "cancelled" ? "Cancelled"
+		: trace.outcome === "interrupted" ? "Interrupted"
+		: "In progress";
+	const lines = [`Handoff · ${outcome}`];
+	for (const destination of destinations) {
+		// Stable IDs remain the protocol identity; make simple task slugs readable.
+		const name = destination.id.replace(/[-_]+/g, " ");
+		lines.push(`  ${name} · ${statusLabels[destination.status]}`);
+	}
+	const needsAttention = ["failed", "cancelled", "interrupted", "partial"].includes(trace.outcome);
+	if (needsAttention) lines.push(`Stopped at: ${trace.stage}. Expand for recovery details.`);
+	lines.push(trace.targetId ? "Continuation branch available in /tree." : "Source conversation kept here.");
+	if (expanded) {
+		lines.push("", "Recovery details");
+		for (const destination of destinations) {
+			lines.push(`${destination.id} · ${statusLabels[destination.status]}`);
+			if (destination.document) lines.push(`Document: ${destination.document}`);
+			if (destination.locator) lines.push(`Session: ${destination.locator}`);
+			lines.push(destination.detail);
+		}
+		if (trace.detail) lines.push(trace.detail);
+		lines.push(
+			`/tree: source ${trace.sourceId}${trace.targetId ? ` → resume ${trace.targetId}` : ""}`,
+			`Route: ${trace.route ?? "not recorded"}`,
+			`Duration: ${Math.floor((trace.updatedAt - trace.startedAt) / 1000)}s`,
+			`Started: ${new Date(trace.startedAt).toISOString()}`,
+			`Updated: ${new Date(trace.updatedAt).toISOString()}`,
+			`Source session: ${trace.sessionFile ?? "ephemeral"}`,
+			"Destination statuses are agent-reported. Acceptance and work completion are not verified.",
+			"Source history and temporary files are retained. Inspect destinations before retrying launches.",
+		);
+	}
 	return lines.join("\n");
 }
 
@@ -102,7 +167,7 @@ function buildBranchSummaryInstructions(focus: string): string {
 	return `The source branch produced a handoff document. Include its exact absolute path so the next turn can open it. Keep the document as the source of truth; use the branch summary to orient the next turn toward continuing the work.${focusInstruction}`;
 }
 
-/** Registers `/handoff`, which writes a handoff document and continues from it on a summarized root branch. */
+/** Agent-designed handoffs; only an explicit `here` route switches the source branch. */
 export default function registerHandoffExtension(pi: ExtensionAPI): void {
 	const agentStartWaiters = new Set<() => void>();
 	let handoffInProgress = false;
@@ -112,10 +177,12 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 
 	const showProgress = (ctx: ExtensionContext): void => {
 		if (!ctx.hasUI || !trace) return;
-		const current = stages.indexOf(trace.stage);
+		const visibleStages = trace.route === "here" ? stages : stages.slice(0, 2);
+		const current = visibleStages.indexOf(trace.stage);
 		ctx.ui.setWidget("handoff", [
 			`Handoff · ${Math.floor((Date.now() - trace.startedAt) / 1000)}s`,
-			...stages.map((stage, index) => `${index < current ? "✓" : index === current ? "›" : "○"} ${stage}`),
+			...visibleStages.map((stage, index) => `${index < current ? "✓" : index === current ? "›" : "○"} ${stage}`),
+			...(trace.destinations ?? []).map((destination) => `${destination.id} · ${destination.status}`),
 		]);
 	};
 	const save = (ctx: ExtensionContext, patch: Partial<HandoffTrace>): void => {
@@ -140,8 +207,60 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 		if (ctx.hasUI) ctx.ui.setWidget("handoff", undefined);
 	};
 
-	pi.registerEntryRenderer(HANDOFF_RECEIPT, (entry, { expanded }) =>
-		new Text(isTrace(entry.data) ? receiptText(entry.data, expanded) : "Handoff receipt unavailable", 0, 0));
+	pi.registerTool({
+		name: "handoff_control",
+		label: "Handoff control",
+		description: "During /handoff only: select here (local continuation), external (agent-designed dispatch), or document (no launch) before doing handoff work. The route cannot change during a run. Report destinations incrementally by stable id; reports replace that destination's previous fields. This tool records lifecycle only: use existing tools to design/write/launch. External statuses are agent-reported, not independently monitored. Maximum 16 destinations; bounded text fields.",
+		parameters: Type.Object({
+			route: StringEnum(routes),
+			destinations: Type.Optional(Type.Array(destinationSchema, { maxItems: 16 })),
+		}),
+		async execute(_id, params, signal, _onUpdate, ctx) {
+			signal?.throwIfAborted();
+			if (shutdown || !handoffInProgress || trace?.outcome !== "running" || trace.stage !== "Write handoff document") {
+				throw new Error("handoff_control is only available during the /handoff preparation turn");
+			}
+			if (trace.route && trace.route !== params.route) throw new Error("Handoff route is already selected; finish this run before choosing another route");
+			if (params.route === "here" && params.destinations?.length) throw new Error("The here route uses the local branch summary, not external destinations");
+			const destinations = new Map((trace.destinations ?? []).map((destination) => [destination.id, destination]));
+			const ids = new Set<string>();
+			for (const destination of params.destinations ?? []) {
+				if (ids.has(destination.id)) throw new Error("Duplicate destination id in report");
+				ids.add(destination.id);
+				const launched = destination.status === "launched" || destination.status === "start-confirmed";
+				if (params.route === "document" && launched) throw new Error("Document-only handoffs cannot report launches");
+				if ((destination.status === "prepared" || launched) && !destination.document) throw new Error("Prepared destinations require a handoff document");
+				if (launched && !destination.locator) throw new Error("Launched destinations require a session or pane locator");
+				if (destination.document) {
+					if (!isAbsolute(destination.document)) throw new Error("Handoff document paths must be absolute");
+					if (!statSync(destination.document).isFile()) throw new Error("Handoff document must be a file");
+					accessSync(destination.document, constants.R_OK);
+				}
+				destinations.set(destination.id, { ...destination });
+			}
+			if (destinations.size > 16) throw new Error("A handoff supports at most 16 destinations");
+			save(ctx, {
+				route: params.route, destinations: [...destinations.values()],
+				sourceId: ctx.sessionManager.getLeafId() ?? trace.sourceId,
+			});
+			return {
+				content: [{ type: "text", text: params.route === "here"
+					? "Local continuation selected. Write the handoff and end your turn; the extension will summarize and continue here."
+					: "Recorded. The source branch will not switch or continue locally. Use existing tools for preparation/dispatch, report each destination, then end your turn. External sessions are not monitored by this extension." }],
+				details: { route: trace.route, destinations: trace.destinations },
+			};
+		},
+	});
+
+	pi.registerEntryRenderer(HANDOFF_RECEIPT, (entry, { expanded }, theme) => {
+		const text = isTrace(entry.data) ? receiptText(entry.data, expanded) : "Handoff receipt unavailable";
+		const [heading, ...body] = text.split("\n");
+		const attention = isTrace(entry.data) && ["failed", "partial", "cancelled", "interrupted"].includes(entry.data.outcome);
+		return new Text([
+			theme.bold(theme.fg(attention ? "warning" : "accent", heading)),
+			...body.map((line) => theme.fg("text", line)),
+		].join("\n"), 0, 0);
+	});
 
 	pi.on("session_start", (_event, ctx) => {
 		shutdown = false;
@@ -157,7 +276,9 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 		if (trace?.outcome === "running") showProgress(ctx);
 	});
 	pi.on("session_shutdown", (_event, ctx) => {
-		finish(ctx, "interrupted", "Runtime stopped; automatic continuation is no longer monitored.");
+		finish(ctx, "interrupted", trace?.route === "external" || trace?.route === "document"
+			? "Source runtime stopped; destination reports are preserved. External sessions may still be running; inspect them before retrying. No local continuation is scheduled."
+			: "Runtime stopped; automatic continuation is no longer monitored.");
 		shutdown = true;
 		clearInterval(timer);
 		for (const resolve of agentStartWaiters) resolve();
@@ -203,7 +324,7 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 		});
 
 	pi.registerCommand("handoff", {
-		description: "Write a handoff document, summarize back to the first message, and continue",
+		description: "Design handoffs: continue here, dispatch elsewhere, or prepare documents only",
 		handler: async (args, ctx) => {
 			if (handoffInProgress) {
 				ctx.ui.notify("A handoff is already in progress", "warning");
@@ -262,6 +383,21 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 					const reason = handoffAssistant?.message.stopReason ?? "missing result";
 					finish(ctx, reason === "aborted" ? "cancelled" : "failed", `Document turn did not complete (${reason}); source branch retained.`);
 					ctx.ui.notify(`Handoff document turn did not complete (${reason}); source branch retained`, "warning");
+					return;
+				}
+
+				if (!trace.route) {
+					finish(ctx, "failed", "No handoff route was recorded; source retained and no local continuation attempted. Inspect the source before retrying any launches.");
+					ctx.ui.notify("Handoff route missing; no local continuation attempted", "warning");
+					return;
+				}
+				if (trace.route !== "here") {
+					const destinations = trace.destinations ?? [];
+					const launched = destinations.filter((destination) => ["launched", "start-confirmed"].includes(destination.status)).length;
+					const incomplete = destinations.length === 0 || destinations.some((destination) => ["planned", "failed"].includes(destination.status));
+					const outcome = launched === destinations.length && launched > 0 ? "dispatched"
+						: launched > 0 ? "partial" : incomplete ? "failed" : "prepared";
+					finish(ctx, outcome, "Source branch retained; no local continuation. Destination statuses are agent-reported; acceptance and work completion are not verified. Inspect destinations before retrying; launched sessions are independent and not monitored here.");
 					return;
 				}
 

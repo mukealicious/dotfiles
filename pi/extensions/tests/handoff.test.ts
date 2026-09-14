@@ -4,6 +4,7 @@ import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { stripVTControlCharacters } from "node:util";
 import test from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
 
@@ -11,6 +12,7 @@ import { type AssistantMessage, InMemoryCredentialStore, type StopReason, type U
 import {
 	discoverAndLoadExtensions,
 	ExtensionRunner,
+	initTheme,
 	ModelRegistry,
 	ModelRuntime,
 	SessionManager,
@@ -18,6 +20,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 
 const extensionPath = join(dirname(fileURLToPath(import.meta.url)), "..", "handoff.ts");
+initTheme("dark", false);
 
 function userMessage(text: string): UserMessage {
 	return {
@@ -58,6 +61,11 @@ async function createHandoffHarness(
 		navigationError?: string;
 		continuationError?: string;
 		deferContinuation?: boolean;
+		controlReports?: Array<{ route: "here" | "external" | "document"; destinations?: Array<{
+			id: string; status: "planned" | "prepared" | "launched" | "start-confirmed" | "failed";
+			document?: string; locator?: string; detail: string;
+		}> }>;
+		shutdownAfterReports?: boolean;
 	} = {},
 ) {
 	const credentials = new InMemoryCredentialStore();
@@ -103,9 +111,6 @@ async function createHandoffHarness(
 		sentUserMessages.push({ content, ...(options ? { options } : {}) });
 		if (content.startsWith("/skill:handoff")) {
 			sessionManager.appendMessage(userMessage(content));
-			handoffAssistantEntryId = sessionManager.appendMessage(
-				assistantMessage(harnessOptions.handoffStopReason ?? "stop"),
-			);
 			queueMicrotask(() => void runner.emit({ type: "agent_start" }));
 		} else {
 			if (harnessOptions.continuationError) throw new Error(harnessOptions.continuationError);
@@ -142,6 +147,17 @@ async function createHandoffHarness(
 	const commandActions: ExtensionCommandContextActions = {
 		waitForIdle: async () => {
 			waitForIdleCalls += 1;
+			if (waitForIdleCalls === 2) {
+				const tool = runner.getToolDefinition("handoff_control");
+				assert.ok(tool);
+				for (const report of harnessOptions.controlReports ?? [{ route: "here" }]) {
+					await tool.execute("control", report, undefined, undefined, runner.createContext());
+				}
+				handoffAssistantEntryId = sessionManager.appendMessage(
+					assistantMessage(harnessOptions.handoffStopReason ?? "stop"),
+				);
+				if (harnessOptions.shutdownAfterReports) await runner.emit({ type: "session_shutdown", reason: "quit" });
+			}
 		},
 		newSession: async () => ({ cancelled: false }),
 		fork: async () => ({ cancelled: false }),
@@ -468,7 +484,12 @@ test("handoff progress spans branch redraw, labels both branches, and persists a
 				const lines = component.render(width);
 				assert.ok(lines.every((line) => visibleWidth(line) <= width));
 			}
-			assert.match(component.render(120).join("\n"), /not verified/);
+			const rendered = stripVTControlCharacters(component.render(120).join("\n"));
+			if (expanded) assert.match(rendered, /not verified/);
+			else {
+				assert.match(rendered, /Continuation started/);
+				assert.doesNotMatch(rendered, /not verified|Source session:|Started:|source [a-f0-9]/);
+			}
 		}
 		assert.ok(!JSON.stringify(harness.sessionManager.buildSessionContext().messages).includes("handoff-receipt"));
 		const file = harness.sessionManager.getSessionFile();
@@ -564,6 +585,153 @@ test("continuation timeout advances elapsed time, not stages, and leaves a failu
 		t.mock.timers.reset();
 		await rm(cwd, { recursive: true, force: true });
 	}
+});
+
+const parallelHandoffPrompt = "let's create a single or multiple handoffs for the invibe-instrcutor space, each in their own herdr tab and probably their own worktree or skill dir? Maybe a single worktree with multiple skills and a single html artifact or something that compares the latest artifact output of each approach to the baseline, so it's easy for human review.";
+
+for (const route of ["external", "document"] as const) {
+	test(`${route} handoffs preserve the source branch and draft without local continuation`, async () => {
+		const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-"));
+		try {
+			const document = join(cwd, "handoff.md");
+			await writeFile(document, "Own method outputs; viewer owns HTML. Keep baseline separate.");
+			const destinations = [
+				{ id: "methods", document, status: route === "external" ? "start-confirmed" as const : "prepared" as const, locator: "w2:t1 / session-methods.jsonl", detail: "Own method outputs; activity observed" },
+				{ id: "viewer", document, status: route === "external" ? "launched" as const : "prepared" as const, locator: "w2:t2 / session-viewer.jsonl", detail: "Own comparison HTML; launch returned successfully" },
+			];
+			const harness = await createHandoffHarness(cwd, {
+				editorBeforeNavigation: "preserve this draft",
+				controlReports: [
+					{ route, destinations: destinations.map((d) => ({ id: d.id, status: "planned", detail: d.detail })) },
+					...destinations.map((destination) => ({ route, destinations: [destination] })),
+				],
+			});
+			const source = harness.sessionManager.appendMessage(userMessage("Compare approaches"));
+			await harness.runner.getCommand("handoff")!.handler(parallelHandoffPrompt, harness.runner.createCommandContext());
+			assert.equal(harness.sentUserMessages[0]?.content, `/skill:handoff ${parallelHandoffPrompt}`);
+			assert.equal(harness.sentUserMessages.length, 1);
+			assert.deepEqual(harness.navigations, []);
+			assert.deepEqual(harness.editorValues, []);
+			assert.equal(harness.runner.getUIContext().getEditorText(), "preserve this draft");
+			assert.ok(harness.sessionManager.getBranch().some((entry) => entry.id === source));
+			const receipt = receipts(harness)[0]!;
+			assert.equal(receipt.data.outcome, route === "external" ? "dispatched" : "prepared");
+			assert.equal(receipt.data.sourceId, harness.handoffAssistantEntryId());
+			assert.deepEqual(receipt.data.destinations, destinations);
+			const renderer = harness.runner.getEntryRenderer("handoff-receipt")!;
+			const component = renderer(receipt, { expanded: true }, harness.runner.getUIContext().theme)!;
+			assert.match(component.render(120).join("\n"), /agent-reported/);
+			const compact = renderer(receipt, { expanded: false }, harness.runner.getUIContext().theme)!;
+			const compactText = compact.render(120).map((line) => stripVTControlCharacters(line).trimEnd()).join("\n");
+			assert.equal(compactText, [
+				`Handoff · ${route === "external" ? "2 sessions launched" : "2 documents ready"}`,
+				`  methods · ${route === "external" ? "start confirmed" : "document ready"}`,
+				`  viewer · ${route === "external" ? "launched" : "document ready"}`,
+				"Source conversation kept here.",
+			].join("\n"));
+			assert.doesNotMatch(compactText, /\.jsonl|handoff\.md|agent-reported|w2:t/);
+			for (const width of [20, 40, 80]) assert.ok(compact.render(width).every((line) => visibleWidth(line) <= width));
+			for (const width of [20, 40, 80]) assert.ok(component.render(width).every((line) => visibleWidth(line) <= width));
+			await harness.runner.emit({ type: "session_shutdown", reason: "quit" });
+			assert.equal(receipts(harness).length, 1, "completed dispatch is not relabeled interrupted on shutdown");
+			assert.equal(harness.widgets.at(-1), undefined);
+		} finally { await rm(cwd, { recursive: true, force: true }); }
+	});
+}
+
+test("receipt presentation keeps raw recovery data expanded and flags unsuccessful outcomes", async () => {
+	const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-"));
+	try {
+		const harness = await createHandoffHarness(cwd);
+		harness.sessionManager.appendMessage(userMessage("Receipt display fixture"));
+		await runHandoff(harness);
+		const receipt = receipts(harness)[0]!;
+		const renderer = harness.runner.getEntryRenderer("handoff-receipt")!;
+		for (const outcome of ["dispatched", "failed", "partial", "cancelled", "interrupted"]) {
+			const fixture = { ...receipt, data: { ...receipt.data, route: "external", targetId: undefined, outcome,
+				destinations: [{ id: "smoke-extension", status: "start-confirmed", document: "/tmp/handoff.md", locator: "w1:p21 /tmp/session.jsonl", detail: "Observed activity" }],
+			} };
+			const compact = renderer(fixture, { expanded: false }, harness.runner.getUIContext().theme)!;
+			const expanded = renderer(fixture, { expanded: true }, harness.runner.getUIContext().theme)!;
+			const compactText = stripVTControlCharacters(compact.render(120).join("\n"));
+			assert.match(compactText, /smoke extension · start confirmed/);
+			assert.doesNotMatch(compactText, /\/tmp\/|w1:p21|agent-reported|Observed activity|source [a-f0-9]/);
+			if (outcome === "dispatched") assert.match(compactText, /1 session started/);
+			else assert.match(compactText, /Expand for recovery details/);
+			const fullText = stripVTControlCharacters(expanded.render(200).join("\n"));
+			assert.match(fullText, /Document: \/tmp\/handoff.md/);
+			assert.match(fullText, /w1:p21 \/tmp\/session.jsonl/);
+			assert.match(fullText, /Observed activity/);
+			assert.match(fullText, /agent-reported/);
+			for (const width of [20, 40, 80]) {
+				assert.ok(compact.render(width).every((line) => visibleWidth(line) <= width));
+				assert.ok(expanded.render(width).every((line) => visibleWidth(line) <= width));
+			}
+		}
+	} finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
+test("partial dispatch preserves successful siblings and records a failed destination", async () => {
+	const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-"));
+	try {
+		const document = join(cwd, "handoff.md");
+		await writeFile(document, "Resume here");
+		const harness = await createHandoffHarness(cwd, { controlReports: [
+			{ route: "external", destinations: [{ id: "methods", status: "launched", document, locator: "w2:t1", detail: "Launched" }] },
+			{ route: "external", destinations: [{ id: "viewer", status: "failed", detail: "Launch failed; no retry attempted" }] },
+		] });
+		harness.sessionManager.appendMessage(userMessage("Parallel handoffs"));
+		await runHandoff(harness);
+		assert.equal(receipts(harness)[0]?.data.outcome, "partial");
+		assert.equal((receipts(harness)[0]?.data.destinations as unknown[]).length, 2);
+		assert.equal(harness.sentUserMessages.length, 1);
+		assert.equal(harness.navigations.length, 0);
+	} finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
+for (const controlReports of [
+	[],
+	[{ route: "external" as const }],
+	[{ route: "external" as const }, { route: "here" as const }],
+	[{ route: "document" as const, destinations: [{ id: "bad", status: "launched" as const, detail: "Not permitted" }] }],
+	[{ route: "external" as const, destinations: [{ id: "bad", status: "prepared" as const, document: "relative.md", detail: "Bad path" }] }],
+	[{ route: "external" as const, destinations: [{ id: "bad", status: "prepared" as const, document: "/nonexistent-handoff/file.md", detail: "Missing artifact" }] }],
+	[{ route: "external" as const, destinations: [{ id: "bad", status: "launched" as const, detail: "Missing document and locator" }] }],
+]) {
+	test(`incomplete or invalid control data never falls through to local continuation: ${JSON.stringify(controlReports)}`, async () => {
+		const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-"));
+		try {
+			const harness = await createHandoffHarness(cwd, { controlReports });
+			harness.sessionManager.appendMessage(userMessage("Hand off elsewhere"));
+			await runHandoff(harness);
+			assert.equal(receipts(harness)[0]?.data.outcome, "failed");
+			assert.equal(harness.sentUserMessages.length, 1);
+			assert.equal(harness.navigations.length, 0);
+		} finally { await rm(cwd, { recursive: true, force: true }); }
+	});
+}
+
+test("interrupted external dispatch retains checkpoints and never relaunches on reload", async () => {
+	const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-"));
+	try {
+		const document = join(cwd, "handoff.md");
+		await writeFile(document, "Resume here");
+		const destinations = [{ id: "methods", status: "launched" as const, document, locator: "w2:t1", detail: "Independent session" }];
+		const harness = await createHandoffHarness(cwd, {
+			controlReports: [{ route: "external", destinations }], shutdownAfterReports: true,
+		});
+		harness.sessionManager.appendMessage(userMessage("Dispatch methods"));
+		await runHandoff(harness);
+		assert.equal(receipts(harness)[0]?.data.outcome, "interrupted");
+		assert.deepEqual(receipts(harness)[0]?.data.destinations, destinations);
+		await harness.runner.emit({ type: "session_start", reason: "reload" });
+		assert.equal(harness.sentUserMessages.length, 1);
+		assert.equal(harness.navigations.length, 0);
+		assert.equal(receipts(harness).length, 1);
+		await assert.rejects(() => harness.runner.getToolDefinition("handoff_control")!.execute(
+			"outside", { route: "external" }, undefined, undefined, harness.runner.createContext(),
+		), /only available/);
+	} finally { await rm(cwd, { recursive: true, force: true }); }
 });
 
 test("reload reports an unfinished persisted handoff without submitting prompts or navigating", async () => {

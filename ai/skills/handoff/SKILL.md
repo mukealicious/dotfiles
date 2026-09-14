@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Compact the active conversation branch into a temporary handoff for continuation. Use when explicitly handing the next phase to a fresh continuation or recording the next unfinished step.
+description: Design temporary handoffs for local continuation, other sessions, parallel work, or document-only recovery. Use when explicitly handing off the next phase or recording the next unfinished step.
 argument-hint: "What should the next continuation do?"
 disable-model-invocation: true
 user-invocable: true
@@ -10,7 +10,62 @@ metadata:
 
 # Handoff
 
-Write a concise handoff for a fresh continuation of the current work. Pi's handoff command invokes this skill, writes the document, summarizes the active branch, and automatically continues from the handoff on a new active branch in the same session.
+Design the handoff from the user's intent and current context. You own the topology:
+one or many continuations, destination tabs/workspaces, filesystem isolation, skill
+selection, and shared artifacts. The extension owns lifecycle bookkeeping, not a
+launcher or a fixed planning recipe.
+
+## Choose the lifecycle first
+
+When invoked by Pi's `/handoff`, call `handoff_control` before writing or launching:
+
+- `route: "here"` — the default intent when no other destination is requested.
+  Write one document and end your turn. The extension summarizes the source branch
+  and starts the continuation in this session. Do not launch another session.
+- `route: "external"` — another tab, workspace, harness, or parallel continuations.
+  Design and dispatch with your existing tools. The extension leaves this branch
+  intact and never starts a local continuation.
+- `route: "document"` — prepare documents without launching anything. Also use this
+  when a consequential ambiguity needs the user's answer before dispatch.
+
+Select once; the route cannot change within that invocation. Missing control data
+stops the extension rather than guessing a local continuation. For a direct skill
+invocation without an active `/handoff` transaction, follow the same planning rules
+but do not call `handoff_control`; no extension continuation is scheduled.
+
+## Design and dispatch
+
+- Treat arguments as intent, not just focus: destinations, parallelism, isolation,
+  shared output, and review requirements matter. Resolve retrievable facts yourself;
+  ask when destination or write ownership remains consequentially ambiguous.
+- For Herdr destinations, load the Herdr skill and its coordination references.
+  Use new, labeled, unfocused tabs; do not repurpose unrelated panes. Preserve the
+  source profile unless the user explicitly requests a different one. Start fresh
+  sessions with their document paths, never concurrent writers to the source JSONL.
+- Separate worktrees when writes overlap. A shared worktree is reasonable with
+  explicit non-overlapping ownership and a single owner for shared artifacts.
+  Skill directories are instructions, not filesystem isolation. Reuse skills;
+  don't create new ones merely to represent tasks.
+- For multiple approaches plus a comparison viewer, define baseline separation,
+  output locations/contracts, and who writes the viewer. Record dependencies and
+  blocking decisions rather than silently choosing unresolved requirements.
+- For external/document routes, record destinations with `handoff_control` using
+  stable task IDs. Report all planned destinations before dispatch, then update
+  each as `prepared`, `launched`, `start-confirmed`, or `failed`. Each update replaces
+  that destination's fields: include its document, locator, and relevant notes again.
+  Record failures without dropping successful siblings. Reports survive interruption.
+- Each prepared destination needs an existing absolute document path. Launch prompts
+  must open that document directly and perform its next unfinished step; they cannot
+  depend on this session's branch summary. Include cwd/worktree, ownership, source
+  recovery locator, and suggested skills in the document.
+- `launched` means the launch command succeeded; `start-confirmed` additionally needs
+  observed destination activity/session evidence. Record the verified locator and
+  evidence in the report. Neither means document acceptance or completed work.
+- End with a compact destination/status/document/ownership report. Do not wait for
+  the remote work to finish, shut down the source runtime, or retry successful
+  launches. Remote sessions live independently; this extension does not monitor them.
+
+## Handoff documents
 
 - Save the document in the user's OS temporary directory, never in the checkout
   or a project runtime directory. Include its exact absolute path in the
@@ -27,7 +82,6 @@ Write a concise handoff for a fresh continuation of the current work. Pi's hando
   available Herdr workspace, tab, and pane identifiers. For Pi, include the
   profile, session ID or JSONL path, and relevant tree-entry ID when branch
   identity matters. Treat Herdr identifiers as live hints, not durable identity.
-- Treat arguments as the next continuation's focus and tailor the handoff to them.
 - Keep specs, ADRs, issues, commits, and diffs as the durable sources of truth;
   reference them instead of copying their contents. Do not create `context.md`,
   `plan.md`, `progress.md`, or another checkout artifact just for handoff.
@@ -36,7 +90,7 @@ Write a concise handoff for a fresh continuation of the current work. Pi's hando
   as a substitute for the other.
 - Redact API keys, access tokens, passwords, cookies, private URLs, PII, and
   other secrets. Describe their presence or location without copying values.
-- Repeating Pi's handoff command is the normal phase loop. Each continuation
+- For local continuation, repeating Pi's handoff command is the normal phase loop. Each continuation
   already carries prior branch summaries on its active path. Do not instruct the
   user to navigate with Pi's tree browser between handoffs; reserve it for
   history, recovery, or a deliberate alternative branch.
