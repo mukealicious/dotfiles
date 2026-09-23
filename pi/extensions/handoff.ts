@@ -3,6 +3,7 @@ import { isAbsolute } from "node:path";
 import { type AssistantMessage, StringEnum, Type } from "@earendil-works/pi-ai";
 import type { ExtensionAPI, ExtensionContext, SessionEntry } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
+import { captureEndpoint, createConnection, registerConnections } from "../lib/handoff-connections.ts";
 
 const HANDOFF_STATE = "handoff-state";
 const HANDOFF_RECEIPT = "handoff-receipt";
@@ -13,7 +14,8 @@ const routes = ["here", "external", "document"] as const;
 type Route = typeof routes[number];
 const destinationStatuses = ["planned", "prepared", "launched", "start-confirmed", "failed"] as const;
 const destinationSchema = Type.Object({
-	id: Type.String({ minLength: 1, maxLength: 120, description: "Stable task identifier; repeated reports update this destination" }),
+	id: Type.String({ minLength: 1, maxLength: 120, description: "Stable task identifier; use a new ID for a separate retry or destination" }),
+	name: Type.Optional(Type.String({ minLength: 1, maxLength: 120, description: "Short human-readable task name, such as Extension check" })),
 	document: Type.Optional(Type.String({ minLength: 1, maxLength: 4096, description: "Absolute handoff document path; required once prepared or launched" })),
 	locator: Type.Optional(Type.String({ minLength: 1, maxLength: 4096, description: "Verified destination session/pane locator; required once launched" })),
 	status: StringEnum(destinationStatuses),
@@ -21,6 +23,8 @@ const destinationSchema = Type.Object({
 });
 type Destination = {
 	id: string;
+	name?: string;
+	connection?: string;
 	document?: string;
 	locator?: string;
 	status: typeof destinationStatuses[number];
@@ -32,7 +36,7 @@ function isDestination(value: unknown): value is Destination {
 	const data = value as Record<string, unknown>;
 	return typeof data.id === "string" && typeof data.detail === "string"
 		&& destinationStatuses.includes(data.status as Destination["status"])
-		&& [data.document, data.locator].every((v) => v === undefined || typeof v === "string");
+		&& [data.document, data.locator, data.name, data.connection].every((v) => v === undefined || typeof v === "string");
 }
 
 interface HandoffTrace {
@@ -81,21 +85,24 @@ function receiptText(trace: HandoffTrace, expanded: boolean): string {
 		: trace.outcome === "cancelled" ? "Cancelled"
 		: trace.outcome === "interrupted" ? "Interrupted"
 		: "In progress";
-	const lines = [`Handoff · ${outcome}`];
-	for (const destination of destinations) {
+	const lines = [`Handoff · ${outcome}`, trace.targetId ? "From source conversation" : "Here"];
+	for (const [index, destination] of destinations.entries()) {
 		// Stable IDs remain the protocol identity; make simple task slugs readable.
-		const name = destination.id.replace(/[-_]+/g, " ");
-		lines.push(`  ${name} · ${statusLabels[destination.status]}`);
+		const name = destination.name ?? destination.id.replace(/[-_]+/g, " ");
+		lines.push(`${index === count - 1 ? "└─" : "├─"} ${name} · ${statusLabels[destination.status]}`);
 	}
+	if (trace.targetId && !count) lines.push(`└─ Here · Local continuation · ${trace.outcome === "started" ? "started" : "branch prepared"}`);
 	const needsAttention = ["failed", "cancelled", "interrupted", "partial"].includes(trace.outcome);
 	if (needsAttention) lines.push(`Stopped at: ${trace.stage}. Expand for recovery details.`);
 	lines.push(trace.targetId ? "Continuation branch available in /tree." : "Source conversation kept here.");
+	if (count) lines.push("/handoffs · cross-session links");
 	if (expanded) {
 		lines.push("", "Recovery details");
 		for (const destination of destinations) {
 			lines.push(`${destination.id} · ${statusLabels[destination.status]}`);
 			if (destination.document) lines.push(`Document: ${destination.document}`);
 			if (destination.locator) lines.push(`Session: ${destination.locator}`);
+			if (destination.connection) lines.push(`Connection: ${destination.connection}`);
 			lines.push(destination.detail);
 		}
 		if (trace.detail) lines.push(trace.detail);
@@ -169,6 +176,7 @@ function buildBranchSummaryInstructions(focus: string): string {
 
 /** Agent-designed handoffs; only an explicit `here` route switches the source branch. */
 export default function registerHandoffExtension(pi: ExtensionAPI): void {
+	registerConnections(pi);
 	const agentStartWaiters = new Set<() => void>();
 	let handoffInProgress = false;
 	let trace: HandoffTrace | undefined;
@@ -182,7 +190,7 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 		ctx.ui.setWidget("handoff", [
 			`Handoff · ${Math.floor((Date.now() - trace.startedAt) / 1000)}s`,
 			...visibleStages.map((stage, index) => `${index < current ? "✓" : index === current ? "›" : "○"} ${stage}`),
-			...(trace.destinations ?? []).map((destination) => `${destination.id} · ${destination.status}`),
+			...(trace.destinations ?? []).map((destination, index, all) => `${index === all.length - 1 ? "└─" : "├─"} ${destination.name ?? destination.id.replace(/[-_]+/g, " ")} · ${statusLabels[destination.status]}`),
 		]);
 	};
 	const save = (ctx: ExtensionContext, patch: Partial<HandoffTrace>): void => {
@@ -236,7 +244,15 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 					if (!statSync(destination.document).isFile()) throw new Error("Handoff document must be a file");
 					accessSync(destination.document, constants.R_OK);
 				}
-				destinations.set(destination.id, { ...destination });
+				const previous = destinations.get(destination.id);
+				let connection = previous?.connection;
+				if (!connection) {
+					const source = await captureEndpoint(pi, ctx, signal);
+					if (source) {
+						connection = createConnection(source, destination.name ?? destination.id.replace(/[-_]+/g, " "));
+					}
+				}
+				destinations.set(destination.id, { ...destination, name: destination.name ?? previous?.name, connection });
 			}
 			if (destinations.size > 16) throw new Error("A handoff supports at most 16 destinations");
 			save(ctx, {
@@ -246,7 +262,8 @@ export default function registerHandoffExtension(pi: ExtensionAPI): void {
 			return {
 				content: [{ type: "text", text: params.route === "here"
 					? "Local continuation selected. Write the handoff and end your turn; the extension will summarize and continue here."
-					: "Recorded. The source branch will not switch or continue locally. Use existing tools for preparation/dispatch, report each destination, then end your turn. External sessions are not monitored by this extension." }],
+					: "Recorded. The source branch will not switch or continue locally. Use existing tools for preparation/dispatch, report each destination, then end your turn. External sessions are not monitored by this extension." },
+				...([...destinations.values()].filter((d) => d.connection).map((d) => ({ type: "text" as const, text: `${d.id}: connection ${d.connection}. Include this path in its handoff and instruct the destination to call handoff_accept with it after reading the document. This registers a reciprocal origin link; do not resume or write the source session.` })))],
 				details: { route: trace.route, destinations: trace.destinations },
 			};
 		},

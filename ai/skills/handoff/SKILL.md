@@ -54,6 +54,19 @@ but do not call `handoff_control`; no extension continuation is scheduled.
   each as `prepared`, `launched`, `start-confirmed`, or `failed`. Each update replaces
   that destination's fields: include its document, locator, and relevant notes again.
   Record failures without dropping successful siblings. Reports survive interruption.
+- Give destinations short, human-readable `name` values. The first report returns
+  a persistent connection file for each destination. Include that exact path in
+  its document and launch prompt. After reading the handoff, a Pi destination calls
+  `handoff_accept` with `{ connection: "<absolute path>" }` to register its origin
+  backlink. If that tool is unavailable in another harness, retain the path as
+  recovery information; do not claim a backlink was registered.
+  Connection files are extension-owned, separate from temporary handoff documents.
+  Updates to the same destination retain its connection. A retry in a different
+  session needs a new task ID and connection; never overwrite a prior acceptance.
+  Acceptance is independent of launch status and does not mean work completion.
+  `/handoffs` inspects cross-session incoming/outgoing links and can focus a verified
+  Herdr session without moving its branch. Local handoffs use labeled `/tree` entries
+  only; do not create or accept connections within the same session.
 - Each prepared destination needs an existing absolute document path. Launch prompts
   must open that document directly and perform its next unfinished step; they cannot
   depend on this session's branch summary. Include cwd/worktree, ownership, source

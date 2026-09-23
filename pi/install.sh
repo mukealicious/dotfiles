@@ -354,6 +354,9 @@ setup_pi_profile() {
     ensure_symlink "$theme" "$profile_dir/themes/$name" "$profile_name/themes/$name"
   done
 
+  # Extensions resolve relative imports from their installed profile path.
+  ensure_symlink "$DOTFILES_ROOT/pi/lib" "$profile_dir/lib" "$profile_name/lib"
+
   EXTENSIONS_SRC="$DOTFILES_ROOT/pi/extensions"
   EXTENSIONS_DIR="$profile_dir/extensions"
   if [ -d "$EXTENSIONS_SRC" ]; then

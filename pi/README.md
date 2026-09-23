@@ -213,7 +213,8 @@ profile's `extensions/` directory by `install.sh`.
 
 ### handoff.ts — Conversation Handoffs
 
-Registers `/handoff [intent]` and the transaction-scoped `handoff_control` tool.
+Registers `/handoff [intent]`, `/handoffs`, the transaction-scoped `handoff_control`
+tool, and destination-side `handoff_accept`.
 The shared handoff skill lets the agent design the topology using existing tools:
 how many sessions, which workspace/tabs, shared versus isolated worktrees, write
 ownership, skills, and shared artifacts. No keyword parser or fixed launcher API.
@@ -259,8 +260,34 @@ to find in `/tree` (including its labeled-only filter). Existing source labels a
 preserved. A persistent, expandable receipt shows the outcome, readable destination
 names, and statuses at a glance. Paths, source/resume IDs, timestamps, verification
 caveats, and recovery details live in the expanded view; failed or interrupted runs
-remain visibly flagged when collapsed. Receipts do not add anything to model context. Progress
-checkpoints also survive reload; an unfinished transaction is reported as
+remain visibly flagged when collapsed. Receipts use a compact origin/child tree and
+a `/handoffs` navigation hint for external destinations. Local handoffs use `/tree`
+only. Receipts do not add anything to model context.
+
+Each new destination gets an immutable connection file under `handoff-connections/`
+next to the source session JSONL. Pass its returned path in the handoff document.
+The destination calls `handoff_accept` after reading it, recording an origin entry
+in its own session and an exclusive `.accepted.json` acknowledgement next to the
+connection. Neither process writes the other's session. Local continuations create
+no connection files or acceptance entries. Connection identity and exact session/tree anchors
+survive tab closure and temporary document removal; deleting the session directory
+also removes these connection files.
+
+`/handoffs` lists cross-session links: **Came from** on the current branch and
+**Sent to** across this session. Legacy local links are omitted; `/tree` retains
+local source/continuation labels. Before focusing a remote session it
+verifies the saved Herdr pane still contains the recorded Pi session, then focuses
+it **without changing its branch**. Missing or moved panes fall back to displayed
+session/tree recovery locators; the picker never launches a duplicate or sends text
+to another agent. Cross-harness and older handoffs retain manual recovery information.
+
+Launch observations, backlink acceptance, and work completion remain distinct.
+Acceptance does not mark a task complete. Multiple incoming links are supported;
+a retry in another session uses a new task ID/connection. This first iteration does
+not group retries, track returned results, monitor remote work, or automatically
+reopen closed sessions.
+
+Progress checkpoints also survive reload; an unfinished transaction is reported as
 interrupted, never automatically retried.
 
 **“Continuation started” is not document acceptance or completed work.** It requires

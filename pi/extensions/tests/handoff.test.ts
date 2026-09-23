@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -62,7 +62,7 @@ async function createHandoffHarness(
 		continuationError?: string;
 		deferContinuation?: boolean;
 		controlReports?: Array<{ route: "here" | "external" | "document"; destinations?: Array<{
-			id: string; status: "planned" | "prepared" | "launched" | "start-confirmed" | "failed";
+			id: string; name?: string; status: "planned" | "prepared" | "launched" | "start-confirmed" | "failed";
 			document?: string; locator?: string; detail: string;
 		}> }>;
 		shutdownAfterReports?: boolean;
@@ -488,7 +488,7 @@ test("handoff progress spans branch redraw, labels both branches, and persists a
 			if (expanded) assert.match(rendered, /not verified/);
 			else {
 				assert.match(rendered, /Continuation started/);
-				assert.doesNotMatch(rendered, /not verified|Source session:|Started:|source [a-f0-9]/);
+				assert.doesNotMatch(rendered, /not verified|Source session:|Started:|source [a-f0-9]{8}/);
 			}
 		}
 		assert.ok(!JSON.stringify(harness.sessionManager.buildSessionContext().messages).includes("handoff-receipt"));
@@ -617,7 +617,14 @@ for (const route of ["external", "document"] as const) {
 			const receipt = receipts(harness)[0]!;
 			assert.equal(receipt.data.outcome, route === "external" ? "dispatched" : "prepared");
 			assert.equal(receipt.data.sourceId, harness.handoffAssistantEntryId());
-			assert.deepEqual(receipt.data.destinations, destinations);
+			const linked = receipt.data.destinations as (typeof destinations[number] & { connection: string; name?: string })[];
+			assert.deepEqual(linked.map(({ connection, name, ...d }) => d), destinations);
+			for (const d of linked) {
+				assert.ok(d.connection);
+				const record = JSON.parse(await readFile(d.connection, "utf8"));
+				assert.equal(record.source.sessionFile, harness.sessionManager.getSessionFile());
+				assert.ok(harness.sessionManager.getEntry(record.source.entryId));
+			}
 			const renderer = harness.runner.getEntryRenderer("handoff-receipt")!;
 			const component = renderer(receipt, { expanded: true }, harness.runner.getUIContext().theme)!;
 			assert.match(component.render(120).join("\n"), /agent-reported/);
@@ -625,9 +632,11 @@ for (const route of ["external", "document"] as const) {
 			const compactText = compact.render(120).map((line) => stripVTControlCharacters(line).trimEnd()).join("\n");
 			assert.equal(compactText, [
 				`Handoff · ${route === "external" ? "2 sessions launched" : "2 documents ready"}`,
-				`  methods · ${route === "external" ? "start confirmed" : "document ready"}`,
-				`  viewer · ${route === "external" ? "launched" : "document ready"}`,
+				"Here",
+				`├─ methods · ${route === "external" ? "start confirmed" : "document ready"}`,
+				`└─ viewer · ${route === "external" ? "launched" : "document ready"}`,
 				"Source conversation kept here.",
+				"/handoffs · cross-session links",
 			].join("\n"));
 			assert.doesNotMatch(compactText, /\.jsonl|handoff\.md|agent-reported|w2:t/);
 			for (const width of [20, 40, 80]) assert.ok(compact.render(width).every((line) => visibleWidth(line) <= width));
@@ -668,6 +677,64 @@ test("receipt presentation keeps raw recovery data expanded and flags unsuccessf
 				assert.ok(expanded.render(width).every((line) => visibleWidth(line) <= width));
 			}
 		}
+	} finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
+test("local handoffs retain tree labels without creating connections or appearing in /handoffs", async () => {
+	const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-local-"));
+	try {
+		const harness = await createHandoffHarness(cwd);
+		harness.sessionManager.appendMessage(userMessage("Continue locally"));
+		await runHandoff(harness);
+		const receipt = receipts(harness)[0]!;
+		assert.equal(receipt.data.localConnection, undefined);
+		assert.equal((await readdir(dirname(harness.sessionManager.getSessionFile()!))).includes("handoff-connections"), false);
+		assert.equal(harness.sessionManager.getEntries().some((e) => e.type === "custom" && e.customType === "handoff-origin"), false);
+		assert.ok(harness.sessionManager.getLabel(receipt.data.sourceId as string));
+		assert.ok(harness.sessionManager.getLabel(receipt.data.targetId as string));
+		// Old session records remain intact but are excluded from the picker.
+		harness.sessionManager.appendCustomEntry("handoff-state", { localConnection: "/missing/legacy.json", sourceId: "old-source", targetId: "old-target", sessionFile: harness.sessionManager.getSessionFile() });
+		harness.sessionManager.appendCustomEntry("handoff-origin", { connection: { version: 1, id: "00000000-0000-0000-0000-000000000000", name: "Local continuation", source: { sessionFile: harness.sessionManager.getSessionFile(), entryId: "old-source", name: "Local origin" } }, path: "/missing/legacy.json" });
+		await harness.runner.getCommand("handoffs")!.handler("", harness.runner.createCommandContext());
+		assert.match(harness.notifications.at(-1)!.message, /No cross-session handoffs.*\/tree/);
+	} finally { await rm(cwd, { recursive: true, force: true }); }
+});
+
+test("destination acceptance persists an origin backlink without modifying the source session", async () => {
+	const cwd = await mkdtemp(join(tmpdir(), "pi-handoff-link-"));
+	try {
+		const document = join(cwd, "handoff.md");
+		await writeFile(document, "Read-only task");
+		const source = await createHandoffHarness(cwd, { controlReports: [{ route: "document", destinations: [{ id: "check", name: "Extension check", status: "prepared", document, detail: "Read only" }] }] });
+		source.sessionManager.appendMessage(userMessage("Prepare a task"));
+		await runHandoff(source);
+		const connection = (receipts(source)[0]!.data.destinations as { connection: string }[])[0]!.connection;
+		const before = await readFile(source.sessionManager.getSessionFile()!, "utf8");
+		const target = await createHandoffHarness(join(cwd, "target"));
+		target.sessionManager.appendMessage(userMessage("Open the document and register its connection"));
+		const tool = target.runner.getToolDefinition("handoff_accept")!;
+		await tool.execute("accept", { connection }, undefined, undefined, target.runner.createContext());
+		await tool.execute("accept-again", { connection }, undefined, undefined, target.runner.createContext());
+		const entries = target.sessionManager.getBranch().filter((e) => e.type === "custom" && e.customType === "handoff-origin");
+		assert.equal(entries.length, 1);
+		assert.equal(await readFile(source.sessionManager.getSessionFile()!, "utf8"), before);
+		for (const [harness, expected] of [[source, /^1\. Sent to · Extension check$/], [target, /^1\. Came from · .+ · Extension check$/]] as const) {
+			let choices: string[] = [];
+			harness.runner.setUIContext({ ...harness.runner.getUIContext(), select: async (_title, options) => { choices = options; return undefined; } });
+			await harness.runner.getCommand("handoffs")!.handler("", harness.runner.createCommandContext());
+			assert.equal(choices.length, 1);
+			assert.match(choices[0]!, expected);
+		}
+		const origin = entries[0]!;
+		assert.equal(origin.type, "custom");
+		if (origin.type !== "custom") return;
+		const renderer = target.runner.getEntryRenderer("handoff-origin")!;
+		const compact = renderer(origin, { expanded: false }, target.runner.getUIContext().theme)!;
+		assert.match(stripVTControlCharacters(compact.render(120).join("\n")), /Here · Extension check/);
+		for (const width of [20, 40, 80]) assert.ok(compact.render(width).every((line) => visibleWidth(line) <= width));
+		await target.runner.emit({ type: "session_start", reason: "reload" });
+		assert.ok(target.runner.getCommand("handoffs"));
+		assert.equal(target.sessionManager.getBranch().filter((e) => e.type === "custom" && e.customType === "handoff-origin").length, 1);
 	} finally { await rm(cwd, { recursive: true, force: true }); }
 });
 
@@ -723,7 +790,9 @@ test("interrupted external dispatch retains checkpoints and never relaunches on 
 		harness.sessionManager.appendMessage(userMessage("Dispatch methods"));
 		await runHandoff(harness);
 		assert.equal(receipts(harness)[0]?.data.outcome, "interrupted");
-		assert.deepEqual(receipts(harness)[0]?.data.destinations, destinations);
+		const linked = receipts(harness)[0]?.data.destinations as (typeof destinations[number] & { connection: string; name?: string })[];
+		assert.deepEqual(linked.map(({ connection, name, ...d }) => d), destinations);
+		assert.ok(linked[0]?.connection);
 		await harness.runner.emit({ type: "session_start", reason: "reload" });
 		assert.equal(harness.sentUserMessages.length, 1);
 		assert.equal(harness.navigations.length, 0);
