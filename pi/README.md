@@ -130,10 +130,12 @@ of their thinking levels:
 
 | Mode | Model | Thinking | Border |
 |---|---|---|---|
-| `light` | `openai-codex/gpt-5.6-luna` | `max` | blue (`thinkingLow`) |
-| `standard` | `openai-codex/gpt-5.6-sol` | `medium` | aqua (`thinkingMedium`) |
+| `light` | `openai-codex/gpt-6-luna` | `max` | blue (`thinkingLow`) |
+| `standard` | `openai-codex/gpt-6-sol` | `medium` | aqua (`thinkingMedium`) |
 | `default` | `openai-codex/gpt-6-astra` | `medium` | purple (`thinkingHigh`) |
 | `deep` | `openai-codex/gpt-6-astra` | `high` | red (`thinkingXhigh`) |
+
+Thinking levels are provisional: [OpenAI's GPT-6 release benchmarks](https://openai.com/index/introducing-gpt-6-sol-and-luna/) report Luna/max and Sol/xhigh or max on selected tasks, but do not establish an optimal Sol/medium setting for everyday coding. Keep Luna/max for the cheap capable light mode and Sol/medium for responsive standard work; raise Sol effort for harder tasks and compare against Astra on local work before changing the baseline.
 
 Mitsupi can write temporary adjustments through `/mode` because the runtime file
 is a regular file rather than a Git symlink. Edit `pi/modes.personal.json` for a
@@ -152,7 +154,7 @@ Tracked baseline defaults:
 
 - **Work profile**: OpenAI `gpt-5.5` via API key
 - **Personal profile**: OpenAI Codex `gpt-6-astra` at medium thinking via OAuth subscription
-- **Personal modes**: Luna/max, Sol/medium, Astra/medium, and Astra/high under
+- **Personal modes**: GPT-6 Luna/max, Sol/medium, Astra/medium, and Astra/high under
   `light`, `standard`, `default`, and `deep`
 - **Themes**: Gruvbox Dark (selected) and Gruvbox Light (available)
 - **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` plus tldraw offline's app-managed skill at `~/skills/tldraw-offline` when installed; missing external skill paths are harmless

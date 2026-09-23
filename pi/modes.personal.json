@@ -4,13 +4,13 @@
   "modes": {
     "light": {
       "provider": "openai-codex",
-      "modelId": "gpt-5.6-luna",
+      "modelId": "gpt-6-luna",
       "thinkingLevel": "max",
       "color": "thinkingLow"
     },
     "standard": {
       "provider": "openai-codex",
-      "modelId": "gpt-5.6-sol",
+      "modelId": "gpt-6-sol",
       "thinkingLevel": "medium",
       "color": "thinkingMedium"
     },

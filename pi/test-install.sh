@@ -326,8 +326,8 @@ jq -e '
   .version == 1
   and .currentMode == "default"
   and (.modes | keys == ["deep", "default", "light", "standard"])
-  and .modes.light == {provider: "openai-codex", modelId: "gpt-5.6-luna", thinkingLevel: "max", color: "thinkingLow"}
-  and .modes.standard == {provider: "openai-codex", modelId: "gpt-5.6-sol", thinkingLevel: "medium", color: "thinkingMedium"}
+  and .modes.light == {provider: "openai-codex", modelId: "gpt-6-luna", thinkingLevel: "max", color: "thinkingLow"}
+  and .modes.standard == {provider: "openai-codex", modelId: "gpt-6-sol", thinkingLevel: "medium", color: "thinkingMedium"}
   and .modes.default == {provider: "openai-codex", modelId: "gpt-6-astra", thinkingLevel: "medium", color: "thinkingHigh"}
   and .modes.deep == {provider: "openai-codex", modelId: "gpt-6-astra", thinkingLevel: "high", color: "thinkingXhigh"}
 ' "$PERSONAL_MODES" >/dev/null || fail "personal mode mapping changed"
