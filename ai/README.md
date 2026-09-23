@@ -213,6 +213,7 @@ uncertain.
 | `post-mortem` | Session lessons and agent-context improvements |
 | `production-readiness` | Service, data, deployment, and reliability risk |
 | `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
+| `rat-stack` | Live Rat Stack reference, only on explicit request or project-local adoption; dependencies alone do not activate it |
 | `tdd` | Red/green vertical slices and public-behavior tests |
 | `tufte-data-viz` | Quantitative visualization judgment |
 | `uncomplect` | Upstream-baseline pressure test for stateful systems, replacement designs, and accidental complexity |
