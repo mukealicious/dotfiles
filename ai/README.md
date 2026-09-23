@@ -64,6 +64,7 @@ auto-sync mechanism.
 | `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | `impeccable` | Product UI/UX and visual interaction design |
 | `yanliudesign/mono-color-skill@a08c45df61ae480e2b0d78b978a304e06ba2894e` | `mono-color` | One-ink and controlled two-ink editorial art direction and raster generation |
 | `plannotator/effective-html`, `ThariqS/html-effectiveness` | `visual-deliverables` | Self-contained HTML/SVG explainers and curated examples |
+| `joelhooks/skills@7c0a930d761bc05f50c3d31cf55ba7f289b45861` | `uncomplect` | Verbatim initial baseline, source map, and upstream evals; license status recorded in `VENDORED_FROM.md` |
 | Pinned maintenance/research influences | `post-mortem`, `production-readiness`, `tufte-data-viz`, `herdr`, `hunk-review` | Retrospectives, production risk, quantitative visualization, Herdr, and Hunk |
 
 Rules for retained upstreams:
@@ -214,6 +215,7 @@ uncertain.
 | `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
 | `tdd` | Red/green vertical slices and public-behavior tests |
 | `tufte-data-viz` | Quantitative visualization judgment |
+| `uncomplect` | Upstream-baseline pressure test for stateful systems, replacement designs, and accidental complexity |
 | `upstream-review` | Manual provenance and adoption decisions |
 | `visual-deliverables` | Self-contained HTML/SVG explainers |
 
