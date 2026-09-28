@@ -336,6 +336,13 @@ EXPECTED_EXTENSIONS='["extensions/answer.ts","extensions/context.ts","extensions
 EXPECTED_SKILLS='["skills/apple-mail/SKILL.md","skills/commit/SKILL.md","skills/github/SKILL.md","skills/google-workspace/SKILL.md","skills/mermaid/SKILL.md","skills/pi-share/SKILL.md","skills/sentry/SKILL.md","skills/summarize/SKILL.md","skills/uv/SKILL.md"]'
 for profile in work personal; do
   settings="$HOME_ROOT/.pi/$profile/settings.json"
+  jq -e '.packages | index("npm:pi-mcp-adapter@3.2.0") != null' "$settings" >/dev/null || fail "$profile MCP adapter missing"
+  mcp="$HOME_ROOT/.pi/$profile/mcp-adapter.json"
+  [ ! -L "$mcp" ] || fail "$profile MCP config must be writable without changing Git"
+  jq -e --arg name "mobbin-$profile" '
+    (.mcpServers | keys) == [$name]
+    and .mcpServers[$name] == {url: "https://api.mobbin.com/mcp", auth: "oauth"}
+  ' "$mcp" >/dev/null || fail "$profile Mobbin config incorrect"
   jq -e --argjson expected_extensions "$EXPECTED_EXTENSIONS" --argjson expected_skills "$EXPECTED_SKILLS" '
     ([.packages[] | select(type == "object" and .source == "npm:mitsupi@1.6.0")] | length == 1)
     and ([.packages[] | select(type == "object" and .source == "npm:mitsupi@1.6.0")][0].extensions == $expected_extensions)
@@ -393,7 +400,23 @@ for profile in work personal; do
   jq '.defaultProvider = "saved-provider" | .defaultModel = "saved-model" | .defaultThinkingLevel = "high" | .lastChangelogVersion = "saved-version" | .trackingId = "saved-id"' "$settings" > "$settings.tmp"
   mv "$settings.tmp" "$settings"
 done
+for profile in work personal; do
+  mcp="$HOME_ROOT/.pi/$profile/mcp-adapter.json"
+  jq --arg name "mobbin-$profile" '
+    .settings.showStatusIcon = false
+    | .mcpServers.custom = {url: "https://example.com/mcp"}
+    | .mcpServers[$name].url = "https://stale.example.com/mcp"
+  ' "$mcp" > "$mcp.tmp"
+  mv "$mcp.tmp" "$mcp"
+done
 run_install "$HOME_ROOT" "$TMP_ROOT/second.log"
+for profile in work personal; do
+  jq -e --arg name "mobbin-$profile" '
+    .settings.showStatusIcon == false
+    and .mcpServers.custom.url == "https://example.com/mcp"
+    and .mcpServers[$name] == {url: "https://api.mobbin.com/mcp", auth: "oauth"}
+  ' "$HOME_ROOT/.pi/$profile/mcp-adapter.json" >/dev/null || fail "$profile MCP merge lost custom config or did not restore Mobbin"
+done
 jq -e --slurpfile modes "$PERSONAL_MODES" '
   .defaultProvider == $modes[0].modes.default.provider
   and .defaultModel == $modes[0].modes.default.modelId

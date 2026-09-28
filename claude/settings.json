@@ -121,7 +121,8 @@
       "Bash(docker compose exec:*)",
       "Bash(sg:*)",
       "Bash(shellcheck:*)",
-      "Bash(just:*)"
+      "Bash(just:*)",
+      "mcp__pencil"
     ]
   },
   "theme": "light"

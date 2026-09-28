@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mobbin-work": {
+      "url": "https://api.mobbin.com/mcp",
+      "auth": "oauth"
+    }
+  }
+}

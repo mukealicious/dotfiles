@@ -21,6 +21,7 @@
     "~/.dotfiles/pi/packages/pi-parallel",
     "~/.dotfiles/pi/packages/pi-openai-fast",
     "~/.dotfiles/pi/packages/pi-subagents",
+    "npm:pi-mcp-adapter@3.2.0",
     {
       "source": "npm:mitsupi@1.6.0",
       "extensions": [

@@ -332,6 +332,37 @@ materialize_pi_modes() {
   log_success "Materialized $modes_label"
 }
 
+# Keep adapter UI edits writable and unrelated servers/settings intact. Only
+# the named managed server definitions are replaced; credentials live in Keychain.
+materialize_pi_mcp() {
+  mcp_src="$1"
+  mcp_dst="$2"
+  mcp_existing="$mcp_dst"
+  if [ ! -e "$mcp_dst" ] && [ ! -L "$mcp_dst" ]; then
+    mcp_existing="$mcp_src"
+  fi
+  mcp_tmp="$(mktemp "${mcp_dst}.tmp.XXXXXX")"
+  if ! jq -e -s '
+    if length == 2 and all(.[];
+      type == "object" and ((.mcpServers // {}) | type == "object")
+    ) then
+      .[0] as $managed | .[1]
+      | .mcpServers = ((.mcpServers // {}) + $managed.mcpServers)
+    else error("Invalid MCP config") end
+  ' "$mcp_src" "$mcp_existing" > "$mcp_tmp"; then
+    rm -f "$mcp_tmp"
+    log_error "Failed to merge MCP config: $mcp_dst (existing file preserved)"
+    return 1
+  fi
+  chmod 600 "$mcp_tmp"
+  if [ ! -L "$mcp_dst" ] && [ -f "$mcp_dst" ] && cmp -s "$mcp_tmp" "$mcp_dst"; then
+    rm -f "$mcp_tmp"
+    return 0
+  fi
+  mv "$mcp_tmp" "$mcp_dst"
+  log_success "Materialized $mcp_dst"
+}
+
 setup_pi_profile() {
   profile_dir="$1"
   settings_src="$2"
@@ -401,6 +432,7 @@ materialize_pi_modes "$PERSONAL_MODES_BASELINE" "$HOME/.pi/personal/modes.json" 
 
 for profile_name in work personal; do
   profile_dir="$HOME/.pi/$profile_name"
+  materialize_pi_mcp "$DOTFILES_ROOT/pi/mcp-adapter.$profile_name.json" "$profile_dir/mcp-adapter.json"
   remove_retired_extension_link "$profile_dir" "$profile_name" cost.ts
   remove_retired_extension_link "$profile_dir" "$profile_name" watchdog.ts
 done
@@ -435,6 +467,7 @@ if [ -f "$DOTFILES_ROOT/pi/packages/pi-subagents/package-lock.json" ]; then
 fi
 
 PACKAGES="
+  npm:pi-mcp-adapter@3.2.0
   $DOTFILES_ROOT/pi/packages/pi-exa
   $DOTFILES_ROOT/pi/packages/pi-parallel
   $DOTFILES_ROOT/pi/packages/pi-openai-fast

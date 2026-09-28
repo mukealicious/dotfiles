@@ -36,6 +36,46 @@ Web search tools are routed by cost and depth:
 
 Run `dot doctor` to verify agents, symlinks, and skill projections are correctly installed.
 
+### Mobbin MCP
+
+Both profiles install `pi-mcp-adapter@3.2.0` and connect to Mobbin's official
+Streamable HTTP endpoint, `https://api.mobbin.com/mcp`. Restart Pi after the
+first install, then authorize in each profile:
+
+| Launch | Run inside Pi |
+|---|---|
+| `pi-personal` | `/mcp-auth mobbin-personal` |
+| `pi-work` | `/mcp-auth mobbin-work` |
+
+Complete the browser login with the intended Mobbin account. No API key is
+needed. `/mcp-adapter` shows connection status; try asking Pi to search Mobbin
+for onboarding screens from banking apps after authorization.
+
+`pi/mcp-adapter.personal.json` and `pi/mcp-adapter.work.json` are managed
+baselines. The installer materializes writable `mcp-adapter.json` files in each
+profile, restores the named Mobbin entry, and preserves unrelated servers and
+adapter settings. Credentials stay in the macOS credential store, not Git.
+Server names deliberately differ because the adapter keys credentials by server
+name, not Pi profile. Tools use the adapter's lazy proxy defaults.
+
+### Machine-local MCP connections
+
+Use `~/.config/mcp/mcp.json` for connections that belong to a computer rather
+than a model/billing profile. Both profiles' adapters load this file automatically;
+keep it a local regular file, outside Git and installer-managed baselines. Other
+MCP clients that read this standard path may also discover these servers.
+
+Linear can live here as `linear` with `url: https://mcp.linear.app/mcp` and
+`auth: oauth`. Authorize once with `/mcp-auth linear`; the adapter's URL-bound
+Keychain credentials are shared by server name across profiles on this machine.
+Do not add Linear to the tracked profile baselines for a machine-only setup.
+
+GitHub can use `url: https://api.githubcopilot.com/mcp/`, `auth: bearer`, and
+`bearerToken: "!gh auth token --hostname github.com"` to resolve the current
+GitHub CLI credential at connection time without storing a token in JSON.
+This follows the active `gh` account, not the Pi profile. Run `/reload` after
+editing shared config; profile overrides take precedence over it.
+
 For local editor/typecheck support of custom Pi extensions, install transient dev dependencies without committing a lockfile:
 
 ```bash
@@ -381,4 +421,5 @@ Pi packages loaded by this setup:
 | `pi/packages/pi-parallel` | Local vendored Parallel tools (`web_search`, `web_fetch`, `deep_research`, `batch_enrich`; Turbo is the default search mode; depends on standalone `parallel-cli`) |
 | `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4, GPT-5.5, GPT-5.6 Luna/Terra/Sol, and Codex GPT-6 Astra models |
 | `pi/packages/pi-subagents` | Local vendored subagent delegation tools, builtin child agents, chains, and parallel runs |
+| `pi-mcp-adapter@3.2.0` | MCP discovery/proxy tools and OAuth for profile-specific Mobbin servers |
 | `mitsupi@1.6.0` | Curated `/answer`, `/context`, `/files`, `/multi-edit`, `/prompt-editor`, `/todos`, `/uv`, `/whimsical`, manual `/btw` and `/review`, plus the nine allowlisted skills |
