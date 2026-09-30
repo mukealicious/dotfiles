@@ -58,7 +58,7 @@ auto-sync mechanism.
 | Upstream | Local scope | Ownership |
 |---|---|---|
 | `dmmulroy/.dotfiles@f9f7aa1a3638d6bfb6fa0b94fd110185534a2895` | `grilling`, `domain-modeling`, `tdd`, `implement`, `bro`, `handoff` | Grilling, domain docs, TDD, manual implementation, plain-language restatement, and temporary handoffs |
-| `viticci/remctl@5dedddab08d63361a62f2c81fe60acc707287e15` | `apple-reminders` | Agent-safe Apple Reminders reads, explicit-intent writes, and verification through RemCTL |
+| `viticci/remctl@e7b4e8563903935aa2bab6d4d24d983499b4a4e8` | `apple-reminders` | Agent-safe Apple Reminders reads, explicit-intent writes, and verification through RemCTL |
 | `mattpocock/skills@9c9f36ccd3995266cd675468af71639c8dde1ec5` | `codebase-design`, thin `grill-me`, thin `grill-with-docs` | Deep-module/interface vocabulary and manual entry-point provenance |
 | `rjs/shaping-skills@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9` | `framing-doc`, `kickoff-doc`, `breadboarding` | Framing, shaped kickoff territory, and breadboarding |
 | `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | `impeccable` | Product UI/UX and visual interaction design |

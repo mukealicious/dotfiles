@@ -233,33 +233,30 @@ else
     info "Fix: $DOTFILES_ROOT/remctl/install.sh"
   fi
 
-  remctl_python="$(uv python find '>=3.10' 2>/dev/null || true)"
-  if [ -n "$remctl_python" ] && [ "$(head -n 1 "$HOME/.local/bin/remctl" 2>/dev/null || true)" = "#!$remctl_python" ]; then
-    pass "remctl uv Python runtime: $remctl_python"
+  remctl_app="$HOME/Applications/RemCTL Capability Host.app"
+  if codesign --verify --deep --strict -R '=identifier "net.macstories.remctl.capability-host" and anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.13] exists and certificate leaf[subject.OU] = "4W35M4UN6R"' "$remctl_app" >/dev/null 2>&1; then
+    pass "remctl signed Capability Host"
   else
-    fail "remctl is not pinned to the expected uv Python 3.10+ runtime"
+    fail "remctl signed Capability Host is missing or invalid"
     info "Fix: $DOTFILES_ROOT/remctl/install.sh"
   fi
 
-  if [ -x "$HOME/.local/bin/remctl-bridge" ]; then
-    pass "remctl EventKit bridge"
+  if [ -f "$HOME/.local/bin/.remctl-install-manifest.json" ]; then
+    pass "remctl upstream ownership manifest"
   else
-    fail "remctl EventKit bridge is missing"
+    fail "remctl upstream ownership manifest is missing"
     info "Fix: $DOTFILES_ROOT/remctl/install.sh"
   fi
 
-  if [ -x "$HOME/.local/bin/remctl-private" ]; then
-    pass "remctl private metadata helper"
-  else
-    warn "remctl private metadata helper is missing"
-    info "Private ReminderKit writes will be unavailable; rerun $DOTFILES_ROOT/remctl/install.sh"
-  fi
-
-  if [ -x "$HOME/.local/bin/remctl-permissions" ]; then
-    pass "remctl permission helper"
-  else
-    warn "remctl guided permission helper is missing"
-    info "Fix: $DOTFILES_ROOT/remctl/install.sh"
+  if [ "$remctl_version" = "$REMCTL_VERSION" ]; then
+    if remctl_health="$(REMCTL_SKIP_ONBOARD=1 REMCTL_CAPABILITY_HOST=force remctl doctor --for-agent --json)" &&
+       printf '%s\n' "$remctl_health" | jq -e '.access.effective.route == "capabilityHost" and .access.effective.ready == true' >/dev/null 2>&1; then
+      pass "remctl effective access through Capability Host"
+    else
+      fail "remctl Capability Host is not ready"
+      info "Inspect: remctl doctor --for-agent --json"
+      info "Permissions: remctl onboard --no-mcp (grant access to the host only)"
+    fi
   fi
 
   if [ -f "$HOME/.config/fish/completions/remctl.fish" ]; then
@@ -269,7 +266,7 @@ else
     info "Fix: $DOTFILES_ROOT/remctl/install.sh"
   fi
 
-  info "Reminders permissions are host-scoped; verify when needed with: remctl doctor --for-agent --json"
+  info "RemCTL owns its protected Python; CLI agents do not need separate macOS grants"
 fi
 
 # ── Surf browser lanes ─────────────────────────────────────────

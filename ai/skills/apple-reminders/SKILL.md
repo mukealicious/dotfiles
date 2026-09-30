@@ -2,14 +2,14 @@
 name: apple-reminders
 description: Read and manage Apple Reminders through the RemCTL CLI on macOS. Use when asked to list, search, create, edit, complete, reopen, or delete reminders or troubleshoot Reminders access.
 license: MIT
-compatibility: Requires macOS 14 or later and the remctl CLI.
+compatibility: Requires macOS 14 or later and the RemCTL 2.x CLI with its signed Capability Host.
 metadata:
-  watch-sources: viticci/remctl/SKILL.md@5dedddab08d63361a62f2c81fe60acc707287e15
+  watch-sources: viticci/remctl/SKILL.md@e7b4e8563903935aa2bab6d4d24d983499b4a4e8
 ---
 
 # Apple Reminders
 
-Use `remctl` as the supported boundary for Apple Reminders. It reads detailed reminder data locally and performs public writes through EventKit. Never write to the Reminders SQLite database directly.
+Use the `remctl` CLI as the supported boundary for Apple Reminders. This is an intentional local adaptation of upstream's MCP-first skill: do not register MCP clients or install the visual plugin unless requested. RemCTL 2.x routes data commands through its signed Capability Host, which reads locally and writes through EventKit or opt-in private ReminderKit. Never access the Reminders SQLite database directly.
 
 ## Respect intent
 
@@ -28,7 +28,11 @@ command -v remctl
 remctl doctor --for-agent --json
 ```
 
-macOS grants Full Disk Access and Reminders/EventKit access per process context. A passing Terminal check does not authorize a separate agent host. Trust the `context` and `checks` fields from the doctor output. If needed, ask the user to run `remctl onboard` interactively and grant access to the exact targets reported by the agent context.
+Read `access.effective`: expect `route: "capabilityHost"` and `ready: true`. The signed `RemCTL Capability Host.app` owns Full Disk Access, Reminders, and Automation grants; a blocked `access.direct` for the caller is normal. Never grant new permissions to Terminal, Python, or the agent host.
+
+For missing permissions, run `remctl onboard --no-mcp` interactively and grant access only to the exact app reported by `capabilityHost.app.path`. After changing Full Disk Access, restart the host with `launchctl kickstart -k "gui/$(id -u)/net.macstories.remctl.capability-host"`, then rerun doctor. Never silently bypass a failed host with direct execution.
+
+Dotfiles owns installation: `~/.dotfiles/remctl/install.sh` installs the reviewed notarized release at `~/.local/bin/remctl`. Do not independently install another copy, rewrite its shebang, or re-sign the app. First migration needs interactive administrator approval and new host grants; later updates preserve the signing identity. MCP and Tailscale remain off.
 
 ## Prefer JSON
 
@@ -76,6 +80,7 @@ After every write:
 3. For `edit`, continue with the returned `id`; a verified move can return a new `id` and an `oldId`.
 4. Verify the resulting reminder with `info <id> --json` or the target list with `show ... --json`.
 5. If an add returns `status: "partial"`, use `edit` to finish the failed metadata step. Never rerun `add`, which would duplicate the reminder.
+6. Never blindly retry an uncertain completion: completing a repeating reminder advances it one occurrence. Read the reminder first. For batch commands, inspect `succeeded`, `failed`, and `uncertain`, not just the overall status.
 
 Invalid due dates fail before writing. Correct the date and retry rather than creating an undated reminder and patching it afterward.
 
@@ -99,7 +104,7 @@ remctl add "Research" -l Projects --private --section "Reading" -t research --ur
 remctl edit 23880 --private --set-tags research,work --json
 ```
 
-Private ReminderKit APIs are unsupported and can drift across macOS releases. Check `private_helper` in doctor output, verify with `info --json`, and ask for a device/UI check when cross-device sync matters.
+Private ReminderKit APIs are unsupported and can drift across macOS releases. Check `capabilityHost.privateProtocol.compatible` in doctor output, verify with `info --json`, and ask for a device/UI check when cross-device sync matters.
 
 ## Limited read fallback
 
@@ -111,5 +116,5 @@ Fallback items contain `eventKitId`, not RemCTL numeric `id`. Never pass an `eve
 
 - Never report a write as successful unless the command succeeded and verification agrees.
 - Preserve structured stderr errors; do not replace them with success-shaped fallbacks.
-- On permission failures, report which doctor check failed and the exact host target that needs authorization.
+- On permission failures, report the failed effective-access check and the exact Capability Host app that needs authorization.
 - Use `remctl --help` and `remctl <command> --help` for less common list, section, group, smart-list, template, assignment, attachment, or import/export operations.

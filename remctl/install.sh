@@ -1,183 +1,123 @@
 #!/bin/sh
-# shellcheck disable=SC1091
-#
-# Install the pinned RemCTL release for shared Apple Reminders agent workflows.
-#
-# macOS privacy permissions are intentionally not requested here. Run
-# `remctl onboard` interactively after installation, then verify from each
-# agent host with `remctl doctor --for-agent --json`.
-
+# Install the reviewed, notarized RemCTL distribution. Upstream owns the app,
+# protected Python, ownership manifest, and transactional replacement.
 set -e
 
 DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-FORCE="${FORCE:-false}"
-
 # shellcheck source=../lib/log.sh
 . "$DOTFILES_ROOT/lib/log.sh"
 # shellcheck source=version.env
 . "$DOTFILES_ROOT/remctl/version.env"
-
+FORCE="${FORCE:-false}"
+DRY_RUN=false
 for arg in "$@"; do
   case "$arg" in
-    --force)
-      FORCE=true
-      ;;
-    *)
-      log_error "Unknown remctl installer option: $arg"
-      exit 1
-      ;;
+    --force) FORCE=true ;;
+    --dry-run) DRY_RUN=true ;;
+    *) log_error "Unknown remctl installer option: $arg"; exit 1 ;;
   esac
 done
 
-if [ "$(uname -s)" != "Darwin" ]; then
-  log_warn "RemCTL is macOS-only; skipping on $(uname -s)"
+if [ "$(uname -s)" != Darwin ]; then
+  log_warn "RemCTL is macOS-only; skipping"
   exit 0
 fi
-
-if ! command -v git >/dev/null 2>&1; then
-  log_error "git is required to install RemCTL"
-  exit 1
-fi
-
-if ! command -v uv >/dev/null 2>&1; then
-  log_error "uv is required to select a supported Python runtime for RemCTL"
-  exit 1
-fi
-
-REMCTL_PYTHON="$(uv python find '>=3.10' 2>/dev/null || true)"
-if [ -z "$REMCTL_PYTHON" ] || [ ! -x "$REMCTL_PYTHON" ]; then
-  log_error "No Python 3.10 or newer runtime is available through uv"
-  log_hint "Run: uv python install 3.12"
+if [ "$(uname -m)" != arm64 ]; then
+  log_error "The pinned RemCTL download supports Apple silicon only"
+  log_hint "Intel requires a separately reviewed upstream source-build installation"
   exit 1
 fi
 
 BIN_DIR="$HOME/.local/bin"
-SOURCE_DIR="$HOME/.local/share/remctl/source"
-REMOTE_URL="https://github.com/viticci/remctl.git"
+APP_PATH="$HOME/Applications/RemCTL Capability Host.app"
+AGENT_PATH="$HOME/Library/LaunchAgents/net.macstories.remctl.capability-host.plist"
 REMCTL_BIN="$BIN_DIR/remctl"
-
-backup_conflict() {
-  target="$1"
-  desc="$2"
-
-  if [ "$FORCE" != "true" ]; then
-    log_error "$desc exists and is not managed by this installer: $target"
-    log_hint "Move it aside, or rerun dot with --force to back it up"
-    exit 1
-  fi
-
-  backup="$target.backup"
-  suffix=1
-  while [ -e "$backup" ] || [ -L "$backup" ]; do
-    backup="$target.backup.$suffix"
-    suffix=$((suffix + 1))
-  done
-  log_info "Backing up $desc to $backup"
-  mv "$target" "$backup"
-}
-
-is_remctl_cli() {
-  target="$1"
-  [ -f "$target" ] && grep -Fq 'remctl — Power-user Reminders CLI' "$target" 2>/dev/null
-}
-
-preflight_install_targets() {
-  mkdir -p "$BIN_DIR"
-
-  if [ -e "$REMCTL_BIN" ] || [ -L "$REMCTL_BIN" ]; then
-    if [ -L "$REMCTL_BIN" ] || ! is_remctl_cli "$REMCTL_BIN"; then
-      backup_conflict "$REMCTL_BIN" "remctl command"
-    fi
-  fi
-
-  for alias_name in rctl reminders; do
-    alias_path="$BIN_DIR/$alias_name"
-    [ -e "$alias_path" ] || [ -L "$alias_path" ] || continue
-    if [ -L "$alias_path" ] && [ "$(readlink "$alias_path")" = "remctl" ]; then
-      continue
-    fi
-    backup_conflict "$alias_path" "$alias_name command"
-  done
-}
+SIGNING_REQUIREMENT='=identifier "net.macstories.remctl.capability-host" and anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.13] exists and certificate leaf[subject.OU] = "4W35M4UN6R"'
 
 install_is_current() {
   [ -x "$REMCTL_BIN" ] || return 1
-  [ "$(head -n 1 "$REMCTL_BIN" 2>/dev/null || true)" = "#!$REMCTL_PYTHON" ] || return 1
-  [ "$($REMCTL_BIN --version 2>/dev/null || true)" = "$REMCTL_VERSION" ] || return 1
-
-  for required in \
-    "$BIN_DIR/remctl_runtime.py" \
-    "$BIN_DIR/remctl_images.py" \
-    "$BIN_DIR/remctl_serialization.py" \
-    "$BIN_DIR/remctl_smart_lists.py" \
-    "$HOME/.config/fish/completions/remctl.fish" \
-    "$HOME/.config/fish/completions/rctl.fish" \
-    "$HOME/.config/fish/completions/reminders.fish"; do
-    [ -e "$required" ] || return 1
-  done
-
-  [ -L "$BIN_DIR/rctl" ] && [ "$(readlink "$BIN_DIR/rctl")" = "remctl" ] || return 1
-  [ -L "$BIN_DIR/reminders" ] && [ "$(readlink "$BIN_DIR/reminders")" = "remctl" ] || return 1
-
-  if command -v swiftc >/dev/null 2>&1; then
-    [ -x "$BIN_DIR/remctl-bridge" ] || return 1
-  fi
+  [ "$("$REMCTL_BIN" --version 2>/dev/null)" = "$REMCTL_VERSION" ] || return 1
+  [ -f "$BIN_DIR/.remctl-install-manifest.json" ] || return 1
+  [ -f "$AGENT_PATH" ] || return 1
+  [ "$(plutil -extract version raw "$APP_PATH/Contents/Resources/distribution.json" 2>/dev/null)" = "$REMCTL_VERSION" ] || return 1
+  codesign --verify --deep --strict -R "$SIGNING_REQUIREMENT" "$APP_PATH" >/dev/null 2>&1 || return 1
+  [ -f "$HOME/.config/fish/completions/remctl.fish" ] || return 1
+  [ -L "$BIN_DIR/rctl" ] && [ "$(readlink "$BIN_DIR/rctl")" = remctl ] || return 1
+  [ -L "$BIN_DIR/reminders" ] && [ "$(readlink "$BIN_DIR/reminders")" = remctl ]
 }
 
-pin_python_runtime() {
-  target="$1"
-  tmp="$(mktemp "$BIN_DIR/.remctl-python.XXXXXX")"
-  {
-    printf '#!%s\n' "$REMCTL_PYTHON"
-    tail -n +2 "$target"
-  } > "$tmp"
-  chmod +x "$tmp"
-  mv "$tmp" "$target"
-}
-
-if [ "$FORCE" != "true" ] && install_is_current; then
+if [ "$FORCE" != true ] && [ "$DRY_RUN" != true ] && install_is_current; then
   log_success "RemCTL $REMCTL_VERSION is already installed"
   exit 0
 fi
 
-preflight_install_targets
-mkdir -p "$(dirname "$SOURCE_DIR")"
+CACHE_DIR="$HOME/Library/Caches/remctl/$REMCTL_REF"
+DMG="$CACHE_DIR/RemCTL-arm64.dmg"
+mkdir -p "$CACHE_DIR"
+STAGE="$(mktemp -d "${TMPDIR:-/tmp}/dot-remctl.XXXXXX")"
+MOUNT="$STAGE/mounted"
+MOUNTED=false
+cleanup() {
+  if [ "$MOUNTED" = true ]; then
+    if ! hdiutil detach "$MOUNT" -quiet; then
+      log_warn "Could not eject $MOUNT; preserving $STAGE"
+      return
+    fi
+  fi
+  rm -rf "$STAGE"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-if [ -e "$SOURCE_DIR" ] && [ ! -d "$SOURCE_DIR/.git" ]; then
-  backup_conflict "$SOURCE_DIR" "RemCTL source checkout"
-fi
-
-if [ ! -d "$SOURCE_DIR/.git" ]; then
-  log_info "Cloning RemCTL source"
-  GIT_TERMINAL_PROMPT=0 git clone --filter=blob:none --no-checkout "$REMOTE_URL" "$SOURCE_DIR"
-else
-  origin_url="$(git -C "$SOURCE_DIR" remote get-url origin 2>/dev/null || true)"
-  if [ "$origin_url" != "$REMOTE_URL" ]; then
-    log_error "RemCTL source checkout has an unexpected origin: ${origin_url:-missing}"
-    log_hint "Expected: $REMOTE_URL"
+verify_checksum() {
+  [ -f "$1" ] && [ "$(shasum -a 256 "$1" | awk '{print $1}')" = "$REMCTL_DMG_SHA256" ]
+}
+if ! verify_checksum "$DMG"; then
+  log_info "Downloading RemCTL $REMCTL_VERSION"
+  curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+    "https://github.com/viticci/remctl/releases/download/$REMCTL_REF/RemCTL-arm64.dmg" \
+    -o "$STAGE/RemCTL.dmg"
+  if ! verify_checksum "$STAGE/RemCTL.dmg"; then
+    log_error "RemCTL download checksum mismatch; nothing installed"
     exit 1
   fi
+  mv "$STAGE/RemCTL.dmg" "$DMG"
 fi
-
-log_info "Checking out RemCTL $REMCTL_REF ($REMCTL_COMMIT)"
-GIT_TERMINAL_PROMPT=0 git -C "$SOURCE_DIR" fetch --depth 1 origin "$REMCTL_COMMIT"
-git -C "$SOURCE_DIR" checkout --detach --force "$REMCTL_COMMIT"
-actual_commit="$(git -C "$SOURCE_DIR" rev-parse HEAD)"
-if [ "$actual_commit" != "$REMCTL_COMMIT" ]; then
-  log_error "RemCTL checkout verification failed: expected $REMCTL_COMMIT, got $actual_commit"
+mkdir "$MOUNT"
+hdiutil attach "$DMG" -readonly -nobrowse -mountpoint "$MOUNT" -quiet
+MOUNTED=true
+PREBUILT="$MOUNT/RemCTL Capability Host.app"
+# Verify before executing any code from the downloaded app, including install.sh.
+codesign --verify --deep --strict -R "$SIGNING_REQUIREMENT" "$PREBUILT"
+spctl --assess --type execute "$PREBUILT"
+if [ "$(plutil -extract version raw "$PREBUILT/Contents/Resources/distribution.json")" != "$REMCTL_VERSION" ]; then
+  log_error "RemCTL distribution version does not match the pin"
   exit 1
 fi
 
-log_info "Installing RemCTL into $BIN_DIR"
-PREFIX="$HOME/.local" bash "$SOURCE_DIR/install.sh" --bootstrap --shell-completions fish
-pin_python_runtime "$REMCTL_BIN"
-
-installed_version="$($REMCTL_BIN --version 2>/dev/null || true)"
-if [ "$installed_version" != "$REMCTL_VERSION" ]; then
-  log_error "RemCTL version verification failed: expected $REMCTL_VERSION, got ${installed_version:-missing}"
+set -- --prebuilt "$PREBUILT" --shell-completions fish
+if [ "$DRY_RUN" = true ]; then
+  set -- "$@" --dry-run
+elif [ ! -t 0 ] || [ ! -t 1 ]; then
+  log_error "Run ~/.dotfiles/remctl/install.sh in Terminal to approve installation"
+  log_hint "The upstream installer may need sudo and one-time legacy-file confirmation"
   exit 1
 fi
 
-log_success "RemCTL $REMCTL_VERSION installed"
-log_hint "Next (interactive): remctl onboard"
-log_hint "Then verify this agent host: remctl doctor --for-agent --json"
+# Keep the existing CLI path, but the standard app and socket locations.
+# Do not use --bootstrap: onboarding is separate and explicitly excludes MCP.
+PREFIX="$HOME" REMCTL_BIN_DIR="$BIN_DIR" REMCTL_APP_DIR="$HOME/Applications" \
+  REMCTL_LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents" \
+  bash "$PREBUILT/Contents/Resources/Distribution/install.sh" "$@"
+if [ "$DRY_RUN" = true ]; then
+  log_success "RemCTL $REMCTL_VERSION dry run passed; installation unchanged"
+  exit 0
+fi
+if ! install_is_current; then
+  log_error "RemCTL installation verification failed"
+  exit 1
+fi
+log_success "RemCTL $REMCTL_VERSION installed (CLI only; no MCP registration)"
+log_hint "First migration: remctl onboard --no-mcp"
+log_hint "Verify: remctl doctor --for-agent --json"
