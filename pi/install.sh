@@ -36,8 +36,10 @@ MITSUPI_PACKAGE="git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a
 FAST_PACKAGE="npm:@benvargas/pi-openai-fast@1.1.1"
 FAST_DIR="$AGENT_DIR/npm/node_modules/@benvargas/pi-openai-fast"
 FAST_PATCH="$DOTFILES_ROOT/pi/patches/pi-openai-fast-1.1.1-policy.patch"
+FAST_STATUS_PATCH="$DOTFILES_ROOT/pi/patches/pi-openai-fast-1.1.1-footer-status.patch"
 FAST_PRISTINE_SHA256="2dbe16ae6db42877ca84d435395e0028a99e3bb8be932e4a576918495ce3911c"
-FAST_PATCHED_SHA256="3c94d6a8895c23344824a420abef1cd455b9073408ecbe3a6374b65ec3a097f2"
+FAST_POLICY_PATCHED_SHA256="3c94d6a8895c23344824a420abef1cd455b9073408ecbe3a6374b65ec3a097f2"
+FAST_PATCHED_SHA256="596b7a9171df69d6be59b875ce38760457866d244ac48f0fe431b1410cffd82d"
 
 if [ ! -x "$PI_BIN" ]; then
   log_info "Installing Pi coding agent ($PI_PACKAGE)..."
@@ -59,12 +61,17 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 if ! command -v patch >/dev/null 2>&1; then
-  log_error "patch is required to apply the Fast policy patch"
+  log_error "patch is required to apply the Fast package patches"
   exit 1
 fi
 
 if [ ! -f "$FAST_PATCH" ]; then
   log_error "Fast policy patch is missing: $FAST_PATCH"
+  exit 1
+fi
+
+if [ ! -f "$FAST_STATUS_PATCH" ]; then
+  log_error "Fast footer status patch is missing: $FAST_STATUS_PATCH"
   exit 1
 fi
 
@@ -131,23 +138,33 @@ fast_extension_sha256() {
   shasum -a 256 "$1" | awk '{print $1}'
 }
 
-# Whole-file digests reject edits both inside and outside patch hunks. Only the
-# pinned pristine artifact is patched, and its staged output is pinned too.
+# Whole-file digests reject edits both inside and outside patch hunks. Accept the
+# pinned pristine artifact or exact prior policy output, and verify staged output.
 fast_context_sha256="$(fast_extension_sha256 "$FAST_DIR/extensions/index.ts")"
 if [ "$fast_context_sha256" = "$FAST_PATCHED_SHA256" ]; then
-  log_success "Fast policy patch already applied"
-elif [ "$fast_context_sha256" = "$FAST_PRISTINE_SHA256" ]; then
+  log_success "Fast policy and footer status patches already applied"
+elif [ "$fast_context_sha256" = "$FAST_PRISTINE_SHA256" ] || [ "$fast_context_sha256" = "$FAST_POLICY_PATCHED_SHA256" ]; then
   fast_stage="$(mktemp -d)"
   fast_tmp=""
   trap 'rm -rf "$fast_stage"; [ -z "$fast_tmp" ] || rm -f "$fast_tmp"' EXIT
   mkdir -p "$fast_stage/extensions"
   cp "$FAST_DIR/extensions/index.ts" "$fast_stage/extensions/index.ts"
-  if ! (cd "$fast_stage" && patch -p1 -N -F 0 -f < "$FAST_PATCH") >/dev/null; then
-    log_error "Fast policy patch failed against its pinned pristine artifact"
+  if [ "$fast_context_sha256" = "$FAST_PRISTINE_SHA256" ]; then
+    if ! (cd "$fast_stage" && patch -p1 -N -F 0 -f < "$FAST_PATCH") >/dev/null; then
+      log_error "Fast policy patch failed against its pinned pristine artifact"
+      exit 1
+    fi
+    if [ "$(fast_extension_sha256 "$fast_stage/extensions/index.ts")" != "$FAST_POLICY_PATCHED_SHA256" ]; then
+      log_error "Fast policy patch output does not match its pinned digest"
+      exit 1
+    fi
+  fi
+  if ! (cd "$fast_stage" && patch -p1 -N -F 0 -f < "$FAST_STATUS_PATCH") >/dev/null; then
+    log_error "Fast footer status patch failed against its pinned policy artifact"
     exit 1
   fi
   if [ "$(fast_extension_sha256 "$fast_stage/extensions/index.ts")" != "$FAST_PATCHED_SHA256" ]; then
-    log_error "Fast policy patch output does not match its pinned digest"
+    log_error "Fast status patch output does not match its pinned digest"
     exit 1
   fi
   fast_tmp="$(mktemp "$FAST_DIR/extensions/index.ts.XXXXXX")"
@@ -156,7 +173,7 @@ elif [ "$fast_context_sha256" = "$FAST_PRISTINE_SHA256" ]; then
   fast_tmp=""
   rm -rf "$fast_stage"
   trap - EXIT
-  log_success "Applied Fast policy patch"
+  log_success "Applied Fast policy and footer status patches"
 else
   log_error "Unknown or partially patched Fast package context: $FAST_DIR/extensions/index.ts"
   log_hint "Reinstall $FAST_PACKAGE to restore the pinned pristine artifact, then rerun this installer"

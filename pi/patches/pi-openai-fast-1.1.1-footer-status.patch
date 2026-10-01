@@ -1,0 +1,85 @@
+--- a/extensions/index.ts
++++ b/extensions/index.ts
+@@ -338,6 +338,14 @@
+ 	let state: FastModeState = { active: false };
+ 	let cachedConfig: ResolvedFastConfig | undefined;
+ 
++	function updateStatus(ctx: ExtensionContext): void {
++		if (!ctx.hasUI) return;
++		const status = state.active && isFastSupportedModel(ctx.model, cachedConfig?.supportedModels ?? [])
++			? ctx.ui.theme.fg("accent", "⚡ FAST")
++			: undefined;
++		ctx.ui.setStatus("pi-openai-fast", status);
++	}
++
+ 	function refreshConfig(ctx: ExtensionContext): ResolvedFastConfig {
+ 		try {
+ 			cachedConfig = resolveFastConfig(getConfigCwd(ctx), undefined, ctx.isProjectTrusted());
+@@ -346,6 +354,7 @@
+ 			// A rejected policy must not leave a previously paid policy cached.
+ 			cachedConfig = undefined;
+ 			state = { active: false };
++			updateStatus(ctx);
+ 			throw error;
+ 		}
+ 	}
+@@ -365,6 +374,7 @@
+ 	async function enableFastMode(ctx: ExtensionContext, options?: { notify?: boolean }): Promise<void> {
+ 		const config = refreshConfig(ctx);
+ 		if (state.active) {
++			updateStatus(ctx);
+ 			if (options?.notify !== false) {
+ 				ctx.ui.notify("Fast mode is already on.", "info");
+ 			}
+@@ -373,6 +383,7 @@
+ 
+ 		persistState(config, true);
+ 		state = { active: true };
++		updateStatus(ctx);
+ 
+ 		if (options?.notify !== false) {
+ 			ctx.ui.notify(describeCurrentState(ctx, state.active, config.supportedModels), "info");
+@@ -382,6 +393,7 @@
+ 	async function disableFastMode(ctx: ExtensionContext, options?: { notify?: boolean }): Promise<void> {
+ 		// Stopping paid priority must not depend on a readable/writable config.
+ 		state = { active: false };
++		updateStatus(ctx);
+ 		try {
+ 			persistState(refreshConfig(ctx), false);
+ 		} catch (error) {
+@@ -431,9 +443,12 @@
+ 				case "off":
+ 					await disableFastMode(ctx);
+ 					return;
+-				case "status":
+-					ctx.ui.notify(describeCurrentState(ctx, state.active, refreshConfig(ctx).supportedModels), "info");
++				case "status": {
++					const config = refreshConfig(ctx);
++					updateStatus(ctx);
++					ctx.ui.notify(describeCurrentState(ctx, state.active, config.supportedModels), "info");
+ 					return;
++				}
+ 				default:
+ 					ctx.ui.notify("Usage: /fast [on|off|status]", "error");
+ 			}
+@@ -448,14 +463,20 @@
+ 		return applyFastServiceTier(event.payload);
+ 	});
+ 
++	pi.on("model_select", (_event, ctx) => {
++		updateStatus(ctx);
++	});
++
+ 	pi.on("session_start", async (_event, ctx) => {
+ 		const config = refreshConfig(ctx);
+ 		state = config.persistState && typeof config.active === "boolean" ? { active: config.active } : { active: false };
++		updateStatus(ctx);
+ 
+ 		if (pi.getFlag(FAST_FLAG) === true) {
+ 			if (!state.active) {
+ 				persistState(config, true);
+ 				state = { active: true };
++				updateStatus(ctx);
+ 			}
+ 			ctx.ui.notify(describeCurrentState(ctx, state.active, config.supportedModels), "info");
+ 			return;

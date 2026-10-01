@@ -162,7 +162,8 @@ user overrides can still supersede the toggle; `/fast off` does not erase them.
 
 The existing Gruvbox theme is retained. Pi's native footer and `/session` own token/cost
 reporting; the legacy Codex quota footer and `/usage` are retired. Native
-ChatGPT credentials are not sent to the old Codex quota endpoint.
+ChatGPT credentials are not sent to the old Codex quota endpoint, and Pi does
+not expose OpenAI subscription quota-window data through its native extension API.
 
 Retained packages:
 
@@ -172,12 +173,22 @@ Retained packages:
   organization's existing Parallel CLI auth file. No CLI installation is required.
 - **pi-exa:** semantic/code/multilingual search through `exa_search`; private
   `EXA_API_KEY` and `/exa-setup`.
-- **@benvargas/pi-openai-fast@1.1.1:** reviewed pinned npm package, not a local
-  fork. `/fast status` replaces the custom lightning badge. Existing `active`,
-  `persistState` and ordered `supportedModels` are preserved. A narrow policy
-  patch honors project trust, keeps alternate agent directories isolated, and
-  preserves explicit allowlists and surfaces config errors without activating priority
-  after a failed save. `/fast off` disables the current session even if saving fails.
+- **@benvargas/pi-openai-fast@1.1.1:** reviewed pinned npm package with a narrow
+  policy patch and a native footer-status patch. The latter uses Pi's
+  `ctx.ui.setStatus()` without replacing the native footer: it shows accented
+  `⚡ FAST` only while enabled on a configured supported current model, and
+  clears the native status otherwise. The preference remains enabled across
+  model switches, so switching back to a supported model restores the badge;
+  `/fast status` still reports the detailed state. Existing `active`,
+  `persistState` and ordered `supportedModels` are
+  preserved. The policy patch honors project trust, isolates alternate agent
+  directories, preserves explicit allowlists, surfaces config errors, and does
+  not enable priority after a failed save. `/fast off` disables the current
+  session even if saving fails. Prefer omitting `supportedModels` from an existing
+  fast configuration to follow the installed package's upstream defaults; toggles
+  preserve that omission. Explicit lists remain supported for intentional restrictions.
+  New model eligibility then comes from reviewed package updates, not automatic
+  provider discovery. The pinned 1.1.1 defaults do not include GPT-6 Luna or GPT-6.1 Sol.
 - **pi-subagents@0.74.0:** unchanged upstream source pinned at
   `b6bda32f03b7f549623bc404c9be14dca298ddc4`, including its matching orchestration
   skill. Package prompts and the optional council skill are not auto-loaded.

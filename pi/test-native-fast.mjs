@@ -18,7 +18,7 @@ const supportedModels = ['openai/gpt-5.4', 'openai-codex/gpt-5.4', 'openai/gpt-5
   'openai/gpt-5.6-luna', 'openai-codex/gpt-5.6-luna', 'openai/gpt-5.6-terra', 'openai-codex/gpt-5.6-terra',
   'openai/gpt-5.6-sol', 'openai-codex/gpt-5.6-sol', 'openai-codex/gpt-6-astra', 'openai/gpt-6-astra'];
 
-async function fixture(config, run, { project, trusted = false, flag = false } = {}) {
+async function fixture(config, run, { project, trusted = false, flag = false, hasUI = true } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pi-native-fast-'));
   const previous = process.env.PI_CODING_AGENT_DIR;
   const agentDir = path.join(root, 'isolated-agent');
@@ -42,14 +42,16 @@ async function fixture(config, run, { project, trusted = false, flag = false } =
     const extension = loaded.extensions[0];
     assert.deepEqual([...extension.commands.keys()], ['fast']);
     const notices = [];
-    const ctx = { cwd, isProjectTrusted: () => trusted, model: { provider: 'openai', id: 'gpt-6-astra' },
-      ui: { notify: (...args) => notices.push(args) } };
+    const statuses = [];
+    const ctx = { cwd, isProjectTrusted: () => trusted, model: { provider: 'openai', id: 'gpt-6-astra' }, hasUI,
+      ui: { notify: (...args) => notices.push(args), setStatus: (key, text) => statuses.push({ key, text }),
+        theme: { fg: (color, text) => `${color}:${text}` } } };
     const event = async (name, value = {}) => {
       let result;
       for (const handler of extension.handlers.get(name) ?? []) result = await handler(value, ctx);
       return result;
     };
-    await run({ ctx, notices, file, projectFile, event, agentDir,
+    await run({ ctx, notices, statuses, file, projectFile, event, agentDir,
       command: args => extension.commands.get('fast').handler(args, ctx),
       read: () => JSON.parse(fs.readFileSync(file, 'utf8')) });
   } finally {
@@ -58,6 +60,21 @@ async function fixture(config, run, { project, trusted = false, flag = false } =
     fs.rmSync(root, { recursive: true, force: true });
   }
 }
+
+test('omitted model list follows package defaults and stays omitted after toggles', async () => {
+  await fixture({ active: true, persistState: true }, async ({ event, command, ctx, read, statuses }) => {
+    await event('session_start');
+    // This model is in upstream defaults but absent from the old personal list.
+    ctx.model = { provider: 'openai', id: 'gpt-5.4-mini' };
+    await event('model_select');
+    assert.equal((await event('before_provider_request', { payload: {} })).service_tier, 'priority');
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: 'accent:⚡ FAST' });
+    await command('off');
+    assert.deepEqual(read(), { active: false, persistState: true });
+    await command('on');
+    assert.deepEqual(read(), { active: true, persistState: true });
+  });
+});
 
 test('pinned fast preserves existing list and state, adds only a supported priority payload', async () => {
   const config = { active: true, persistState: true, supportedModels };
@@ -78,6 +95,45 @@ test('pinned fast preserves existing list and state, adds only a supported prior
     await command('on');
     assert.deepEqual(read(), config);
   });
+});
+test('native status shows FAST only while enabled on a configured current model', async () => {
+  await fixture({ active: false, persistState: true, supportedModels: ['openai/gpt-6-astra'] }, async ({ event, command, ctx, statuses }) => {
+    await event('session_start');
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: undefined });
+    await command('on');
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: 'accent:⚡ FAST' });
+
+    ctx.model.id = 'unsupported';
+    await event('model_select', { model: ctx.model, source: 'set' });
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: undefined });
+    assert.equal(await event('before_provider_request', { payload: {} }), undefined);
+
+    ctx.model.id = 'gpt-6-astra';
+    await event('model_select', { model: ctx.model, source: 'set' });
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: 'accent:⚡ FAST' });
+    assert.equal((await event('before_provider_request', { payload: {} })).service_tier, 'priority');
+
+    await command('off');
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: undefined });
+  });
+});
+test('native status hides enabled fast mode when no model is selected', async () => {
+  await fixture({ active: true, persistState: true, supportedModels: ['openai/gpt-6-astra'] }, async ({ event, ctx, statuses }) => {
+    await event('session_start');
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: 'accent:⚡ FAST' });
+    ctx.model = undefined;
+    await event('model_select', { model: undefined, source: 'set' });
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: undefined });
+    ctx.model = { provider: 'openai', id: 'gpt-6-astra' };
+    await event('model_select', { model: ctx.model, source: 'set' });
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: 'accent:⚡ FAST' });
+  });
+});
+test('non-UI fast sessions do not attempt to render footer status', async () => {
+  await fixture({ active: true, persistState: true, supportedModels }, async ({ event, statuses }) => {
+    await event('session_start');
+    assert.deepEqual(statuses, []);
+  }, { hasUI: false });
 });
 test('native payload follows fast on/off across supported and unsupported model switches', async () => {
   const config = { active: false, persistState: true, supportedModels: ['openai/gpt-6-astra', 'openai/gpt-6-sol'] };
@@ -134,12 +190,22 @@ test('persistState false starts off, command toggle works without writing', asyn
   });
 });
 test('--fast enables a supported model without changing model selection', async () => {
-  await fixture({ active: false, persistState: false, supportedModels }, async ({ event, ctx }) => {
+  await fixture({ active: false, persistState: false, supportedModels }, async ({ event, ctx, statuses }) => {
     const model = ctx.model;
     await event('session_start');
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: 'accent:⚡ FAST' });
     assert.deepEqual(await event('before_provider_request', { payload: {} }), { service_tier: 'priority' });
     assert.equal(ctx.model, model);
   }, { flag: true });
+});
+test('/fast status refreshes policy and updates the native badge', async () => {
+  await fixture({ active: true, persistState: true, supportedModels: ['openai/gpt-6-astra'] }, async ({ event, command, file, statuses }) => {
+    await event('session_start');
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: 'accent:⚡ FAST' });
+    fs.writeFileSync(file, JSON.stringify({ active: true, persistState: true, supportedModels: ['openai/gpt-6-sol'] }));
+    await command('status');
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: undefined });
+  });
 });
 for (const trusted of [false, true]) {
   test(`fast project override honors native trust=${trusted}`, async () => {
@@ -208,12 +274,14 @@ test('non-object global policy is rejected while an untrusted project is ignored
   }, { project: null, trusted: false });
 });
 
-test('a failed active-policy refresh clears cached paid eligibility', async () => {
-  await fixture({ active: true, persistState: true, supportedModels }, async ({ event, command, file }) => {
+test('a failed active-policy refresh clears cached paid eligibility and the badge', async () => {
+  await fixture({ active: true, persistState: true, supportedModels }, async ({ event, command, file, statuses }) => {
     await event('session_start');
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: 'accent:⚡ FAST' });
     assert.deepEqual(await event('before_provider_request', { payload: {} }), { service_tier: 'priority' });
     fs.writeFileSync(file, JSON.stringify({ active: true, persistState: true, supportedModels: 'openai/gpt-5.4' }));
     await assert.rejects(command('status'), /supportedModels must be an array/);
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: undefined });
     await assert.rejects(event('before_provider_request', { payload: {} }), /supportedModels must be an array/);
     // Even after the disk is repaired, a failed refresh has disabled this session.
     fs.writeFileSync(file, JSON.stringify({ active: true, persistState: true, supportedModels }));
