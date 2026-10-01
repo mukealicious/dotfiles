@@ -41,15 +41,6 @@ review = "semantic-diff"
 notes = "Reviewed TDD source and focused references for ai/skills/tdd/"
 
 [[sources]]
-id = "implement"
-repo = "dmmulroy/.dotfiles"
-path = "home/.agents/skills/implement"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Reviewed implementation workflow source for ai/skills/implement/SKILL.md"
-
-[[sources]]
 id = "bro"
 repo = "dmmulroy/.dotfiles"
 path = "home/.agents/skills/bro"
@@ -57,15 +48,6 @@ branch = "main"
 kind = "skill"
 review = "semantic-diff"
 notes = "Reviewed plain-language restatement source for ai/skills/bro/SKILL.md"
-
-[[sources]]
-id = "handoff"
-repo = "dmmulroy/.dotfiles"
-path = "home/.agents/skills/handoff"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Reviewed temporary same-process handoff source for ai/skills/handoff/SKILL.md"
 
 [[sources]]
 id = "codebase-design"
@@ -272,7 +254,7 @@ path = "packages/pi-openai-fast"
 branch = "main"
 kind = "package"
 review = "semantic-diff"
-notes = "Upstream source for locally vendored pi/packages/pi-openai-fast"
+notes = "Pinned npm:@benvargas/pi-openai-fast@1.1.1; narrow isolation patch owned by pi/patches"
 
 [[sources]]
 id = "pi-subagents"
@@ -281,4 +263,4 @@ path = ""
 branch = "main"
 kind = "package"
 review = "semantic-diff"
-notes = "Upstream source for locally vendored pi/packages/pi-subagents"
+notes = "Unchanged vendored pi-subagents 0.74.0 at b6bda32f03b7f549623bc404c9be14dca298ddc4; own pin/configuration, not implementation"

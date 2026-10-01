@@ -49,15 +49,18 @@ The review system is intentionally manual: no auto-install, no auto-sync, no bac
 
 ### Retained upstream sources
 
-Some shared skills are intentionally adapted from reviewed upstream snapshots.
-The finite D6 source/SHA/disposition record is
+Prefer unchanged reviewed upstream snapshots; retain adaptations only for concrete
+capability or safety requirements. The historical D6 source/SHA/disposition record is
 [`specs/pi-profile-and-skill-simplification-D6-retained-skill-audit.md`](../specs/pi-profile-and-skill-simplification-D6-retained-skill-audit.md).
 This document and the metadata beside each skill are provenance records, not an
 auto-sync mechanism.
 
 | Upstream | Local scope | Ownership |
 |---|---|---|
-| `dmmulroy/.dotfiles@f9f7aa1a3638d6bfb6fa0b94fd110185534a2895` | `grilling`, `domain-modeling`, `tdd`, `implement`, `bro`, `handoff` | Grilling, domain docs, TDD, manual implementation, plain-language restatement, and temporary handoffs |
+| `dmmulroy/.dotfiles@7c086fe40c01bf494aea7184da2eb7aaf7b7dff4` | `grilling`, `domain-modeling`, `bro` | Upstream instructions unchanged except provenance metadata; domain-modeling now owns only the glossary |
+| `dmmulroy/.dotfiles@f9f7aa1a3638d6bfb6fa0b94fd110185534a2895` | `tdd` | Retained local methodology; not refreshed in this adoption |
+| `mitsuhiko/agent-stuff@b7c45d67c634d361d67340789a02f64ffb9e16f1` | `mermaid` | Unchanged skill/validator snapshot; removed upstream, preserved rather than silently dropped by the package upgrade |
+| `walterra/agent-tools@a678024a6fa7a765cd83997b3153f2eebb588d58` | `post-mortem` | Upstream retrospective workflow, with portable source-location/tool wording |
 | `viticci/remctl@e7b4e8563903935aa2bab6d4d24d983499b4a4e8` | `apple-reminders` | Agent-safe Apple Reminders reads, explicit-intent writes, and verification through RemCTL |
 | `mattpocock/skills@9c9f36ccd3995266cd675468af71639c8dde1ec5` | `codebase-design`, thin `grill-me`, thin `grill-with-docs` | Deep-module/interface vocabulary and manual entry-point provenance |
 | `rjs/shaping-skills@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9` | `framing-doc`, `kickoff-doc`, `breadboarding` | Framing, shaped kickoff territory, and breadboarding |
@@ -65,7 +68,7 @@ auto-sync mechanism.
 | `yanliudesign/mono-color-skill@a08c45df61ae480e2b0d78b978a304e06ba2894e` | `mono-color` | One-ink and controlled two-ink editorial art direction and raster generation |
 | `plannotator/effective-html`, `ThariqS/html-effectiveness` | `visual-deliverables` | Self-contained HTML/SVG explainers and curated examples |
 | `joelhooks/skills@7c0a930d761bc05f50c3d31cf55ba7f289b45861` | `uncomplect` | Verbatim initial baseline, source map, and upstream evals; license status recorded in `VENDORED_FROM.md` |
-| Pinned maintenance/research influences | `post-mortem`, `production-readiness`, `tufte-data-viz`, `herdr`, `hunk-review` | Retrospectives, production risk, quantitative visualization, Herdr, and Hunk |
+| Pinned maintenance/research influences | `production-readiness`, `tufte-data-viz`, `herdr`, `hunk-review` | Production risk, quantitative visualization, Herdr, and Hunk |
 
 Rules for retained upstreams:
 
@@ -99,8 +102,7 @@ Current install targets:
 |---|---|
 | `~/.claude/CLAUDE.md` | `ai/instructions/base.md` + `claude/instructions/appendix.md` |
 | `.ai-runtime/pi/AGENTS.md` | `ai/instructions/base.md` + `pi/instructions/appendix.md` |
-| `~/.pi/work/AGENTS.md` | symlink → `.ai-runtime/pi/AGENTS.md` |
-| `~/.pi/personal/AGENTS.md` | symlink → `.ai-runtime/pi/AGENTS.md` |
+| `~/.pi/agent/AGENTS.md` | symlink → `.ai-runtime/pi/AGENTS.md` |
 | `~/.config/opencode/AGENTS.md` | `ai/instructions/base.md` + `opencode/instructions/appendix.md` |
 | `~/.codex/instructions.md` | `ai/instructions/base.md` |
 | `~/.gemini/GEMINI.md` | `ai/instructions/base.md` |
@@ -194,22 +196,22 @@ uncertain.
 | `build-skill` | `SKILL.md` authoring and validation |
 | `code-review` | Proportional advisory review and final-pass cleanup |
 | `codebase-design` | Deep modules, interfaces, seams, locality, and testability |
-| `domain-modeling` | Domain terminology, `CONTEXT.md`, and qualifying ADRs |
+| `domain-modeling` | Domain terminology and the `CONTEXT.md` glossary |
 | `dotfiles-dev` | Dotfiles implementation conventions |
 | `framing-doc` / `kickoff-doc` | Evidence-grounded framing and shaped kickoff territory |
 | `flares` | Cloudflare-native mini-apps and thin AI-client guidance |
 | `grill-me` / `grill-with-docs` | Thin manual entries into grilling and domain modeling |
 | `grilling` | Dependency-aware design-tree questioning |
-| `handoff` | Temporary same-process continuation context |
 | `herdr` | Herdr pane/workspace/agent coordination |
 | `hunk-review` | Hunk diff and comment workflow |
 | `impeccable` | Product UI/UX and visual interaction design |
-| `implement` | Manual current-session implementation |
 | `librarian` / `opensrc` | External code discovery and source-backed investigation |
+| `mermaid` | Frozen upstream Mermaid validation skill preserved after its removal from Mitsupi |
 | `moja-glava` | Durable private knowledge checkpoints |
 | `mono-color` | One-ink and controlled two-ink editorial art direction, raster assets, and production prompts |
 | `mu-mode` | Explicit concrete-playbook router; playbooks and principles are bundled internal documents, not separate skills |
 | `mu-stack` | New-project JS/TS tooling plus project-level StyleX and Effect adoption decisions |
+| `pen-design` | Local MCP-first Pen.dev integration; loads provider guidance at runtime rather than redistributing it |
 | `post-mortem` | Session lessons and agent-context improvements |
 | `production-readiness` | Service, data, deployment, and reliability risk |
 | `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
@@ -220,15 +222,21 @@ uncertain.
 | `upstream-review` | Manual provenance and adoption decisions |
 | `visual-deliverables` | Self-contained HTML/SVG explainers |
 
+The redundant `implement` wrapper is retired: ordinary implementation follows
+shared operating instructions. Domain-modeling no longer supplies ADR templates
+or multi-context-map guidance; follow repository-local conventions when needed.
+
 `framing-doc` and `kickoff-doc` remain distinct: framing captures the evidence
 grounded “why” before shaping; kickoff records builder-facing shaped territory
 after shaping.
 
 ### One-owner capability boundaries
 
-- **Visual:** `impeccable` owns product UI/UX; `mono-color` owns one-ink and
-  controlled two-ink editorial art direction and raster assets; `tufte-data-viz` owns quantitative
-  graphics; `visual-deliverables` owns self-contained HTML/SVG explainers;
+- **Visual:** `pen-design` owns Pen-generated editable `.pen` artifacts and
+  their exports; `impeccable` owns code-first product UI/UX and critique;
+  `mono-color` owns one-ink and controlled two-ink editorial art direction and
+  raster assets; `tufte-data-viz` owns quantitative graphics;
+  `visual-deliverables` owns self-contained HTML/SVG explainers;
   Mermaid owns text-native diagrams; `tldraw-offline` owns the editable local canvas.
 - **Research:** `researcher` gathers delegated evidence; `qmd` searches local
   Markdown; `opensrc` acquires snapshots; `librarian` analyzes external code;
@@ -247,23 +255,16 @@ Custom extensions symlinked by `pi/install.sh`. Third-party extensions installed
 
 | Extension | Type | Description |
 |---|---|---|
-| `handoff.ts` | Command | `/handoff` writes temporary continuation context and resumes on a summarized tree branch |
 | `notify.ts` | Lifecycle hook | Non-Herdr desktop notification via OSC 777; suppressed under `HERDR_ENV=1` |
-| `usage-footer.ts` | UI footer | Model/provider, token, context, cost, and Codex subscription usage details |
+| `modes.ts` | Command/shortcuts | Four capability presets using native model/thinking APIs; native editor and footer remain in control |
 
 | Package | Source | Provides |
 |---|---|---|
-| `npm:mitsupi@1.6.0` | Armin Ronacher | Curated `/answer`, `/context`, `/files`, `/multi-edit`, `/prompt-editor`, `/todos`, `/uv`, `/whimsical`, manual `/btw` and `/review`, plus the nine allowlisted skills; prompts/themes disabled |
+| `git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857` | Armin Ronacher | Eight selected skills only; all extensions/prompts/themes disabled. Files/todos tools and their patches are retired; existing todo data is preserved. |
 
-### Intercepted Commands (`pi/intercepted-commands/`)
-
-Shell shims that intercept common Python tooling and redirect to uv equivalents. Used by mitsupi's `uv.ts` extension. Also available for non-Pi agents.
-
-| Command | Behavior |
-|---|---|
-| `pip`, `pip3` | Blocked — suggests `uv add` or `uv run --with` |
-| `poetry` | Blocked — suggests `uv init`, `uv add`, `uv sync`, `uv run` |
-| `python`, `python3` | Redirects to `uv run python` (blocks `-m pip` and `-m venv`) |
+Native bash follows shared `uv` guidance. The UV bash override and unreferenced
+local interceptor shims are retired; instructions are policy, not a sandbox.
+`/review` uses a native read-only prompt instead of automated checkout/fix loops.
 
 ## Available AI Tools
 
@@ -294,13 +295,14 @@ Shell shims that intercept common Python tooling and redirect to uv equivalents.
 - **Instruction File**: `~/.gemini/GEMINI.md` (assembled from shared base)
 
 ### Pi Coding Agent (pi)
-- **Provider**: OpenAI — work uses its profile-scoped API-key flow; personal uses its profile-scoped Codex OAuth flow
-- **Profiles**: exactly `pi-work` and `pi-personal` — `pi` dispatches based on `PI_DEFAULT_PROFILE`
-- **Config**: tracked `pi/settings.{work,personal}.json` baselines are materialized into writable profile settings so Pi can persist model changes without dirtying Git
-- **Instruction File**: `.ai-runtime/pi/AGENTS.md` (assembled), linked into both profiles
-- **Agents**: `.ai-runtime/pi/agents/` (assembled), linked file-by-file into each real profile-local `agents/` directory; custom agents and chains remain profile-local
-- **Herdr**: official generated Pi integrations are refreshed only with a profile-scoped `herdr integration install pi`; local OSC notifications are suppressed inside Herdr
-- **Aliases**: `pi-work-print`, `pi-personal-print`
+- **Provider**: OpenAI via native Sign in with ChatGPT (subscription)
+- **Environment**: one `~/.pi/agent`; use `pi`, not the retired work/personal wrappers
+- **Config**: `pi/settings.json` materializes writable startup settings; `pi/extensions/modes.ts` defines four capability presets; native machine-local `mcp.json` owns connections
+- **Instruction File**: `.ai-runtime/pi/AGENTS.md` (assembled), linked into the agent directory
+- **Agents**: `.ai-runtime/pi/agents/` (assembled), linked individually alongside custom agents and chains
+- **Herdr**: official integration installed once at `~/.pi/agent`; local OSC notifications are suppressed inside Herdr
+- **Tools**: native MCP and codemode; see [Pi setup](../pi/README.md)
+- **Alias**: `pi-print`
 
 ## Instruction Composition
 

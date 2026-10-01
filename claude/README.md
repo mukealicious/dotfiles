@@ -57,9 +57,8 @@ ai/
     ├── build-skill/        # Skill authoring guide
     ├── code-review/        # Proportional advisory review
     ├── codebase-design/    # Deep modules, interfaces, and seams
-    ├── domain-modeling/    # Domain language and durable decisions
+    ├── domain-modeling/    # Domain terminology and glossary
     ├── grilling/           # Dependency-aware design-tree questioning
-    ├── implement/          # Manual current-session implementation
     ├── librarian/          # Multi-repo exploration
     ├── opensrc/            # External package/repo source context
     ├── tdd/                # Red/green vertical slices
@@ -107,12 +106,12 @@ Key workflow boundaries:
 | `codebase-design` | Deep-module/interface vocabulary when structural shape matters |
 | `grilling` / `domain-modeling` | Design-tree questions and durable domain language |
 | `tdd` | Test-first slices at public behavioral seams |
-| `implement` / `bro` | Manual implementation and plain-language restatement |
+| `bro` | Manual plain-language restatement |
 | `framing-doc` / `kickoff-doc` | Distinct shaping documents |
 | `opensrc` / `librarian` | Source-backed external investigation |
 | `build-skill` / `dotfiles-dev` | Skill authoring and repository conventions |
 
-`implement`, `bro`, `grill-me`, and `grill-with-docs` are manual entry points;
+`bro`, `grill-me`, and `grill-with-docs` are manual entry points;
 model invocation does not start them automatically. Run `ai/install.sh` to
 refresh the projection after editing source skills.
 

@@ -35,7 +35,7 @@ Do not load every reference automatically. Read only the files selected by the r
 - **Mu Stack owns:** project-level JS/TS toolchain selection plus the StyleX and Effect adoption decisions. It consumes the base mise/pnpm ownership policy rather than replacing it.
 - **Repository guidance owns:** an established project's actual commands, versions, conventions, and migration constraints.
 - **codebase-design owns:** module interfaces, seams, and structural architecture beyond the stack choice.
-- **domain-modeling owns:** domain terminology, `CONTEXT.md`, and qualifying ADRs.
+- **domain-modeling owns:** domain terminology and the `CONTEXT.md` glossary.
 - **impeccable owns:** product UI and visual design; Mu Stack only chooses the styling mechanism.
 - **flares owns:** quick context-derived mini-apps and dashboards. Use Mu Stack only when the user asks for an independent repository or explicit stack design.
 

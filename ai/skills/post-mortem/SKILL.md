@@ -1,127 +1,121 @@
 ---
 name: post-mortem
-description: Analyze a session/post-mortem. Use to find successes, failures, and improvements for this repo's agent instructions, skills, and AI-facing config.
+description: Analyze chat history to identify successes, failures, and improvement opportunities. Generates actionable recommendations for updating project rules, skills, and system prompts. Use when the user asks for a post-mortem, retrospective, session analysis, or wants to improve agent configuration based on past interactions.
 metadata:
-  watch-sources: walterra/agent-tools/packages/post-mortem@f5d822b92b2610c9f1acc01c8d102cad1ca1c081
+  watch-sources: walterra/agent-tools/packages/post-mortem@a678024a6fa7a765cd83997b3153f2eebb588d58
 ---
 
-# Post-Mortem
+# Post-Mortem Analysis
 
-Analyze a live session or chat export, identify what helped or hurt, and turn the findings into durable improvements for this repo's agent-facing setup.
+Analyze chat histories to identify successes, failures, and improvement opportunities. Generate actionable recommendations for updating project configuration (agent instructions, skills, and related files) to prevent similar issues.
 
 ## When to Use
 
-- User asks for a post-mortem, retrospective, or session analysis
-- User wants to improve agent behavior based on a prior interaction
-- User provides a local chat export or shared URL for review
+- User asks for a "post-mortem" or "retrospective"
+- User wants to analyze what went well or wrong in a session
+- User wants to improve agent behavior based on past interactions
+- User provides a chat export file or URL for analysis
 
-## Input Modes
+## Input Sources
 
-Support all three input modes as first-class paths:
+The analysis can work with:
 
-1. **Current session** - default when no external source is provided
-2. **Local export file** - read JSON, markdown, or text chat exports
-3. **Remote URL** - fetch the shared export, then analyze it
+1. **Current session**: Analyze the ongoing conversation (default if no file provided)
+2. **File path**: Chat export in JSON, markdown, or text format
+3. **URL**: Link to a shared chat export
 
-If the user narrows the focus, keep the analysis scoped to that theme while still noting broader structural issues when they are clearly causal.
+## Process
 
-## Workflow
+### Phase 1: Analysis
 
-### Phase 1: Load the Session
+1. **Load and analyze chat**:
+   - If no file specified: Analyze the current conversation history
+   - If file path provided: Read the chat export file
+   - If URL provided: Use an available fetch or browsing tool to retrieve the shared export
+   - Parse the conversation flow and identify key interactions
+   - Extract tool usage patterns and decision points
+   - Note any error messages, confusion, or repeated attempts
 
-1. If no source is provided, analyze the current conversation.
-2. If a local path is provided, read the export file.
-3. If a URL is provided, fetch it and analyze the fetched content.
-4. Trace the conversation flow, tool usage, decision points, confusion, retries, and recovery moments.
+2. **Categorize interactions**:
+   - **Successful patterns**: What worked well and why
+   - **Failed patterns**: What went wrong and root causes
+   - **Missed opportunities**: Where the agent could have been more effective
+   - **User friction points**: Where the user had to provide additional guidance
 
-### Phase 2: Analyze What Happened
+### Phase 2: Assessment
 
-Identify:
+1. **Skill usage review**:
+   - Identify skills that were (or should have been) applied
+   - Locate and read relevant project skill files (for example, under `ai/skills/` or harness-specific skill directories)
+   - Assess whether skill instructions were clear and complete
 
-- what went well
-- what went wrong
-- root causes
-- missed opportunities
-- user friction points
-- tool selection or workflow issues
-- missing instructions, missing context, or unclear guidance
+2. **Identify root causes**:
+   - Missing context in project rules or skills
+   - Unclear or ambiguous instructions
+   - Missing skills or workflow guidance
+   - Tool selection issues
+   - Architecture understanding gaps
 
-Focus on durable causes, not just surface mistakes.
+3. **Pattern analysis**:
+   - Recurring mistakes or confusion
+   - Successful strategies that should be reinforced
+   - Dependencies that weren't clear
+   - Workflow steps that were skipped or misunderstood
 
-### Phase 3: Map Findings to Repo Surfaces
+### Phase 3: Recommendations
 
-Recommend the narrowest local authoring surface that owns the fix:
+1. **Project rules improvements**:
+   - Missing architectural context to add
+   - Workflow patterns to emphasize
+   - Common pitfalls to warn about
+   - Examples that would clarify usage
 
-- shared behavior -> `ai/instructions/base.md` or `ai/skills/*/SKILL.md`
-- harness-specific behavior -> `claude/instructions/appendix.md`, `pi/instructions/appendix.md`, or `opencode/instructions/appendix.md`
-- Claude-only runtime glue -> `claude/skills/*/SKILL.md` only when a shared skill is not enough
-- Pi-runtime behavior -> `pi/extensions/*`, `pi/packages/*`, or nearby Pi docs when the issue is Pi-specific
-- documentation confusion -> the narrowest doc that explains the workflow, such as `ai/README.md` or `pi/README.md`
+2. **Skill enhancements**:
+   - New skills that should be created
+   - Existing skills that need updates
+   - Additional constraints needed
+   - Process clarifications
+   - Tool usage guidelines
 
-Prefer local source files over installed runtime outputs. Do not recommend edits to generated or installer-managed projections when the source file is available.
+### Phase 4: Implementation
 
-## Assessment Heuristics
+1. **Present findings**:
+   - Summary of what went well
+   - Key issues identified
+   - Specific recommendations with rationale
+   - Proposed changes to configuration files
 
-Check whether the outcome was shaped by:
+2. **User confirmation**:
+   - **STOP**: Present findings and ask "Review these recommendations. Proceed with updating files? (y/n)"
+   - Allow the user to modify or reject specific recommendations
 
-- missing or weak shared instructions
-- an absent skill or incomplete skill workflow
-- the wrong ownership boundary for a rule or behavior
-- harness-specific behavior leaking into shared guidance
-- unclear docs around install flow, runtime discovery, or tool usage
-- Pi-specific runtime behavior that belongs in an extension or package rather than skill text
+3. **Apply improvements**:
+   - Update only the approved project instructions or configuration files
+   - Modify or create skills as needed
+   - Document changes made
 
-## Recommendation Rules
+## Example Interactions
 
-- Tie every recommendation to a real file or concrete new artifact
-- Explain why that file is the right owner for the fix
-- Prefer concrete wording or workflow changes over vague advice
-- Prefer narrow edits over broad repo rewrites
-- Keep upstream review integration lightweight; `metadata.watch-sources` is for future comparison, not a reason to add review-only dependencies
+**Analyze current session:**
+> "Do a post-mortem on this chat"
 
-## Required Output
+1. Review current conversation history
+2. Identify issues or missed opportunities
+3. Present recommendations
+4. Get confirmation before updating files
 
-Present the post-mortem with these sections in substance, even if the exact headings vary by harness:
+**Analyze external chat:**
+> "Post-mortem this chat export ~/Downloads/session.json - focus on the build process issues"
 
-- what went well
-- key issues
-- root causes
-- recommended file changes
-- approval checkpoint
+1. Read the chat export file
+2. Focus analysis on build-related interactions
+3. Identify missing documentation or skills
+4. Present recommendations
+5. Get confirmation before updating files
 
-For recommended file changes, include:
+## Output Checklist
 
-- target file
-- proposed change
-- rationale
-- whether the change is shared, harness-specific, or Pi-runtime-specific
-
-Make the recommendations specific enough that they can be implemented immediately after approval.
-
-## Approval Gate
-
-Before editing anything, stop and clearly separate:
-
-- analysis findings
-- proposed file changes
-- what will happen if the user approves
-
-Ask the user to review the recommendations. Do not edit files until the user explicitly approves.
-
-## After Approval
-
-Once the user explicitly approves, apply the approved changes directly in the same flow.
-
-- Do not require a second planning pass unless the approved changes materially expand scope
-- Edit only the approved files
-- Preserve the narrowest-owner rule while implementing
-- Summarize what changed after the edits are complete
-
-## Guardrails
-
-- Do not recommend editor-specific config surfaces unless this repo already owns them
-- Do not broaden scope to arbitrary repo history outside the provided session or export
-- Do not make edits without explicit approval
-- Do not assume every issue belongs in a skill; sometimes the fix belongs in shared instructions, docs, or Pi runtime surfaces
-
-This skill is intentionally instruction-only in v1.
+- [ ] **Analysis report**: What went well vs. what went wrong
+- [ ] **Root cause analysis**: Why issues occurred
+- [ ] **Actionable recommendations**: Specific file changes to prevent recurrence
+- [ ] **Updated configuration**: Improved rules and skills (after user approval)

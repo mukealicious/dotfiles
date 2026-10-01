@@ -3,10 +3,10 @@
 - Upstream: https://github.com/dmmulroy/.dotfiles
 - Paths:
   - `home/.agents/skills/domain-modeling/SKILL.md`
-  - `home/.agents/skills/domain-modeling/ADR-FORMAT.md`
   - `home/.agents/skills/domain-modeling/CONTEXT-FORMAT.md`
-- Ref: `f9f7aa1a3638d6bfb6fa0b94fd110185534a2895`
-- Role: Project terminology, durable context, and sparingly offered ADR decisions.
+- Ref: `7c086fe40c01bf494aea7184da2eb7aaf7b7dff4`
+- Role: Build a project-specific terminology glossary in `CONTEXT.md`.
 
-The local skill retains the reviewed behavior and lets repository conventions
-own where durable domain documents live.
+Upstream skill and context format adopted with only `metadata.watch-sources`
+provenance and trailing blank-line normalization in SKILL.md. Upstream now owns only glossary guidance;
+ADR and multi-context material was removed rather than carried as a local fork.
