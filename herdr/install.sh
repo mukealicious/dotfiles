@@ -47,15 +47,12 @@ mkdir -p "$HERDR_DEST"
 ensure_symlink "$HERDR_SRC" "$HERDR_DEST/config.toml" "Herdr config.toml"
 
 if command -v herdr >/dev/null 2>&1; then
-  log_info "Refreshing supported Pi integrations..."
+  log_info "Refreshing Pi integration..."
 
   # Herdr owns generated integration state; invoke its official installer only.
-  for profile in work personal; do
-    profile_dir="$HOME/.pi/$profile"
-    if [ -d "$profile_dir" ]; then
-      PI_CODING_AGENT_DIR="$profile_dir" herdr integration install pi
-    fi
-  done
+  if [ -d "$HOME/.pi/agent" ]; then
+    PI_CODING_AGENT_DIR="$HOME/.pi/agent" herdr integration install pi
+  fi
 
   # Preserve the existing global integrations for other installed agents.
   if command -v claude >/dev/null 2>&1; then

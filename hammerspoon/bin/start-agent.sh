@@ -98,7 +98,7 @@ MOJA_GLAVA_DIR="$(/bin/realpath "$MOJA_GLAVA_DIR")" \
   || fail "could not resolve the Moja Glava vault path"
 [ -f "$MOJA_GLAVA_DIR/AGENTS.md" ] || fail "Moja Glava AGENTS.md does not exist: $MOJA_GLAVA_DIR/AGENTS.md"
 
-PI_BIN="${PI_BIN:-$HOME/.dotfiles/bin/pi-personal}"
+PI_BIN="${PI_BIN:-$HOME/.dotfiles/bin/pi}"
 MOJA_SKILL="${MOJA_SKILL:-$HOME/.dotfiles/.ai-runtime/pi/skills/moja-glava/SKILL.md}"
 HERDR_BIN="${HERDR_BIN:-$(command -v herdr 2>/dev/null || true)}"
 HUNK_BIN="${HUNK_BIN:-$(command -v hunk 2>/dev/null || true)}"

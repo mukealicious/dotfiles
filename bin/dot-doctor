@@ -170,15 +170,6 @@ if command -v qmd >/dev/null 2>&1; then
   fi
 fi
 
-if command -v parallel-cli >/dev/null 2>&1 && parallel-cli --version >/dev/null 2>&1; then
-  pass "parallel-cli"
-else
-  warn "parallel-cli not ready"
-  info "Needed by the Pi researcher agent via pi-parallel"
-  info "Install via upstream script: curl -fsSL https://parallel.ai/install.sh | bash"
-  info "Then authenticate: parallel-cli login"
-fi
-
 if command -v ffmpeg >/dev/null 2>&1; then
   pass "ffmpeg"
 else
@@ -472,27 +463,19 @@ if command -v herdr >/dev/null 2>&1; then
   fi
 
   integration_issues=0
-  personal_integrations="$(PI_CODING_AGENT_DIR="$HOME/.pi/personal" herdr integration status 2>/dev/null || true)"
-  work_integrations="$(PI_CODING_AGENT_DIR="$HOME/.pi/work" herdr integration status 2>/dev/null || true)"
+  pi_integrations="$(PI_CODING_AGENT_DIR="$HOME/.pi/agent" herdr integration status 2>/dev/null || true)"
 
-  if [ ! -d "$HOME/.pi/personal" ]; then
-    fail "required Pi personal profile is missing"
+  if [ ! -d "$HOME/.pi/agent" ]; then
+    fail "Pi agent directory is missing"
     integration_issues=1
-  elif ! printf '%s\n' "$personal_integrations" | grep -q '^pi: current '; then
-    warn "Herdr Pi personal integration is missing or outdated"
-    integration_issues=1
-  fi
-  if [ ! -d "$HOME/.pi/work" ]; then
-    fail "required Pi work profile is missing"
-    integration_issues=1
-  elif ! printf '%s\n' "$work_integrations" | grep -q '^pi: current '; then
-    warn "Herdr Pi work integration is missing or outdated"
+  elif ! printf '%s\n' "$pi_integrations" | grep -q '^pi: current '; then
+    warn "Herdr Pi integration is missing or outdated"
     integration_issues=1
   fi
 
   for integration in claude codex opencode; do
     if command -v "$integration" >/dev/null 2>&1 \
-      && ! printf '%s\n' "$personal_integrations" | grep -q "^$integration: current "; then
+      && ! printf '%s\n' "$pi_integrations" | grep -q "^$integration: current "; then
       warn "Herdr $integration integration is missing or outdated"
       integration_issues=1
     fi
@@ -542,22 +525,22 @@ if [ "$capture_dependencies_ok" = true ]; then
   pass "Hammerspoon capture dependencies"
 fi
 
-if [ -x "$DOTFILES_ROOT/bin/pi-personal" ]; then
-  if "$DOTFILES_ROOT/bin/pi-personal" --version >/dev/null 2>&1; then
-    pass "Hammerspoon personal Pi launcher"
-  else
-    fail "Hammerspoon personal Pi launcher cannot start"
-    info "Check the mise-managed Node and Pi installation"
-  fi
+if [ -x "$DOTFILES_ROOT/bin/pi" ] && "$DOTFILES_ROOT/bin/pi" --version >/dev/null 2>&1; then
+  pass "Pi launcher"
 else
-  fail "Hammerspoon personal Pi launcher is missing"
+  fail "Pi launcher cannot start"
+  info "Check the mise-managed Node and Pi installation"
 fi
-
-if [ -x "$DOTFILES_ROOT/bin/pi-profile-check" ]; then
-  pass "Pi profile-boundary evidence checker"
+if jq -e '.defaultProvider == "openai" and (.packages | all(.[]; (if type == "string" then . else .source end) | contains("pi-mcp-adapter") | not))' "$HOME/.pi/agent/settings.json" >/dev/null 2>&1; then
+  pass "Unified Pi settings with native MCP"
 else
-  fail "Pi profile-boundary evidence checker is missing"
-  info "Expected: $DOTFILES_ROOT/bin/pi-profile-check"
+  warn "Pi settings need consolidation"
+  info "See $DOTFILES_ROOT/pi/README.md"
+fi
+if "$DOTFILES_ROOT/bin/pi" auth check --provider openai --no-refresh >/dev/null 2>&1; then
+  pass "Pi OpenAI authentication"
+else
+  warn "Pi needs authentication: launch pi, then /login openai (ChatGPT subscription)"
 fi
 
 moja_glava_dir="${MOJA_GLAVA_DIR:-$HOME/Code/moja-glava}"
@@ -756,7 +739,7 @@ check_managed_file() {
 check_managed_file "$HOME/.claude/CLAUDE.md" "~/.claude/CLAUDE.md"
 PI_RUNTIME_ROOT="$DOTFILES_ROOT/.ai-runtime/pi"
 check_managed_file "$PI_RUNTIME_ROOT/AGENTS.md" ".ai-runtime/pi/AGENTS.md"
-for profile in work personal; do
+for profile in agent; do
   profile_dir="$HOME/.pi/$profile"
   if [ -d "$profile_dir" ]; then
     check_symlink "$PI_RUNTIME_ROOT/AGENTS.md" "$profile_dir/AGENTS.md" "~/.pi/$profile/AGENTS.md"
@@ -872,7 +855,7 @@ fi
 # Pi keeps a real profile-local agents directory; only managed files link to
 # the generated shared agent tree. Custom agents and chains remain local.
 if [ -d "$PI_RUNTIME_ROOT/agents" ]; then
-  for profile in work personal; do
+  for profile in agent; do
     profile_dir="$HOME/.pi/$profile"
     [ -d "$profile_dir" ] || continue
     agents_dir="$profile_dir/agents"
@@ -901,7 +884,7 @@ header "Pi extensions"
 
 PI_EXTENSIONS_SRC="$DOTFILES_ROOT/pi/extensions"
 if [ -d "$PI_EXTENSIONS_SRC" ]; then
-  for profile in work personal; do
+  for profile in agent; do
     profile_dir="$HOME/.pi/$profile"
     [ -d "$profile_dir" ] || continue
     for extension in "$PI_EXTENSIONS_SRC"/*.ts; do

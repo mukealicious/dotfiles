@@ -1,0 +1,49 @@
+{
+  "theme": "gruvbox-dark",
+  "defaultProvider": "openai",
+  "defaultTools": ["+codemode"],
+  "defaultModel": "gpt-6-astra",
+  "defaultThinkingLevel": "medium",
+  "skills": [
+    "~/.dotfiles/.ai-runtime/pi/skills",
+    "~/skills/tldraw-offline",
+    "~/.dotfiles/.agents/skills",
+    "!**/.dotfiles/.agents/skills/**"
+  ],
+  "subagents": {
+    "agentOverrides": {
+      "scout": {
+        "model": "openai/gpt-6-luna",
+        "tools": ["read", "grep", "find", "ls"],
+        "output": false
+      },
+      "worker": { "model": "openai/gpt-6-luna" }
+    }
+  },
+  "packages": [
+    "~/.dotfiles/pi/packages/pi-exa",
+    "~/.dotfiles/pi/packages/pi-parallel",
+    "npm:@benvargas/pi-openai-fast@1.1.1",
+    {
+      "source": "~/.dotfiles/pi/packages/pi-subagents",
+      "skills": ["skills/pi-subagents/SKILL.md"],
+      "prompts": []
+    },
+    {
+      "source": "git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857",
+      "extensions": [],
+      "skills": [
+        "skills/apple-mail/SKILL.md",
+        "skills/commit/SKILL.md",
+        "skills/github/SKILL.md",
+        "skills/google-workspace/SKILL.md",
+        "skills/pi-share/SKILL.md",
+        "skills/sentry/SKILL.md",
+        "skills/summarize/SKILL.md",
+        "skills/uv/SKILL.md"
+      ],
+      "prompts": [],
+      "themes": []
+    }
+  ]
+}

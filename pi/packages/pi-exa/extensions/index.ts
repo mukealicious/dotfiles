@@ -1,5 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
+import { Type, type Static } from "typebox";
+import { Check } from "typebox/value";
 
 const EXA_API_BASE = "https://api.exa.ai";
 const EXA_DOCS_URL = "https://docs.exa.ai/reference/search-api-guide-for-coding-agents";
@@ -20,21 +21,22 @@ type ExaSearchParams = {
   textMaxCharacters?: number;
 };
 
-type ExaSearchResult = {
-  title?: string;
-  url?: string;
-  publishedDate?: string;
-  author?: string;
-  highlights?: string[];
-  text?: string;
-  summary?: string;
-};
+// Validate fields we consume, but retain all provider metadata in structuredContent.
+const SearchResponse = Type.Object({
+  requestId: Type.Optional(Type.String()),
+  resolvedSearchType: Type.Optional(Type.String()),
+  results: Type.Array(Type.Object({
+    title: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+    url: Type.String(),
+    publishedDate: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+    author: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+    highlights: Type.Optional(Type.Union([Type.Array(Type.String()), Type.Null()])),
+    text: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+    summary: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  }, { additionalProperties: true })),
+}, { additionalProperties: true });
 
-type ExaSearchResponse = {
-  requestId?: string;
-  resolvedSearchType?: string;
-  results?: ExaSearchResult[];
-};
+type ExaSearchResponse = Static<typeof SearchResponse>;
 
 function getApiKey(): string | undefined {
   const key = process.env.EXA_API_KEY?.trim();
@@ -72,7 +74,8 @@ function buildSearchBody(params: ExaSearchParams): Record<string, unknown> {
   return body;
 }
 
-async function callExa(path: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
+async function callExa(path: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<ExaSearchResponse> {
+  signal?.throwIfAborted();
   const apiKey = getApiKey();
   if (!apiKey) {
     throw new Error("EXA_API_KEY is not set. Create an Exa API key, then add it to your private shell env (for fish: set -Ux EXA_API_KEY '...').");
@@ -91,10 +94,11 @@ async function callExa(path: string, body: Record<string, unknown>, signal?: Abo
   const text = await response.text();
   let payload: unknown;
   try {
-    payload = text ? JSON.parse(text) : {};
+    payload = JSON.parse(text);
   } catch {
-    payload = { raw: text };
+    if (response.ok) throw new Error("Exa returned invalid JSON.");
   }
+  signal?.throwIfAborted();
 
   if (!response.ok) {
     const message = typeof payload === "object" && payload !== null && "message" in payload
@@ -103,10 +107,13 @@ async function callExa(path: string, body: Record<string, unknown>, signal?: Abo
     throw new Error(`Exa API error ${response.status}: ${message}`);
   }
 
+  if (!Check(SearchResponse, payload)) {
+    throw new Error("Exa returned an invalid search response (expected a results array).");
+  }
   return payload;
 }
 
-function formatSearchResponse(query: string, response: ExaSearchResponse): string {
+function formatSearchResponse(query: string, response: ExaSearchResponse, mode: ContentMode): string {
   const results = response.results ?? [];
   if (results.length === 0) return `No Exa results found for: "${query}"`;
 
@@ -115,11 +122,15 @@ function formatSearchResponse(query: string, response: ExaSearchResponse): strin
     const title = result.title || "Untitled";
     const url = result.url || "(no url)";
     const date = result.publishedDate ? ` · ${result.publishedDate}` : "";
-    const excerpts = result.highlights?.length
-      ? result.highlights.slice(0, 3).join("\n   ")
-      : result.summary || result.text?.slice(0, 800) || "";
+    // content is model-visible, not just a UI preview. Restricted researchers
+    // cannot use codemode to recover text requested explicitly through this tool.
+    const excerpts = mode === "none" ? ""
+      : mode === "text" ? result.text || ""
+      : mode === "summary" ? result.summary || ""
+      : result.highlights?.join("\n   ") || result.summary || result.text || "";
     lines.push(`\n${index + 1}. **${title}**${date}\n   ${url}${excerpts ? `\n   ${excerpts}` : ""}`);
   }
+  lines.push("\nProvider metadata is also available through codemode as structured data.");
   return lines.join("\n");
 }
 
@@ -127,6 +138,9 @@ export default function registerExaExtension(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "exa_search",
     label: "Exa Search",
+    exposure: "direct",
+    annotations: { readOnlyHint: true, openWorldHint: true },
+    outputSchema: SearchResponse,
     description: "Search the public web with Exa for semantic, technical/code, and multilingual material. Returns highlights, text, summaries, or URLs.",
     promptSnippet: "Semantic, technical/code, and multilingual web search.",
     promptGuidelines: [
@@ -149,14 +163,15 @@ export default function registerExaExtension(pi: ExtensionAPI): void {
     async execute(_toolCallId, params: ExaSearchParams, signal) {
       try {
         const body = buildSearchBody(params);
-        const result = await callExa("/search", body, signal) as ExaSearchResponse;
+        const result = await callExa("/search", body, signal);
         return {
-          content: [{ type: "text" as const, text: formatSearchResponse(params.query, result) }],
+          content: [{ type: "text" as const, text: formatSearchResponse(params.query, result, params.contentMode ?? "highlights") }],
           details: { ...result, query: params.query, request: body },
+          structuredContent: result,
         };
       } catch (error) {
         return {
-          content: [{ type: "text" as const, text: error instanceof Error ? error.message : String(error) }],
+          content: [{ type: "text" as const, text: signal?.aborted ? "Exa search cancelled." : error instanceof Error ? error.message : String(error) }],
           details: { query: params.query },
           isError: true,
         };

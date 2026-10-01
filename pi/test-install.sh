@@ -1,535 +1,216 @@
 #!/bin/sh
-# Focused hermetic coverage for Pi profile materialization and package curation.
+# Hermetic native Pi installer regression tests. No package/network access.
 set -eu
-
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-pi-install.XXXXXX")"
-TMP_ROOT="$(cd "$TMP_ROOT" && pwd -P)"
-trap 'rm -rf "$TMP_ROOT"' EXIT INT TERM
-REPO="$TMP_ROOT/repo"
-HOME_ROOT="$TMP_ROOT/home"
-FAKE_BIN="$TMP_ROOT/bin"
-mkdir -p "$REPO" "$HOME_ROOT/.bun/bin" "$FAKE_BIN"
-
-fail() {
-  echo "FAIL: $*" >&2
-  exit 1
-}
-
-assert_contains() {
-  file="$1"
-  expected="$2"
-  grep -Fq "$expected" "$file" || fail "$file is missing: $expected"
-}
-
-assert_not_contains() {
-  file="$1"
-  unexpected="$2"
-  if grep -Fq "$unexpected" "$file"; then
-    fail "$file unexpectedly contains: $unexpected"
-  fi
-}
-
-# Keep the fixture independent of the checkout's installed dependencies.
-tar -C "$ROOT" --exclude='node_modules' -cf - pi lib | tar -C "$REPO" -xf -
-
-cat > "$HOME_ROOT/.bun/bin/pi" <<'EOF'
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/pi-install.XXXXXX")"
+TMP="$(cd "$TMP" && pwd -P)"
+trap 'rm -rf "$TMP"' EXIT INT TERM
+REPO="$TMP/repo"
+export HOME="$TMP/home"
+mkdir -p "$REPO" "$HOME/.bun/bin" "$TMP/bin" "$HOME/.pi/agent/git/github.com/mitsuhiko/agent-stuff/extensions" "$REPO/pi/packages/pi-subagents/node_modules"
+for dependency_version in acorn:8.18.0 jiti:2.7.0 undici:8.10.2 yaml:2.8.3; do
+  dependency="${dependency_version%%:*}"
+  version="${dependency_version#*:}"
+  mkdir -p "$REPO/pi/packages/pi-subagents/node_modules/$dependency"
+  printf '{"name":"%s","version":"%s"}\n' "$dependency" "$version" > "$REPO/pi/packages/pi-subagents/node_modules/$dependency/package.json"
+done
+tar -C "$ROOT" --exclude=node_modules -cf - pi lib | tar -C "$REPO" -xf -
+fail() { echo "FAIL: $*" >&2; exit 1; }
+FAST_PATCH="$REPO/pi/patches/pi-openai-fast-1.1.1-policy.patch"
+FAST_FIXTURE="$TMP/fast-pristine.ts"
+node "$ROOT/pi/test-fixtures/from-patches.mjs" "$FAST_PATCH" > "$FAST_FIXTURE"
+FAST_FIXTURE_PRISTINE_SHA256="$(shasum -a 256 "$FAST_FIXTURE" | awk '{print $1}')"
+cp "$FAST_FIXTURE" "$TMP/fast-patched.ts"
+mkdir -p "$TMP/patch/extensions"
+cp "$FAST_FIXTURE" "$TMP/patch/extensions/index.ts"
+(cd "$TMP/patch" && patch -p1 -N -F 0 -f < "$FAST_PATCH") >/dev/null
+FAST_FIXTURE_PATCHED_SHA256="$(shasum -a 256 "$TMP/patch/extensions/index.ts" | awk '{print $1}')"
+# Exercise the production digest code with fixture-only constants in this disposable copy.
+sed -e "s/2dbe16ae6db42877ca84d435395e0028a99e3bb8be932e4a576918495ce3911c/$FAST_FIXTURE_PRISTINE_SHA256/" \
+  -e "s/3c94d6a8895c23344824a420abef1cd455b9073408ecbe3a6374b65ec3a097f2/$FAST_FIXTURE_PATCHED_SHA256/" \
+  "$REPO/pi/install.sh" > "$REPO/pi/install.sh.test"
+mv "$REPO/pi/install.sh.test" "$REPO/pi/install.sh"
+cp "$REPO/pi/packages/pi-subagents/node_modules/acorn/package.json" "$TMP/acorn.package.json"
+cp "$REPO/pi/packages/pi-subagents/node_modules/jiti/package.json" "$TMP/jiti.package.json"
+cp "$REPO/pi/packages/pi-subagents/node_modules/undici/package.json" "$TMP/undici.package.json"
+cp "$REPO/pi/packages/pi-subagents/node_modules/yaml/package.json" "$TMP/yaml.package.json"
+cat > "$HOME/.bun/bin/pi" <<'EOF'
 #!/bin/sh
-if [ "$1" = "--version" ]; then
-  printf '%s\n' "${PI_FAKE_VERSION:-0.84.2}"
-  exit 0
+if [ "$1" = --version ]; then echo "${PI_FAKE_VERSION:-0.99.1}"; exit; fi
+printf '%s %s\n' "$PI_CODING_AGENT_DIR" "$*" >> "$HOME/installs.log"
+last_arg=
+for arg do last_arg="$arg"; done
+if [ "${PI_TEST_INSTALL_FAIL:-}" = "$last_arg" ]; then
+  echo "injected install failure: $last_arg" >&2
+  exit 29
 fi
-exit 0
 EOF
-cat > "$FAKE_BIN/mise" <<'EOF'
+cat > "$TMP/bin/mise" <<'EOF'
 #!/bin/sh
-if [ "$1" = "exec" ]; then
-  shift
-  while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do shift; done
-  [ "$#" -gt 0 ] && shift
-  exec "$@"
-fi
-if [ "$1" = "which" ]; then
-  exit 1
-fi
-exit 1
+[ "$1" = exec ] || exit 1
+shift
+while [ "$1" != -- ]; do shift; done
+shift
+exec "$@"
 EOF
-cat > "$FAKE_BIN/npm" <<'EOF'
-#!/bin/sh
-exit 0
-EOF
-cat > "$FAKE_BIN/parallel-cli" <<'EOF'
-#!/bin/sh
-[ "$1" = "--version" ]
-EOF
-chmod +x "$HOME_ROOT/.bun/bin/pi" "$FAKE_BIN/mise" "$FAKE_BIN/npm" "$FAKE_BIN/parallel-cli"
-
-# These sparse fixtures contain patch context only; neither is typechecked or
-# executed by the installer tests.
-PROMPT_EDITOR_FIXTURE="$TMP_ROOT/prompt-editor.fixture.ts"
-cat > "$PROMPT_EDITOR_FIXTURE" <<'EOF'
-@@line 246
-	if (typeof level !== "string") return undefined;
-	const v = level as ThinkingLevel;
-	// Keep the list local to avoid importing internal enums.
-	const allowed: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
-	return allowed.includes(v) ? v : undefined;
-}
-
-@@line 276
-		modes: {
-			// Forced default mode
-			default: { ...base },
-			// Convenience mode (user can delete/rename)
-			fast: { ...base, thinkingLevel: "off" },
-		},
-	};
-}
-
-@@line 334
-	return Object.keys(modes).filter((name) => name !== CUSTOM_MODE_NAME);
-}
-
-function getModeBorderColor(ctx: ExtensionContext, pi: ExtensionAPI, mode: string): (text: string) => string {
-	const theme = ctx.ui.theme;
-	const spec = runtime.data.modes[mode];
-
-	// Explicit color override in JSON.
-	if (spec?.color) {
-		try {
-			// Validate early so we don't crash during render.
-			theme.getFgAnsi(spec.color as any);
-			return (text: string) => theme.fg(spec.color as any, text);
-		} catch {
-			// fall through to thinking-based colors
-		}
-	}
-
-	// Default: derive from the current thinking level.
-	return theme.getThinkingBorderColor(pi.getThinkingLevel());
-}
-
-function formatModeLabel(mode: string): string {
-	return mode;
-}
-
-@@line 610
-const MODE_UI_ADD = "Add mode…";
-const MODE_UI_BACK = "Back";
-
-const ALL_THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
-const THINKING_UNSET_LABEL = "(don't change)";
-
-function isDefaultModeName(name: string): boolean {
-	return name === "default";
-}
-
-@@line 866
-
-  const settingsManager = SettingsManager.inMemory();
-  const currentModel = spec.provider && spec.modelId ? ctx.modelRegistry.find(spec.provider, spec.modelId) : ctx.model;
-
-  const scopedModels: Array<{ model: any; thinkingLevel: string }> = [];
-
-  return ctx.ui.custom<{ provider: string; modelId: string } | undefined>((tui, _theme, _keybindings, done) => {
-    const selector = new ModelSelectorComponent(
-      tui,
-      currentModel,
-      settingsManager,
-      ctx.modelRegistry as any,
-      scopedModels as any,
-      (model) => done({ provider: model.provider, modelId: model.id }),
-      () => done(undefined),
-    );
-		return selector;
-	});
-}
-
-@@line 1143
-}
-
-function setEditor(pi: ExtensionAPI, ctx: ExtensionContext, history: PromptEntry[]) {
-	ctx.ui.setEditorComponent((tui, theme, keybindings) => {
-		const editor = new PromptEditor(tui, theme, keybindings);
-		requestEditorRender = () => editor.requestRenderNow();
-		editor.modeLabelProvider = () => runtime.currentMode;
-		// Keep the mode label color stable (match footer/status bar).
-		editor.modeLabelColor = (text: string) => ctx.ui.theme.fg("dim", text);
-		const borderColor = (text: string) => {
-			const isBashMode = editor.getText().trimStart().startsWith("!");
-			if (isBashMode) {
-				return ctx.ui.theme.getBashModeBorderColor()(text);
-			}
-			return getModeBorderColor(ctx, pi, runtime.currentMode)(text);
-		};
-
-		editor.borderColor = borderColor;
-EOF
-# Keep each sparse context block at its upstream source line. macOS
-# `patch -F 0` requires the hunk positions as well as exact context.
-awk '
-	$1 == "@@line" {
-		target = $2 + 0
-		while (output_line < target - 1) {
-			print ""
-			output_line++
-		}
-		next
-	}
-	{ print; output_line++ }
-' "$PROMPT_EDITOR_FIXTURE" > "$PROMPT_EDITOR_FIXTURE.tmp"
-mv "$PROMPT_EDITOR_FIXTURE.tmp" "$PROMPT_EDITOR_FIXTURE"
-# The upstream file uses tabs; keep the fixture context byte-for-byte compatible.
-sed -e 's/^      /\t\t\t/' -e 's/^    /\t\t/' -e 's/^  /\t/' "$PROMPT_EDITOR_FIXTURE" > "$PROMPT_EDITOR_FIXTURE.tmp"
-mv "$PROMPT_EDITOR_FIXTURE.tmp" "$PROMPT_EDITOR_FIXTURE"
-
-FILES_SHORTCUT_FIXTURE="$TMP_ROOT/files-shortcut.fixture.ts"
-cat > "$FILES_SHORTCUT_FIXTURE" <<'EOF'
-const runFileBrowser = async (_pi: unknown, _ctx: unknown): Promise<void> => {};
-
-export default function (pi: any): void {
-	pi.registerShortcut("ctrl+shift+o", {
-		handler: async (ctx: any) => {
-			await runFileBrowser(pi, ctx);
-		},
-	});
-
-	pi.registerShortcut("ctrl+shift+f", {
-		description: "Reveal the latest file reference in Finder",
-		handler: async (ctx) => {
-			const entries = ctx.sessionManager.getBranch();
-			const latest = findLatestFileReference(entries, ctx.cwd);
-
-			if (!latest) {
-				ctx.ui.notify("No file reference found in the session", "warning");
-				return;
-			}
-
-			const canonical = toCanonicalPath(latest.path);
-			if (!canonical) {
-				ctx.ui.notify(`File not found: ${latest.display}`, "error");
-				return;
-			}
-
-			await revealPath(pi, ctx, {
-				canonicalPath: canonical.canonicalPath,
-				resolvedPath: canonical.canonicalPath,
-				displayPath: latest.display,
-				exists: true,
-				isDirectory: canonical.isDirectory,
-				status: undefined,
-				inRepo: false,
-				isTracked: false,
-				isReferenced: true,
-				hasSessionChange: false,
-				lastTimestamp: 0,
-			});
-		},
-	});
-
-	pi.registerShortcut("ctrl+shift+r", {
-		description: "Quick Look the latest file reference",
-EOF
-# Match the source line that starts the patch hunk without retaining the rest
-# of Mitsupi's files extension in this hermetic fixture.
-awk 'BEGIN { for (i = 1; i <= 1037; i++) print "" } { print }' "$FILES_SHORTCUT_FIXTURE" > "$FILES_SHORTCUT_FIXTURE.tmp"
-mv "$FILES_SHORTCUT_FIXTURE.tmp" "$FILES_SHORTCUT_FIXTURE"
-
-make_mitsupi_copy() {
-  home="$1"
-  profile="$2"
-  version="$3"
-  context="$4"
-  package_dir="$home/.pi/$profile/npm/node_modules/mitsupi"
-  mkdir -p "$package_dir/extensions" "$package_dir/skills" "$package_dir/themes" "$package_dir/commands"
-  cat > "$package_dir/package.json" <<EOF
-{
-  "name": "mitsupi",
-  "version": "$version",
-  "pi": {
-    "extensions": ["./extensions"],
-    "skills": ["./skills"],
-    "themes": ["./themes"],
-    "prompts": ["./commands"]
-  }
-}
-EOF
-  if [ "$context" = "original" ]; then
-    cp "$PROMPT_EDITOR_FIXTURE" "$package_dir/extensions/prompt-editor.ts"
-  else
-    sed 's/"xhigh"/"broken"/g' "$PROMPT_EDITOR_FIXTURE" > "$package_dir/extensions/prompt-editor.ts"
-  fi
-  cp "$FILES_SHORTCUT_FIXTURE" "$package_dir/extensions/files.ts"
-  for extension in answer context multi-edit todos uv whimsical btw review control go-to-bed loop notify session-breakdown split-fork; do
-    : > "$package_dir/extensions/$extension.ts"
-  done
-  for skill in apple-mail commit github google-workspace mermaid pi-share sentry summarize uv anachb frontend-design ghidra librarian native-web-search oebb-scotty openscad tmux update-changelog web-browser; do
-    mkdir -p "$package_dir/skills/$skill"
-    printf '%s\n' "---" "name: $skill" "description: fixture" "---" > "$package_dir/skills/$skill/SKILL.md"
-  done
-  : > "$package_dir/themes/nightowl.json"
-  : > "$package_dir/commands/unused.md"
-}
-
-for profile in work personal; do
-  make_mitsupi_copy "$HOME_ROOT" "$profile" "1.6.0" original
+printf '#!/bin/sh\necho called >> "$HOME/npm.log"\nexit 0\n' > "$TMP/bin/npm"
+# No Parallel CLI installer or other network download belongs in this fixture.
+printf '#!/bin/sh\necho unexpected-curl >> "$HOME/forbidden-network"; exit 1\n' > "$TMP/bin/curl"
+chmod +x "$HOME/.bun/bin/pi" "$TMP/bin/"*
+export PATH="$TMP/bin:$PATH"
+PACKAGE="$HOME/.pi/agent/git/github.com/mitsuhiko/agent-stuff"
+printf '{"name":"mitsupi","version":"1.6.0"}\n' > "$PACKAGE/package.json"
+# Retired extension code and todo history must remain untouched.
+printf 'inactive files extension\n' > "$PACKAGE/extensions/files.ts"
+printf 'inactive todos extension\n' > "$PACKAGE/extensions/todos.ts"
+mkdir -p "$REPO/.pi/todos"
+printf 'closed historical todo\n' > "$REPO/.pi/todos/kept.md"
+cp "$PACKAGE/extensions/files.ts" "$TMP/files.original"
+cp "$PACKAGE/extensions/todos.ts" "$TMP/todos.original"
+FAST_PACKAGE="$HOME/.pi/agent/npm/node_modules/@benvargas/pi-openai-fast"
+mkdir -p "$FAST_PACKAGE/extensions" "$HOME/.pi/agent/extensions"
+printf '{"name":"@benvargas/pi-openai-fast","version":"1.1.1"}\n' > "$FAST_PACKAGE/package.json"
+cp "$FAST_FIXTURE" "$FAST_PACKAGE/extensions/index.ts"
+printf '{"active":true,"persistState":false,"supportedModels":["custom/model"]}\n' > "$HOME/.pi/agent/extensions/pi-openai-fast.json"
+cp "$HOME/.pi/agent/extensions/pi-openai-fast.json" "$TMP/fast-config"
+# Older profiles are not ongoing installer targets.
+mkdir -p "$HOME/.pi/personal" "$HOME/.pi/work"
+printf 'untouched\n' > "$HOME/.pi/personal/settings.json"
+printf 'untouched\n' > "$HOME/.pi/work/settings.json"
+ln -s "$REPO/pi/extensions/handoff.ts" "$HOME/.pi/agent/extensions/handoff.ts"
+ln -s "$REPO/pi/lib" "$HOME/.pi/agent/lib"
+mkdir -p "$HOME/.pi/agent/sessions/handoff-connections"
+printf 'preserved connection\n' > "$HOME/.pi/agent/sessions/handoff-connections/kept.json"
+run() { sh "$REPO/pi/install.sh" > "$TMP/install.log" 2>&1; }
+if (PI_FAKE_VERSION=0.98.0 run); then fail 'old Pi accepted'; fi
+[ ! -e "$HOME/.pi/agent/settings.json" ] || fail 'version guard mutated settings'
+# Fast patch preflight remains fail-closed.
+cp "$FAST_PACKAGE/extensions/index.ts" "$TMP/fast.original"
+printf 'unknown fast context\n' > "$FAST_PACKAGE/extensions/index.ts"
+if run; then fail 'unknown fast patch context accepted'; fi
+grep -qx 'unknown fast context' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast preflight mutated unknown context'
+[ ! -e "$HOME/.pi/agent/settings.json" ] || fail 'fast patch guard mutated settings'
+cp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts"
+# Alter a patched policy hunk; exact whole-file identity must reject it.
+(cd "$FAST_PACKAGE" && patch -p1 -N -F 0 -f < "$ROOT/pi/patches/pi-openai-fast-1.1.1-policy.patch") >/dev/null
+sed 's/configuration must be a JSON object/altered root-policy context/' "$FAST_PACKAGE/extensions/index.ts" > "$TMP/fast.partial-source"
+mv "$TMP/fast.partial-source" "$FAST_PACKAGE/extensions/index.ts"
+cp "$FAST_PACKAGE/extensions/index.ts" "$TMP/fast.unknown-root"
+if run; then fail 'unknown root-policy context accepted'; fi
+cmp "$TMP/fast.unknown-root" "$FAST_PACKAGE/extensions/index.ts" || fail 'partial patch context was modified'
+[ ! -e "$HOME/.pi/agent/settings.json" ] || fail 'root-policy guard mutated settings'
+cp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts"
+# Dependency readiness fails before any profile settings or links are materialized.
+mv "$REPO/pi/packages/pi-subagents/node_modules" "$TMP/subagents-node-modules"
+if run; then fail 'missing runtime dependencies reported success'; fi
+grep -Fq 'Stop all Pi/subagent runners' "$TMP/install.log" || fail 'missing dependency stop-runner instruction'
+[ ! -e "$HOME/.pi/agent/settings.json" ] || fail 'dependency preflight ran after settings mutation'
+[ ! -e "$HOME/.pi/agent/extensions/notify.ts" ] || fail 'dependency preflight ran after extension mutation'
+cmp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts" || fail 'dependency preflight ran after fast package mutation'
+[ ! -e "$HOME/installs.log" ] || fail 'dependency preflight ran after package installation'
+[ ! -e "$HOME/npm.log" ] || fail 'dependency preflight invoked npm'
+mkdir -p "$REPO/pi/packages/pi-subagents"
+mv "$TMP/subagents-node-modules" "$REPO/pi/packages/pi-subagents/node_modules"
+printf '{"name":"acorn","version":"0.0.0"}\n' > "$REPO/pi/packages/pi-subagents/node_modules/acorn/package.json"
+if run; then fail 'wrong runtime dependency version reported success'; fi
+grep -Fq 'does not match the lockfile' "$TMP/install.log" || fail 'wrong dependency diagnostic'
+[ ! -e "$HOME/.pi/agent/settings.json" ] || fail 'wrong dependency preflight ran after settings mutation'
+cmp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts" || fail 'wrong dependency preflight ran after fast package mutation'
+printf '{"name":"acorn","version":"8.18.0"}\n' > "$REPO/pi/packages/pi-subagents/node_modules/acorn/package.json"
+run || { tail -30 "$TMP/install.log"; fail install; }
+[ "$(shasum -a 256 "$FAST_PACKAGE/extensions/index.ts" | awk '{print $1}')" = "$FAST_FIXTURE_PATCHED_SHA256" ] || fail 'installed patch output digest differs from fixture pin'
+SETTINGS="$HOME/.pi/agent/settings.json"
+MODES="$HOME/.pi/agent/modes.json"
+MODELS="$HOME/.pi/agent/models.json"
+[ ! -e "$MODELS" ] || fail 'installer created competing native priority policy'
+jq -e '.packages | index("npm:@benvargas/pi-openai-fast@1.1.1") != null and index("~/.dotfiles/pi/packages/pi-openai-fast") == null' "$SETTINGS" >/dev/null || fail 'fast package pin'
+jq -e '.packages[] | select(type == "object" and .source == "~/.dotfiles/pi/packages/pi-subagents") | .skills == ["skills/pi-subagents/SKILL.md"] and .prompts == []' "$SETTINGS" >/dev/null || fail 'upstream subagent resource selection'
+jq -e '.subagents.agentOverrides.scout | .model == "openai/gpt-6-luna" and .tools == ["read", "grep", "find", "ls"] and .output == false' "$SETTINGS" >/dev/null || fail 'scout policy'
+grep -Fq 'ctx.isProjectTrusted()' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast trust patch'
+grep -Fq 'supportedModels must be an array' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast allowlist patch'
+grep -Fq 'configuration must be a JSON object' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast config root patch'
+[ ! -L "$SETTINGS" ] || fail 'runtime settings are symlinks'
+[ ! -e "$MODES" ] || fail 'retired modes baseline created'
+jq -e '.defaultProvider == "openai" and .defaultModel == "gpt-6-astra" and .defaultTools == ["+codemode"] and ([.packages[] | select(type == "string") | contains("mcp-adapter")] | any | not)' "$SETTINGS" >/dev/null || fail 'native defaults'
+jq -e '.packages[] | select(type == "object" and .source == "git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857") | .themes == [] and .prompts == [] and (.extensions == []) and (.skills | length == 8)' "$SETTINGS" >/dev/null || fail 'Mitsupi curation'
+jq -e '(.skills | index("~/.dotfiles/.agents/skills") != null) and (.skills | index("!**/.dotfiles/.agents/skills/**") != null)' "$SETTINGS" >/dev/null || fail 'skill projection exclusion'
+for extension in notify modes; do
+  [ -L "$HOME/.pi/agent/extensions/$extension.ts" ] || fail "missing $extension"
 done
-
-# Simulate an existing installation: prompt-editor was patched by an earlier
-# installer run while files.ts remains unpatched.
-(
-  cd "$HOME_ROOT/.pi/personal/npm/node_modules/mitsupi"
-  patch -p1 -N -t < "$REPO/pi/patches/mitsupi-1.6.0-prompt-editor.patch"
-) >/dev/null
-
-for profile in work personal; do
-  mkdir -p "$HOME_ROOT/.pi/$profile/extensions"
+[ -L "$HOME/.pi/agent/prompts/review.md" ] || fail 'native review prompt missing'
+[ ! -e "$HOME/.pi/agent/extensions/usage-footer.ts" ] || fail 'legacy footer active'
+[ ! -L "$HOME/.pi/agent/extensions/handoff.ts" ] || fail 'retired managed handoff link survived'
+[ ! -L "$HOME/.pi/agent/lib" ] || fail 'retired managed library link survived'
+grep -qx 'preserved connection' "$HOME/.pi/agent/sessions/handoff-connections/kept.json" || fail 'historical handoff data changed'
+[ ! -e "$HOME/.pi/agent/mcp-adapter.json" ] || fail 'adapter config created'
+[ ! -e "$HOME/forbidden-network" ] || fail 'unexpected network installer'
+jq -e '[.packages[] | (if type == "object" then .source else . end) | select(contains("mitsupi") or contains("mitsuhiko/agent-stuff"))] == ["git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857"]' "$SETTINGS" >/dev/null || fail 'duplicate or legacy Mitsupi selection'
+# Old mode data and inactive editor code must survive even if no longer valid.
+printf 'legacy mode choices\n' > "$MODES"
+printf 'retired editor, not a patch target\n' > "$PACKAGE/extensions/prompt-editor.ts"
+cp "$MODES" "$TMP/legacy-modes"
+cp "$PACKAGE/extensions/prompt-editor.ts" "$TMP/legacy-editor"
+jq '.deviceId="stable-device" | .trackingId="tracking" | .lastChangelogVersion="version" | .defaultModel="chosen-model" | .defaultThinkingLevel="high" | .theme="chosen-theme" | .retry={"maxRetries":4} | .subagents.agentOverrides.worker.model="custom/model" | .subagents.agentOverrides.custom={"disabled":true} | .packages=["stale-package"]' "$SETTINGS" > "$TMP/settings"
+mv "$TMP/settings" "$SETTINGS"
+printf '{"mcpServers":{"custom":{"url":"https://example.com/mcp","enabled":false}}}\n' > "$HOME/.pi/agent/mcp.json"
+cp "$HOME/.pi/agent/mcp.json" "$TMP/mcp"
+# Removing the priority override must survive reinstalls, along with custom models.
+printf '{"providers":{"custom":{"baseUrl":"http://localhost:1234","models":[{"id":"local"}]},"openai":{"modelOverrides":{"gpt-6-astra":{"samplingParams":{"service_tier":"priority","temperature":0.5}}}}}}\n' > "$MODELS"
+cp "$MODELS" "$TMP/models"
+run || fail 'second install'
+run || fail 'third install'
+cp "$FAST_PACKAGE/extensions/index.ts" "$TMP/fast.patched"
+run || { tail -30 "$TMP/install.log"; fail 'exact-current fast reinstall'; }
+cmp "$TMP/fast.patched" "$FAST_PACKAGE/extensions/index.ts" || fail 'fast patch idempotence'
+# Only exact pristine and exact current are supported; partial state fails closed.
+(cd "$FAST_PACKAGE" && patch -R -p1 -F 0 -f < "$ROOT/pi/patches/pi-openai-fast-1.1.1-policy.patch") >/dev/null
+cp "$FAST_PACKAGE/extensions/index.ts" "$TMP/fast.pristine"
+run || { tail -30 "$TMP/install.log"; fail 'pristine fast artifact'; }
+cmp "$TMP/fast.patched" "$FAST_PACKAGE/extensions/index.ts" || fail 'pristine patch output differs'
+cp "$FAST_PACKAGE/extensions/index.ts" "$TMP/fast.patched"
+# The whole-file digest must reject edits outside every patch hunk too.
+printf '\n// unexpected edit outside patch hunks\n' >> "$FAST_PACKAGE/extensions/index.ts"
+cp "$FAST_PACKAGE/extensions/index.ts" "$TMP/fast.outside-edit"
+if run; then fail 'outside-hunk fast edit accepted'; fi
+cmp "$TMP/fast.outside-edit" "$FAST_PACKAGE/extensions/index.ts" || fail 'outside-hunk fast edit changed'
+grep -Fq 'Unknown or partially patched Fast package context' "$TMP/install.log" || fail 'outside-hunk edit diagnostic'
+cp "$TMP/fast.patched" "$FAST_PACKAGE/extensions/index.ts"
+node -e 'const fs=require("fs"),p=process.argv[1];fs.writeFileSync(p,fs.readFileSync(p,"utf8").replace("configuration must be a JSON object","configuration altered"));' "$FAST_PACKAGE/extensions/index.ts"
+cp "$FAST_PACKAGE/extensions/index.ts" "$TMP/fast.partial"
+if run; then fail 'partial fast patch accepted'; fi
+cmp "$TMP/fast.partial" "$FAST_PACKAGE/extensions/index.ts" || fail 'partial fast package mutated'
+grep -Fq 'Reinstall npm:@benvargas/pi-openai-fast@1.1.1' "$TMP/install.log" || fail 'partial fast recovery hint'
+cp "$TMP/fast.patched" "$FAST_PACKAGE/extensions/index.ts"
+jq -e '.deviceId == "stable-device" and .trackingId == "tracking" and .lastChangelogVersion == "version" and .defaultModel == "chosen-model" and .defaultThinkingLevel == "high" and .theme == "chosen-theme" and .retry.maxRetries == 4 and (.packages | index("stale-package") == null)' "$SETTINGS" >/dev/null || fail 'runtime preferences or managed resources not preserved'
+jq -e '.subagents.agentOverrides.worker.model == "custom/model" and .subagents.agentOverrides.custom.disabled == true' "$SETTINGS" >/dev/null || fail 'personal subagent overrides changed'
+cmp "$TMP/mcp" "$HOME/.pi/agent/mcp.json" || fail 'machine MCP modified'
+cmp "$TMP/models" "$MODELS" || fail 'runtime model preferences modified'
+cmp "$TMP/files.original" "$PACKAGE/extensions/files.ts" || fail 'retired files extension modified'
+cmp "$TMP/todos.original" "$PACKAGE/extensions/todos.ts" || fail 'retired todos extension modified'
+grep -qx 'closed historical todo' "$REPO/.pi/todos/kept.md" || fail 'todo history changed'
+cmp "$TMP/legacy-modes" "$MODES" || fail 'retired modes modified'
+cmp "$TMP/legacy-editor" "$PACKAGE/extensions/prompt-editor.ts" || fail 'retired editor modified'
+cmp "$TMP/fast-config" "$HOME/.pi/agent/extensions/pi-openai-fast.json" || fail 'fast choices changed'
+for profile in personal work; do
+  grep -qx untouched "$HOME/.pi/$profile/settings.json" || fail 'old profile modified'
+  if grep -Fq ".pi/$profile " "$HOME/installs.log"; then fail 'installed into old profile'; fi
 done
-
-# Previous installer runs created exact absolute links. Those links must be
-# removed even though their deleted source paths are now dead.
-ln -s "$REPO/pi/extensions/cost.ts" "$HOME_ROOT/.pi/work/extensions/cost.ts"
-ln -s "$REPO/pi/extensions/watchdog.ts" "$HOME_ROOT/.pi/work/extensions/watchdog.ts"
-
-# Same-name user entries must remain untouched and be reported.
-printf 'user cost extension\n' > "$HOME_ROOT/.pi/personal/extensions/cost.ts"
-mkdir "$HOME_ROOT/.pi/personal/extensions/watchdog.ts"
-
-run_install() {
-  home="$1"
-  log="$2"
-  HOME="$home" PATH="$FAKE_BIN:$PATH" sh "$REPO/pi/install.sh" >"$log" 2>&1
-}
-
-run_install "$HOME_ROOT" "$TMP_ROOT/first.log"
-[ ! -e "$HOME_ROOT/.pi/work/extensions/cost.ts" ] && [ ! -L "$HOME_ROOT/.pi/work/extensions/cost.ts" ] || fail "managed cost link was retained"
-[ ! -e "$HOME_ROOT/.pi/work/extensions/watchdog.ts" ] && [ ! -L "$HOME_ROOT/.pi/work/extensions/watchdog.ts" ] || fail "managed watchdog link was retained"
-[ -f "$HOME_ROOT/.pi/personal/extensions/cost.ts" ] || fail "user cost file was removed"
-[ -d "$HOME_ROOT/.pi/personal/extensions/watchdog.ts" ] || fail "user watchdog directory was removed"
-assert_contains "$TMP_ROOT/first.log" 'Removed retired managed extension link: work/extensions/cost.ts'
-assert_contains "$TMP_ROOT/first.log" 'Removed retired managed extension link: work/extensions/watchdog.ts'
-assert_contains "$TMP_ROOT/first.log" 'Preserving user-owned extension entry: personal/extensions/cost.ts'
-assert_contains "$TMP_ROOT/first.log" 'Preserving user-owned extension entry: personal/extensions/watchdog.ts'
-assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 prompt-editor patch for work'
-assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 prompt-editor theme patch for work'
-assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 files shortcut patch for work'
-assert_contains "$TMP_ROOT/first.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for personal'
-assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 prompt-editor theme patch for personal'
-assert_contains "$TMP_ROOT/first.log" 'Applied Mitsupi 1.6.0 files shortcut patch for personal'
-
-PERSONAL_MODES="$HOME_ROOT/.pi/personal/modes.json"
-[ -f "$PERSONAL_MODES" ] || fail "personal modes were not materialized"
-[ ! -L "$PERSONAL_MODES" ] || fail "personal modes must remain a writable runtime file"
-cmp -s "$REPO/pi/modes.personal.json" "$PERSONAL_MODES" || fail "personal modes differ from the tracked baseline"
-[ ! -e "$HOME_ROOT/.pi/work/modes.json" ] || fail "work modes were configured before a work mapping was approved"
-jq -e '
-  .version == 1
-  and .currentMode == "default"
-  and (.modes | keys == ["deep", "default", "light", "standard"])
-  and .modes.light == {provider: "openai-codex", modelId: "gpt-6-luna", thinkingLevel: "max", color: "thinkingLow"}
-  and .modes.standard == {provider: "openai-codex", modelId: "gpt-6-sol", thinkingLevel: "medium", color: "thinkingMedium"}
-  and .modes.default == {provider: "openai-codex", modelId: "gpt-6-astra", thinkingLevel: "medium", color: "thinkingHigh"}
-  and .modes.deep == {provider: "openai-codex", modelId: "gpt-6-astra", thinkingLevel: "high", color: "thinkingXhigh"}
-' "$PERSONAL_MODES" >/dev/null || fail "personal mode mapping changed"
-
-EXPECTED_EXTENSIONS='["extensions/answer.ts","extensions/context.ts","extensions/files.ts","extensions/multi-edit.ts","extensions/prompt-editor.ts","extensions/todos.ts","extensions/uv.ts","extensions/whimsical.ts","extensions/btw.ts","extensions/review.ts"]'
-EXPECTED_SKILLS='["skills/apple-mail/SKILL.md","skills/commit/SKILL.md","skills/github/SKILL.md","skills/google-workspace/SKILL.md","skills/mermaid/SKILL.md","skills/pi-share/SKILL.md","skills/sentry/SKILL.md","skills/summarize/SKILL.md","skills/uv/SKILL.md"]'
-for profile in work personal; do
-  settings="$HOME_ROOT/.pi/$profile/settings.json"
-  jq -e '.packages | index("npm:pi-mcp-adapter@3.2.0") != null' "$settings" >/dev/null || fail "$profile MCP adapter missing"
-  mcp="$HOME_ROOT/.pi/$profile/mcp-adapter.json"
-  [ ! -L "$mcp" ] || fail "$profile MCP config must be writable without changing Git"
-  jq -e --arg name "mobbin-$profile" '
-    (.mcpServers | keys) == [$name]
-    and .mcpServers[$name] == {url: "https://api.mobbin.com/mcp", auth: "oauth"}
-  ' "$mcp" >/dev/null || fail "$profile Mobbin config incorrect"
-  jq -e --argjson expected_extensions "$EXPECTED_EXTENSIONS" --argjson expected_skills "$EXPECTED_SKILLS" '
-    ([.packages[] | select(type == "object" and .source == "npm:mitsupi@1.6.0")] | length == 1)
-    and ([.packages[] | select(type == "object" and .source == "npm:mitsupi@1.6.0")][0].extensions == $expected_extensions)
-    and ([.packages[] | select(type == "object" and .source == "npm:mitsupi@1.6.0")][0].skills == $expected_skills)
-    and ([.packages[] | select(type == "object" and .source == "npm:mitsupi@1.6.0")][0].prompts == [])
-    and ([.packages[] | select(type == "object" and .source == "npm:mitsupi@1.6.0")][0].themes == [])
-  ' "$settings" >/dev/null || fail "$profile Mitsupi resource allowlist changed"
-  [ -L "$HOME_ROOT/.pi/$profile/extensions/notify.ts" ] || fail "$profile local notify extension is missing"
-  [ "$(readlink "$HOME_ROOT/.pi/$profile/extensions/notify.ts")" = "$REPO/pi/extensions/notify.ts" ] || fail "$profile local notify link is misdirected"
-  [ -L "$HOME_ROOT/.pi/$profile/extensions/handoff.ts" ] || fail "$profile handoff extension is missing"
-  [ "$(readlink "$HOME_ROOT/.pi/$profile/extensions/handoff.ts")" = "$REPO/pi/extensions/handoff.ts" ] || fail "$profile handoff link is misdirected"
-  assert_not_contains "$settings" 'extensions/notify.ts'
-  assert_not_contains "$settings" 'extensions/loop.ts'
-  assert_not_contains "$settings" 'extensions/control.ts'
-  assert_not_contains "$settings" 'extensions/session-breakdown.ts'
-  assert_not_contains "$settings" 'nightowl'
-  assert_contains "$settings" 'extensions/btw.ts'
-  assert_contains "$settings" 'extensions/review.ts'
-  [ -f "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/btw.ts" ] || fail "$profile /btw resource is missing"
-  [ -f "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/review.ts" ] || fail "$profile /review resource is missing"
-  snapshot="$TMP_ROOT/$profile-prompt-editor.patched.ts"
-  cp "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/prompt-editor.ts" "$snapshot"
-  assert_contains "$snapshot" '"xhigh", "max"'
-  assert_not_contains "$snapshot" 'fast: { ...base'
-  assert_contains "$snapshot" 'const modelRuntimeAdapter = {'
-  assert_contains "$snapshot" 'getAvailableSnapshot: () => ctx.modelRegistry.getAvailable()'
-  assert_contains "$snapshot" 'modelRuntimeAdapter as any'
-  assert_not_contains "$snapshot" 'ctx.modelRegistry as any'
-  assert_contains "$snapshot" 'const uiTheme = ctx.ui.theme'
-  assert_contains "$snapshot" 'return getModeBorderColor(uiTheme, pi, runtime.currentMode)(text)'
-  assert_contains "$snapshot" 'return theme.getThinkingBorderColor("off")'
-  assert_not_contains "$snapshot" 'return ctx.ui.theme.getBashModeBorderColor()(text)'
-  files_snapshot="$TMP_ROOT/$profile-files.patched.ts"
-  cp "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/files.ts" "$files_snapshot"
-  assert_not_contains "$files_snapshot" 'ctrl+shift+f'
-  assert_not_contains "$files_snapshot" 'Reveal the latest file reference in Finder'
+if grep -Fq mcp-adapter "$HOME/installs.log"; then fail 'adapter installed'; fi
+[ ! -e "$HOME/npm.log" ] || fail 'routine installer invoked npm'
+printf 'user-owned extension\n' > "$HOME/.pi/agent/extensions/handoff.ts"
+mkdir "$HOME/custom-lib"
+ln -s "$HOME/custom-lib" "$HOME/.pi/agent/lib"
+run || { tail -30 "$TMP/install.log"; fail 'install with unmanaged retired-name entries'; }
+grep -qx 'user-owned extension' "$HOME/.pi/agent/extensions/handoff.ts" || fail 'user-owned handoff entry changed'
+[ "$(readlink "$HOME/.pi/agent/lib")" = "$HOME/custom-lib" ] || fail 'unmanaged library link changed'
+for package in "$REPO/pi/packages/pi-exa" "$REPO/pi/packages/pi-parallel" "$REPO/pi/packages/pi-subagents" git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857; do
+  if (PI_TEST_INSTALL_FAIL="$package" run); then fail "$package install failure reported success"; fi
+  grep -Fq "injected install failure: $package" "$TMP/install.log" || fail "$package stderr was suppressed"
+  grep -Fq "Retry manually:" "$TMP/install.log" || fail "$package recovery hint missing"
 done
-
-# Mitsupi's mode-picker compatibility and `max` support are local patches;
-# `/fast` remains owned by pi-openai-fast and no latency-named mode is seeded.
-[ -f "$HOME_ROOT/.pi/work/npm/node_modules/mitsupi/extensions/fast.ts" ] && fail "Mitsupi unexpectedly exposes a fast extension"
-assert_contains "$HOME_ROOT/.pi/work/settings.json" 'pi-openai-fast'
-
-# A live link with the retired basename but another source is unmanaged.
-rm "$HOME_ROOT/.pi/personal/extensions/cost.ts"
-printf 'unmanaged extension\n' > "$TMP_ROOT/unmanaged-cost.ts"
-ln -s "$TMP_ROOT/unmanaged-cost.ts" "$HOME_ROOT/.pi/personal/extensions/cost.ts"
-ln -s "$TMP_ROOT/missing-watchdog.ts" "$HOME_ROOT/.pi/work/extensions/watchdog.ts"
-# Runtime mode edits are allowed between installer runs, but the tracked
-# baseline remains authoritative when dotfiles are reinstalled.
-jq '.modes.default.thinkingLevel = "off" | .modes.fast = .modes.light' "$PERSONAL_MODES" > "$PERSONAL_MODES.tmp"
-mv "$PERSONAL_MODES.tmp" "$PERSONAL_MODES"
-for profile in work personal; do
-  settings="$HOME_ROOT/.pi/$profile/settings.json"
-  jq '.defaultProvider = "saved-provider" | .defaultModel = "saved-model" | .defaultThinkingLevel = "high" | .lastChangelogVersion = "saved-version" | .trackingId = "saved-id"' "$settings" > "$settings.tmp"
-  mv "$settings.tmp" "$settings"
+[ ! -e "$HOME/forbidden-network" ] || fail 'unexpected network installer'
+for dependency in acorn jiti undici yaml; do
+  cmp "$TMP/$dependency.package.json" "$REPO/pi/packages/pi-subagents/node_modules/$dependency/package.json" || fail "dependency changed: $dependency"
 done
-for profile in work personal; do
-  mcp="$HOME_ROOT/.pi/$profile/mcp-adapter.json"
-  jq --arg name "mobbin-$profile" '
-    .settings.showStatusIcon = false
-    | .mcpServers.custom = {url: "https://example.com/mcp"}
-    | .mcpServers[$name].url = "https://stale.example.com/mcp"
-  ' "$mcp" > "$mcp.tmp"
-  mv "$mcp.tmp" "$mcp"
-done
-run_install "$HOME_ROOT" "$TMP_ROOT/second.log"
-for profile in work personal; do
-  jq -e --arg name "mobbin-$profile" '
-    .settings.showStatusIcon == false
-    and .mcpServers.custom.url == "https://example.com/mcp"
-    and .mcpServers[$name] == {url: "https://api.mobbin.com/mcp", auth: "oauth"}
-  ' "$HOME_ROOT/.pi/$profile/mcp-adapter.json" >/dev/null || fail "$profile MCP merge lost custom config or did not restore Mobbin"
-done
-jq -e --slurpfile modes "$PERSONAL_MODES" '
-  .defaultProvider == $modes[0].modes.default.provider
-  and .defaultModel == $modes[0].modes.default.modelId
-  and .defaultThinkingLevel == $modes[0].modes.default.thinkingLevel
-  and .lastChangelogVersion == "saved-version" and .trackingId == "saved-id"
-' "$HOME_ROOT/.pi/personal/settings.json" >/dev/null || fail "personal startup does not match default mode"
-jq -e '
-  .defaultProvider == "saved-provider" and .defaultModel == "saved-model"
-  and .defaultThinkingLevel == "high"
-  and .lastChangelogVersion == "saved-version" and .trackingId == "saved-id"
-' "$HOME_ROOT/.pi/work/settings.json" >/dev/null || fail "work runtime defaults were not preserved"
-[ -L "$HOME_ROOT/.pi/personal/extensions/cost.ts" ] || fail "live unmanaged link was removed"
-[ "$(readlink "$HOME_ROOT/.pi/personal/extensions/cost.ts")" = "$TMP_ROOT/unmanaged-cost.ts" ] || fail "live unmanaged link changed"
-[ -L "$HOME_ROOT/.pi/work/extensions/watchdog.ts" ] || fail "dead unmanaged link was removed"
-assert_contains "$TMP_ROOT/second.log" 'Preserving unmanaged extension link: personal/extensions/cost.ts'
-assert_contains "$TMP_ROOT/second.log" 'Preserving dead unmanaged extension link: work/extensions/watchdog.ts'
-assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for work'
-assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor theme patch already applied for work'
-assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 files shortcut patch already applied for work'
-assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor patch already applied for personal'
-assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 prompt-editor theme patch already applied for personal'
-assert_contains "$TMP_ROOT/second.log" 'Mitsupi 1.6.0 files shortcut patch already applied for personal'
-cmp -s "$REPO/pi/modes.personal.json" "$PERSONAL_MODES" || fail "installer did not restore the tracked personal modes"
-for profile in work personal; do
-  cmp -s "$TMP_ROOT/$profile-prompt-editor.patched.ts" "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/prompt-editor.ts" || fail "$profile Mitsupi prompt-editor patch is not idempotent"
-  cmp -s "$TMP_ROOT/$profile-files.patched.ts" "$HOME_ROOT/.pi/$profile/npm/node_modules/mitsupi/extensions/files.ts" || fail "$profile Mitsupi files shortcut patch is not idempotent"
-done
-
-# A third run has no managed retired links left to remove.
-run_install "$HOME_ROOT" "$TMP_ROOT/third.log"
-if grep -Fq 'Removed retired managed extension link' "$TMP_ROOT/third.log"; then
-  fail "retired-link cleanup is not idempotent"
-fi
-[ -L "$HOME_ROOT/.pi/personal/extensions/cost.ts" ] || fail "idempotent run removed unmanaged link"
-[ -L "$HOME_ROOT/.pi/work/extensions/watchdog.ts" ] || fail "idempotent run removed dead unmanaged link"
-[ -d "$HOME_ROOT/.pi/personal/extensions/watchdog.ts" ] || fail "idempotent run removed user directory"
-
-# Existing but unknown versions and patch contexts fail before either profile
-# is materialized or mutated.
-UNKNOWN_VERSION_HOME="$TMP_ROOT/unknown-version-home"
-mkdir -p "$UNKNOWN_VERSION_HOME/.bun/bin"
-cp "$HOME_ROOT/.bun/bin/pi" "$UNKNOWN_VERSION_HOME/.bun/bin/pi"
-make_mitsupi_copy "$UNKNOWN_VERSION_HOME" work "1.6.0" original
-make_mitsupi_copy "$UNKNOWN_VERSION_HOME" personal "1.5.0" original
-if run_install "$UNKNOWN_VERSION_HOME" "$TMP_ROOT/unknown-version.log"; then
-  fail "unknown Mitsupi version unexpectedly passed preflight"
-fi
-assert_contains "$TMP_ROOT/unknown-version.log" 'is not exactly version 1.6.0'
-[ ! -e "$UNKNOWN_VERSION_HOME/.pi/work/settings.json" ] || fail "unknown version mutated work settings"
-[ ! -e "$UNKNOWN_VERSION_HOME/.pi/personal/settings.json" ] || fail "unknown version mutated personal settings"
-[ ! -e "$UNKNOWN_VERSION_HOME/.pi/personal/modes.json" ] || fail "unknown version materialized personal modes"
-[ "$(grep -Fc '"xhigh"' "$UNKNOWN_VERSION_HOME/.pi/work/npm/node_modules/mitsupi/extensions/prompt-editor.ts")" -eq 2 ] || fail "unknown version mutated work Mitsupi copy"
-
-UNKNOWN_CONTEXT_HOME="$TMP_ROOT/unknown-context-home"
-mkdir -p "$UNKNOWN_CONTEXT_HOME/.bun/bin"
-cp "$HOME_ROOT/.bun/bin/pi" "$UNKNOWN_CONTEXT_HOME/.bun/bin/pi"
-make_mitsupi_copy "$UNKNOWN_CONTEXT_HOME" work "1.6.0" original
-make_mitsupi_copy "$UNKNOWN_CONTEXT_HOME" personal "1.6.0" unknown
-if run_install "$UNKNOWN_CONTEXT_HOME" "$TMP_ROOT/unknown-context.log"; then
-  fail "unknown Mitsupi context unexpectedly passed preflight"
-fi
-assert_contains "$TMP_ROOT/unknown-context.log" 'Unknown Mitsupi 1.6.0 prompt-editor context'
-[ ! -e "$UNKNOWN_CONTEXT_HOME/.pi/work/settings.json" ] || fail "unknown context mutated work settings"
-[ ! -e "$UNKNOWN_CONTEXT_HOME/.pi/personal/settings.json" ] || fail "unknown context mutated personal settings"
-[ ! -e "$UNKNOWN_CONTEXT_HOME/.pi/personal/modes.json" ] || fail "unknown context materialized personal modes"
-[ "$(grep -Fc '"xhigh"' "$UNKNOWN_CONTEXT_HOME/.pi/work/npm/node_modules/mitsupi/extensions/prompt-editor.ts")" -eq 2 ] || fail "unknown context mutated work Mitsupi copy"
-
-UNKNOWN_THEME_CONTEXT_HOME="$TMP_ROOT/unknown-theme-context-home"
-mkdir -p "$UNKNOWN_THEME_CONTEXT_HOME/.bun/bin"
-cp "$HOME_ROOT/.bun/bin/pi" "$UNKNOWN_THEME_CONTEXT_HOME/.bun/bin/pi"
-make_mitsupi_copy "$UNKNOWN_THEME_CONTEXT_HOME" work "1.6.0" original
-make_mitsupi_copy "$UNKNOWN_THEME_CONTEXT_HOME" personal "1.6.0" original
-unknown_theme_extension="$UNKNOWN_THEME_CONTEXT_HOME/.pi/personal/npm/node_modules/mitsupi/extensions/prompt-editor.ts"
-sed 's/match footer\/status bar/changed theme context/' "$unknown_theme_extension" > "$unknown_theme_extension.tmp"
-mv "$unknown_theme_extension.tmp" "$unknown_theme_extension"
-if run_install "$UNKNOWN_THEME_CONTEXT_HOME" "$TMP_ROOT/unknown-theme-context.log"; then
-  fail "unknown prompt-editor theme context unexpectedly passed preflight"
-fi
-assert_contains "$TMP_ROOT/unknown-theme-context.log" 'Unknown Mitsupi 1.6.0 prompt-editor theme context'
-[ ! -e "$UNKNOWN_THEME_CONTEXT_HOME/.pi/work/settings.json" ] || fail "unknown theme context mutated work settings"
-[ ! -e "$UNKNOWN_THEME_CONTEXT_HOME/.pi/personal/settings.json" ] || fail "unknown theme context mutated personal settings"
-[ ! -e "$UNKNOWN_THEME_CONTEXT_HOME/.pi/personal/modes.json" ] || fail "unknown theme context materialized personal modes"
-[ "$(grep -Fc '"xhigh"' "$UNKNOWN_THEME_CONTEXT_HOME/.pi/work/npm/node_modules/mitsupi/extensions/prompt-editor.ts")" -eq 2 ] || fail "unknown theme context mutated work Mitsupi copy"
-
-# A one-line change in patch context must not be accepted through patch fuzz.
-UNKNOWN_FILES_CONTEXT_HOME="$TMP_ROOT/unknown-files-context-home"
-mkdir -p "$UNKNOWN_FILES_CONTEXT_HOME/.bun/bin"
-cp "$HOME_ROOT/.bun/bin/pi" "$UNKNOWN_FILES_CONTEXT_HOME/.bun/bin/pi"
-make_mitsupi_copy "$UNKNOWN_FILES_CONTEXT_HOME" work "1.6.0" original
-make_mitsupi_copy "$UNKNOWN_FILES_CONTEXT_HOME" personal "1.6.0" original
-unknown_files_extension="$UNKNOWN_FILES_CONTEXT_HOME/.pi/personal/npm/node_modules/mitsupi/extensions/files.ts"
-sed 's/Quick Look the latest file reference/Changed test context/' "$unknown_files_extension" > "$unknown_files_extension.tmp"
-mv "$unknown_files_extension.tmp" "$unknown_files_extension"
-if run_install "$UNKNOWN_FILES_CONTEXT_HOME" "$TMP_ROOT/unknown-files-context.log"; then
-  fail "unknown files context unexpectedly passed preflight"
-fi
-assert_contains "$TMP_ROOT/unknown-files-context.log" 'Unknown Mitsupi 1.6.0 files shortcut context'
-[ ! -e "$UNKNOWN_FILES_CONTEXT_HOME/.pi/work/settings.json" ] || fail "unknown files context mutated work settings"
-[ ! -e "$UNKNOWN_FILES_CONTEXT_HOME/.pi/personal/settings.json" ] || fail "unknown files context mutated personal settings"
-[ ! -e "$UNKNOWN_FILES_CONTEXT_HOME/.pi/personal/modes.json" ] || fail "unknown files context materialized personal modes"
-assert_contains "$unknown_files_extension" 'Changed test context'
-assert_contains "$unknown_files_extension" 'ctrl+shift+f'
-
-OLD_PI_HOME="$TMP_ROOT/old-pi-home"
-mkdir -p "$OLD_PI_HOME/.bun/bin"
-cp "$HOME_ROOT/.bun/bin/pi" "$OLD_PI_HOME/.bun/bin/pi"
-make_mitsupi_copy "$OLD_PI_HOME" work "1.6.0" original
-make_mitsupi_copy "$OLD_PI_HOME" personal "1.6.0" original
-if PI_FAKE_VERSION=0.80.5 run_install "$OLD_PI_HOME" "$TMP_ROOT/old-pi.log"; then
-  fail "old Pi version unexpectedly passed the version guard"
-fi
-assert_contains "$TMP_ROOT/old-pi.log" 'Pi 0.80.5 is too old'
-[ ! -e "$OLD_PI_HOME/.pi/work/settings.json" ] || fail "old Pi guard mutated work settings"
-[ ! -e "$OLD_PI_HOME/.pi/personal/modes.json" ] || fail "old Pi guard materialized personal modes"
-
-echo "Pi installer profile materialization, Mitsupi curation, patch, preflight, and retired-extension tests passed"
+cmp "$TMP/fast-config" "$HOME/.pi/agent/extensions/pi-openai-fast.json" || fail 'dependency failure changed fast config'
+echo 'Native Pi installer tests passed'

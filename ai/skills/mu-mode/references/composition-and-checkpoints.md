@@ -12,7 +12,7 @@ Briefly explain consequential choices: for example, “Breadboarding to trace th
 |---|---|---|
 | Unresolved product or design decisions | [Grilling](../../grilling/SKILL.md) | Inspect facts first; do not reopen settled answers. Honor its shared-understanding gate. |
 | Workflow wiring or demoable slices | [Breadboarding](../../breadboarding/SKILL.md) | Map real affordances, stores, and effects; not a generic task list. |
-| Changing domain terms and relationships | [Domain Modeling](../../domain-modeling/SKILL.md) | CONTEXT.md is a glossary; offer ADRs only for qualifying trade-offs. |
+| Changing domain terms and relationships | [Domain Modeling](../../domain-modeling/SKILL.md) | CONTEXT.md is a glossary, not a spec or decision log. |
 | Uncertain module interface or test seam | [Codebase Design](../../codebase-design/SKILL.md) | Use its vocabulary; alternative-interface exploration is not a default step. |
 | A chosen test-first implementation | [TDD](../../tdd/SKILL.md) | An optional experiment, not an established user default. Use established behavioral seams; ask only for consequential unresolved scope/interface choices. Claim TDD only with red-before-green evidence. |
 | Frontend experience and visual behavior | [Impeccable](../../impeccable/SKILL.md) | Gather product/design context proportionate to the task; bounded fixes and critiques need not run setup. Skip for backend-only work. |
@@ -20,7 +20,7 @@ Briefly explain consequential choices: for example, “Breadboarding to trace th
 | Advisory findings on changes | [Code Review](../../code-review/SKILL.md) | Reviewers remain read-only; the parent owns fixes and validation. |
 | Source-grounded conversation artifacts | [Framing Doc](../../framing-doc/SKILL.md), [Kickoff Doc](../../kickoff-doc/SKILL.md) | Read the source; neither is a generic plan generator. |
 
-These are examples, not an exhaustive required set. Other skills remain available when relevant. [Implement](../../implement/SKILL.md) stays a manual alternative entry point, not a wrapper required by Mu Mode. Leaf skills remain independently useful.
+These are examples, not an exhaustive required set. Other skills remain available when relevant. Implement approved work directly under the shared operating instructions; no implementation wrapper is required. Leaf skills remain independently useful.
 
 ## Shape phases proportionately
 
@@ -35,9 +35,9 @@ Keep communication compact:
 
 ## Guide continuation
 
-At an agreed handoff boundary, stop and recommend Pi's handoff command with a concrete next-phase focus, including the authoritative plan path if one exists. Do not automatically invoke it or start a phase loop. If the work is complete, hand back the result without inventing another phase. Use [Pause Safely](../playbooks/pause-safely.md) when the user wants to stop rather than immediately continue.
+At an agreed checkpoint, stop with a concrete next-phase focus and the authoritative plan path if one exists. Otherwise continue approved work in place; do not create a session transition for every phase. If the work is complete, return the result without inventing another phase. Use [Pause Safely](../playbooks/pause-safely.md) when the user wants to stop.
 
-When the user invokes Pi's handoff command, its existing extension and the [Handoff](../../handoff/SKILL.md) skill own the temporary document, summarization, same-session tree continuation, and recovery. Do not create another session, process, Herdr tab, orchestrator, or confirmation UI. No manual tree navigation is needed for normal continuation.
+Use native session controls for compaction, branching, and resume. When delegation is authorized, the configured subagent workflow owns child execution and coordination; the parent owns integration and validation. Codemode composes ordinary tool calls, not a replacement orchestration protocol.
 
 Carry through the packet:
 

@@ -1,6 +1,7 @@
 #!/bin/sh
 # Focused hermetic coverage for Herdr's active Pi integration boundary.
 set -eu
+unset PI_CODING_AGENT_DIR
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-herdr-install.XXXXXX")"
@@ -71,11 +72,11 @@ HERDR_LOG="$TMP_ROOT/herdr.log" HOME="$HOME_ROOT" PATH="$FAKE_BIN:/usr/bin:/bin"
 [ -L "$HOME_ROOT/.config/herdr/config.toml" ] || fail "Herdr config was not linked"
 [ "$(readlink "$HOME_ROOT/.config/herdr/config.toml")" = "$REPO_PHYSICAL/herdr/config.toml" ] \
   || fail "Herdr config link is misdirected"
-[ "$(wc -l < "$TMP_ROOT/herdr.log" | tr -d ' ')" -eq 3 ] || fail "unexpected Herdr integration count"
-grep -F "$(printf '%s\t\t%s' "$HOME_ROOT/.pi/work" 'integration install pi')" "$TMP_ROOT/herdr.log" >/dev/null \
-  || fail "work integration was not profile-scoped"
-grep -F "$(printf '%s\t\t%s' "$HOME_ROOT/.pi/personal" 'integration install pi')" "$TMP_ROOT/herdr.log" >/dev/null \
-  || fail "personal integration was not profile-scoped"
+[ "$(wc -l < "$TMP_ROOT/herdr.log" | tr -d ' ')" -eq 2 ] || fail "unexpected Herdr integration count"
+grep -F "$(printf '%s\t\t%s' "$HOME_ROOT/.pi/agent" 'integration install pi')" "$TMP_ROOT/herdr.log" >/dev/null \
+  || fail "unified integration was not installed"
+assert_not_contains "$TMP_ROOT/herdr.log" '.pi/work'
+assert_not_contains "$TMP_ROOT/herdr.log" '.pi/personal'
 claude_staging_dir="$(awk -F '\t' '$3 == "integration install claude" { print $2 }' "$TMP_ROOT/herdr.log")"
 [ -n "$claude_staging_dir" ] || fail "Claude integration was not staged"
 [ ! -e "$claude_staging_dir" ] || fail "Claude staging directory was not cleaned up"
@@ -89,7 +90,7 @@ cmp "$TMP_ROOT/legacy-state.before" "$HOME_ROOT/.pi/agent/legacy-state.ts" \
   || fail "deprecated fallback state changed"
 
 # Source contracts prevent accidental ownership from returning during a later edit.
-assert_not_contains "$REPO/herdr/install.sh" '.pi/agent'
+assert_contains "$REPO/herdr/install.sh" '.pi/agent'
 assert_contains "$REPO/herdr/install.sh" "CLAUDE_CONFIG_DIR=\"\$staging_dir\" herdr integration install claude"
 assert_contains "$REPO/herdr/install.sh" 'install -m 0755'
 assert_contains "$REPO/herdr/install.sh" 'integration install codex'
@@ -109,8 +110,8 @@ assert_contains "$REPO/herdr/config.toml" 'enabled = false'
 assert_contains "$REPO/herdr/config.toml" 'pane_history = false'
 
 # Keep release mechanics and the isolated review recipe discoverable in docs.
-assert_contains "$ROOT/ai/skills/herdr/SKILL.md" "first observed \`idle\`, \`done\`, or \`blocked\` state"
-assert_contains "$ROOT/ai/skills/herdr/SKILL.md" 'searches the selected current terminal snapshot'
+assert_contains "$ROOT/ai/skills/herdr/references/workflows.md" "first observed \`idle\`, \`done\`, or \`blocked\` state"
+assert_contains "$ROOT/ai/skills/herdr/references/workflows.md" 'searches the selected current terminal snapshot'
 assert_contains "$ROOT/ai/skills/herdr/references/cli.md" 'including output that already exists'
 assert_contains "$ROOT/herdr/README.md" 'herdr worktree create'
 assert_contains "$ROOT/herdr/README.md" 'hunk diff --watch'

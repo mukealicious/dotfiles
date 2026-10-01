@@ -152,10 +152,10 @@ Shared guidance now lives in `ai/instructions/base.md`, with small harness appen
 
 `~/.AGENTS.md` remains a base-only compatibility output rather than the main source of truth.
 
-Pi has exactly two supported profiles, `~/.pi/work` and `~/.pi/personal`; the
-`pi`, `pi-work`, and `pi-personal` launchers select one explicitly. Shared
-instructions and managed agents are staged under `.ai-runtime/pi/`, while
-profile-local settings, packages, sessions, and custom agents remain separate.
+Pi uses one subscription-backed environment at `~/.pi/agent`, native MCP,
+and native codemode. Use `pi`; old work/personal wrappers are retired.
+Shared instructions, skills, and managed agents are staged under
+`.ai-runtime/pi/`. See [Pi setup and migration](pi/README.md).
 
 The primary portability model is shared instructions plus shared skills. Harness-native `agents/` formats are optional and used only when a tool materially benefits from named agent metadata.
 
@@ -192,12 +192,10 @@ Shared skills in `ai/skills/` are projected to Claude, Pi, OpenCode, and Codex:
 | `code-review` | Proportional advisory review and final-pass cleanup |
 | `codebase-design` | Deep modules, interfaces, seams, locality, and testability |
 | `grilling` | Dependency-aware design-tree questioning |
-| `domain-modeling` | Domain language, `CONTEXT.md`, and qualifying ADRs |
+| `domain-modeling` | Domain language and the `CONTEXT.md` glossary |
 | `tdd` | Red/green vertical slices and public-behavior tests |
-| `implement` | Manual current-session implementation of approved specs/tickets |
 | `bro` | Manual plain-language restatement |
 | `framing-doc` / `kickoff-doc` | Evidence-grounded framing and builder-facing shaped territory |
-| `handoff` | Temporary same-process continuation context |
 | `apple-reminders` | Explicit-intent Apple Reminders reads and writes through RemCTL |
 | `herdr` | Managed-pane coordination, attention, and native worktree topology |
 | `opensrc` / `librarian` | Source-backed external code investigation |

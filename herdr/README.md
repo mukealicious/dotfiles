@@ -15,15 +15,13 @@ herdr
 ```
 
 `herdr/install.sh` keeps the existing official integrations for installed
-agents. For Pi, it refreshes exactly the supported `work` and `personal`
-profiles. Herdr owns the generated integration source; this repository does not
-vendor or hand-edit `herdr-agent-state.ts`, and it never refreshes the
-deprecated `~/.pi/agent` fallback. Run these profile-scoped commands manually
-only for troubleshooting or after a Herdr upgrade:
+agents. For Pi, it refreshes the unified `~/.pi/agent` environment. Herdr owns
+the generated integration source; this repository does not vendor or hand-edit
+`herdr-agent-state.ts`. Run this command manually only for troubleshooting or
+after a Herdr upgrade:
 
 ```bash
-PI_CODING_AGENT_DIR="$HOME/.pi/work" herdr integration install pi
-PI_CODING_AGENT_DIR="$HOME/.pi/personal" herdr integration install pi
+PI_CODING_AGENT_DIR="$HOME/.pi/agent" herdr integration install pi
 ```
 
 Claude settings are shared across machines whose home directory names differ.
@@ -32,12 +30,10 @@ official Claude integration in a temporary staging directory, then installs the
 generated hook into `~/.claude/hooks/` without writing a host-specific absolute
 path into `claude/settings.json`.
 
-Check each active profile without touching the fallback:
+Check the active integration:
 
 ```bash
-for profile in work personal; do
-  PI_CODING_AGENT_DIR="$HOME/.pi/$profile" herdr integration status
-done
+PI_CODING_AGENT_DIR="$HOME/.pi/agent" herdr integration status
 ```
 
 Use `prefix+q` to detach and run `herdr` again to reattach.
@@ -98,7 +94,7 @@ but unsaved shell/editor state and ordinary long-running commands do not.
 ## Native isolated review: Herdr worktree + Pi + Hunk
 
 Use Herdr's native worktree action when a review needs filesystem isolation. Herdr
-owns the worktree and pane topology; the selected Pi profile owns the process and
+owns the worktree and pane topology; Pi owns the process and
 session; Hunk owns user-facing diff annotations. This is not a second lifecycle
 or worktree manager, and pane history remains disabled.
 
@@ -114,13 +110,13 @@ herdr worktree create \
 ```
 
 Then split the returned root pane, label both sides, and start the supported
-personal Pi profile beside a watched Hunk diff:
+Pi beside a watched Hunk diff:
 
 ```bash
 herdr pane split <root-pane-id> --direction right --ratio 0.5 --no-focus
 herdr pane rename <root-pane-id> "pi"
 herdr pane rename <hunk-pane-id> "hunk"
-herdr pane run <root-pane-id> "pi-personal"
+herdr pane run <root-pane-id> "pi"
 herdr pane run <hunk-pane-id> "hunk diff --watch"
 ```
 

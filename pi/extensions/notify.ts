@@ -63,7 +63,7 @@ const extractLastAssistantText = (
 const formatNotification = (
   text: string | null
 ): { title: string; body: string } => {
-  const normalized = (text || "").replace(/\s+/g, " ").trim();
+  const normalized = (text || "").replace(/[\x00-\x1f\x7f-\x9f]/g, " ").replace(/\s+/g, " ").trim();
   if (!normalized) return { title: "Ready for input", body: "" };
 
   const maxBody = 200;
@@ -75,10 +75,10 @@ const formatNotification = (
 };
 
 export default function (pi: ExtensionAPI) {
-  pi.on("agent_end", async (event) => {
+  pi.on("agent_settled", (_event, ctx) => {
+    if (ctx.mode !== "tui" || process.env.HERDR_ENV === "1") return;
     const lastText = extractLastAssistantText(
-      (event as { messages?: Array<{ role?: string; content?: unknown }> })
-        .messages ?? []
+      ctx.sessionManager.getBranch().flatMap(entry => entry.type === "message" ? [entry.message] : [])
     );
     const { title, body } = formatNotification(lastText);
     notify(title, body);

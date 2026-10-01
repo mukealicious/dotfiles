@@ -40,7 +40,7 @@ const PROVIDER_PLACEHOLDERS = {
 const EXCLUDED_FROM_SUGGESTIONS = new Set();
 
 function usage() {
-  console.error('Usage: project-skills.mjs <provider> <source-dir> <target-dir>');
+  console.error('Usage: project-skills.mjs <provider> <source-dir> <target-dir> [reference-root]');
   process.exit(1);
 }
 
@@ -131,7 +131,7 @@ function copyDirectoryRecursive(sourceDir, targetDir, transformText) {
   }
 }
 
-const [, , provider, sourceDir, targetDir] = process.argv;
+const [, , provider, sourceDir, targetDir, referenceRoot] = process.argv;
 if (!provider || !sourceDir || !targetDir) {
   usage();
 }
@@ -188,7 +188,7 @@ for (const skill of skillInfo) {
     projectedSkillDir,
     (content) => replacePlaceholders(content, provider, commandNames, allSkillNames, {
       availableCommands: skill.name === 'impeccable' ? impeccableSubcommands(sourceSkillDir, provider) : undefined,
-      scriptsPath: path.resolve(projectedSkillDir, 'scripts'),
+      scriptsPath: path.resolve(referenceRoot || targetDir, skill.dirName, 'scripts'),
     }),
   );
 }

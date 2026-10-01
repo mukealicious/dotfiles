@@ -1,9 +1,0 @@
-#!/bin/sh
-
-set -e
-
-BIN_DIR="$(CDPATH='' cd -- "$(dirname "$0")" && pwd -P)"
-export PI_DISPATCH_LIBRARY=1
-export PI_WRAPPER_PROFILE=work
-. "$BIN_DIR/pi"
-dispatch_pi "$@"

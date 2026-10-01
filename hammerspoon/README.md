@@ -34,7 +34,7 @@ Every action creates the same reviewable layout in the `moja-glava` Herdr worksp
 
 ```text
 ┌─────────────────────────────┬──────────────────┐
-│ pi-personal                 │ hunk diff --watch│
+│ pi                          │ hunk diff --watch│
 │                             │                  │
 │ Capture prompt and history  │ Live vault diff  │
 └─────────────────────────────┴──────────────────┘

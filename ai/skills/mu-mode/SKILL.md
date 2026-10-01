@@ -42,7 +42,7 @@ After activation:
 1. Say `Mu Mode: <route> — <defining contract>`.
 2. Read [principles.md](references/principles.md), then load only the full principle modules named by the route or triggered by the work.
 3. Read [composition-and-checkpoints.md](references/composition-and-checkpoints.md) and the selected playbook when it exists. Preserve the contract and specialist requirements; adapt the suggested methods, tools, delegation, and phase shape to the task.
-4. Carry this contract forward through conversation context until the user exits, disables, or leaves Mu Mode. This is soft continuity, not runtime-enforced state. When using Pi's handoff command, record Mu Mode, the current route, and whether the continuation should stay on it or rematch; make reloading this router the continuation's first step. Reinvoke after other compaction or visible drift when needed.
+4. Carry this contract forward through conversation context until the user exits, disables, or leaves Mu Mode. This is soft continuity, not runtime-enforced state. When recording a continuation checkpoint, include Mu Mode, the current route, and whether pickup should stay on it or rematch; make reloading this router the first pickup step. Reinvoke after other compaction or visible drift when needed.
 5. Treat `new task` as a request to clear the current route and rematch without leaving Mu Mode.
 
 ## Routing

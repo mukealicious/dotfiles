@@ -1,11 +1,7 @@
 # Machine-local Fish settings (not committed as a real config).
 # Copy relevant lines into ~/.config/fish/local.fish and customize values.
 
-# Choose the default Pi profile for this machine.
-# - work: `pi` dispatches to `pi-work`
-# - personal: `pi` dispatches to `pi-personal`
-set -gx PI_DEFAULT_PROFILE work
+# Pi uses one subscription-backed environment; no PI_DEFAULT_PROFILE is needed.
 
-# Optional: 1Password references used by work-oriented wrappers.
-# set -gx OPENAI_OP_REF "op://Vault/Item/password"
+# Optional: 1Password references used by other tools.
 # set -gx LINEAR_OP_REF "op://Vault/Item/credential"

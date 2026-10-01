@@ -1,6 +1,6 @@
 # Pause Safely
 
-Use this playbook when the user wants work to stop now while remaining genuinely resumable. This is not Pi's handoff command, which immediately starts another continuation.
+Use this playbook when the user wants work to stop now while remaining genuinely resumable.
 
 ## Contract
 
@@ -21,7 +21,7 @@ First announce `Mu Mode: Pause Safely — stop at a verified boundary and emit a
 
 Do not start another unit. Let a consequential in-flight command reach a safe boundary when practical. Interrupt only when continuing would be riskier than stopping.
 
-Do not invoke Pi's handoff command; it automatically continues. A separate temporary handoff document may follow the shared [handoff](../../handoff/SKILL.md) skill's document contract when an artifact is useful, but Pause Safely itself must return control to the user.
+Return control to the user without launching a continuation. Write a checkpoint document only when useful; otherwise the resume packet in conversation is enough.
 
 ### 2. Stabilize the state
 
@@ -47,7 +47,7 @@ Include verified coordinates when available:
 
 - repository and working directory;
 - source harness and its verified native session locator;
-- for Pi, the verified profile (including `PI_DEFAULT_PROFILE` when provided), session ID, JSONL path, and current tree-entry ID when branch identity matters;
+- for Pi, the verified agent directory (`PI_CODING_AGENT_DIR` when provided), session ID, JSONL path, and current tree-entry ID when branch identity matters;
 - handoff path when relevant;
 - Herdr workspace, tab, and pane IDs plus human-readable labels;
 - active Mu Mode route and whether pickup should continue it or rematch;
@@ -59,4 +59,4 @@ Write the packet so it can be passed directly to Moja Glava, but do not update t
 
 ### 5. Stop
 
-Return the resume packet and state clearly that work is paused. Do not launch Session Pickup, invoke Pi's handoff command, or continue implementation.
+Return the resume packet and state clearly that work is paused. Do not launch Session Pickup, start more delegated work, or continue implementation.

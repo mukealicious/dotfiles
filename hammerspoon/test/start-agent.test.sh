@@ -24,7 +24,7 @@ HERDR_LOG="$TEST_ROOT/herdr.log"
 PANE_LIST_COUNT_FILE="$TEST_ROOT/pane-list-count"
 export HERDR_LOG MOJA_GLAVA_DIR PANE_LIST_COUNT_FILE
 
-cat > "$TEST_ROOT/bin/pi-personal" <<'EOF'
+cat > "$TEST_ROOT/bin/pi" <<'EOF'
 #!/bin/sh
 exit 0
 EOF
@@ -99,7 +99,7 @@ case "$1 $2" in
     ;;
 esac
 EOF
-chmod +x "$TEST_ROOT/bin/pi-personal" "$TEST_ROOT/bin/hunk" "$TEST_ROOT/bin/herdr"
+chmod +x "$TEST_ROOT/bin/pi" "$TEST_ROOT/bin/hunk" "$TEST_ROOT/bin/herdr"
 
 run_launcher() {
   HERDR_MALFORMED="${HERDR_MALFORMED:-0}" \
@@ -112,7 +112,7 @@ run_launcher() {
   HERDR_FAIL_RUN_ID="${HERDR_FAIL_RUN_ID:-}" \
   MOJA_GLAVA_DIR="$MOJA_GLAVA_DIR" \
   MOJA_SKILL="$MOJA_SKILL" \
-  PI_BIN="$TEST_ROOT/bin/pi-personal" \
+  PI_BIN="$TEST_ROOT/bin/pi" \
   HERDR_BIN="${HERDR_BIN_OVERRIDE:-$TEST_ROOT/bin/herdr}" \
   HUNK_BIN="${HUNK_BIN_OVERRIDE:-$TEST_ROOT/bin/hunk}" \
   JQ_BIN="$JQ_BIN" \
@@ -138,7 +138,7 @@ grep -F "pane split w1:p2 --direction right --ratio 0.38 --cwd $MOJA_GLAVA_DIR -
 grep -F "pane rename w1:p2 pi" "$HERDR_LOG" >/dev/null
 grep -F "pane rename w1:p3 hunk" "$HERDR_LOG" >/dev/null
 grep -F "pane run w1:p3 '$TEST_ROOT/bin/hunk' diff --watch" "$HERDR_LOG" >/dev/null
-grep -F "pane run w1:p2" "$HERDR_LOG" | grep -F "'$TEST_ROOT/bin/pi-personal'" >/dev/null
+grep -F "pane run w1:p2" "$HERDR_LOG" | grep -F "'$TEST_ROOT/bin/pi'" >/dev/null
 grep -F "pane run w1:p2" "$HERDR_LOG" | grep -F "'MOJA_GLAVA_MODE=save'" >/dev/null
 grep -F "pane run w1:p2" "$HERDR_LOG" | grep -F "'@$CAPTURE_DIR/context.md'" >/dev/null
 grep -F "pane run w1:p2" "$HERDR_LOG" | grep -F "'@$CAPTURE_DIR/screenshot.png'" >/dev/null

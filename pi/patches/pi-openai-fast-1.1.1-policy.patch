@@ -1,0 +1,148 @@
+--- a/extensions/index.ts
++++ b/extensions/index.ts
+@@ -209,7 +209,7 @@
+ 		const raw = readFileSync(filePath, "utf-8");
+ 		const parsed = JSON.parse(raw) as unknown;
+ 		if (!isRecord(parsed)) {
+-			return {};
++			throw new Error("configuration must be a JSON object");
+ 		}
+ 		const config: FastConfigFile = {};
+ 		if (typeof parsed.persistState === "boolean") {
+@@ -218,6 +218,12 @@
+ 		if (typeof parsed.active === "boolean") {
+ 			config.active = parsed.active;
+ 		}
++		if (Object.hasOwn(parsed, "supportedModels") &&
++			(!Array.isArray(parsed.supportedModels) || parsed.supportedModels.some(
++				(entry) => typeof entry !== "string" || !parseSupportedModelKey(entry),
++			))) {
++			throw new Error("supportedModels must be an array of provider/model strings (or [] to disable all models)");
++		}
+ 		const supportedModels = normalizeSupportedModelKeys(parsed.supportedModels);
+ 		if (supportedModels !== undefined) {
+ 			config.supportedModels = supportedModels;
+@@ -225,8 +231,7 @@
+ 		return config;
+ 	} catch (error) {
+ 		const message = error instanceof Error ? error.message : String(error);
+-		console.warn(`[pi-openai-fast] Failed to read ${filePath}: ${message}`);
+-		return null;
++		throw new Error(`[pi-openai-fast] Failed to read ${filePath}: ${message}`);
+ 	}
+ }
+ 
+@@ -236,7 +241,7 @@
+ 		writeFileSync(filePath, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
+ 	} catch (error) {
+ 		const message = error instanceof Error ? error.message : String(error);
+-		console.warn(`[pi-openai-fast] Failed to write ${filePath}: ${message}`);
++		throw new Error(`[pi-openai-fast] Failed to write ${filePath}: ${message}`);
+ 	}
+ }
+ 
+@@ -263,17 +268,17 @@
+ 	}
+ }
+ 
+-function resolveFastConfig(cwd: string, homeDir?: string): ResolvedFastConfig {
+-	const { projectConfigPath, globalConfigPath, legacyGlobalConfigPath } = getConfigPaths(cwd, homeDir);
+-	migrateLegacyGlobalConfigFile(legacyGlobalConfigPath, globalConfigPath);
+-	ensureDefaultConfigFile(projectConfigPath, globalConfigPath);
++function resolveFastConfig(cwd: string, homeDir?: string, projectTrusted = false): ResolvedFastConfig {
++	const { projectConfigPath, globalConfigPath } = getConfigPaths(cwd, homeDir);
++	// Explicit agent directories are isolated; never import another directory's state.
++	ensureDefaultConfigFile(projectTrusted ? projectConfigPath : globalConfigPath, globalConfigPath);
+ 
+ 	const globalConfig = readConfigFile(globalConfigPath) ?? {};
+-	const projectConfig = readConfigFile(projectConfigPath) ?? {};
+-	const selectedConfigPath = existsSync(projectConfigPath) ? projectConfigPath : globalConfigPath;
++	const projectConfig = projectTrusted ? readConfigFile(projectConfigPath) ?? {} : {};
++	const selectedConfigPath = projectTrusted && existsSync(projectConfigPath) ? projectConfigPath : globalConfigPath;
+ 	const merged = { ...globalConfig, ...projectConfig };
+ 	const supportedModels =
+-		parseSupportedModels(migrateSupportedModelKeys(merged.supportedModels)) ??
++		parseSupportedModels(merged.supportedModels) ??
+ 		parseSupportedModels(DEFAULT_SUPPORTED_MODEL_KEYS);
+ 
+ 	return {
+@@ -334,21 +339,27 @@
+ 	let cachedConfig: ResolvedFastConfig | undefined;
+ 
+ 	function refreshConfig(ctx: ExtensionContext): ResolvedFastConfig {
+-		cachedConfig = resolveFastConfig(getConfigCwd(ctx));
+-		return cachedConfig;
++		try {
++			cachedConfig = resolveFastConfig(getConfigCwd(ctx), undefined, ctx.isProjectTrusted());
++			return cachedConfig;
++		} catch (error) {
++			// A rejected policy must not leave a previously paid policy cached.
++			cachedConfig = undefined;
++			state = { active: false };
++			throw error;
++		}
+ 	}
+ 
+ 	function getConfig(ctx: ExtensionContext): ResolvedFastConfig {
+ 		return cachedConfig ?? refreshConfig(ctx);
+ 	}
+ 
+-	function persistState(config: ResolvedFastConfig): void {
+-		cachedConfig = { ...config, active: state.active };
+-		if (!config.persistState) {
+-			return;
++	function persistState(config: ResolvedFastConfig, active: boolean): void {
++		if (config.persistState) {
++			const nextConfig = { ...(readConfigFile(config.configPath) ?? {}), active };
++			writeConfigFile(config.configPath, nextConfig);
+ 		}
+-		const nextConfig = { ...(readConfigFile(config.configPath) ?? {}), active: state.active };
+-		writeConfigFile(config.configPath, nextConfig);
++		cachedConfig = { ...config, active };
+ 	}
+ 
+ 	async function enableFastMode(ctx: ExtensionContext, options?: { notify?: boolean }): Promise<void> {
+@@ -360,8 +371,8 @@
+ 			return;
+ 		}
+ 
++		persistState(config, true);
+ 		state = { active: true };
+-		persistState(config);
+ 
+ 		if (options?.notify !== false) {
+ 			ctx.ui.notify(describeCurrentState(ctx, state.active, config.supportedModels), "info");
+@@ -369,17 +380,14 @@
+ 	}
+ 
+ 	async function disableFastMode(ctx: ExtensionContext, options?: { notify?: boolean }): Promise<void> {
+-		const config = refreshConfig(ctx);
+-		if (!state.active) {
+-			if (options?.notify !== false) {
+-				ctx.ui.notify("Fast mode is already off.", "info");
+-			}
++		// Stopping paid priority must not depend on a readable/writable config.
++		state = { active: false };
++		try {
++			persistState(refreshConfig(ctx), false);
++		} catch (error) {
++			ctx.ui.notify(`Fast mode is off for this session, but saving failed; saved startup state may still be on. ${error instanceof Error ? error.message : String(error)}`, "warning");
+ 			return;
+ 		}
+-
+-		state = { active: false };
+-		persistState(config);
+-
+ 		if (options?.notify !== false) {
+ 			ctx.ui.notify("Fast mode disabled.", "info");
+ 		}
+@@ -446,8 +454,8 @@
+ 
+ 		if (pi.getFlag(FAST_FLAG) === true) {
+ 			if (!state.active) {
++				persistState(config, true);
+ 				state = { active: true };
+-				persistState(config);
+ 			}
+ 			ctx.ui.notify(describeCurrentState(ctx, state.active, config.supportedModels), "info");
+ 			return;

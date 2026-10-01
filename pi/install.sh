@@ -2,8 +2,8 @@
 #
 # Pi Coding Agent Configuration
 #
-# Sets up Pi profile directories, materializes writable settings and personal
-# modes, and symlinks managed resources. Installs Pi packages via `pi install`.
+# Sets up Pi's standard agent directory, materializes writable settings,
+# and symlinks managed resources. Installs Pi packages via `pi install`.
 #
 # Usage:
 #   ./install.sh          # Normal install
@@ -30,12 +30,14 @@ fi
 
 PI_PACKAGE="@earendil-works/pi-coding-agent"
 PI_BIN="$HOME/.bun/bin/pi"
-MIN_PI_VERSION="0.80.6"
-MITSUPI_PACKAGE="npm:mitsupi@1.6.0"
-MITSUPI_PROMPT_EDITOR_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-prompt-editor.patch"
-MITSUPI_PROMPT_EDITOR_THEME_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-prompt-editor-theme.patch"
-MITSUPI_FILES_SHORTCUT_PATCH="$DOTFILES_ROOT/pi/patches/mitsupi-1.6.0-files-shortcut.patch"
-PERSONAL_MODES_BASELINE="$DOTFILES_ROOT/pi/modes.personal.json"
+AGENT_DIR="$HOME/.pi/agent"
+MIN_PI_VERSION="0.99.1"
+MITSUPI_PACKAGE="git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857"
+FAST_PACKAGE="npm:@benvargas/pi-openai-fast@1.1.1"
+FAST_DIR="$AGENT_DIR/npm/node_modules/@benvargas/pi-openai-fast"
+FAST_PATCH="$DOTFILES_ROOT/pi/patches/pi-openai-fast-1.1.1-policy.patch"
+FAST_PRISTINE_SHA256="2dbe16ae6db42877ca84d435395e0028a99e3bb8be932e4a576918495ce3911c"
+FAST_PATCHED_SHA256="3c94d6a8895c23344824a420abef1cd455b9073408ecbe3a6374b65ec3a097f2"
 
 if [ ! -x "$PI_BIN" ]; then
   log_info "Installing Pi coding agent ($PI_PACKAGE)..."
@@ -57,22 +59,12 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 if ! command -v patch >/dev/null 2>&1; then
-  log_error "patch is required to apply the Mitsupi compatibility patch"
+  log_error "patch is required to apply the Fast policy patch"
   exit 1
 fi
 
-if [ ! -f "$MITSUPI_PROMPT_EDITOR_PATCH" ]; then
-  log_error "Mitsupi compatibility patch is missing: $MITSUPI_PROMPT_EDITOR_PATCH"
-  exit 1
-fi
-
-if [ ! -f "$MITSUPI_PROMPT_EDITOR_THEME_PATCH" ]; then
-  log_error "Mitsupi compatibility patch is missing: $MITSUPI_PROMPT_EDITOR_THEME_PATCH"
-  exit 1
-fi
-
-if [ ! -f "$MITSUPI_FILES_SHORTCUT_PATCH" ]; then
-  log_error "Mitsupi compatibility patch is missing: $MITSUPI_FILES_SHORTCUT_PATCH"
+if [ ! -f "$FAST_PATCH" ]; then
+  log_error "Fast policy patch is missing: $FAST_PATCH"
   exit 1
 fi
 
@@ -99,148 +91,77 @@ check_pi_version() {
     exit 1
   fi
   if ! pi_version_at_least "$pi_version" "$MIN_PI_VERSION"; then
-    log_error "Pi $pi_version is too old; Pi >= $MIN_PI_VERSION is required for native max thinking"
+    log_error "Pi $pi_version is too old; Pi >= $MIN_PI_VERSION is required for native MCP and ChatGPT login"
     exit 1
   fi
-  log_success "Pi $pi_version supports native max thinking"
+  log_success "Pi $pi_version supports native MCP and ChatGPT login"
 }
 
-mitsupi_package_dir() {
-  printf '%s/.pi/%s/npm/node_modules/mitsupi\n' "$HOME" "$1"
-}
-
-check_mitsupi_patch_context() {
-  if (cd "$1" && patch -p1 -N -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
-    return 0
-  fi
-  if (cd "$1" && patch -R -p1 -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
-    return 0
-  fi
-
-  log_error "Unknown Mitsupi 1.6.0 $4 context for $2: $5"
-  log_hint "Refusing to mutate either profile; inspect the installed package before retrying"
-  exit 1
-}
-
-check_mitsupi_package_copy() {
-  profile_name="$1"
-  package_dir="$(mitsupi_package_dir "$profile_name")"
-
-  # A missing package is installed below. An existing package, including a
-  # malformed directory, must be validated before any profile is mutated.
-  if [ ! -e "$package_dir" ] && [ ! -L "$package_dir" ]; then
-    log_info "Mitsupi is not installed for $profile_name yet"
-    return 0
-  fi
-
-  package_json="$package_dir/package.json"
-  prompt_editor="$package_dir/extensions/prompt-editor.ts"
-  files_extension="$package_dir/extensions/files.ts"
-  if [ ! -f "$package_json" ] || ! jq -e --arg version "1.6.0" '.name == "mitsupi" and .version == $version' "$package_json" >/dev/null 2>&1; then
-    log_error "Mitsupi $profile_name copy is not exactly version 1.6.0: $package_dir"
-    log_hint "Remove or reinstall only this profile's package with PI_CODING_AGENT_DIR=$HOME/.pi/$profile_name pi install $MITSUPI_PACKAGE"
-    exit 1
-  fi
-  if [ ! -f "$prompt_editor" ]; then
-    log_error "Mitsupi $profile_name prompt-editor context is missing: $prompt_editor"
-    exit 1
-  fi
-  if [ ! -f "$files_extension" ]; then
-    log_error "Mitsupi $profile_name files context is missing: $files_extension"
-    exit 1
-  fi
-
-  check_mitsupi_patch_context "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_PATCH" "prompt-editor" "$prompt_editor"
-  check_mitsupi_patch_context "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_THEME_PATCH" "prompt-editor theme" "$prompt_editor"
-  check_mitsupi_patch_context "$package_dir" "$profile_name" "$MITSUPI_FILES_SHORTCUT_PATCH" "files shortcut" "$files_extension"
-  log_success "Validated Mitsupi 1.6.0 patch contexts for $profile_name"
-}
-
-preflight_mitsupi_copies() {
-  check_mitsupi_package_copy work
-  check_mitsupi_package_copy personal
-}
-
-validate_pi_modes_baseline() {
-  modes_src="$1"
-  modes_label="$2"
-
-  if [ ! -f "$modes_src" ]; then
-    log_error "$modes_label is missing: $modes_src"
-    exit 1
-  fi
-
-  if ! jq -e '
-    type == "object"
-    and .version == 1
-    and (.currentMode | type == "string" and length > 0)
-    and (.modes | type == "object" and length > 0)
-    and (. as $root | $root.modes | has($root.currentMode))
-    and all(
-      .modes[];
-      type == "object"
-      and (.provider | type == "string" and length > 0)
-      and (.modelId | type == "string" and length > 0)
-      and (
-        .thinkingLevel as $thinking
-        | ["off", "minimal", "low", "medium", "high", "xhigh", "max"]
-        | index($thinking) != null
-      )
-      and (
-        .color as $color
-        | ["thinkingOff", "thinkingMinimal", "thinkingLow", "thinkingMedium", "thinkingHigh", "thinkingXhigh", "thinkingMax"]
-        | index($color) != null
-      )
-    )
-  ' "$modes_src" >/dev/null 2>&1; then
-    log_error "$modes_label is not a valid Mitsupi modes baseline: $modes_src"
-    exit 1
-  fi
-
-  log_success "Validated $modes_label"
-}
-
-ensure_mitsupi_package() {
-  for profile_name in work personal; do
-    package_dir="$(mitsupi_package_dir "$profile_name")"
-    if [ -d "$package_dir" ]; then
-      continue
-    fi
-    log_info "Installing $MITSUPI_PACKAGE for $profile_name..."
-    if ! PI_CODING_AGENT_DIR="$HOME/.pi/$profile_name" mise exec -C "$DOTFILES_ROOT" -- "$PI_BIN" install "$MITSUPI_PACKAGE"; then
-      log_error "Failed to install $MITSUPI_PACKAGE for $profile_name"
+check_subagents_dependencies() {
+  # This is intentionally read-only: npm ci would replace dependencies also
+  # used by active runner processes through the source-linked package tree.
+  SUBAGENTS_NODE_MODULES="$DOTFILES_ROOT/pi/packages/pi-subagents/node_modules"
+  for dependency in acorn jiti undici yaml; do
+    dependency_dir="$SUBAGENTS_NODE_MODULES/$dependency"
+    expected_version="$(jq -r --arg package "node_modules/$dependency" '.packages[$package].version // empty' "$DOTFILES_ROOT/pi/packages/pi-subagents/package-lock.json")"
+    if [ ! -f "$dependency_dir/package.json" ] || [ -z "$expected_version" ] \
+      || ! jq -e --arg name "$dependency" --arg version "$expected_version" '.name == $name and .version == $version' "$dependency_dir/package.json" >/dev/null 2>&1; then
+      log_error "pi-subagents dependency is missing or does not match the lockfile: $dependency_dir"
+      log_hint "Stop all Pi/subagent runners, then refresh dependencies manually: cd $DOTFILES_ROOT/pi/packages/pi-subagents && npm_config_legacy_peer_deps=true mise exec -C $DOTFILES_ROOT -- npm ci --omit=dev --ignore-scripts"
       exit 1
     fi
   done
 }
 
-apply_mitsupi_patch_file() {
-  if (cd "$1" && patch -p1 -N -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
-    (cd "$1" && patch -p1 -N -F 0 -t < "$3") >/dev/null
-    log_success "Applied Mitsupi 1.6.0 $4 patch for $2"
-  elif (cd "$1" && patch -R -p1 -F 0 -t --dry-run < "$3") >/dev/null 2>&1; then
-    log_success "Mitsupi 1.6.0 $4 patch already applied for $2"
-  else
-    log_error "Mitsupi 1.6.0 $4 context changed after preflight for $2"
+# Reject a broken source-linked dependency tree before settings, links, or
+# package resources are changed. This check never writes into node_modules.
+check_pi_version
+check_subagents_dependencies
+
+# Adopt the exact reviewed npm artifact, not another vendored fork. Configuration
+# remains owned by /fast; never reset active/persistState/supportedModels here.
+if [ ! -e "$FAST_DIR" ]; then
+  PI_CODING_AGENT_DIR="$AGENT_DIR" mise exec -C "$DOTFILES_ROOT" -- "$PI_BIN" install "$FAST_PACKAGE"
+fi
+if ! jq -e '.name == "@benvargas/pi-openai-fast" and .version == "1.1.1"' "$FAST_DIR/package.json" >/dev/null 2>&1; then
+  log_error "Expected $FAST_PACKAGE at $FAST_DIR; refusing unknown package context"
+  exit 1
+fi
+fast_extension_sha256() {
+  shasum -a 256 "$1" | awk '{print $1}'
+}
+
+# Whole-file digests reject edits both inside and outside patch hunks. Only the
+# pinned pristine artifact is patched, and its staged output is pinned too.
+fast_context_sha256="$(fast_extension_sha256 "$FAST_DIR/extensions/index.ts")"
+if [ "$fast_context_sha256" = "$FAST_PATCHED_SHA256" ]; then
+  log_success "Fast policy patch already applied"
+elif [ "$fast_context_sha256" = "$FAST_PRISTINE_SHA256" ]; then
+  fast_stage="$(mktemp -d)"
+  fast_tmp=""
+  trap 'rm -rf "$fast_stage"; [ -z "$fast_tmp" ] || rm -f "$fast_tmp"' EXIT
+  mkdir -p "$fast_stage/extensions"
+  cp "$FAST_DIR/extensions/index.ts" "$fast_stage/extensions/index.ts"
+  if ! (cd "$fast_stage" && patch -p1 -N -F 0 -f < "$FAST_PATCH") >/dev/null; then
+    log_error "Fast policy patch failed against its pinned pristine artifact"
     exit 1
   fi
-}
-
-apply_mitsupi_patches() {
-  for profile_name in work personal; do
-    package_dir="$(mitsupi_package_dir "$profile_name")"
-    apply_mitsupi_patch_file "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_PATCH" "prompt-editor"
-    apply_mitsupi_patch_file "$package_dir" "$profile_name" "$MITSUPI_PROMPT_EDITOR_THEME_PATCH" "prompt-editor theme"
-    apply_mitsupi_patch_file "$package_dir" "$profile_name" "$MITSUPI_FILES_SHORTCUT_PATCH" "files shortcut"
-  done
-}
-
-# Validate both existing copies before setup, package installation, or any
-# profile link/settings mutation. Missing copies are the only allowed state;
-# they are installed and validated again before the patch is applied.
-check_pi_version
-validate_pi_modes_baseline "$PERSONAL_MODES_BASELINE" "personal modes baseline"
-preflight_mitsupi_copies
+  if [ "$(fast_extension_sha256 "$fast_stage/extensions/index.ts")" != "$FAST_PATCHED_SHA256" ]; then
+    log_error "Fast policy patch output does not match its pinned digest"
+    exit 1
+  fi
+  fast_tmp="$(mktemp "$FAST_DIR/extensions/index.ts.XXXXXX")"
+  cp "$fast_stage/extensions/index.ts" "$fast_tmp"
+  mv "$fast_tmp" "$FAST_DIR/extensions/index.ts"
+  fast_tmp=""
+  rm -rf "$fast_stage"
+  trap - EXIT
+  log_success "Applied Fast policy patch"
+else
+  log_error "Unknown or partially patched Fast package context: $FAST_DIR/extensions/index.ts"
+  log_hint "Reinstall $FAST_PACKAGE to restore the pinned pristine artifact, then rerun this installer"
+  exit 1
+fi
 
 # Pi persists interactive model choices and changelog state in settings.json.
 # Materialize a writable runtime file instead of symlinking it into Git. Repo
@@ -264,23 +185,15 @@ materialize_pi_settings() {
 
   settings_tmp="$(mktemp "${settings_dst}.tmp.XXXXXX")"
 
-  runtime_keys='["defaultProvider", "defaultModel", "defaultThinkingLevel", "lastChangelogVersion", "trackingId"]'
-  # Personal startup follows the managed default mode, not an older saved model.
-  if [ "$settings_src" = "$DOTFILES_ROOT/pi/settings.personal.json" ]; then
-    runtime_keys='["lastChangelogVersion", "trackingId"]'
-  fi
+  # Source owns resource selection; native /model and /settings own preferences.
+  # Defaults bootstrap missing keys, not overwrite deliberate runtime choices.
+  managed_keys='["packages", "skills", "extensions", "prompts", "themes", "defaultTools"]'
 
   if [ -e "$settings_dst" ]; then
-    if ! jq --argjson runtime_keys "$runtime_keys" -s '
+    if ! jq --argjson managed_keys "$managed_keys" -s '
       .[0] as $managed
       | .[1] as $runtime
-      | $managed * (
-          $runtime
-          | with_entries(
-              .key as $key
-              | select($runtime_keys | index($key) != null)
-            )
-        )
+      | $managed * ($runtime | with_entries(.key as $key | select($managed_keys | index($key) == null)))
     ' "$settings_src" "$settings_dst" > "$settings_tmp"; then
       rm -f "$settings_tmp"
       log_error "Failed to merge $settings_label"
@@ -300,102 +213,44 @@ materialize_pi_settings() {
   log_success "Materialized $settings_label"
 }
 
-# Mitsupi writes mode edits atomically, so the runtime path must be a regular,
-# writable file rather than a symlink into Git. The tracked baseline is the
-# durable source of truth and is restored on each installer run.
-materialize_pi_modes() {
-  modes_src="$1"
-  modes_dst="$2"
-  modes_label="$3"
+# Native mcp.json is machine-local and writable through /mcp. Do not overwrite
+# server choices or credentials on subsequent installs.
 
-  if [ -e "$modes_dst" ] && [ ! -f "$modes_dst" ]; then
-    log_error "$modes_label exists but is not a modes file"
-    return 1
-  fi
+setup_pi_resources() {
+  mkdir -p "$AGENT_DIR"
+  materialize_pi_settings "$DOTFILES_ROOT/pi/settings.json" "$AGENT_DIR/settings.json" "agent/settings.json"
 
-  modes_tmp="$(mktemp "${modes_dst}.tmp.XXXXXX")"
-  if ! cp "$modes_src" "$modes_tmp"; then
-    rm -f "$modes_tmp"
-    log_error "Failed to materialize $modes_label"
-    return 1
-  fi
-  chmod 600 "$modes_tmp"
-
-  if [ ! -L "$modes_dst" ] && [ -f "$modes_dst" ] && cmp -s "$modes_tmp" "$modes_dst"; then
-    chmod 600 "$modes_dst"
-    rm -f "$modes_tmp"
-    return 0
-  fi
-
-  # mv replaces a legacy symlink itself rather than writing through it.
-  mv "$modes_tmp" "$modes_dst"
-  log_success "Materialized $modes_label"
-}
-
-# Keep adapter UI edits writable and unrelated servers/settings intact. Only
-# the named managed server definitions are replaced; credentials live in Keychain.
-materialize_pi_mcp() {
-  mcp_src="$1"
-  mcp_dst="$2"
-  mcp_existing="$mcp_dst"
-  if [ ! -e "$mcp_dst" ] && [ ! -L "$mcp_dst" ]; then
-    mcp_existing="$mcp_src"
-  fi
-  mcp_tmp="$(mktemp "${mcp_dst}.tmp.XXXXXX")"
-  if ! jq -e -s '
-    if length == 2 and all(.[];
-      type == "object" and ((.mcpServers // {}) | type == "object")
-    ) then
-      .[0] as $managed | .[1]
-      | .mcpServers = ((.mcpServers // {}) + $managed.mcpServers)
-    else error("Invalid MCP config") end
-  ' "$mcp_src" "$mcp_existing" > "$mcp_tmp"; then
-    rm -f "$mcp_tmp"
-    log_error "Failed to merge MCP config: $mcp_dst (existing file preserved)"
-    return 1
-  fi
-  chmod 600 "$mcp_tmp"
-  if [ ! -L "$mcp_dst" ] && [ -f "$mcp_dst" ] && cmp -s "$mcp_tmp" "$mcp_dst"; then
-    rm -f "$mcp_tmp"
-    return 0
-  fi
-  mv "$mcp_tmp" "$mcp_dst"
-  log_success "Materialized $mcp_dst"
-}
-
-setup_pi_profile() {
-  profile_dir="$1"
-  settings_src="$2"
-  profile_name="$3"
-
-  mkdir -p "$profile_dir"
-  materialize_pi_settings "$settings_src" "$profile_dir/settings.json" "$profile_name/settings.json"
+  # models.json is entirely user-owned. /fast owns managed priority policy.
 
   if [ -d "$DOTFILES_ROOT/pi/node_modules" ]; then
-    ensure_symlink "$DOTFILES_ROOT/pi/node_modules" "$profile_dir/node_modules" "$profile_name/node_modules"
+    ensure_symlink "$DOTFILES_ROOT/pi/node_modules" "$AGENT_DIR/node_modules" "agent/node_modules"
   else
     log_warn "Pi extension dependencies are missing"
     log_hint "Run manually: cd $DOTFILES_ROOT/pi && npm install"
   fi
 
-  mkdir -p "$profile_dir/themes"
+  mkdir -p "$AGENT_DIR/themes"
   for theme in "$DOTFILES_ROOT/pi/themes/"*.json; do
     [ -e "$theme" ] || continue
     name="$(basename "$theme")"
-    ensure_symlink "$theme" "$profile_dir/themes/$name" "$profile_name/themes/$name"
+    ensure_symlink "$theme" "$AGENT_DIR/themes/$name" "agent/themes/$name"
   done
 
-  # Extensions resolve relative imports from their installed profile path.
-  ensure_symlink "$DOTFILES_ROOT/pi/lib" "$profile_dir/lib" "$profile_name/lib"
+  mkdir -p "$AGENT_DIR/prompts"
+  for prompt in "$DOTFILES_ROOT/pi/prompts/"*.md; do
+    [ -e "$prompt" ] || continue
+    name="$(basename "$prompt")"
+    ensure_symlink "$prompt" "$AGENT_DIR/prompts/$name" "agent/prompts/$name"
+  done
 
   EXTENSIONS_SRC="$DOTFILES_ROOT/pi/extensions"
-  EXTENSIONS_DIR="$profile_dir/extensions"
+  EXTENSIONS_DIR="$AGENT_DIR/extensions"
   if [ -d "$EXTENSIONS_SRC" ]; then
     mkdir -p "$EXTENSIONS_DIR"
     for ext in "$EXTENSIONS_SRC"/*.ts; do
       [ -e "$ext" ] || continue
       name="$(basename "$ext")"
-      ensure_symlink "$ext" "$EXTENSIONS_DIR/$name" "$profile_name/extensions/$name"
+      ensure_symlink "$ext" "$EXTENSIONS_DIR/$name" "agent/extensions/$name"
     done
   fi
 }
@@ -405,12 +260,10 @@ setup_pi_profile() {
 # now dead because the source was deleted. Never remove user-owned files,
 # directories, or links to another live source.
 remove_retired_extension_link() {
-  profile_dir="$1"
-  profile_name="$2"
-  extension_name="$3"
+  extension_name="$1"
   extension_source="$DOTFILES_ROOT/pi/extensions/$extension_name"
-  extension_target="$profile_dir/extensions/$extension_name"
-  extension_label="$profile_name/extensions/$extension_name"
+  extension_target="$AGENT_DIR/extensions/$extension_name"
+  extension_label="agent/extensions/$extension_name"
 
   if [ -L "$extension_target" ]; then
     if [ "$(readlink "$extension_target")" = "$extension_source" ]; then
@@ -426,57 +279,27 @@ remove_retired_extension_link() {
   fi
 }
 
-setup_pi_profile "$HOME/.pi/work" "$DOTFILES_ROOT/pi/settings.work.json" "$HOME/.pi/work"
-setup_pi_profile "$HOME/.pi/personal" "$DOTFILES_ROOT/pi/settings.personal.json" "$HOME/.pi/personal"
-materialize_pi_modes "$PERSONAL_MODES_BASELINE" "$HOME/.pi/personal/modes.json" "$HOME/.pi/personal/modes.json"
-
-for profile_name in work personal; do
-  profile_dir="$HOME/.pi/$profile_name"
-  materialize_pi_mcp "$DOTFILES_ROOT/pi/mcp-adapter.$profile_name.json" "$profile_dir/mcp-adapter.json"
-  remove_retired_extension_link "$profile_dir" "$profile_name" cost.ts
-  remove_retired_extension_link "$profile_dir" "$profile_name" watchdog.ts
-done
-
-# Install researcher support CLI required by pi-parallel.
-# Upstream documents Homebrew, but the published tap does not currently
-# resolve; use Parallel's official installer script which places the binary
-# in ~/.local/bin (already on PATH in this dotfiles setup).
-if command -v parallel-cli >/dev/null 2>&1 && parallel-cli --version >/dev/null 2>&1; then
-  log_success "parallel-cli already installed"
-else
-  log_info "Installing parallel-cli via upstream installer..."
-  if curl -fsSL https://parallel.ai/install.sh | bash >/dev/null 2>&1; then
-    log_success "Installed parallel-cli"
-  else
-    log_warn "Failed to install parallel-cli"
-    log_hint "Run manually: curl -fsSL https://parallel.ai/install.sh | bash"
-  fi
+setup_pi_resources
+# Retired modes.json files are left untouched; native settings own selection.
+if [ ! -e "$AGENT_DIR/mcp.json" ] && [ ! -L "$AGENT_DIR/mcp.json" ]; then
+  (umask 077; printf '%s\n' '{"mcpServers":{}}' > "$AGENT_DIR/mcp.json")
 fi
 
-# Install Pi packages.
-# Remote packages use fully qualified sources (git: or npm: prefix).
-# Local vendored packages are installed from repo paths for tighter supply-chain control.
-if [ -f "$DOTFILES_ROOT/pi/packages/pi-subagents/package-lock.json" ]; then
-  log_info "Installing pi-subagents runtime dependencies..."
-  if npm_config_legacy_peer_deps=true mise exec -C "$DOTFILES_ROOT/pi/packages/pi-subagents" -- npm ci --omit=dev --ignore-scripts >/dev/null 2>&1; then
-    log_success "Installed pi-subagents dependencies"
-  else
-    log_warn "Failed to install pi-subagents dependencies"
-    log_hint "Run manually: npm_config_legacy_peer_deps=true mise exec -C $DOTFILES_ROOT/pi/packages/pi-subagents -- npm ci --omit=dev --ignore-scripts"
-  fi
+for extension_name in cost.ts watchdog.ts usage-footer.ts handoff.ts; do
+  remove_retired_extension_link "$extension_name"
+done
+# Only the retired handoff extension used this managed library link.
+if [ -L "$AGENT_DIR/lib" ] && [ "$(readlink "$AGENT_DIR/lib")" = "$DOTFILES_ROOT/pi/lib" ]; then
+  rm "$AGENT_DIR/lib"
+  log_success "Removed retired managed handoff library link"
 fi
 
 PACKAGES="
-  npm:pi-mcp-adapter@3.2.0
   $DOTFILES_ROOT/pi/packages/pi-exa
   $DOTFILES_ROOT/pi/packages/pi-parallel
-  $DOTFILES_ROOT/pi/packages/pi-openai-fast
   $DOTFILES_ROOT/pi/packages/pi-subagents
+  $MITSUPI_PACKAGE
 "
-
-ensure_mitsupi_package
-preflight_mitsupi_copies
-apply_mitsupi_patches
 
 log_info "Installing Pi packages..."
 for pkg in $PACKAGES; do
@@ -484,19 +307,13 @@ for pkg in $PACKAGES; do
   display_name="${pkg##*/}"
   display_name="${display_name%.git}"
   display_name="${display_name#npm:}"
-  failed=false
-  for profile_dir in "$HOME/.pi/work" "$HOME/.pi/personal"; do
-    if ! PI_CODING_AGENT_DIR="$profile_dir" mise exec -C "$DOTFILES_ROOT" -- "$PI_BIN" install "$pkg" 2>/dev/null; then
-      failed=true
-      break
-    fi
-  done
-
-  if [ "$failed" = false ]; then
-    log_success "Installed $display_name"
-  else
-    log_warn "Failed to install $display_name (run 'PI_CODING_AGENT_DIR=<profile> pi install $pkg' manually)"
+  if ! PI_CODING_AGENT_DIR="$AGENT_DIR" mise exec -C "$DOTFILES_ROOT" -- "$PI_BIN" install "$pkg"; then
+    log_error "Failed to install required package $display_name"
+    log_hint "Retry manually: PI_CODING_AGENT_DIR=$AGENT_DIR mise exec -C $DOTFILES_ROOT -- $PI_BIN install $pkg"
+    exit 1
   fi
+
+  log_success "Installed $display_name"
 done
 
 log_success "Pi configuration complete!"

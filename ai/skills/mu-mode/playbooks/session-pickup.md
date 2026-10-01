@@ -1,6 +1,6 @@
 # Session Pickup
 
-Use this playbook to resume work after a real discontinuity from a verified session, branch, handoff, checkpoint, transcript, or other continuation artifact. A successful continuation from Pi's handoff command is automatic and does not route here.
+Use this playbook to resume work after a real discontinuity from a verified session, branch, handoff, checkpoint, transcript, or other continuation artifact. Work that can continue in the current context does not need this route.
 
 ## Contract
 

@@ -1,425 +1,352 @@
-# Pi Coding Agent
+# Pi
 
-Configuration for [Pi](https://github.com/earendil-works/pi), Armin Ronacher's terminal AI coding agent.
+One everyday environment at `~/.pi/agent`, using OpenAI's **Sign in with
+ChatGPT**, native MCP, and native codemode. Use `pi` or `pi-print`; retired
+`pi-personal`/`pi-work` wrappers and print aliases have been removed.
 
 ## Setup
 
-Run automatically by `script/install`, or manually:
-```bash
-~/.dotfiles/pi/install.sh
-```
+Pi itself uses its own updater rather than mise's JS release airlock:
 
-Pi itself is intentionally not managed as an `npm:` tool in `mise.toml`; use Pi's own updater so new releases are not delayed by the global release airlock:
-
-```bash
+```sh
 pi update
+ai/install.sh
+pi/install.sh
+PI_CODING_AGENT_DIR="$HOME/.pi/agent" herdr integration install pi
 ```
 
-For a first-time install, Pi moved to `earendil-works/pi`; use the current package under the `@earendil-works` npm scope:
+Requires Pi 0.99.1 or later. Before first setup, or when the reviewed subagent
+lockfile changes, stop all Pi/subagent runners and prepare its runtime dependencies:
 
-```bash
+```sh
+(cd pi/packages/pi-subagents && npm_config_legacy_peer_deps=true mise exec -C ~/.dotfiles -- npm ci --omit=dev --ignore-scripts)
+```
+
+Routine `pi/install.sh` only checks dependency manifest versions against the
+reviewed lockfile; it never rebuilds this shared live directory. Missing or
+mismatched dependencies stop setup with the recovery command. This is a readiness
+check, not a full dependency-integrity scan. Required package-install failures
+also stop setup and retain their diagnostics rather than reporting completion.
+
+On a new machine, install Pi with:
+
+```sh
 mise exec -C ~/.dotfiles -- bun install -g @earendil-works/pi-coding-agent --minimum-release-age=0
 ```
 
-Official migration path for old installs is `pi update`; run it again if it first updates only to the final old-scope handoff release.
+Launch `pi`, then `/login openai` and choose **Sign in with ChatGPT**. Legacy
+Codex tokens cannot be relabeled as native OpenAI tokens. The launcher clears
+inherited `OPENAI_API_KEY` and `OPENAI_OP_REF` to prevent accidental API billing.
+It runs Pi with mise's Node and child-scoped noninteractive Git editors. Explicit
+custom `PI_CODING_AGENT_DIR` values remain supported for isolated experiments;
+inherited retired work/personal paths redirect to the unified environment.
 
-Web search tools are routed by cost and depth:
+Occasional API use does not warrant a second managed installation. Use an
+explicit isolated native invocation when needed; never commit credentials.
 
-- Local `pi-parallel` provides `web_search`, `web_fetch`, `deep_research`, and `batch_enrich`. `web_search` defaults to Parallel Turbo for ordinary discovery and quick lookups, with Basic and Advanced available explicitly. In this dotfiles setup `parallel-cli` is installed via `curl -fsSL https://parallel.ai/install.sh | bash` into `~/.local/bin`; authentication is still manual:
-  ```bash
-  parallel-cli login
-  ```
-- `pi-exa` provides `exa_search` for semantic discovery, obscure technical/code material, broader multilingual search, and fallback verification. Set `EXA_API_KEY` privately (do not commit it), then run `/exa-setup` in Pi:
-  ```fish
-  set -Ux EXA_API_KEY "..."
-  ```
+## Ownership
 
-Run `dot doctor` to verify agents, symlinks, and skill projections are correctly installed.
-
-### Mobbin MCP
-
-Both profiles install `pi-mcp-adapter@3.2.0` and connect to Mobbin's official
-Streamable HTTP endpoint, `https://api.mobbin.com/mcp`. Restart Pi after the
-first install, then authorize in each profile:
-
-| Launch | Run inside Pi |
+| Source | Runtime |
 |---|---|
-| `pi-personal` | `/mcp-auth mobbin-personal` |
-| `pi-work` | `/mcp-auth mobbin-work` |
+| `pi/settings.json` | Writable `~/.pi/agent/settings.json` |
+| User model configuration | Writable `~/.pi/agent/models.json`; not created or modified by installation |
+| `pi/extensions/modes.ts` | Four fixed capability presets using native model/thinking APIs |
+| `pi/extensions/`, `pi/themes/`, `pi/prompts/` | Installed resource links |
+| `ai/instructions/`, `pi/instructions/` | Generated `.ai-runtime/pi/AGENTS.md` |
+| Shared skills in `ai/skills/` | Generated `.ai-runtime/pi/skills/` |
+| `pi/agents/` and shared agent bodies | Individual links in `~/.pi/agent/agents/` |
+| Machine-local connections | **`~/.pi/agent/mcp.json`**, edited through `/mcp` or CLI |
 
-Complete the browser login with the intended Mobbin account. No API key is
-needed. `/mcp-adapter` shows connection status; try asking Pi to search Mobbin
-for onboarding screens from banking apps after authorization.
+The installer owns resource selection (`packages`, `skills`, `extensions`,
+`prompts`, `themes`, `defaultTools`). Other tracked settings bootstrap missing
+keys; existing native `/model` and `/settings` preferences and runtime identity
+survive reinstalls. Native compaction/thinking/retry defaults are no longer
+repeated in the source baseline; existing explicit choices remain respected.
+It does not overwrite an existing `mcp.json` or fast-mode configuration. OAuth lives in private `auth.json` and `mcp-auth.json`, not
+Git. Custom agents and chains live alongside managed agent links.
 
-`pi/mcp-adapter.personal.json` and `pi/mcp-adapter.work.json` are managed
-baselines. The installer materializes writable `mcp-adapter.json` files in each
-profile, restores the named Mobbin entry, and preserves unrelated servers and
-adapter settings. Credentials stay in the macOS credential store, not Git.
-Server names deliberately differ because the adapter keys credentials by server
-name, not Pi profile. Tools use the adapter's lazy proxy defaults.
+Skills are shared across work and personal projects. Project-specific guidance
+belongs in repository `AGENTS.md` or trusted `.pi/` configuration.
 
-### Machine-local MCP connections
+The paired `.dotfiles/.agents/skills` entry and exclusion in `settings.json`
+register the managed Codex projection as disabled before native project discovery.
+Keep both: a global exclusion alone does not filter auto-discovered project skills
+in Pi 0.99.1. This keeps Pi's provider-specific projection authoritative, including
+from nested working directories, without disabling other repositories' skills.
 
-Use `~/.config/mcp/mcp.json` for connections that belong to a computer rather
-than a model/billing profile. Both profiles' adapters load this file automatically;
-keep it a local regular file, outside Git and installer-managed baselines. Other
-MCP clients that read this standard path may also discover these servers.
+## Native MCP and codemode
 
-Linear can live here as `linear` with `url: https://mcp.linear.app/mcp` and
-`auth: oauth`. Authorize once with `/mcp-auth linear`; the adapter's URL-bound
-Keychain credentials are shared by server name across profiles on this machine.
-Do not add Linear to the tracked profile baselines for a machine-only setup.
+Use `/mcp` to inspect servers, sign in, reconnect, or change tool exposure.
+From a shell:
 
-GitHub can use `url: https://api.githubcopilot.com/mcp/`, `auth: bearer`, and
-`bearerToken: "!gh auth token --hostname github.com"` to resolve the current
-GitHub CLI credential at connection time without storing a token in JSON.
-This follows the active `gh` account, not the Pi profile. Run `/reload` after
-editing shared config; profile overrides take precedence over it.
+```sh
+pi mcp add mobbin --url https://api.mobbin.com/mcp
+pi mcp login mobbin
+pi mcp list
+```
 
-For local editor/typecheck support of custom Pi extensions, install transient dev dependencies without committing a lockfile:
+OAuth credentials are profile-local files. Native credentials are keyed by URL;
+two names for the same endpoint do not provide two separate accounts. This
+setup chooses Mobbin personal. Reauthorize Linear and Mobbin after migration.
 
-```bash
+GitHub can follow the active `gh` account without a token in JSON:
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "!token=$(gh auth token --hostname github.com) && test -n \"$token\" && printf 'Bearer %s' \"$token\""
+      }
+    }
+  }
+}
+```
+
+Native Pi reads its agent-directory `mcp.json` and trusted project
+`.pi/mcp.json`. It does not read `~/.config/mcp/mcp.json` or adapter files.
+There is deliberately no ongoing import/merge layer. Native MCP connects
+enabled servers at startup. Disable servers you do not want started.
+
+`defaultTools: ["+codemode"]` enables native JavaScript orchestration alongside
+normal tools. MCP defaults to codemode exposure; use deferred discovery for
+large tool catalogs as needed. Nested calls still go through Pi's tool events.
+Codemode is not a sandbox against the tools it is allowed to call.
+
+The adapter's `mcp`, `mcpScript`, server proxy tools, and `/mcp-auth` are retired.
+Native MCP does not render interactive MCP Apps; ordinary tool/image results
+remain supported. `/mcp` replaces `/mcp-adapter`.
+
+## Models and useful extensions
+
+All capability modes use provider `openai`:
+
+| Mode | Model | Thinking |
+|---|---|---|
+| light | GPT-6 Luna | max |
+| standard | GPT-6 Sol | medium |
+| default | GPT-6 Astra | medium |
+| deep | GPT-6 Astra | high |
+
+`/mode` or `Ctrl+Shift+M` opens the native selector; `/mode deep` applies a preset.
+`Ctrl+Space` cycles light → standard → default → deep. Both Astra depths remain
+separate stops. The thin `modes.ts` extension derives the current preset from
+native model/thinking state and never overrides startup or resumed selections.
+Missing models or credentials produce an error rather than provider fallback.
+
+Pi's native editor replaces Mitsupi's custom editor. Custom mode-border colors,
+`/mode store`, project mode overrides and cross-session prompt-history scanning
+are retired. Existing `modes.json` files and saved conversations remain untouched;
+mode files are no longer read or installed. Native session prompt history remains.
+
+`/fast on|off` is the sole managed priority control; `/mode` only selects model
+and thinking. The fast preference survives model switches; only models in its
+configured supported-model list receive `service_tier: "priority"`. Unsupported
+models stay unchanged. Priority availability and charges depend on OpenAI and
+your account, not just a model's name.
+
+The previous bootstrap-only Astra override can be retired once, without running
+installation or consolidation:
+
+```sh
+node pi/retire-astra-priority.mjs "$HOME/.pi/agent/models.json"
+```
+
+This removes only Astra's `samplingParams.service_tier` when it is `"priority"`,
+preserves unrelated model configuration and fast preferences, and saves the exact
+original as `models.json.before-fast-only`. It refuses symlinks and backup conflicts.
+Restart Pi (or open `/model` and reselect) to discard an already-loaded override.
+The installer no longer creates model policy or changes user model files. Deliberate
+user overrides can still supersede the toggle; `/fast off` does not erase them.
+
+The existing Gruvbox theme is retained. Pi's native footer and `/session` own token/cost
+reporting; the legacy Codex quota footer and `/usage` are retired. Native
+ChatGPT credentials are not sent to the old Codex quota endpoint.
+
+Retained packages:
+
+- **pi-parallel@3.0.0:** unchanged upstream at
+  `75d933b86d304c2e7beab25c5429fd497b8cc36f`; direct HTTP `web_search` and
+  `web_fetch`. Configure an API key with `/parallel-setup`, or reuse the selected
+  organization's existing Parallel CLI auth file. No CLI installation is required.
+- **pi-exa:** semantic/code/multilingual search through `exa_search`; private
+  `EXA_API_KEY` and `/exa-setup`.
+- **@benvargas/pi-openai-fast@1.1.1:** reviewed pinned npm package, not a local
+  fork. `/fast status` replaces the custom lightning badge. Existing `active`,
+  `persistState` and ordered `supportedModels` are preserved. A narrow policy
+  patch honors project trust, keeps alternate agent directories isolated, and
+  preserves explicit allowlists and surfaces config errors without activating priority
+  after a failed save. `/fast off` disables the current session even if saving fails.
+- **pi-subagents@0.74.0:** unchanged upstream source pinned at
+  `b6bda32f03b7f549623bc404c9be14dca298ddc4`, including its matching orchestration
+  skill. Package prompts and the optional council skill are not auto-loaded.
+  See its [README](packages/pi-subagents/README.md) and
+  [provenance](packages/pi-subagents/VENDORED_FROM.md).
+- **mitsupi:** pinned Git source `mitsuhiko/agent-stuff` at
+  `0865c849befd2021490679f96a8dee58c84ac857` (manifest version still 1.6.0);
+  eight selected skills only. All package extensions, prompts and themes are
+  disabled. `/files`, `/todos` and the `todo` tool are retired; their two local
+  patches and installer patching logic are removed. Existing todo files and
+  inactive package code remain untouched. Use your editor/Git/Hunk for files
+  and ordinary notes for tasks; no replacement extension is installed.
+  Upstream removed Mermaid; its previously selected skill/validator remain unchanged
+  as the frozen shared snapshot `ai/skills/mermaid/`, not as a package patch.
+
+`/review [scope]` is now a native prompt using the shared read-only review skill
+and agent, without PR checkout, editing or an automatic fix loop. `/answer`,
+`/btw`, `/loop`, the UV bash override and whimsical indicator are not loaded.
+Native bash plus shared `uv` instructions replace interception; this is policy,
+not sandbox enforcement. Unreferenced local Python shims were removed.
+
+Exa retains its full structured-result API adapter. Parallel follows upstream's
+narrower contract: Turbo search, bounded text results, and visible partial-fetch
+errors. `deep_research`, `batch_enrich`, Basic/Advanced search, extra filters and
+Parallel's former full structured-result contract are intentionally retired.
+Researchers synthesize evidence from the three remaining web tools; there is no
+compatibility wrapper, CLI polling lifecycle or automatic CLI download. Existing
+CLI installations and credentials are left untouched.
+
+Native `edit` owns file edits: use `edits[]` for disjoint replacements in one
+file, each matched against the original content. Separate files require separate
+calls; there is no cross-file transaction, `multi`, or Codex patch interface.
+Mitsupi's edit override and `/context` are disabled. Use the native footer and
+`/session` for usage and startup diagnostics for loaded resources; automatic
+loaded-skill highlighting is retired.
+
+Local `notify.ts` is only the non-Herdr OSC notification fallback. Herdr owns
+its own integration and notifications.
+
+## Continuation and delegation
+
+Use native `/compact`, `/tree`, `/fork` and session resume for conversation
+continuity. Use codemode to compose ordinary tool calls and upstream subagent
+workflows for authorized multi-step, multi-agent work. The parent remains
+responsible for integration and validation; no local orchestration wrapper is
+needed.
+
+The custom `/handoff`, `/handoffs`, `handoff_control`, `handoff_accept` and shared
+handoff skill are retired. Automatic document-to-branch continuation and the
+backlink UI are intentionally removed, not reimplemented through codemode.
+Existing documents, session entries and connection files remain untouched and
+can be inspected as historical data.
+
+Use subagents only when the operator authorizes delegation; otherwise work
+directly in the parent. Use the matching upstream skill and `action: "list"` before
+execution. Upstream owns the implementation, schema, lifecycle and discovery;
+we own the reviewed source pin, dependencies and supported personal configuration.
+Do not restore old resolver/lifecycle patches to satisfy retired fork tests.
+
+Personal policy uses `subagents.agentOverrides` in settings: scout has a read-only
+tool allowlist and Luna model, worker uses Luna. The managed `review` definition
+is a read-only Sol role. Our `researcher` definition uses Sol and explicitly loads
+Exa/Parallel providers so both foreground and background runs have its named web
+tools. It cannot edit files or delegate. These are permission lists, not an OS
+sandbox. Additional upstream builtins keep upstream defaults; notably `reviewer`
+is distinct from our read-only `review`, and `evidence-auditor` requires
+pi-web-access, which this setup does not install. Native settings preserve existing
+personal overrides on reinstall; project definitions/settings can override roles.
+
+Foreground children are in-process SDK sessions; background children use a detached
+runner. Foreground children do not inherit ambient extensions. Configure required
+providers explicitly in an agent's `extensions`/`subagentOnlyExtensions`, or use
+upstream's background conventions. `subagent` remains model-only, not
+codemode-callable: launch its workflow directly rather than wrapping it in a
+codemode script.
+
+**Accepted discovery/trust differences:** upstream uses its own delegated skill
+and agent discovery, not our former native parity adapter. It can discover package
+skills despite a native `skills: []` filter and project agents without consulting
+native project trust. Child execution forwards parent trust, including alternate
+cwd cases; it does not retain the fork's independent saved-trust lookup. Manual-only
+skills are filtered from child injection. Do not treat native resource filtering or
+project trust as a sandbox for upstream discovery.
+
+Upstream workflow scripts, management, background status/recovery, intercom and
+worktrees use their supported conventions. Old saved chains and active-run files
+are preserved, not migrated or promised compatible. Management no longer has the
+fork's managed-link protection: edit managed agents in this checkout. Optional
+`disabledFeatures` in `~/.pi/agent/extensions/subagent/config.json` can disable
+agent management or workflow scripts (the latter enables simpler chain/tasks
+inputs); no compatibility adapter is installed. See upstream
+[configuration](packages/pi-subagents/docs/configuration.md) and
+[agents](packages/pi-subagents/docs/agents.md).
+
+Restart Pi after this source-linked cutover before launching children. The outgoing
+fork snapshot is retained under `~/.pi/backups/`; historical handoff receipts
+remain on disk despite retirement of their custom tools.
+
+## One-time consolidation
+
+For installations that still have work/personal directories:
+
+```sh
+node pi/migrate-to-native.mjs
+ai/install.sh
+pi/install.sh
+PI_CODING_AGENT_DIR="$HOME/.pi/agent" herdr integration install pi
+```
+
+Run this separately on each machine; do not sync credentials or combine machine
+histories. Stop Pi/subagent runners before switching that machine, and keep the
+old directories for manual recovery. This is a one-time cutover, not ongoing
+compatibility with work/personal profiles.
+
+The migration builds a new directory before activating it. It copies histories,
+custom resources, and native `models.json`/`keybindings.json` files unchanged.
+Different model/keybinding files stop the migration for a manual choice rather
+than inventing a merge policy. It converts machine/shared and profile MCP
+definitions (both adapter and native `mcp.json`), selects Mobbin personal, and
+refuses conflicting preserved files or unsupported adapter options. It preserves other provider credentials but does not copy
+legacy Codex tokens or activate stored OpenAI API keys. Project trust is asked
+again rather than unioning historical approvals. Custom prompts are included.
+Runtime preferences and fast configuration use personal > work > old agent
+precedence, falling back when absent; managed resource selectors come from source.
+Retired Codex provider/model pairs do not override the native startup defaults.
+
+The previous agent directory is renamed to `agent.before-native-<timestamp>`;
+work/personal originals remain untouched. A marker makes reruns a no-op. Active
+old sessions continue writing their original files: close them normally and
+resume their explicit original path if newer messages are needed. Do not delete
+old histories while handoff links or active sessions reference them. When resuming
+legacy history, explicitly select the new provider if its old model is restored:
+`pi --session PATH --model openai/gpt-6-astra`.
+
+Rollback: close unified Pi sessions, move the new agent directory aside, restore
+the saved agent directory, and revert the tracked consolidation changes. Old
+profiles remain launchable through Pi's raw binary with an explicit agent dir.
+
+## Native-first customization review
+
+See [CUSTOMIZATION-AUDIT.md](CUSTOMIZATION-AUDIT.md) for the current ownership
+contract, retained customizations and validation limits. The accumulated migration
+receipts and superseded proposals are in its linked historical archive.
+
+## Validation
+
+```sh
+sh pi/test-launch.sh
+sh pi/test-install.sh
+node --test pi/test-migrate.mjs
+sh ai/test-install.sh
+sh herdr/test-install.sh
 npm --prefix pi install --package-lock=false --ignore-scripts
 npm --prefix pi run typecheck
+NODE="$(mise which -C "$PWD" node)"
+PI_OFFLINE=1 "$NODE" --experimental-strip-types --test pi/test-native-*.mjs pi/test-upstream-subagents.mjs pi/test-mitsupi-policy.mjs pi/extensions/tests/*.test.ts
+PI_OFFLINE=1 "$NODE" --experimental-strip-types --test pi/packages/pi-exa/test/*.mjs pi/test-upstream-parallel.mjs
 ```
 
-To choose the default Pi profile per machine, copy the pattern from `fish/local.fish.example`
-into `~/.config/fish/local.fish` and set:
+Run upstream's full suites in a disposable copy named `pi-subagents`, with its
+unchanged lockfile and `npm ci --ignore-scripts --legacy-peer-deps`. Do not install
+its development Pi peers into the production vendor tree. Invoke mise Node 24
+explicitly using upstream's `test:unit`/`test:integration` flags, adding
+`--test-concurrency=8`. On macOS use `TMPDIR=/private/tmp` (short canonical socket
+paths); leave `PI_OFFLINE` unset for these suites because npm-discovery fixtures
+explicitly test non-offline behavior. Their harness isolates HOME and mocks
+execution; keep opt-in live CLI smoke variables unset. See the audit for the
+host-versus-upstream-toolchain validation boundary.
 
-```fish
-set -gx PI_DEFAULT_PROFILE work
-# or
-set -gx PI_DEFAULT_PROFILE personal
-```
-
-`bin/pi` is the sole launch dispatcher. It keeps a recognized inherited
-`PI_CODING_AGENT_DIR`, otherwise recognizes work/personal `--session PATH` and
-`--session=PATH` values before using `PI_DEFAULT_PROFILE`. A session from the
-other profile fails rather than opening it under the wrong profile. Fish delegates
-to this wrapper; `pi-work` and `pi-personal` select their named profile directly.
-All three supported launch commands set `GIT_EDITOR=true`,
-`GIT_SEQUENCE_EDITOR=true`, and `GIT_MERGE_AUTOEDIT=no` only for Pi's child
-process, leaving the interactive shell's Git editor configuration unchanged.
-
-### Profile-boundary evidence
-
-D10 verification is read-only and makes no model calls or cleanup changes:
-
-```bash
-~/.dotfiles/bin/pi-profile-check --json > /tmp/pi-profile-boundary.json
-```
-
-It runs `pi auth check --no-refresh` for work and personal, checks provider and
-profile selection, summarizes profile-owned state and required resources, checks
-profile-scoped Herdr integrations, and classifies the deprecated fallback by
-category, count, and aggregate size. It never prints credentials or fallback
-entry names. A non-zero result is a blocker or manual-review report; inspect the
-JSON before issuing the reported manual deletion command. The command never
-creates, backs up, migrates, or deletes `~/.pi/agent`.
-
-## Directory Structure
-
-```
-pi/
-├── agents/                 # Pi agent metadata assembled with shared agent bodies
-│   └── review.frontmatter  # Shared-body review exemplar
-├── settings.work.json      # Work profile config baseline (OpenAI API key flow)
-├── settings.personal.json  # Personal profile config baseline (OpenAI Codex OAuth flow)
-├── modes.personal.json     # Personal Mitsupi capability-depth mode baseline
-├── install.sh              # Materializes settings/modes, symlinks resources, installs packages
-├── patches/                 # Exact-context local patches for pinned Pi packages
-├── aliases.fish            # Thin Fish forwarding to bin/pi
-├── extensions/             # Custom TypeScript extensions
-│   ├── handoff.ts          # Agent-designed local/external conversation handoffs
-│   ├── notify.ts           # Non-Herdr OSC notification fallback
-│   └── usage-footer.ts      # Token, model, and Codex subscription usage footer
-├── intercepted-commands/   # Shell shims for Python tooling
-│   ├── pip                # → uv add / uv run --with
-│   ├── pip3               # → uv add / uv run --with
-│   ├── poetry             # → uv init / uv add / uv sync / uv run
-│   ├── python             # → uv run python (blocks -m pip, -m venv)
-│   └── python3            # → uv run python (blocks -m pip, -m venv)
-└── themes/
-    ├── gruvbox-dark.json   # Selected custom color theme
-    └── gruvbox-light.json  # Alternate custom color theme
-```
-
-## Configuration
-
-Profile settings and personal Mitsupi modes are materialized as writable runtime
-files by `install.sh`:
-
-- `pi/settings.work.json` → `~/.pi/work/settings.json`
-- `pi/settings.personal.json` → `~/.pi/personal/settings.json`
-- `pi/modes.personal.json` → `~/.pi/personal/modes.json`
-
-The tracked files are managed baselines rather than direct symlink targets. Pi writes
-interactive model choices and changelog state back to each profile's runtime file;
-keeping that file outside Git avoids dirtying the dotfiles worktree whenever a model
-changes. Installer runs preserve `lastChangelogVersion` and Pi's generated
-`trackingId`. Work also preserves `defaultProvider`, `defaultModel`, and
-`defaultThinkingLevel`; personal restores these startup settings from the tracked
-baseline so fresh launches start in `default` mode (Astra/medium). Explicit CLI
-model/thinking options and resumed sessions still take precedence. Interactive
-mode changes remain available; saved startup overrides last until the next install.
-Edit the tracked baseline for durable configuration changes.
-
-The tracked personal modes baseline is authoritative and installer runs restore
-these capability-depth mappings. Explicit border colors identify modes independently
-of their thinking levels:
-
-| Mode | Model | Thinking | Border |
-|---|---|---|---|
-| `light` | `openai-codex/gpt-6-luna` | `max` | blue (`thinkingLow`) |
-| `standard` | `openai-codex/gpt-6-sol` | `medium` | aqua (`thinkingMedium`) |
-| `default` | `openai-codex/gpt-6-astra` | `medium` | purple (`thinkingHigh`) |
-| `deep` | `openai-codex/gpt-6-astra` | `high` | red (`thinkingXhigh`) |
-
-Thinking levels are provisional: [OpenAI's GPT-6 release benchmarks](https://openai.com/index/introducing-gpt-6-sol-and-luna/) report Luna/max and Sol/xhigh or max on selected tasks, but do not establish an optimal Sol/medium setting for everyday coding. Keep Luna/max for the cheap capable light mode and Sol/medium for responsive standard work; raise Sol effort for harder tasks and compare against Astra on local work before changing the baseline.
-
-Mitsupi can write temporary adjustments through `/mode` because the runtime file
-is a regular file rather than a Git symlink. Edit `pi/modes.personal.json` for a
-durable change; the next installer run replaces runtime adjustments with the
-tracked baseline. Run `/reload` in an existing Pi session after installing or
-changing the baseline. Work-profile modes remain unconfigured until a separate
-provider/model mapping is approved.
-
-Shared Pi resources are staged and validated under `.ai-runtime/pi/` before they
-replace the active generated tree. Both active profiles then link their
-`AGENTS.md` files to the generated instruction, while retaining separate real
-`agents/` directories. Managed agent files link individually to the generated
-agents; custom agents and chains remain in their owning profile.
-
-Tracked baseline defaults:
-
-- **Work profile**: OpenAI `gpt-5.5` via API key
-- **Personal profile**: OpenAI Codex `gpt-6-astra` at medium thinking via OAuth subscription
-- **Personal modes**: GPT-6 Luna/max, Sol/medium, Astra/medium, and Astra/high under
-  `light`, `standard`, `default`, and `deep`
-- **Themes**: Gruvbox Dark (selected) and Gruvbox Light (available)
-- **Skills**: Discovers Pi-projected shared skills from `~/.dotfiles/.ai-runtime/pi/skills/` plus tldraw offline's app-managed skill at `~/skills/tldraw-offline` when installed; missing external skill paths are harmless
-- **Instructions**: `ai/install.sh` stages `.ai-runtime/pi/AGENTS.md`, validates it, then links it into both profiles
-- **Agents**: `ai/install.sh` stages `.ai-runtime/pi/agents/`, validates it, then links managed files into each profile-local agent directory
-- **Packages**: vendored pi-exa, pi-parallel, vendored pi-openai-fast, vendored pi-subagents, and mitsupi
-
-In normal use there is no standalone user-facing top-level Pi profile: `pi` dispatches to
-either `pi-work` or `pi-personal`. The deprecated `~/.pi/agent/` fallback is not managed
-or read by local installers; exact legacy resource links are migrated during the cutover,
-while the directory itself is left untouched for manual deletion after later verification.
-
-### Subagent model routing
-
-Subagents resolve bare model IDs through the active parent profile: `pi-personal`
-children use `openai-codex` with the personal OAuth subscription, while `pi-work`
-children use `openai` with the work API key.
-
-| Role | Model | Thinking |
-|---|---|---|
-| `scout` | GPT-5.6 Luna | high |
-| `researcher` | GPT-5.6 Terra | high |
-| `worker` | GPT-5.6 Luna | max |
-| `review` | GPT-5.6 Sol | xhigh |
-
-The package retains only builtin scout, researcher, and worker. The generated shared
-`review` agent is canonical. Scout and review are read-only leaves; researcher is a
-web/evidence leaf; worker is the only default delegated checkout writer. Profile
-settings do not override these role defaults.
-
-### Workflow boundaries
-
-- Use Pi `/tree` to inspect history, recover context, or deliberately revisit an alternative branch. It is not a required step between handoffs.
-- Use `pi-subagents` for bounded independent reconnaissance, research, implementation,
-  or review work; the parent keeps decisions, integration, and validation.
-- Use a Herdr worktree for concurrent filesystem isolation and Hunk review; it is
-  not another delegation or lifecycle owner.
-- Use `/fork` or `/clone` for a separate session when history or provider state
-  should diverge.
-- Use `/skill:code-review` for proportional advisory review and Hunk for user-facing
-  annotations. Mitsupi `/review` remains an optional manual tree-isolated experiment,
-  not an automatic sequel.
-- Use `/handoff [intent]` for temporary continuation context. The agent designs
-  local, external/parallel, or document-only handoffs from natural-language intent.
-  Only an explicit local route summarizes/switches the source branch and continues
-  here. External sessions are agent-launched with existing tools, not owned or
-  monitored by the extension. Repeat `/handoff` at later phase boundaries; prior
-  local summaries are included in the next summary, not guaranteed verbatim.
-- `/skill:grilling`, `/skill:grill-me`, `/skill:grill-with-docs`, `/skill:tdd`,
-  `/skill:implement`, and `/skill:bro` are composable workflows. `implement` and
-  `bro` are manual-only; implementation stays in the current session, does not
-  auto-delegate, and does not commit without a separate request.
-
-## Extensions
-
-Extensions are TypeScript files using Pi's `ExtensionAPI`. Symlinked into each active
-profile's `extensions/` directory by `install.sh`.
-
-### handoff.ts — Conversation Handoffs
-
-Registers `/handoff [intent]`, `/handoffs`, the transaction-scoped `handoff_control`
-tool, and destination-side `handoff_accept`.
-The shared handoff skill lets the agent design the topology using existing tools:
-how many sessions, which workspace/tabs, shared versus isolated worktrees, write
-ownership, skills, and shared artifacts. No keyword parser or fixed launcher API.
-
-Before preparing/launching, the agent selects one immutable route:
-
-| Route | Extension behavior |
-|---|---|
-| `here` | After document writing, summarize back to the first user message and start a local continuation |
-| `external` | Record agent-designed destinations/dispatch; retain the source branch and never continue locally |
-| `document` | Record prepared documents without launching or switching branches |
-
-Plain `/handoff` means local continuation unless context requests otherwise, but
-local navigation still requires explicit control data from the agent. Missing or
-invalid routing fails closed rather than guessing. Examples:
-
-- `/handoff continue with validation`
-- `/handoff split method experiments and the comparison viewer into separate tabs in workspace X; share a worktree only with separate write ownership`
-- `/handoff prepare documents for tomorrow; don't launch anything`
-
-For external/document routes, the agent reports each destination incrementally by
-stable ID: `planned`, `prepared`, `launched`, `start-confirmed`, or `failed`. Reports
-replace that destination's fields and preserve other destinations. Prepared/started
-destinations require a readable absolute document path; launches also need a session
-or pane locator. The tool only validates the local file and records reports: it does
-not independently inspect remote sessions. Maximum 16 destinations per handoff.
-Partial dispatch preserves successful siblings, and interruptions retain checkpoints
-without retrying launches. Destination prompts open their document directly, not a
-branch summary that exists only in the source session.
-
-For local handoffs, repeating `/handoff` summarizes the active branch, including its
-earlier summaries; they need not remain verbatim. No manual `/tree` navigation is
-needed between phases.
-
-A compact widget above the editor shows document writing, summarization/tree
-switching, and continuation startup with elapsed time for the local route; external
-routes show destination reports without local continuation stages. Stages advance only on
-observed lifecycle boundaries; Pi exposes summarization and switching as one
-operation. The widget survives tree redraw and clears when a receipt is recorded.
-
-`handoff source` and `handoff resume ← <source ID>` labels make both branches easy
-to find in `/tree` (including its labeled-only filter). Existing source labels are
-preserved. A persistent, expandable receipt shows the outcome, readable destination
-names, and statuses at a glance. Paths, source/resume IDs, timestamps, verification
-caveats, and recovery details live in the expanded view; failed or interrupted runs
-remain visibly flagged when collapsed. Receipts use a compact origin/child tree and
-a `/handoffs` navigation hint for external destinations. Local handoffs use `/tree`
-only. Receipts do not add anything to model context.
-
-Each new destination gets an immutable connection file under `handoff-connections/`
-next to the source session JSONL. Pass its returned path in the handoff document.
-The destination calls `handoff_accept` after reading it, recording an origin entry
-in its own session and an exclusive `.accepted.json` acknowledgement next to the
-connection. Neither process writes the other's session. Local continuations create
-no connection files or acceptance entries. Connection identity and exact session/tree anchors
-survive tab closure and temporary document removal; deleting the session directory
-also removes these connection files.
-
-`/handoffs` lists cross-session links: **Came from** on the current branch and
-**Sent to** across this session. Legacy local links are omitted; `/tree` retains
-local source/continuation labels. Before focusing a remote session it
-verifies the saved Herdr pane still contains the recorded Pi session, then focuses
-it **without changing its branch**. Missing or moved panes fall back to displayed
-session/tree recovery locators; the picker never launches a duplicate or sends text
-to another agent. Cross-harness and older handoffs retain manual recovery information.
-
-Launch observations, backlink acceptance, and work completion remain distinct.
-Acceptance does not mark a task complete. Multiple incoming links are supported;
-a retry in another session uses a new task ID/connection. This first iteration does
-not group retries, track returned results, monitor remote work, or automatically
-reopen closed sessions.
-
-Progress checkpoints also survive reload; an unfinished transaction is reported as
-interrupted, never automatically retried.
-
-**“Continuation started” is not document acceptance or completed work.** It requires
-the local continuation prompt's observed agent start, not merely submission. External
-launches/start confirmations are explicitly agent-reported, not independently
-monitored. For local handoffs the command does not verify the artifact path; find it
-in the source turn or branch summary. `/handoff history` is deferred.
-
-Cancellation, errors, or runtime shutdown retain source history and temporary
-files, with the last observed stage in the receipt. Startup has a 30-second timeout;
-document writing and summarization use Pi's existing cancellation behavior. The
-command clears only the prompt restored by navigation and restores a preexisting
-draft if that prompt replaced it, without overwriting newly typed text.
-
-Local handoffs stay in the current Pi/Herdr process, so profile, cwd, pane identity,
-and Git state carry through naturally. External sessions must receive those choices
-explicitly through the agent's launch workflow and outlive the source tab. Specs and
-other durable records remain separate from temporary handoffs and Moja Glava checkpoints.
-
-### notify.ts — Desktop Notifications
-
-Sends OSC 777 escape sequence on `agent_end` event. Shows a desktop notification with the last assistant message summary when Pi finishes a turn. It skips OSC notifications inside Herdr because Herdr tracks agent state and notifications there.
-
-For Herdr-native Pi state reporting, install Herdr's official integration per active profile after `herdr` is available:
-
-```bash
-PI_CODING_AGENT_DIR="$HOME/.pi/work" herdr integration install pi
-PI_CODING_AGENT_DIR="$HOME/.pi/personal" herdr integration install pi
-```
-
-**Supported terminals**: WezTerm, Ghostty, iTerm2
-
-### usage-footer.ts — Usage Footer
-
-Adds model/provider, token-total, context-window, and cost information to Pi's
-footer. When the active model uses `openai-codex`, it also fetches the ChatGPT
-five-hour and weekly subscription windows; other providers do not trigger that
-request. `/usage` shows the same subscription details on demand.
-
-### Provided by Mitsupi
-
-Both profile settings pin `npm:mitsupi@1.6.0` and use positive resource
-allowlists. The enabled extensions are `answer.ts`, `context.ts`, `files.ts`,
-`multi-edit.ts`, `prompt-editor.ts`, `todos.ts`, `uv.ts`, `whimsical.ts`,
-`btw.ts`, and `review.ts`; the enabled skills are `apple-mail`, `commit`,
-`github`, `google-workspace`, `mermaid`, `pi-share`, `sentry`, `summarize`,
-and `uv`. Mitsupi prompts and themes are disabled. The package remains fully
-installed so retained resources can use internal files, but filtered resources
-such as `notify.ts`, `control.ts`, `session-breakdown.ts`, and `loop.ts` are not
-Pi-visible. `/btw` and `/review` are manual trials; `/loop` is unavailable.
-Start `/review` from an empty tree branch with automatic fixing disabled, then
-return through `/end-review` with a summary or an explicit fix prompt. `/btw`
-is for non-mutating tangents; its in-memory child is not separately visible to
-Herdr, so the pane may appear idle and no separate completion toast is expected.
-
-`pi/install.sh` applies the tracked prompt-editor and files-shortcut patches
-only after both profile copies pass the exact version/context preflight. The
-prompt-editor patch adds Pi's native `max` thinking level to Mitsupi's mode
-editor, adapts its model picker and theme lifetime to the current Pi runtime
-contract, keeps mode-border colors stable across later renders, and keeps a
-fresh profile's required `default` mode from creating a latency-named `fast`
-mode. The files-shortcut patch removes Mitsupi's `Ctrl+Shift+F` Finder reveal
-binding so Pi retains its built-in transcript search; `/files` and the other
-Mitsupi file shortcuts remain available. The installer materializes the tracked
-`pi/modes.personal.json` mapping into the personal profile; `/mode` remains the
-manual selector and `/fast` remains the independent `pi-openai-fast`
-service-tier toggle.
-
-The filtered Mitsupi surface includes `control.ts`, `go-to-bed.ts`, `loop.ts`,
-`notify.ts`, `session-breakdown.ts`, `split-fork.ts`, the `anachb`,
-`frontend-design`, `ghidra`, `librarian`, `native-web-search`, `oebb-scotty`,
-`openscad`, `tmux`, `update-changelog`, and `web-browser` skills, and the
-`nightowl` theme. Local `pi/extensions/notify.ts` is the sole non-Herdr OSC
-fallback and suppresses itself when `HERDR_ENV=1`.
-
-## Intercepted Commands
-
-Shell shims in `pi/intercepted-commands/` that print helpful error messages redirecting to uv. Used by mitsupi's `uv.ts` extension which prepends intercepted-commands to PATH within Pi's bash tool.
-
-**Note**: mitsupi bundles its own intercepted-commands, so these local shims serve as fallbacks and are available for non-Pi agents.
-
-## Packages
-
-Pi packages loaded by this setup:
-
-| Package | Provides |
-|---|---|
-| `pi/packages/pi-exa` | Local Exa search tool (`exa_search`; depends on private `EXA_API_KEY`) |
-| `pi/packages/pi-parallel` | Local vendored Parallel tools (`web_search`, `web_fetch`, `deep_research`, `batch_enrich`; Turbo is the default search mode; depends on standalone `parallel-cli`) |
-| `pi/packages/pi-openai-fast` | Local vendored `/fast` toggle that sets OpenAI `service_tier=priority` on configured GPT-5.4, GPT-5.5, GPT-5.6 Luna/Terra/Sol, and Codex GPT-6 Astra models |
-| `pi/packages/pi-subagents` | Local vendored subagent delegation tools, builtin child agents, chains, and parallel runs |
-| `pi-mcp-adapter@3.2.0` | MCP discovery/proxy tools and OAuth for profile-specific Mobbin servers |
-| `mitsupi@1.6.0` | Curated `/answer`, `/context`, `/files`, `/multi-edit`, `/prompt-editor`, `/todos`, `/uv`, `/whimsical`, manual `/btw` and `/review`, plus the nine allowlisted skills |
+`dot doctor` checks the unified installation. MCP connectivity and browser OAuth
+are separate checks: run `pi mcp list` and sign in through `/mcp`. No installer
+starts a model request or copies OAuth tokens between providers.
