@@ -118,6 +118,8 @@ grep -Fq 'supportedModels must be an array' "$FAST_PACKAGE/extensions/index.ts" 
 grep -Fq 'configuration must be a JSON object' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast config root patch'
 grep -Fq 'ctx.ui.setStatus("pi-openai-fast", status)' "$FAST_PACKAGE/extensions/index.ts" || fail 'native fast footer status'
 grep -Fq 'pi.on("model_select"' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast footer model refresh'
+grep -Fq '"openai/gpt-6.1-sol"' "$FAST_PACKAGE/extensions/index.ts" || fail 'Sol Fast default missing'
+grep -Fq 'priority requested, not server-confirmed' "$FAST_PACKAGE/extensions/index.ts" || fail 'Fast request intent missing'
 [ ! -L "$SETTINGS" ] || fail 'runtime settings are symlinks'
 [ ! -e "$MODES" ] || fail 'retired modes baseline created'
 jq -e '.defaultProvider == "openai" and .defaultModel == "gpt-6-astra" and .defaultTools == ["+codemode"] and ([.packages[] | select(type == "string") | contains("mcp-adapter")] | any | not)' "$SETTINGS" >/dev/null || fail 'native defaults'
@@ -151,8 +153,17 @@ run || fail 'third install'
 cp "$FAST_PACKAGE/extensions/index.ts" "$TMP/fast.patched"
 run || { tail -30 "$TMP/install.log"; fail 'exact-current fast reinstall'; }
 cmp "$TMP/fast.patched" "$FAST_PACKAGE/extensions/index.ts" || fail 'fast patch idempotence'
+# Upgrade the exact previous footer output without touching other resources.
+(cd "$FAST_PACKAGE" && patch -R -p1 -F 0 -f < "$ROOT/pi/patches/pi-openai-fast-1.1.1-sol.patch") >/dev/null
+cp "$SETTINGS" "$TMP/fast-only.settings"
+cp "$HOME/installs.log" "$TMP/fast-only.installs"
+sh "$REPO/pi/install.sh" --fast-only > "$TMP/install.log" 2>&1 || { tail -30 "$TMP/install.log"; fail 'Fast-only upgrade'; }
+cmp "$TMP/fast.patched" "$FAST_PACKAGE/extensions/index.ts" || fail 'prior footer upgrade output differs'
+cmp "$TMP/fast-only.settings" "$SETTINGS" || fail 'Fast-only changed settings'
+cmp "$TMP/fast-only.installs" "$HOME/installs.log" || fail 'Fast-only installed unrelated packages'
+cmp "$TMP/fast-config" "$HOME/.pi/agent/extensions/pi-openai-fast.json" || fail 'Fast-only changed policy'
 # Upgrade the exact prior policy output in place; partial states fail closed.
-(cd "$FAST_PACKAGE" && patch -R -p1 -F 0 -f < "$ROOT/pi/patches/pi-openai-fast-1.1.1-footer-status.patch") >/dev/null
+(cd "$FAST_PACKAGE" && patch -R -p1 -F 0 -f < "$ROOT/pi/patches/pi-openai-fast-1.1.1-sol.patch" && patch -R -p1 -F 0 -f < "$ROOT/pi/patches/pi-openai-fast-1.1.1-footer-status.patch") >/dev/null
 run || { tail -30 "$TMP/install.log"; fail 'previous policy output upgrade'; }
 cmp "$TMP/fast.patched" "$FAST_PACKAGE/extensions/index.ts" || fail 'prior policy upgrade output differs'
 cp "$FAST_PACKAGE/extensions/index.ts" "$TMP/fast.patched"

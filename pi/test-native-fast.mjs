@@ -76,6 +76,38 @@ test('omitted model list follows package defaults and stays omitted after toggle
   });
 });
 
+test('Sol default requests priority, reports intent, and preserves omitted policy across toggles', async () => {
+  await fixture({ active: true, persistState: true }, async ({ event, command, ctx, read, statuses, notices }) => {
+    ctx.model = { provider: 'openai', id: 'gpt-6.1-sol' };
+    await event('session_start');
+    assert.deepEqual(await event('before_provider_request', { payload: {} }), { service_tier: 'priority' });
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: 'accent:⚡ FAST' });
+    await command('status');
+    assert.match(notices.at(-1)[0], /priority requested, not server-confirmed/);
+    await command('off');
+    assert.equal(await event('before_provider_request', { payload: {} }), undefined);
+    assert.deepEqual(statuses.at(-1), { key: 'pi-openai-fast', text: undefined });
+    await command('on');
+    assert.deepEqual(await event('before_provider_request', { payload: {} }), { service_tier: 'priority' });
+    assert.deepEqual(read(), { active: true, persistState: true });
+    for (const model of [{ provider: 'openai-codex', id: 'gpt-6.1-sol' }, { provider: 'openai', id: 'gpt-6-luna' }]) {
+      ctx.model = model;
+      await event('model_select');
+      assert.equal(await event('before_provider_request', { payload: {} }), undefined);
+      assert.equal(statuses.at(-1).text, undefined);
+    }
+  });
+});
+test('explicit lists do not silently gain Sol support', async () => {
+  const config = { active: true, persistState: true, supportedModels };
+  await fixture(config, async ({ event, ctx, read }) => {
+    ctx.model = { provider: 'openai', id: 'gpt-6.1-sol' };
+    await event('session_start');
+    assert.equal(await event('before_provider_request', { payload: {} }), undefined);
+    assert.deepEqual(read(), config);
+  });
+});
+
 test('pinned fast preserves existing list and state, adds only a supported priority payload', async () => {
   const config = { active: true, persistState: true, supportedModels };
   await fixture(config, async ({ event, command, read, ctx }) => {

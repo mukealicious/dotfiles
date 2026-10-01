@@ -125,13 +125,13 @@ All capability modes use provider `openai`:
 | Mode | Model | Thinking |
 |---|---|---|
 | light | GPT-6 Luna | max |
-| standard | GPT-6 Sol | medium |
-| default | GPT-6 Astra | medium |
+| standard | GPT-6.1 Sol | medium |
+| default | GPT-6.1 Sol | high |
 | deep | GPT-6 Astra | high |
 
 `/mode` or `Ctrl+Shift+M` opens the native selector; `/mode deep` applies a preset.
-`Ctrl+Space` cycles light → standard → default → deep. Both Astra depths remain
-separate stops. The thin `modes.ts` extension derives the current preset from
+`Ctrl+Space` cycles light → standard → default → deep. Both Sol depths remain
+separate stops, with Astra reserved for deep. The thin `modes.ts` extension derives the current preset from
 native model/thinking state and never overrides startup or resumed selections.
 Missing models or credentials produce an error rather than provider fallback.
 
@@ -174,21 +174,26 @@ Retained packages:
 - **pi-exa:** semantic/code/multilingual search through `exa_search`; private
   `EXA_API_KEY` and `/exa-setup`.
 - **@benvargas/pi-openai-fast@1.1.1:** reviewed pinned npm package with a narrow
-  policy patch and a native footer-status patch. The latter uses Pi's
+  policy patch, a native footer-status patch, and a Sol-support patch. The footer uses Pi's
   `ctx.ui.setStatus()` without replacing the native footer: it shows accented
   `⚡ FAST` only while enabled on a configured supported current model, and
   clears the native status otherwise. The preference remains enabled across
   model switches, so switching back to a supported model restores the badge;
-  `/fast status` still reports the detailed state. Existing `active`,
+  the badge means **priority requested**, not server-confirmed. `/fast status`
+  makes that distinction explicit. Existing `active`,
   `persistState` and ordered `supportedModels` are
   preserved. The policy patch honors project trust, isolates alternate agent
   directories, preserves explicit allowlists, surfaces config errors, and does
   not enable priority after a failed save. `/fast off` disables the current
   session even if saving fails. Prefer omitting `supportedModels` from an existing
-  fast configuration to follow the installed package's upstream defaults; toggles
+  fast configuration to follow the installed package's reviewed defaults; toggles
   preserve that omission. Explicit lists remain supported for intentional restrictions.
   New model eligibility then comes from reviewed package updates, not automatic
-  provider discovery. The pinned 1.1.1 defaults do not include GPT-6 Luna or GPT-6.1 Sol.
+  provider discovery. Our Sol patch adds `openai/gpt-6.1-sol` to the defaults;
+  GPT-6 Luna and legacy `openai-codex/gpt-6.1-sol` remain excluded. Explicit
+  lists are never expanded. Apply only Fast patches with `sh pi/install.sh --fast-only`,
+  then `/reload`. The [patch notes](patches/README.md#sol-fast-validation) record
+  the live comparison and the subscription tier-reporting caveat.
 - **pi-subagents@0.74.0:** unchanged upstream source pinned at
   `b6bda32f03b7f549623bc404c9be14dca298ddc4`, including its matching orchestration
   skill. Package prompts and the optional council skill are not auto-loaded.

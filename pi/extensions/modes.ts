@@ -4,8 +4,8 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 // Native Pi owns the editor, persistence, model availability and credentials.
 const modes = [
   { name: "light", model: "gpt-6-luna", thinking: "max" },
-  { name: "standard", model: "gpt-6-sol", thinking: "medium" },
-  { name: "default", model: "gpt-6-astra", thinking: "medium" },
+  { name: "standard", model: "gpt-6.1-sol", thinking: "medium" },
+  { name: "default", model: "gpt-6.1-sol", thinking: "high" },
   { name: "deep", model: "gpt-6-astra", thinking: "high" },
 ] as const;
 

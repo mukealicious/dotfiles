@@ -1,0 +1,27 @@
+--- a/extensions/index.ts
++++ b/extensions/index.ts
+@@ -35,6 +35,7 @@
+ 	"openai/gpt-5.6-terra",
+ 	"openai/gpt-5.6-luna",
+ 	"openai/gpt-6-astra",
++	"openai/gpt-6.1-sol",
+ 	"openai-codex/gpt-5.4",
+ 	"openai-codex/gpt-5.5",
+ 	"openai-codex/gpt-5.6-sol",
+@@ -319,7 +320,7 @@
+ 		return `Fast mode is on. No model is selected. Supported models: ${describeSupportedModels(supportedModels)}.`;
+ 	}
+ 	if (isFastSupportedModel(ctx.model, supportedModels)) {
+-		return `Fast mode is on for ${model}.`;
++		return `Fast mode is on for ${model}: priority requested, not server-confirmed.`;
+ 	}
+ 	return `Fast mode is on, but ${model} does not support it. Supported models: ${describeSupportedModels(supportedModels)}.`;
+ }
+@@ -339,6 +340,7 @@
+ 	let cachedConfig: ResolvedFastConfig | undefined;
+ 
+ 	function updateStatus(ctx: ExtensionContext): void {
++		// Request intent only; the server's reported tier can be misleading with ChatGPT OAuth.
+ 		if (!ctx.hasUI) return;
+ 		const status = state.active && isFastSupportedModel(ctx.model, cachedConfig?.supportedModels ?? [])
+ 			? ctx.ui.theme.fg("accent", "⚡ FAST")

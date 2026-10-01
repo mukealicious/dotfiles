@@ -12,8 +12,8 @@ function harness() {
   const notices: { message: string; type: string }[] = [];
   const changes: string[] = [];
   const state = {
-    model: { provider: "openai", id: "gpt-6-astra" } as Model,
-    thinking: "medium", idle: true, hasUI: true, available: true, authenticated: true,
+    model: { provider: "openai", id: "gpt-6.1-sol" } as Model,
+    thinking: "high", idle: true, hasUI: true, available: true, authenticated: true,
     selection: undefined as string | undefined, options: [] as string[], title: "",
     clamp: undefined as string | undefined, failure: undefined as Error | undefined,
     pending: undefined as Promise<void> | undefined,
@@ -55,8 +55,8 @@ function harness() {
 
 const expected = [
   ["light", "gpt-6-luna", "max"],
-  ["standard", "gpt-6-sol", "medium"],
-  ["default", "gpt-6-astra", "medium"],
+  ["standard", "gpt-6.1-sol", "medium"],
+  ["default", "gpt-6.1-sol", "high"],
   ["deep", "gpt-6-astra", "high"],
 ];
 for (const [name, model, thinking] of expected) {
@@ -69,7 +69,7 @@ for (const [name, model, thinking] of expected) {
     assert.equal(h.notices.at(-1)?.type, "info");
   });
 }
-test('cycling keeps both Astra depths and wraps in the original four-preset order', async () => {
+test('cycling keeps both Sol depths and wraps in the original four-preset order', async () => {
   const h = harness();
   assert.deepEqual([...h.commands.keys()], ["mode"]);
   assert.deepEqual([...h.shortcuts.keys()], ["ctrl+shift+m", "ctrl+space"]);
@@ -82,6 +82,7 @@ test('cycling keeps both Astra depths and wraps in the original four-preset orde
 });
 test('cycling derives current state from native model/thinking, including manual changes', async () => {
   const h = harness();
+  h.state.model = { provider: "openai", id: "gpt-6-astra" };
   h.state.thinking = "high";
   await h.shortcut();
   assert.equal(h.state.model.id, "gpt-6-luna");
@@ -97,6 +98,7 @@ test('native selector reports current mode, supports cancellation, and applies a
   assert.deepEqual(h.changes, []);
   h.state.selection = "deep";
   await h.shortcut("ctrl+shift+m");
+  assert.equal(h.state.model.id, "gpt-6-astra");
   assert.equal(h.state.thinking, "high");
 });
 for (const scenario of ["unknown", "store", "unavailable", "unauthenticated", "busy", "exception"]) {
