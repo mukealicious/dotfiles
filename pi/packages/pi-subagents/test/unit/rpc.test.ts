@@ -599,6 +599,7 @@ describe("subagent extension RPC bridge", () => {
 			[{ workflowScript: "return 1" }, /workflowScript was removed; pass inline script text as script/],
 			[{ workflowScriptPath: "ci/sweep.js" }, /workflowScriptPath was removed; pass the file as workflow: "\.\/path\/to\/script\.js"/],
 			[{ workflow: true }, /no reply block for workflow: true/],
+			[{ workflow: "true" }, /no reply block for workflow: true/],
 			[{ script: "return 1", workflow: "./ci/sweep.js" }, /script cannot be combined with workflow/],
 		] as const) {
 			const rejected = await request(events, "spawn-rejected", "spawn", params);
@@ -1323,7 +1324,7 @@ describe("subagent extension RPC bridge", () => {
 						getSessionFile: () => sessionFile,
 						getBranch: () => [{
 							type: "message",
-							message: { role: "toolResult", toolName: "subagent", details: { mode: "workflow", runId: workflowRunId, results: [] } },
+							message: { role: "toolResult", toolName: "subagent", details: { mode: "workflow", runId: workflowRunId, asyncId: workflowRunId, results: [] } },
 						}],
 					},
 				}) as any,

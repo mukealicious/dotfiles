@@ -195,10 +195,14 @@ Retained packages:
   then `/reload`. The [patch notes](patches/README.md#sol-fast-validation) record
   the live comparison and the subscription tier-reporting caveat.
 - **pi-subagents@0.74.0:** unchanged upstream source pinned at
-  `b6bda32f03b7f549623bc404c9be14dca298ddc4`, including its matching orchestration
+  `10694a673cb077b4d3ec6a6cfe68acb6c28b83a5`, including its matching orchestration
   skill. Package prompts and the optional council skill are not auto-loaded.
   See its [README](packages/pi-subagents/README.md) and
   [provenance](packages/pi-subagents/VENDORED_FROM.md).
+  **Known limitation:** Claude Code async dynamic fanout fails with model/effort
+  overrides or pinned agent models. Use native Pi children or Claude Code
+  single/static-parallel runs instead; no local implementation fix is carried.
+  See the [accepted upstream limitation](packages/pi-subagents/VENDORED_FROM.md#known-accepted-upstream-limitation).
 - **mitsupi:** pinned Git source `mitsuhiko/agent-stuff` at
   `0865c849befd2021490679f96a8dee58c84ac857` (manifest version still 1.6.0);
   eight selected skills only. All package extensions, prompts and themes are

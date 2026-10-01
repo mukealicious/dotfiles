@@ -1497,6 +1497,24 @@ Answer only from the supplied synthetic text.
 		assert.equal(mockPi.callCount(), 0);
 	});
 
+	it("validate reports workflow args errors beside script errors without launching (#2608)", { skip: !createSubagentExecutor ? "executor not importable" : undefined }, async () => {
+		const executor = makeExecutor([makeAgent("echo")]);
+		const workflowScript = `return runs.run("bad key", { agent: "echo" });`;
+		const tooManyFields = Object.fromEntries(Array.from({ length: 17 }, (_, index) => [`field${index}`, "x"]));
+		const oversize = { a: "x".repeat(9000), b: "y".repeat(9000) };
+		const scriptError = { message: "runs.run key must be 1-128 characters using letters, numbers, '.', '_' or '-', and start with a letter or number.", line: 1, column: 17 };
+
+		for (const [args, argsError] of [[tooManyFields, "workflow args contains too many fields."], [oversize, "workflow args exceed 16384 bytes."]] as const) {
+			const result = await executor.executePublic("args-validation", { action: "validate", workflowScript, args }, new AbortController().signal, undefined, makeMinimalCtx(tempDir));
+			assert.equal(result.isError, true);
+			assert.equal(result.details.mode, "management");
+			assert.deepEqual(JSON.parse(result.content[0]?.text ?? "null"), { ok: false, errors: [scriptError, { message: argsError }] });
+		}
+		const argsOnly = await executor.executePublic("args-only-validation", { action: "validate", workflowScript: "return 1;", args: oversize }, new AbortController().signal, undefined, makeMinimalCtx(tempDir));
+		assert.deepEqual(JSON.parse(argsOnly.content[0]?.text ?? "null"), { ok: false, errors: [{ message: "workflow args exceed 16384 bytes." }] });
+		assert.equal(mockPi.callCount(), 0);
+	});
+
 	it("reports missing and empty workflow script files before validation", { skip: !createSubagentExecutor ? "executor not importable" : undefined }, async () => {
 		fs.writeFileSync(path.join(tempDir, "empty.js"), " \n");
 		const executor = makeExecutor([makeAgent("echo")], {}, false, undefined, true, new Map(), undefined, undefined, createEventBus(), () => {
@@ -1557,6 +1575,51 @@ Answer only from the supplied synthetic text.
 		assert.equal(result.isError, undefined, result.content[0]?.text ?? "reply workflow failed");
 		assert.deepEqual(result.details.workflow?.value, { task: "from reply", child: "reply workflow" });
 		assert.equal(mockPi.callCount(), 1);
+	});
+
+	it("treats workflow: \"true\" from MCP clients as the reply block, not a resource named 'true' (#2600)", { skip: !createSubagentExecutor ? "executor not importable" : undefined }, async () => {
+		mockPi.onCall({ output: "reply workflow" });
+		const ctx = makeMinimalCtx(tempDir);
+		const reply = {
+			type: "message",
+			message: {
+				role: "assistant",
+				content: [
+					{ type: "text", text: "```js workflow\nconst child = await runs.run(\"main\", { agent: \"echo\", task: args.task });\nreturn child.output;\n```" },
+					{ type: "toolCall", id: "call-string-true", name: "subagent", arguments: { workflow: "true" } },
+				],
+			},
+		};
+		const replyCtx = { ...ctx, sessionManager: { ...ctx.sessionManager, getBranch: () => [reply] } };
+		const executor = makeExecutor([makeAgent("echo")]);
+
+		const validation = await executor.executePublic("call-string-true", { action: "validate", workflow: "true", args: { task: "from reply" } }, new AbortController().signal, undefined, replyCtx);
+		assert.equal(validation.isError, undefined, validation.content[0]?.text ?? "reply workflow validation failed");
+
+		const result = await executor.executePublic("call-string-true", { workflow: "true", args: { task: "from reply" }, async: false }, new AbortController().signal, undefined, replyCtx);
+		assert.equal(result.isError, undefined, result.content[0]?.text ?? "reply workflow failed");
+		assert.equal(result.details.workflow?.value, "reply workflow");
+		assert.equal(mockPi.callCount(), 1);
+	});
+
+	it("tags each foreground workflow result with its child run id", { skip: !createSubagentExecutor ? "executor not importable" : undefined }, async () => {
+		mockPi.onCall({ output: "first" });
+		mockPi.onCall({ output: "second" });
+		const result = await makeExecutor([makeAgent("echo")]).execute(
+			"workflow-result-run-ids",
+			{
+				async: false,
+				workflowScript: `const a = await runs.run("a", { agent: "echo", task: "A" }); const b = await runs.run("b", { agent: "echo", task: "B" }); return { a: a.runId, b: b.runId };`,
+			},
+			new AbortController().signal,
+			undefined,
+			makeMinimalCtx(tempDir),
+		);
+
+		assert.equal(result.isError, undefined, result.content[0]?.text ?? "workflow failed");
+		const value = result.details.workflow?.value as { a?: string; b?: string };
+		assert.ok(value.a && value.b && value.a !== value.b);
+		assert.deepEqual(result.details.results.map((entry) => ({ key: entry.workflowKey, runId: entry.runId })), [{ key: "a", runId: value.a }, { key: "b", runId: value.b }]);
 	});
 
 	it("executes a workflow loaded from a script path", { skip: !createSubagentExecutor ? "executor not importable" : undefined }, async () => {

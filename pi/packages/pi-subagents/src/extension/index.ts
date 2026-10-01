@@ -328,6 +328,7 @@ export default function registerSubagentExtension(pi: ExtensionAPI): void {
 	const fleetViewEnabled = config.fleetView !== false;
 	const fleetViewPlacement = resolveFleetViewPlacement(config.fleetViewPlacement);
 	const asyncWidgetEnabled = config.asyncWidget !== false;
+	const asyncWidgetCollapsed = config.asyncWidgetCollapsed === true;
 	const summaryInlineToolDisplay = config.inlineToolDisplay === "summary";
 	const tempArtifactsDir = getArtifactsDir(null);
 	const artifactCleanupDays = config.artifactConfig?.cleanupDays ?? DEFAULT_ARTIFACT_CONFIG.cleanupDays;
@@ -482,6 +483,7 @@ export default function registerSubagentExtension(pi: ExtensionAPI): void {
 	};
 	const { ensurePoller, refreshWidget, handleStarted, handleComplete, resetJobs, restoreActiveJobs, dispose: disposeAsyncJobTracker } = createAsyncJobTracker(pi, state, DIRS.async, {
 		widgetEnabled: asyncWidgetEnabled,
+		widgetCollapsed: asyncWidgetCollapsed,
 		onJobTerminal: () => refreshResultDelivery(),
 		supervisorRequestState: supervisorChannel.getSupervisorRequestState,
 	});
@@ -739,7 +741,7 @@ export default function registerSubagentExtension(pi: ExtensionAPI): void {
 			}
 			if (args.workflow !== undefined)
 				return new Text(
-					`${title}${gap}${theme.fg("accent", args.workflow === true ? "workflow (reply block)" : `workflow ${String(args.workflow)}`)}${args.async === true ? `${gap}${theme.fg("warning", "[async]")}` : ""}${args.preflight !== undefined ? `${gap}${theme.fg("dim", formatWorkflowPreflightCall(args.preflight))}` : ""}`,
+					`${title}${gap}${theme.fg("accent", args.workflow === true || args.workflow === "true" ? "workflow (reply block)" : `workflow ${String(args.workflow)}`)}${args.async === true ? `${gap}${theme.fg("warning", "[async]")}` : ""}${args.preflight !== undefined ? `${gap}${theme.fg("dim", formatWorkflowPreflightCall(args.preflight))}` : ""}`,
 					0,
 					0,
 				);
@@ -777,23 +779,28 @@ export default function registerSubagentExtension(pi: ExtensionAPI): void {
 	registerWaitTool(pi, state, waitToolConfig.enabled, waitSubscriptionManager, waitToolConfig.defaultTimeoutMs, undefined, supervisorChannel.hasPendingRequests);
 
 	pi.on("agent_end", async (_event, ctx) => {
-		if (!ctx.hasUI) await drainOutstandingWork({ state, events: pi.events, hasPendingSupervisorRequest: supervisorChannel.hasPendingRequests });
-		const ownerSessionId = state.currentSessionId;
-		if (!ownerSessionId) return;
-		goalTurnId += 1;
 		try {
-			const location = resolveMissionStoreLocation({ projectRoot: state.baseCwd, ...(config.missions ? { config: config.missions } : {}) });
-			const retainedChildren = listRetainedChildren(DIRS.async, ownerSessionId);
-			for (const notice of collectGoalContinuationNotices({ location, ownerSessionId, retainedChildren, turnId: goalTurnId })) {
-				handleSubagentControlNotice({
-					pi,
-					state,
-					visibleControlNotices: new Set(),
-					details: { source: "goal", event: notice.event, noticeText: notice.message },
-				});
+			if (!ctx.hasUI) await drainOutstandingWork({ state, events: pi.events, hasPendingSupervisorRequest: supervisorChannel.hasPendingRequests });
+		} finally {
+			// Deliver notices after a failed drain without suppressing its rejection.
+			const ownerSessionId = state.currentSessionId;
+			if (ownerSessionId) {
+				goalTurnId += 1;
+				try {
+					const location = resolveMissionStoreLocation({ projectRoot: state.baseCwd, ...(config.missions ? { config: config.missions } : {}) });
+					const retainedChildren = listRetainedChildren(DIRS.async, ownerSessionId);
+					for (const notice of collectGoalContinuationNotices({ location, ownerSessionId, retainedChildren, turnId: goalTurnId })) {
+						handleSubagentControlNotice({
+							pi,
+							state,
+							visibleControlNotices: new Set(),
+							details: { source: "goal", event: notice.event, noticeText: notice.message },
+						});
+					}
+				} catch (error) {
+					console.error("Failed to evaluate goal missions:", error);
+				}
 			}
-		} catch (error) {
-			console.error("Failed to evaluate goal missions:", error);
 		}
 	});
 

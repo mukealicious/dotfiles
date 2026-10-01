@@ -4,6 +4,7 @@
 
 import { Type } from "typebox";
 import type { DisabledFeatureSurface } from "../shared/disabled-features.ts";
+import { MAX_ARGS_BYTES, MAX_ARGS_DEPTH, MAX_ARGS_FIELDS, MAX_ARGS_ITEMS } from "../workflows/workflow-resources.ts";
 
 function keepTopLevelParameterDescriptions<T>(schema: T): T {
 	return pruneNestedDescriptions(schema, []) as T;
@@ -202,7 +203,7 @@ const SubagentParamProperties = {
 	timezone: Type.Optional(Type.String()),
 	overlap: Type.Optional(Type.String({ enum: ["skip"] })),
 	catchUp: Type.Optional(Type.String({ enum: ["none", "latest"], description: "Missed schedule occurrences; default latest." })),
-	missionId: Type.Optional(Type.String()),
+	missionId: Type.Optional(Type.String({ description: "Existing mission to attach to a workflow or schedule.create; read guide missions for lifecycle and retention." })),
 	mission: Type.Optional(Type.Unsafe({ ...MissionLaunchOverride, description: "false disables; true invalid. Object: exactly one non-empty title or summary; objective/labels optional; goal only true, requires budget.tokens." })),
 	missionUpdate: Type.Optional(Type.Unsafe({ ...MissionUpdateOverride, description: "Mission patch; read guide missions." })),
 	missionStatus: Type.Optional(Type.String()),
@@ -222,7 +223,7 @@ const SubagentParamProperties = {
 		anyOf: [{ type: "boolean" }, { type: "string", minLength: 1 }],
 		description: "true: run the one ```js workflow block written in this same reply (false invalid). String with '/': script file read from request cwd. Other string: named workflow resource. Raw scripts (true or path) have no runs.host.",
 	})),
-	args: Type.Optional(Type.Unsafe({ type: "object", maxProperties: 16, additionalProperties: true, description: "Bounded plain-JSON args for workflow; raw-script args are exposed deeply frozen and persisted, so do not include secrets." })),
+	args: Type.Optional(Type.Unsafe({ type: "object", maxProperties: MAX_ARGS_FIELDS, additionalProperties: true, description: `Plain-JSON args for workflow; ${MAX_ARGS_FIELDS} fields/object, ${MAX_ARGS_ITEMS} items/array, depth ${MAX_ARGS_DEPTH}, ${MAX_ARGS_BYTES / 1024} KiB total; raw-script args are exposed deeply frozen and persisted, so do not include secrets.` })),
 	globalConcurrencyLimit: Type.Optional(Type.Integer({ minimum: 1 })),
 	maxSubagentSpawnsPerRun: Type.Optional(Type.Integer({ minimum: 1 })),
 	preflight: Type.Optional(WorkflowPreflightOverride),
