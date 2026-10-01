@@ -13,13 +13,16 @@ import * as path from "node:path";
 import { createTempDir, removeTempDir, tryImport } from "../support/helpers.ts";
 
 // Top-level await
-const settings = await tryImport<any>("./settings.ts");
-const skills = await tryImport<any>("./skills.ts");
+const settings = await tryImport<any>("./src/shared/settings.ts");
+const skills = await tryImport<any>("./src/agents/skills.ts");
 const available = !!(settings && skills);
 
 const resolveChainTemplates = settings?.resolveChainTemplates;
 const buildChainInstructions = settings?.buildChainInstructions;
 const resolveStepBehavior = settings?.resolveStepBehavior;
+const resolveParallelBehaviors = settings?.resolveParallelBehaviors;
+const suppressProgressForReadOnlyTask = settings?.suppressProgressForReadOnlyTask;
+const taskDisallowsFileUpdates = settings?.taskDisallowsFileUpdates;
 const isParallelStep = settings?.isParallelStep;
 const createChainDir = settings?.createChainDir;
 const normalizeSkillInput = skills?.normalizeSkillInput;
@@ -148,10 +151,33 @@ describe("resolveStepBehavior", { skip: !available ? "pi packages not available"
 		assert.equal(behavior.output, "custom.md");
 	});
 
+	it("uses agent outputMode defaults unless a step overrides them", () => {
+		const inlineBehavior = resolveStepBehavior({ name: "test", output: "report.md" }, {});
+		assert.equal(inlineBehavior.outputMode, "inline");
+		assert.equal(resolveStepBehavior({ name: "test", output: "report.md", outputMode: "file-only" }, {}).outputMode, "file-only");
+
+		const stepOverrideBehavior = resolveStepBehavior({ name: "test", output: "report.md", outputMode: "file-only" }, { outputMode: "inline" });
+		assert.equal(stepOverrideBehavior.outputMode, "inline");
+	});
+
 	it("false disables output", () => {
 		const config = { name: "test", output: "report.md" };
 		const behavior = resolveStepBehavior(config, { output: false });
 		assert.equal(behavior.output, false);
+	});
+
+	it("string false disables output defensively", () => {
+		const config = { name: "test", output: "report.md" };
+		const behavior = resolveStepBehavior(config, { output: "false" });
+		assert.equal(behavior.output, false);
+	});
+
+	it("ignores boolean and string true output overrides", () => {
+		const config = { name: "test", output: "report.md" };
+		assert.equal(resolveStepBehavior(config, { output: true }).output, "report.md");
+		assert.equal(resolveStepBehavior(config, { output: "true" }).output, "report.md");
+		assert.equal(resolveStepBehavior({ name: "test" }, { output: true }).output, false);
+		assert.equal(resolveStepBehavior({ name: "test" }, { output: "true" }).output, false);
 	});
 
 	it("defaults to false when agent has no config", () => {
@@ -163,21 +189,82 @@ describe("resolveStepBehavior", { skip: !available ? "pi packages not available"
 	});
 });
 
+describe("resolveParallelBehaviors", { skip: !available ? "pi packages not available" : undefined }, () => {
+	it("uses agent outputMode defaults unless a parallel task overrides them", () => {
+		const [defaultBehavior] = resolveParallelBehaviors(
+			[{ agent: "reviewer", task: "Review" }],
+			[{ name: "reviewer", output: "report.md", outputMode: "file-only" }],
+			0,
+		);
+		assert.equal(defaultBehavior?.outputMode, "file-only");
+
+		const [overrideBehavior] = resolveParallelBehaviors(
+			[{ agent: "reviewer", task: "Review", outputMode: "inline" }],
+			[{ name: "reviewer", output: "report.md", outputMode: "file-only" }],
+			0,
+		);
+		assert.equal(overrideBehavior?.outputMode, "inline");
+	});
+
+	it("string false agent default disables output in chain parallel tasks", () => {
+		const behaviors = resolveParallelBehaviors(
+			[{ agent: "reviewer", task: "Review" }],
+			[{ name: "reviewer", output: "false" }],
+			0,
+		);
+
+		assert.equal(behaviors[0]?.output, false);
+	});
+
+	it("requires truthful context or explicit fallback for missing parallel agents", () => {
+		assert.throws(() => resolveParallelBehaviors([{ agent: "missing", task: "Review" }], [], 0), /requires unknown-agent diagnostic context/);
+		assert.throws(() => resolveParallelBehaviors(
+			[{ agent: "missing", task: "Review" }], [], 0, undefined,
+			{ cwd: process.cwd(), scope: "both" },
+		), /Unknown agent: missing[\s\S]*Effective cwd:[\s\S]*Consulted agent-definition directories/);
+	});
+});
+
+describe("read-only progress suppression", { skip: !available ? "pi packages not available" : undefined }, () => {
+	it("suppresses progress for review-only or no-edit tasks", () => {
+		const behavior = { reads: undefined, output: false, outputMode: "inline", progress: true, skills: undefined };
+
+		assert.equal(taskDisallowsFileUpdates("Review-only. Do not edit files."), true);
+		assert.equal(taskDisallowsFileUpdates("Implement read-only mode for config files."), false);
+		assert.equal(taskDisallowsFileUpdates("This task is not read-only; edit files."), false);
+		assert.equal(suppressProgressForReadOnlyTask(behavior, "Review-only. Do not edit files.").progress, false);
+		assert.equal(suppressProgressForReadOnlyTask(behavior, "{task}", "Review-only. Do not edit files.").progress, false);
+		assert.equal(suppressProgressForReadOnlyTask(behavior, "Implement the approved fix.").progress, true);
+	});
+});
+
 describe("buildChainInstructions", { skip: !available ? "pi packages not available" : undefined }, () => {
-	it("adds [Read from:] prefix for reads", () => {
-		const behavior = { reads: ["context.md"], output: false, progress: false, skills: undefined };
+	it("includes existing reads and omits missing reads", () => {
+		const behavior = { reads: ["context.md", "missing.md"], output: false, outputMode: "inline", progress: false, skills: undefined };
 		const dir = createTempDir("chain-test-");
 		try {
+			fs.writeFileSync(path.join(dir, "context.md"), "context");
 			const { prefix } = buildChainInstructions(behavior, dir, false);
 			assert.ok(prefix.includes("[Read from:"), `should have Read instruction: ${prefix}`);
-			assert.ok(prefix.includes("context.md"), "should reference the file");
+			assert.ok(prefix.includes("context.md"), "should reference the existing file");
+			assert.doesNotMatch(prefix, /missing\.md/);
+		} finally {
+			removeTempDir(dir);
+		}
+	});
+
+	it("omits the read prefix when all configured reads are missing", () => {
+		const behavior = { reads: ["missing.md"], output: false, outputMode: "inline", progress: false, skills: undefined };
+		const dir = createTempDir("chain-test-");
+		try {
+			assert.doesNotMatch(buildChainInstructions(behavior, dir, false).prefix, /\[Read from:/);
 		} finally {
 			removeTempDir(dir);
 		}
 	});
 
 	it("adds [Write to:] prefix for output", () => {
-		const behavior = { reads: undefined, output: "output.md", progress: false, skills: undefined };
+		const behavior = { reads: undefined, output: "output.md", outputMode: "inline", progress: false, skills: undefined };
 		const dir = createTempDir("chain-test-");
 		try {
 			const { prefix } = buildChainInstructions(behavior, dir, false);
@@ -189,7 +276,7 @@ describe("buildChainInstructions", { skip: !available ? "pi packages not availab
 	});
 
 	it("adds progress instructions in suffix for first progress step", () => {
-		const behavior = { reads: undefined, output: false, progress: true, skills: undefined };
+		const behavior = { reads: undefined, output: false, outputMode: "inline", progress: true, skills: undefined };
 		const dir = createTempDir("chain-test-");
 		try {
 			const { suffix } = buildChainInstructions(behavior, dir, true);
@@ -207,7 +294,7 @@ describe("buildChainInstructions", { skip: !available ? "pi packages not availab
 	});
 
 	it("includes previous output in suffix when not in template", () => {
-		const behavior = { reads: undefined, output: false, progress: false, skills: undefined };
+		const behavior = { reads: undefined, output: false, outputMode: "inline", progress: false, skills: undefined };
 		const dir = createTempDir("chain-test-");
 		try {
 			const { suffix } = buildChainInstructions(behavior, dir, false, "Previous step output here");
@@ -221,7 +308,7 @@ describe("buildChainInstructions", { skip: !available ? "pi packages not availab
 	});
 
 	it("returns empty prefix/suffix when no behavior configured", () => {
-		const behavior = { reads: undefined, output: false, progress: false, skills: undefined };
+		const behavior = { reads: undefined, output: false, outputMode: "inline", progress: false, skills: undefined };
 		const dir = createTempDir("chain-test-");
 		try {
 			const { prefix, suffix } = buildChainInstructions(behavior, dir, false);

@@ -3,16 +3,19 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, it } from "node:test";
-import type { AgentConfig } from "../../agents.ts";
+import type { AgentConfig } from "../../src/agents/agents.ts";
 import {
+	NATIVE_INTERCOM_EXTENSION_DIR,
 	applyIntercomBridgeToAgent,
 	diagnoseIntercomBridge,
 	resolveIntercomBridge,
 	resolveIntercomSessionTarget,
 	resolveSubagentIntercomTarget,
 	resolveIntercomBridgeMode,
+	validateIntercomBridgeConfig,
 	type IntercomBridgeState,
-} from "../../intercom-bridge.ts";
+} from "../../src/intercom/intercom-bridge.ts";
+import { agentDefinitionDigest } from "../../src/shared/launch-contract.ts";
 
 function makeAgent(overrides: Partial<AgentConfig> = {}): AgentConfig {
 	return {
@@ -43,11 +46,16 @@ describe("resolveIntercomBridgeMode", () => {
 
 describe("resolveIntercomSessionTarget", () => {
 	it("prefers an explicit session name", () => {
-		assert.equal(resolveIntercomSessionTarget("planner", "session-12345678"), "planner");
+		assert.equal(resolveIntercomSessionTarget("planner", "session-12345678", "session-stableabcdef"), "planner");
 	});
 
 	it("uses a runtime-only subagent chat alias when unnamed", () => {
-		assert.equal(resolveIntercomSessionTarget(undefined, "session-12345678"), "subagent-chat-12345678");
+		assert.equal(resolveIntercomSessionTarget(undefined, "session-12345678", ""), "subagent-chat-12345678");
+	});
+
+	it("uses the current pi-intercom runtime id for unnamed fallback when present", () => {
+		assert.equal(resolveIntercomSessionTarget(undefined, "session-12345678", "session-stableabcdef"), "subagent-chat-stableabcdef");
+		assert.equal(resolveIntercomSessionTarget(undefined, "session-12345678", "session-abcdefghijklmnopqrst"), "subagent-chat-abcdefghijklmnopqr");
 	});
 });
 
@@ -58,134 +66,67 @@ describe("resolveSubagentIntercomTarget", () => {
 	});
 });
 
-function withMalformedIntercomConfig<T>(fn: (paths: { extensionDir: string; configPath: string }) => T): T {
-	const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-intercom-diagnostic-test-"));
-	const extensionDir = path.join(tempDir, "pi-intercom");
-	const configPath = path.join(tempDir, "config.json");
-	fs.mkdirSync(extensionDir, { recursive: true });
-	fs.writeFileSync(configPath, "{ enabled: nope }");
-	try {
-		return fn({ extensionDir, configPath });
-	} finally {
-		fs.rmSync(tempDir, { recursive: true, force: true });
-	}
-}
-
 describe("diagnoseIntercomBridge", () => {
-	it("reports inactive and unavailable when pi-intercom is missing", () => {
-		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-intercom-diagnostic-test-"));
-		try {
-			const diagnostic = diagnoseIntercomBridge({
-				config: { mode: "always" },
-				context: "fresh",
-				orchestratorTarget: "main",
-				extensionDir: path.join(tempDir, "missing-pi-intercom"),
-				configPath: path.join(tempDir, "config.json"),
-			});
-			assert.equal(diagnostic.active, false);
-			assert.equal(diagnostic.wantsIntercom, true);
-			assert.equal(diagnostic.piIntercomAvailable, false);
-			assert.equal(diagnostic.reason, "pi-intercom extension was not found");
-		} finally {
-			fs.rmSync(tempDir, { recursive: true, force: true });
-		}
+	it("reports the native supervisor channel as available without external package discovery", () => {
+		const diagnostic = diagnoseIntercomBridge({
+			config: { mode: "always" },
+			context: "fresh",
+			orchestratorTarget: "main",
+		});
+
+		assert.equal(diagnostic.active, true);
+		assert.equal(diagnostic.wantsIntercom, true);
+		assert.equal(diagnostic.supervisorChannelAvailable, true);
+		assert.equal(diagnostic.extensionDir, NATIVE_INTERCOM_EXTENSION_DIR);
 	});
 
-	it("preserves malformed intercom config errors while matching runtime enabled behavior", () => {
-		withMalformedIntercomConfig(({ extensionDir, configPath }) => {
-			const diagnostic = diagnoseIntercomBridge({
-				config: { mode: "always" },
-				context: "fresh",
-				orchestratorTarget: "main",
-				extensionDir,
-				configPath,
-			});
-			assert.equal(diagnostic.active, true);
-			assert.equal(diagnostic.intercomConfigEnabled, true);
-			assert.match(diagnostic.intercomConfigError ?? "", /SyntaxError:/);
+	it("does not read external intercom config when bridge mode is off", () => {
+		const diagnostic = diagnoseIntercomBridge({
+			config: { mode: "off" },
+			context: "fresh",
+			orchestratorTarget: "main",
 		});
-	});
 
-	it("does not report config parse errors when runtime would not read intercom config", () => {
-		withMalformedIntercomConfig(({ extensionDir, configPath }) => {
-			const diagnostic = diagnoseIntercomBridge({
-				config: { mode: "off" },
-				context: "fresh",
-				orchestratorTarget: "main",
-				extensionDir,
-				configPath,
-			});
-			assert.equal(diagnostic.active, false);
-			assert.equal(diagnostic.reason, "bridge mode is off");
-			assert.equal(diagnostic.intercomConfigEnabled, undefined);
-			assert.equal(diagnostic.intercomConfigError, undefined);
-		});
+		assert.equal(diagnostic.active, false);
+		assert.equal(diagnostic.reason, "bridge mode is off");
 	});
 });
 
 describe("resolveIntercomBridge", () => {
-	it("activates when extension exists, config is enabled, and context matches", () => {
-		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-intercom-bridge-test-"));
-		const extensionDir = path.join(tempDir, "pi-intercom");
-		const configPath = path.join(tempDir, "config.json");
-		fs.mkdirSync(extensionDir, { recursive: true });
-		fs.writeFileSync(configPath, JSON.stringify({ enabled: true }));
-		try {
-			const bridge = resolveIntercomBridge({
-				config: { mode: "fork-only" },
-				context: "fork",
-				orchestratorTarget: "main",
-				extensionDir,
-				configPath,
-			});
-			assert.equal(bridge.active, true);
-			assert.equal(bridge.orchestratorTarget, "main");
-		} finally {
-			fs.rmSync(tempDir, { recursive: true, force: true });
-		}
+	it("activates when mode/context permit and an orchestrator target exists", () => {
+		const bridge = resolveIntercomBridge({
+			config: { mode: "fork-only" },
+			context: "fork",
+			orchestratorTarget: "main",
+		});
+
+		assert.equal(bridge.active, true);
+		assert.equal(bridge.resultDelivery, false);
+		assert.equal(bridge.orchestratorTarget, "main");
+		assert.equal(bridge.extensionDir, NATIVE_INTERCOM_EXTENSION_DIR);
 	});
 
-	it("stays inactive when intercom config is disabled", () => {
-		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-intercom-bridge-test-"));
-		const extensionDir = path.join(tempDir, "pi-intercom");
-		const configPath = path.join(tempDir, "config.json");
-		fs.mkdirSync(extensionDir, { recursive: true });
-		fs.writeFileSync(configPath, JSON.stringify({ enabled: false }));
-		try {
-			const bridge = resolveIntercomBridge({
-				config: { mode: "always" },
-				context: "fresh",
-				orchestratorTarget: "main",
-				extensionDir,
-				configPath,
-			});
-			assert.equal(bridge.active, false);
-		} finally {
-			fs.rmSync(tempDir, { recursive: true, force: true });
-		}
+	it("uses a per-run override instead of the global config", () => {
+		const bridge = resolveIntercomBridge({
+			config: { mode: "always", resultDelivery: true },
+			override: { mode: "off" },
+			context: "fresh",
+			orchestratorTarget: "main",
+		});
+
+		assert.equal(bridge.active, false);
+		assert.equal(bridge.mode, "off");
+		assert.equal(bridge.resultDelivery, false);
 	});
 
-	it("stays active when intercom config is malformed", () => {
-		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-intercom-bridge-test-"));
-		const extensionDir = path.join(tempDir, "pi-intercom");
-		const configPath = path.join(tempDir, "config.json");
-		fs.mkdirSync(extensionDir, { recursive: true });
-		fs.writeFileSync(configPath, "{ enabled: nope }");
-		const originalWarn = console.warn;
-		console.warn = () => {};
-		try {
-			const bridge = resolveIntercomBridge({
-				config: { mode: "always" },
-				context: "fresh",
-				orchestratorTarget: "main",
-				extensionDir,
-				configPath,
-			});
-			assert.equal(bridge.active, true);
-		} finally {
-			console.warn = originalWarn;
-			fs.rmSync(tempDir, { recursive: true, force: true });
-		}
+	it("can disable external grouped-result delivery without disabling supervisor coordination", () => {
+		const bridge = resolveIntercomBridge({
+			config: { mode: "always", resultDelivery: false },
+			context: "fresh",
+			orchestratorTarget: "main",
+		});
+		assert.equal(bridge.active, true);
+		assert.equal(bridge.resultDelivery, false);
 	});
 
 	it("stays inactive for fresh context when mode is fork-only", () => {
@@ -193,49 +134,51 @@ describe("resolveIntercomBridge", () => {
 			config: { mode: "fork-only" },
 			context: "fresh",
 			orchestratorTarget: "main",
-			extensionDir: "/path/that/does/not/matter",
 		});
 		assert.equal(bridge.active, false);
 	});
 
 	it("loads custom instructions from instructionFile", () => {
-		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-intercom-bridge-test-"));
-		const extensionDir = path.join(tempDir, "pi-intercom");
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-native-intercom-bridge-test-"));
 		const instructionFile = path.join(tempDir, "bridge.md");
-		fs.mkdirSync(extensionDir, { recursive: true });
 		fs.writeFileSync(instructionFile, "Custom bridge for {orchestratorTarget}\nUse ask then send.");
 		try {
 			const bridge = resolveIntercomBridge({
 				config: { mode: "always", instructionFile },
 				context: "fresh",
 				orchestratorTarget: "main",
-				extensionDir,
 			});
 			assert.equal(bridge.active, true);
 			assert.match(bridge.instruction, /Custom bridge for main/);
+			assert.equal(bridge.interpolatesOrchestratorTarget, true);
 		} finally {
 			fs.rmSync(tempDir, { recursive: true, force: true });
 		}
 	});
 
+	it("keeps the default instruction independent of the parent session", () => {
+		const first = resolveIntercomBridge({ config: { mode: "always" }, context: "fresh", orchestratorTarget: "subagent-chat-first" });
+		const second = resolveIntercomBridge({ config: { mode: "always" }, context: "fresh", orchestratorTarget: "subagent-chat-second" });
+		assert.equal(first.active, true);
+		assert.equal(first.interpolatesOrchestratorTarget, false);
+		assert.equal(first.instruction, second.instruction);
+		assert.doesNotMatch(first.instruction, /subagent-chat-first/);
+		assert.equal(first.orchestratorTarget, "subagent-chat-first");
+	});
+
 	it("uses stronger default instructions for fork-aware coordination", () => {
-		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-intercom-bridge-test-"));
-		const extensionDir = path.join(tempDir, "pi-intercom");
-		fs.mkdirSync(extensionDir, { recursive: true });
-		try {
-			const bridge = resolveIntercomBridge({
-				config: { mode: "always" },
-				context: "fork",
-				orchestratorTarget: "main",
-				extensionDir,
-			});
-			assert.equal(bridge.active, true);
-			assert.match(bridge.instruction, /reference-only/i);
-			assert.match(bridge.instruction, /normal assistant text/i);
-			assert.match(bridge.instruction, /focused task result/i);
-		} finally {
-			fs.rmSync(tempDir, { recursive: true, force: true });
-		}
+		const bridge = resolveIntercomBridge({
+			config: { mode: "always" },
+			context: "fork",
+			orchestratorTarget: "main",
+		});
+		assert.equal(bridge.active, true);
+		assert.match(bridge.instruction, /reference-only/i);
+		assert.match(bridge.instruction, /normal assistant text/i);
+		assert.match(bridge.instruction, /contact_supervisor/);
+		assert.match(bridge.instruction, /need_decision/);
+		assert.match(bridge.instruction, /progress_update/);
+		assert.match(bridge.instruction, /focused task result/i);
 	});
 });
 
@@ -243,38 +186,83 @@ describe("applyIntercomBridgeToAgent", () => {
 	const activeBridge: IntercomBridgeState = {
 		active: true,
 		mode: "always",
+		resultDelivery: true,
 		orchestratorTarget: "main",
-		extensionDir: "/Users/test/.pi/agent/extensions/pi-intercom",
-		instruction: "Intercom orchestration channel:\n- Need a decision or blocked: intercom({ action: \"ask\", to: \"main\", message: \"<question>\" })\n- Blocked/update: intercom({ action: \"send\", to: \"main\", message: \"UPDATE: <summary>\" })",
+		extensionDir: NATIVE_INTERCOM_EXTENSION_DIR,
+		instruction: "Intercom orchestration channel:\n- Need a decision or blocked: contact_supervisor({ reason: \"need_decision\", message: \"<question>\" })\n- Blocked/update: contact_supervisor({ reason: \"progress_update\", message: \"UPDATE: <summary>\" })",
+		interpolatesOrchestratorTarget: false,
 	};
 
-	it("does not widen an explicit tool allowlist", () => {
-		const agent = makeAgent({ tools: ["read", "grep", "find", "ls"] });
-		assert.equal(applyIntercomBridgeToAgent(agent, activeBridge), agent);
+	it("preserves the parsed definition digest across the overlay", () => {
+		const agent = makeAgent({ tools: ["read"] });
+		const parsedDigest = agentDefinitionDigest(agent);
+		const bridged = applyIntercomBridgeToAgent(agent, activeBridge);
+		assert.equal(bridged.definitionDigest, parsedDigest);
+		assert.equal(agentDefinitionDigest(bridged), parsedDigest);
+		assert.equal(agentDefinitionDigest(applyIntercomBridgeToAgent(bridged, activeBridge)), parsedDigest);
+		assert.equal(agent.definitionDigest, undefined);
 	});
 
-	it("injects instructions only when intercom is already authorized", () => {
-		const updated = applyIntercomBridgeToAgent(makeAgent({ tools: ["read", "intercom"] }), activeBridge);
-		assert.deepEqual(updated.tools, ["read", "intercom"]);
+	it("injects contact_supervisor and prompt instructions", () => {
+		const updated = applyIntercomBridgeToAgent(makeAgent({ tools: ["read", "bash"] }), activeBridge);
+		assert.deepEqual(updated.tools, ["read", "bash", "contact_supervisor"]);
 		assert.match(updated.systemPrompt, /Intercom orchestration channel:/);
-		assert.match(updated.systemPrompt, /action: "ask"/);
+		assert.match(updated.systemPrompt, /contact_supervisor/);
+		assert.doesNotMatch(updated.systemPrompt ?? "", /Generic intercom/);
 	});
 
-	it("keeps unrestricted agents unrestricted", () => {
-		const updated = applyIntercomBridgeToAgent(makeAgent(), activeBridge);
-		assert.equal(updated.tools, undefined);
-		assert.match(updated.systemPrompt, /Intercom orchestration channel:/);
+	it("is idempotent", () => {
+		const first = applyIntercomBridgeToAgent(makeAgent({ tools: ["read"] }), activeBridge);
+		const second = applyIntercomBridgeToAgent(first, activeBridge);
+		assert.equal(second.tools?.filter((tool) => tool === "intercom").length, 0);
+		assert.equal(second.tools?.filter((tool) => tool === "contact_supervisor").length, 1);
+		assert.equal(second.systemPrompt, first.systemPrompt);
 	});
 
-	it("does not inject when extension sandbox excludes intercom", () => {
+	it("does not block native supervisor tools for agents with explicit extension allowlists", () => {
 		const agent = makeAgent({ tools: ["read"], extensions: ["/tmp/other-extension/index.ts"] });
 		const updated = applyIntercomBridgeToAgent(agent, activeBridge);
-		assert.equal(updated, agent);
+		assert.deepEqual(updated.tools, ["read", "contact_supervisor"]);
+		assert.match(updated.systemPrompt, /contact_supervisor/);
 	});
 
-	it("does not treat not-pi-intercom paths as allowed", () => {
-		const agent = makeAgent({ tools: ["read"], extensions: ["/tmp/not-pi-intercom/index.ts"] });
-		const updated = applyIntercomBridgeToAgent(agent, activeBridge);
-		assert.equal(updated, agent);
+	it("preserves explicitly requested external intercom tools", () => {
+		const updated = applyIntercomBridgeToAgent(makeAgent({ tools: ["read", "intercom"] }), activeBridge);
+		assert.deepEqual(updated.tools, ["read", "intercom", "contact_supervisor"]);
+	});
+
+	it("does not widen explicit empty or MCP-only builtin allowlists", () => {
+		const emptyTools = applyIntercomBridgeToAgent(makeAgent({ tools: [] }), activeBridge);
+		assert.deepEqual(emptyTools.tools, []);
+		assert.match(emptyTools.systemPrompt, /contact_supervisor/);
+
+		const mcpOnly = applyIntercomBridgeToAgent(makeAgent({ tools: [], mcpDirectTools: ["github/search_repositories"] }), activeBridge);
+		assert.deepEqual(mcpOnly.tools, []);
+		assert.deepEqual(mcpOnly.mcpDirectTools, ["github/search_repositories"]);
+		assert.match(mcpOnly.systemPrompt, /contact_supervisor/);
+	});
+});
+
+describe("validateIntercomBridgeConfig", () => {
+	it("accepts the documented fields and drops nothing", () => {
+		const result = validateIntercomBridgeConfig({ value: { mode: "fork-only", instructionFile: "./bridge.md", resultDelivery: true }, label: "intercomBridge" });
+		assert.deepEqual(result, { ok: true, value: { mode: "fork-only", instructionFile: "./bridge.md", resultDelivery: true } });
+		assert.deepEqual(validateIntercomBridgeConfig({ value: {}, label: "intercomBridge" }), { ok: true, value: {} });
+	});
+
+	it("rejects unknown fields and wrong types with the caller's label", () => {
+		const cases: Array<[unknown, RegExp]> = [
+			[null, /^bridge must be an object\.$/],
+			[[], /^bridge must be an object\.$/],
+			[{ extra: 1 }, /^bridge\.extra is not supported\.$/],
+			[{ mode: "loud" }, /^bridge\.mode is invalid\.$/],
+			[{ instructionFile: 1 }, /^bridge\.instructionFile must be a string\.$/],
+			[{ resultDelivery: "yes" }, /^bridge\.resultDelivery must be a boolean\.$/],
+		];
+		for (const [value, expected] of cases) {
+			const result = validateIntercomBridgeConfig({ value, label: "bridge" });
+			assert.equal(result.ok, false);
+			if (!result.ok) assert.match(result.error, expected);
+		}
 	});
 });

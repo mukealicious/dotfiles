@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { mergeAgentsForScope } from "../../agent-selection.ts";
-import type { AgentConfig } from "../../agents.ts";
+import { mergeAgentsForScope } from "../../src/agents/agent-selection.ts";
+import type { AgentConfig } from "../../src/agents/agents.ts";
 
-function makeAgent(name: string, source: "builtin" | "user" | "project", systemPrompt: string): AgentConfig {
+function makeAgent(name: string, source: "builtin" | "package" | "user" | "project", systemPrompt: string): AgentConfig {
 	return {
 		name,
 		description: `${name} agent`,
@@ -65,6 +65,17 @@ describe("mergeAgentsForScope", () => {
 		assert.equal(result.length, 1);
 		assert.equal(result[0]?.source, "user");
 		assert.equal(result[0]?.systemPrompt, "custom prompt");
+	});
+
+	it("package agents override builtins but not user or project agents", () => {
+		const builtinAgents = [makeAgent("scout", "builtin", "builtin prompt")];
+		const packageAgents = [makeAgent("scout", "package", "package prompt")];
+		const userAgents = [makeAgent("scout", "user", "user prompt")];
+		const projectAgents = [makeAgent("scout", "project", "project prompt")];
+
+		assert.equal(mergeAgentsForScope("both", [], [], builtinAgents, packageAgents)[0]?.source, "package");
+		assert.equal(mergeAgentsForScope("user", userAgents, [], builtinAgents, packageAgents)[0]?.source, "user");
+		assert.equal(mergeAgentsForScope("project", [], projectAgents, builtinAgents, packageAgents)[0]?.source, "project");
 	});
 
 	it("project agents override builtins with the same name", () => {

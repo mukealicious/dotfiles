@@ -1,25 +1,27 @@
+/**
+ * Scripted child sessions for tests.
+ *
+ * `install()` replaces the process-wide foreground `ChildSessionFactory` with
+ * a scripted one and names the runner-side scripted factory module for
+ * background launches. Both replay the responses queued with `onCall()` from
+ * one directory, so a test scripts a child the same way whichever launch path
+ * it exercises.
+ */
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import { setChildSessionFactory, setChildSessionFactoryModule } from "../../src/runs/shared/child-session.ts";
+import { createFakeChildSessions, type FakeChildResponse, type FakeChildSessionRecord } from "./fake-child-session.ts";
 
-export interface MockPiResponse {
-	output?: string;
-	stderr?: string;
-	exitCode?: number;
-	startupDelay?: number;
-	delay?: number;
-	jsonl?: unknown[];
-	steps?: Array<{
-		delay?: number;
-		jsonl?: unknown[];
-		stderr?: string;
-	}>;
-	echoEnv?: string[];
-}
+export type MockPiResponse = FakeChildResponse;
 
 export interface MockPi {
 	readonly dir: string;
+	/** In-process foreground child sessions created since the last reset, in launch order. */
+	readonly sessions: FakeChildSessionRecord[];
+	/** Number of times the foreground child session factory was disposed. */
+	readonly disposeCalls: number;
 	install(): void;
 	uninstall(): void;
 	onCall(response: MockPiResponse): void;
@@ -27,19 +29,13 @@ export interface MockPi {
 	callCount(): number;
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SCRIPT_PATH = path.join(__dirname, "mock-pi-script.mjs");
+const RUNNER_FACTORY_MODULE = path.join(path.dirname(fileURLToPath(import.meta.url)), "runner-child-session-factory.ts");
 const CALL_PREFIX = "call-";
 const DEFAULT_RESPONSE_FILE = "default-response.json";
 const QUEUED_PREFIX = "pending-";
 
 function ensureDir(dir: string): void {
 	fs.mkdirSync(dir, { recursive: true });
-}
-
-function writeExecutable(filePath: string, content: string): void {
-	fs.writeFileSync(filePath, content, "utf-8");
-	fs.chmodSync(filePath, 0o755);
 }
 
 function listQueueFiles(queueDir: string, prefix: string): string[] {
@@ -54,49 +50,40 @@ function listQueueFiles(queueDir: string, prefix: string): string[] {
 
 export function createMockPi(): MockPi {
 	const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-mock-cli-"));
-	const queueDir = path.join(rootDir, "queue");
-	const binDir = path.join(rootDir, "bin");
+	let queueGeneration = 0;
+	let queueDir = path.join(rootDir, `queue-${queueGeneration}`);
 	ensureDir(queueDir);
-	ensureDir(binDir);
 
-	const shellScriptPath = path.join(binDir, "pi");
-	const cmdScriptPath = path.join(binDir, "pi.cmd");
-	writeExecutable(shellScriptPath, `#!/bin/sh\nexec "${process.execPath}" "${SCRIPT_PATH}" "$@"\n`);
-	writeExecutable(cmdScriptPath, `@echo off\r\n"${process.execPath}" "${SCRIPT_PATH}" %*\r\n`);
-
+	const fakeSessions = createFakeChildSessions(() => queueDir);
 	let installed = false;
 	let nextSequence = 0;
-	let originalPath: string | undefined;
-	let originalArgv1: string | undefined;
 	let originalQueueEnv: string | undefined;
 
 	return {
 		get dir() {
 			return queueDir;
 		},
+		get sessions() {
+			return fakeSessions.sessions;
+		},
+		get disposeCalls() {
+			return fakeSessions.disposeCalls;
+		},
 		install() {
 			if (installed) return;
 			installed = true;
-			originalPath = process.env.PATH;
+			setChildSessionFactory(fakeSessions.factory);
+			setChildSessionFactoryModule(RUNNER_FACTORY_MODULE);
 			originalQueueEnv = process.env.MOCK_PI_QUEUE_DIR;
-			process.env.PATH = `${binDir}${path.delimiter}${originalPath ?? ""}`;
 			process.env.MOCK_PI_QUEUE_DIR = queueDir;
-			if (process.platform === "win32") {
-				originalArgv1 = process.argv[1];
-				process.argv[1] = SCRIPT_PATH;
-			}
 		},
 		uninstall() {
 			if (!installed) return;
 			installed = false;
-			if (originalPath === undefined) delete process.env.PATH;
-			else process.env.PATH = originalPath;
+			setChildSessionFactory(undefined);
+			setChildSessionFactoryModule(undefined);
 			if (originalQueueEnv === undefined) delete process.env.MOCK_PI_QUEUE_DIR;
 			else process.env.MOCK_PI_QUEUE_DIR = originalQueueEnv;
-			if (process.platform === "win32") {
-				if (originalArgv1 === undefined) delete process.argv[1];
-				else process.argv[1] = originalArgv1;
-			}
 			try {
 				fs.rmSync(rootDir, { recursive: true, force: true });
 			} catch {}
@@ -113,12 +100,11 @@ export function createMockPi(): MockPi {
 		},
 		reset() {
 			nextSequence = 0;
+			fakeSessions.reset();
+			queueGeneration += 1;
+			queueDir = path.join(rootDir, `queue-${queueGeneration}`);
 			ensureDir(queueDir);
-			for (const entry of fs.readdirSync(queueDir)) {
-				try {
-					fs.rmSync(path.join(queueDir, entry), { recursive: true, force: true });
-				} catch {}
-			}
+			if (installed) process.env.MOCK_PI_QUEUE_DIR = queueDir;
 		},
 		callCount() {
 			return listQueueFiles(queueDir, CALL_PREFIX).length;

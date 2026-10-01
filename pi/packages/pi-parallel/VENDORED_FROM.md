@@ -1,12 +1,13 @@
 ---
 metadata:
-  watch-sources: HazAT/pi-parallel@dc713b3e569967f4616a4dfd07e9e9f8d90565b0
+  watch-sources: HazAT/pi-parallel@75d933b86d304c2e7beab25c5429fd497b8cc36f
 ---
 
 # Vendored from upstream
 
 - Upstream repo: `HazAT/pi-parallel`
-- Pinned commit: `dc713b3e569967f4616a4dfd07e9e9f8d90565b0`
-- Source URL: <https://github.com/HazAT/pi-parallel/tree/dc713b3e569967f4616a4dfd07e9e9f8d90565b0>
+- Pinned commit: `75d933b86d304c2e7beab25c5429fd497b8cc36f`
+- Source URL: <https://github.com/HazAT/pi-parallel/tree/75d933b86d304c2e7beab25c5429fd497b8cc36f>
+- Archive: <https://github.com/HazAT/pi-parallel/archive/75d933b86d304c2e7beab25c5429fd497b8cc36f.tar.gz>
 
-This directory is an in-repo vendor copy so the local search policy can default ordinary searches to Parallel Turbo while preserving explicit Basic and Advanced modes. Local changes also keep the package aligned with the current `@earendil-works` Pi packages.
+The implementation is an unchanged archive copy. It replaces the local four-tool fork with upstream's two-tool direct HTTP search/fetch integration; Parallel CLI authentication is no longer required.

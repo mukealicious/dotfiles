@@ -1,22 +1,28 @@
----
-metadata:
-  watch-sources: nicobailon/pi-subagents@b91c8810785e2574ade9416d3653a5162d103434
----
+# Vendored upstream — unchanged
 
-# Vendored from upstream
+| Field | Pin |
+|---|---|
+| Package | `pi-subagents@0.74.0` |
+| Repository | https://github.com/nicobailon/pi-subagents |
+| Source revision | `b6bda32f03b7f549623bc404c9be14dca298ddc4` |
+| Tag | `v0.74.0` |
+| Adopted | 2026-09-30 |
 
-- Upstream repo: `nicobailon/pi-subagents`
-- Pinned commit: `b91c8810785e2574ade9416d3653a5162d103434`
-- Source URL: <https://github.com/nicobailon/pi-subagents/tree/b91c8810785e2574ade9416d3653a5162d103434>
+All upstream files, including its matching skills, prompts, tests, manifest and
+lockfile, are copied unchanged from the pinned GitHub source archive. This file
+is the only local addition; `node_modules/` is untracked installation output.
+No local implementation patches are carried. Configuration belongs outside this
+subtree (`pi/settings.json`, `pi/agents/`, and writable runtime configuration).
 
-This directory is an in-repo vendor copy so Pi can load the package from a local path instead of installing it from npm.
+Production dependencies: `npm ci --omit=dev --ignore-scripts --legacy-peer-deps`
+with mise Node 24. Host Pi supplies peer modules. Do not install upstream's
+0.87.0 development peers into the production tree; use a disposable source copy
+for the upstream test toolchain. Use a directory named `pi-subagents` for that
+copy (npm self-peer resolution depends on the directory name).
 
-## Local divergences
+The outgoing dirty fork was preserved before replacement at:
+`~/.pi/backups/pi-subagents-before-0.74.0-20260930T130849.tar.gz`.
+Do not restore it over active runners. Restart Pi after changing source versions.
 
-- Active user scope resolves through `PI_CODING_AGENT_DIR`, retaining `~/.pi/agent` only when the environment variable is absent.
-- Temporary async, result, chain, and artifact state is isolated by both OS user and active Pi profile.
-- User configuration, settings-declared and resource-filtered package skill discovery, run history, intercom, saved chains, and session-artifact cleanup follow the same active-profile boundary; undeclared package roots and manual-only skills are not injectable.
-- User agents and chains resolve only from the active profile's real `agents/` directory; home `~/.agents` remains available for skills but not agent definitions.
-- Builtins are limited to leaf scout, researcher, and worker roles. Shared generated `review` is the read-only reviewer; read-only roles reject output and progress overrides before and after clarification, linked managed definitions cannot be edited through package UI or management, and bridge setup cannot widen explicit tool allowlists.
-- Provider-neutral `gpt-5.6` role defaults and Pi's native `max` thinking level are preserved across parsing, selection, serialization, UI, and launch paths.
-- Skill fallback discovery honors resource filters on settings-declared packages, keeps project package discovery, and does not scan active-profile or global npm roots opportunistically.
+For acceptance results and the intentionally accepted discovery, trust, and
+execution differences, see `../../CUSTOMIZATION-AUDIT.md` and `../../README.md`.

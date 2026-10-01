@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { createFileCoalescer } from "../../file-coalescer.ts";
+import { createFileCoalescer } from "../../src/shared/file-coalescer.ts";
 
 type TimerTask = { id: number; cb: () => void; delay: number };
 
@@ -51,6 +51,21 @@ describe("createFileCoalescer", () => {
 		assert.equal(timers.pendingCount(), 2);
 		timers.runAll();
 		assert.deepEqual(events.sort(), ["a.json", "b.json"]);
+	});
+
+	it("flushes a pending file immediately without a duplicate timer write", () => {
+		const events: string[] = [];
+		const timers = createFakeTimers();
+		const coalescer = createFileCoalescer((file) => events.push(file), 50, timers.timerApi);
+		coalescer.schedule("status.json");
+		coalescer.schedule("status.json");
+		assert.equal(timers.pendingCount(), 1);
+		assert.equal(coalescer.flush("status.json"), true);
+		assert.deepEqual(events, ["status.json"]);
+		assert.equal(timers.pendingCount(), 0);
+		timers.runAll();
+		assert.deepEqual(events, ["status.json"]);
+		assert.equal(coalescer.flush("status.json"), false);
 	});
 
 	it("clear cancels all pending handlers", () => {

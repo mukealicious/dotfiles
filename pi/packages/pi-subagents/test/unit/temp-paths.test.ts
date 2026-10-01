@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
+import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
+import { spawnSync } from "node:child_process";
 import { describe, it } from "node:test";
-import {
-	resolveActiveProfileDir,
-	resolveProfileTempRoot,
-} from "../../profile-paths.ts";
+import { fileURLToPath } from "node:url";
 import {
 	ASYNC_DIR,
 	CHAIN_RUNS_DIR,
@@ -13,26 +13,7 @@ import {
 	TEMP_ROOT_DIR,
 	getAsyncConfigPath,
 	resolveTempScopeId,
-} from "../../types.ts";
-
-describe("resolveActiveProfileDir", () => {
-	it("uses the selected Pi profile", () => {
-		assert.equal(
-			resolveActiveProfileDir({
-				env: { PI_CODING_AGENT_DIR: "/profiles/personal" },
-				homedir: () => "/home/alice",
-			}),
-			"/profiles/personal",
-		);
-	});
-
-	it("preserves the upstream fallback when no profile is selected", () => {
-		assert.equal(
-			resolveActiveProfileDir({ env: {}, homedir: () => "/home/alice" }),
-			path.join("/home/alice", ".pi", "agent"),
-		);
-	});
-});
+} from "../../src/shared/types.ts";
 
 describe("resolveTempScopeId", () => {
 	it("prefers uid when available", () => {
@@ -75,40 +56,98 @@ describe("resolveTempScopeId", () => {
 	});
 });
 
-describe("profile temp paths", () => {
-	it("gives work, personal, and fallback profiles stable isolated roots", () => {
-		const common = {
-			getuid: () => 501,
-			homedir: () => "/home/alice",
-			tmpdir: () => "/tmp",
-		};
-		const work = resolveProfileTempRoot({
-			...common,
-			env: { PI_CODING_AGENT_DIR: "/home/alice/.pi/work" },
-		});
-		const personal = resolveProfileTempRoot({
-			...common,
-			env: { PI_CODING_AGENT_DIR: "/home/alice/.pi/personal" },
-		});
-		const fallback = resolveProfileTempRoot({ ...common, env: {} });
-
-		assert.equal(
-			work,
-			resolveProfileTempRoot({
-				...common,
-				env: { PI_CODING_AGENT_DIR: "/home/alice/.pi/work" },
-			}),
-		);
-		assert.notEqual(work, personal);
-		assert.notEqual(work, fallback);
-		assert.notEqual(personal, fallback);
-		assert.match(path.basename(work), /^pi-subagents-uid-501-work-[a-f0-9]{12}$/);
-		assert.match(path.basename(personal), /^pi-subagents-uid-501-personal-[a-f0-9]{12}$/);
-		assert.match(path.basename(fallback), /^pi-subagents-uid-501-agent-[a-f0-9]{12}$/);
+describe("shared temp paths", () => {
+	it("uses the explicit temp root before shared paths resolve", () => {
+		const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagents-temp-override-"));
+		const override = path.join(fixture, "async state");
+		const isolatedHome = path.join(fixture, "home");
+		try {
+			const moduleUrl = new URL("../../src/shared/types.ts", import.meta.url).href;
+			const script = `import { ASYNC_DIR, RESULTS_DIR, TEMP_ROOT_DIR } from ${JSON.stringify(moduleUrl)}; console.log(JSON.stringify({ ASYNC_DIR, RESULTS_DIR, TEMP_ROOT_DIR }));`;
+			const result = spawnSync(process.execPath, ["--experimental-strip-types", "--input-type=module", "--eval", script], {
+				encoding: "utf-8",
+				env: { ...process.env, HOME: isolatedHome, USERPROFILE: isolatedHome, PI_SUBAGENTS_TEMP_ROOT: override },
+			});
+			assert.equal(result.status, 0, result.stderr);
+			assert.deepEqual(JSON.parse(result.stdout.trim()), {
+				ASYNC_DIR: path.join(override, "async-subagent-runs"),
+				RESULTS_DIR: path.join(override, "async-subagent-results"),
+				TEMP_ROOT_DIR: override,
+			});
+		} finally {
+			fs.rmSync(fixture, { recursive: true, force: true });
+		}
 	});
 
-	it("anchors runtime temp directories under the active profile root", () => {
-		assert.equal(TEMP_ROOT_DIR, resolveProfileTempRoot());
+	it("isolates agent-dir profile writes from an inherited PI_CODING_AGENT_DIR", () => {
+		const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagents-agent-isolation-"));
+		const tempRoot = path.join(fixture, "temp-root");
+		const callerAgentDir = path.join(fixture, "caller-agent");
+		try {
+			const loaderUrl = new URL("../support/isolated-temp-root.mjs", import.meta.url).href;
+			const profilesUrl = new URL("../../src/profiles/profiles.ts", import.meta.url).href;
+			const utilsUrl = new URL("../../src/shared/utils.ts", import.meta.url).href;
+			const script = `
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { applySubagentProfile, getSubagentProfilesDir } from ${JSON.stringify(profilesUrl)};
+import { getAgentDir } from ${JSON.stringify(utilsUrl)};
+
+const profilesDir = getSubagentProfilesDir();
+fs.mkdirSync(profilesDir, { recursive: true });
+fs.writeFileSync(path.join(profilesDir, "isolated.json"), JSON.stringify({ subagents: { agentOverrides: { worker: { thinking: "high" } } } }));
+const result = applySubagentProfile("isolated");
+console.log(JSON.stringify({ agentDir: getAgentDir(), profilePath: path.join(profilesDir, "isolated.json"), settingsPath: result.settingsPath, tempDir: os.tmpdir(), testParentPid: process.env.PI_SUBAGENTS_TEST_PARENT_PID }));
+`;
+			const env = {
+				...process.env,
+				PI_CODING_AGENT_DIR: callerAgentDir,
+				PI_SUBAGENTS_TEMP_ROOT: tempRoot,
+			};
+			delete env.PI_SUBAGENTS_TEST_LOADER;
+			const result = spawnSync(process.execPath, [
+				"--experimental-strip-types",
+				"--import", loaderUrl,
+				"--input-type=module",
+				"--eval", script,
+			], {
+				cwd: process.cwd(),
+				encoding: "utf-8",
+				env,
+			});
+			assert.equal(result.status, 0, result.stderr);
+			const output = JSON.parse(result.stdout.trim()) as { agentDir: string; profilePath: string; settingsPath: string; tempDir: string; testParentPid: string };
+			const isolatedAgentDir = path.join(tempRoot, "home", ".pi", "agent");
+			assert.equal(output.agentDir, isolatedAgentDir);
+			assert.equal(output.profilePath, path.join(isolatedAgentDir, "profiles", "pi-subagents", "isolated.json"));
+			assert.equal(output.settingsPath, path.join(isolatedAgentDir, "settings.json"));
+			assert.equal(output.tempDir, tempRoot);
+			assert.equal(output.testParentPid, String(result.pid));
+			if (process.platform === "darwin") assert.equal(fs.existsSync(path.join(tempRoot, ".metadata_never_index")), true);
+			assert.equal(fs.existsSync(output.profilePath), true);
+			assert.equal(fs.existsSync(output.settingsPath), true);
+			assert.equal(fs.existsSync(callerAgentDir), false);
+		} finally {
+			fs.rmSync(fixture, { recursive: true, force: true });
+		}
+	});
+
+	it("records a nested test process as the runner parent", () => {
+		const loaderUrl = new URL("../support/isolated-temp-root.mjs", import.meta.url).href;
+		const result = spawnSync(process.execPath, [
+			"--import", loaderUrl,
+			"--input-type=module",
+			"--eval", "console.log(process.env.PI_SUBAGENTS_TEST_PARENT_PID)",
+		], {
+			encoding: "utf-8",
+			env: { ...process.env, PI_SUBAGENTS_TEST_LOADER: "loaded", PI_SUBAGENTS_TEST_PARENT_PID: String(process.pid) },
+		});
+		assert.equal(result.status, 0, result.stderr);
+		assert.equal(result.stdout.trim(), String(result.pid));
+	});
+
+	it("anchors shared temp directories under one scoped root", () => {
 		assert.equal(path.dirname(RESULTS_DIR), TEMP_ROOT_DIR);
 		assert.equal(path.dirname(ASYNC_DIR), TEMP_ROOT_DIR);
 		assert.equal(path.dirname(CHAIN_RUNS_DIR), TEMP_ROOT_DIR);
@@ -118,6 +157,27 @@ describe("profile temp paths", () => {
 		assert.equal(path.basename(ASYNC_DIR), "async-subagent-runs");
 		assert.equal(path.basename(CHAIN_RUNS_DIR), "chain-runs");
 		assert.equal(path.basename(TEMP_ARTIFACTS_DIR), "artifacts");
+	});
+
+	it("stops a test runner before consuming config when its test parent is gone", () => {
+		const configPath = path.join(os.tmpdir(), "orphan-check.json");
+		fs.writeFileSync(configPath, "{}", "utf-8");
+		try {
+			const result = spawnSync(process.execPath, [
+				"--experimental-strip-types",
+				"--import", new URL("../support/register-loader.mjs", import.meta.url).href,
+				fileURLToPath(new URL("../../src/runs/background/subagent-runner-bootstrap.ts", import.meta.url)),
+				configPath,
+			], {
+				env: { ...process.env, PI_SUBAGENTS_TEST_PARENT_PID: "2147483647" },
+				encoding: "utf-8",
+				timeout: 10_000,
+			});
+			assert.equal(result.status, 1, result.stderr);
+			assert.equal(fs.existsSync(configPath), true);
+		} finally {
+			fs.rmSync(configPath, { force: true });
+		}
 	});
 
 	it("writes async config files under the same scoped temp root", () => {

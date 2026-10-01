@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 interface SlashLiveStateModule {
-	applySlashUpdate?: typeof import("../../slash-live-state.ts").applySlashUpdate;
-	buildSlashInitialResult?: typeof import("../../slash-live-state.ts").buildSlashInitialResult;
-	clearSlashSnapshots?: typeof import("../../slash-live-state.ts").clearSlashSnapshots;
-	finalizeSlashResult?: typeof import("../../slash-live-state.ts").finalizeSlashResult;
-	getSlashRenderableSnapshot?: typeof import("../../slash-live-state.ts").getSlashRenderableSnapshot;
-	restoreSlashFinalSnapshots?: typeof import("../../slash-live-state.ts").restoreSlashFinalSnapshots;
+	applySlashUpdate?: typeof import("../../src/slash/slash-live-state.ts").applySlashUpdate;
+	buildSlashInitialResult?: typeof import("../../src/slash/slash-live-state.ts").buildSlashInitialResult;
+	clearSlashSnapshots?: typeof import("../../src/slash/slash-live-state.ts").clearSlashSnapshots;
+	finalizeSlashResult?: typeof import("../../src/slash/slash-live-state.ts").finalizeSlashResult;
+	getSlashRenderableSnapshot?: typeof import("../../src/slash/slash-live-state.ts").getSlashRenderableSnapshot;
+	restoreSlashFinalSnapshots?: typeof import("../../src/slash/slash-live-state.ts").restoreSlashFinalSnapshots;
 }
 
 let applySlashUpdate: SlashLiveStateModule["applySlashUpdate"];
@@ -25,7 +25,7 @@ try {
 		finalizeSlashResult,
 		getSlashRenderableSnapshot,
 		restoreSlashFinalSnapshots,
-	} = await import("../../slash-live-state.ts") as SlashLiveStateModule);
+	} = await import("../../src/slash/slash-live-state.ts") as SlashLiveStateModule);
 } catch {
 	available = false;
 }
@@ -61,6 +61,65 @@ describe("slash live state", { skip: !available ? "slash-live-state.ts not impor
 		assert.equal(progress?.currentTool, "find");
 		assert.deepEqual(progress?.recentOutput, ["src/index.ts", "src/render.ts"]);
 		assert.equal(snapshot.version > 0, true);
+	});
+
+	it("marks async initial slash snapshots as background", () => {
+		clearSlashSnapshots!();
+		const details = buildSlashInitialResult!("req-bg", {
+			workflowScript: "return runs.run(\"run\", { agent: \"scout\", task: \"inspect\" })",
+			async: true,
+		});
+
+		assert.equal(details.result.details.mode, "single");
+		assert.equal(details.result.details.background, true);
+		assert.equal(details.result.details.asyncId, undefined);
+	});
+
+	it("does not assign a parallel child update to another chain placeholder", () => {
+		clearSlashSnapshots!();
+		const details = buildSlashInitialResult!("req-parallel", {
+			chain: [{ parallel: [{ agent: "scout", task: "map" }, { agent: "context-builder", task: "analyze" }] }],
+		});
+
+		applySlashUpdate!("req-parallel", {
+			requestId: "req-parallel",
+			progress: [{
+				index: 1,
+				agent: "context-builder",
+				status: "running",
+				task: "analyze",
+				currentTool: "find",
+				recentTools: [],
+				recentOutput: [],
+				toolCount: 38,
+				tokens: 1_000,
+				durationMs: 1_000,
+			}],
+		});
+
+		const results = getSlashRenderableSnapshot!(details).result.details.results;
+		assert.equal(results[0]?.progress?.currentTool, undefined);
+		assert.equal(results[1]?.progress?.currentTool, "find");
+	});
+
+	it("creates stable placeholders for a 40-step worker/reviewer chain", () => {
+		clearSlashSnapshots!();
+		const chain = Array.from({ length: 40 }, (_, index) => ({
+			agent: index % 2 === 0 ? "worker" : "reviewer",
+			...(index === 0 ? { task: "Start long chain" } : {}),
+		}));
+
+		const details = buildSlashInitialResult!("req-long-chain", { chain });
+
+		assert.equal(details.result.details.mode, "chain");
+		assert.equal(details.result.details.results.length, 40);
+		assert.equal(details.result.details.progress?.length, 40);
+		assert.equal(details.result.details.chainAgents?.length, 40);
+		assert.equal(details.result.details.totalSteps, 40);
+		assert.equal(details.result.details.currentStepIndex, 0);
+		assert.equal(details.result.details.results[0]?.progress?.status, "running");
+		assert.equal(details.result.details.results[39]?.agent, "reviewer");
+		assert.equal(details.result.details.results[39]?.progress?.index, 39);
 	});
 
 	it("prefers finalized snapshots and restores them from persisted custom messages", () => {

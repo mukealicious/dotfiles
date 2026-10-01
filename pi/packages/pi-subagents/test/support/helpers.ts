@@ -13,6 +13,10 @@ export function createMockPi(): MockPi {
 	return _createMockPi();
 }
 
+export function resolveMockPiCallArgs(call: { args?: readonly string[]; effectiveArgs?: readonly string[] }): string[] {
+	return [...(call.effectiveArgs ?? call.args ?? [])];
+}
+
 export function createTempDir(prefix = "pi-subagent-test-"): string {
 	return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
@@ -43,13 +47,17 @@ export function createEventBus() {
 
 interface AgentConfig {
 	name: string;
+	aliases?: string[];
 	description?: string;
+	defaultContext?: "fresh" | "fork";
 	systemPrompt?: string;
 	model?: string;
-	fallbackModels?: string[];
 	tools?: string[];
 	extensions?: string[];
+	subagentOnlyExtensions?: string[];
 	skills?: string[];
+	skillPath?: string[];
+	filePath?: string;
 	thinking?: string;
 	systemPromptMode?: string;
 	inheritProjectContext?: boolean;
@@ -58,8 +66,7 @@ interface AgentConfig {
 	output?: string | false;
 	reads?: string[] | false;
 	progress?: boolean;
-	defaultReads?: string[];
-	defaultProgress?: boolean;
+	toolBudget?: { soft?: number; hard: number; block?: string[] | "*" };
 	mcpDirectTools?: string[];
 	maxSubagentDepth?: number;
 }
@@ -70,6 +77,7 @@ export function makeAgentConfigs(names: string[]): AgentConfig[] {
 		description: `Test agent: ${name}`,
 		systemPrompt: "",
 		systemPromptMode: "replace",
+		inheritGlobalContext: false,
 		inheritProjectContext: false,
 		inheritSkills: false,
 	}));
@@ -81,13 +89,14 @@ export function makeAgent(name: string, overrides: Partial<AgentConfig> = {}): A
 		description: `Test agent: ${name}`,
 		systemPrompt: "",
 		systemPromptMode: "replace",
+		inheritGlobalContext: false,
 		inheritProjectContext: false,
 		inheritSkills: false,
 		...overrides,
 	};
 }
 
-export interface MinimalCtx {
+interface MinimalCtx {
 	cwd: string;
 	hasUI: boolean;
 	ui: Record<string, never>;
@@ -98,7 +107,7 @@ export interface MinimalCtx {
 	modelRegistry: {
 		getAvailable: () => Array<{ provider: string; id: string }>;
 	};
-	model?: { provider: string };
+	model?: { provider: string; id?: string };
 }
 
 export function makeMinimalCtx(cwd: string): MinimalCtx {
@@ -119,7 +128,7 @@ export function makeMinimalCtx(cwd: string): MinimalCtx {
 /**
  * Try to dynamically import a module.
  * - Bare specifiers are imported as-is.
- * - Relative paths (e.g., "./utils.ts") are resolved from the project root.
+ * - Relative paths (e.g., "./src/shared/utils.ts") are resolved from the project root.
  *
  * Only swallows MODULE_NOT_FOUND / ERR_MODULE_NOT_FOUND when the missing module
  * is exactly the requested bare specifier (expected optional dependency).
@@ -153,6 +162,8 @@ export async function tryImport<T>(specifier: string): Promise<T | null> {
 	}
 }
 
+let writeCallSeq = 0;
+
 export const events = {
 	assistantMessage(text: string, model = "mock/test-model"): object {
 		return {
@@ -165,6 +176,53 @@ export const events = {
 				usage: { input: 100, output: 50, cacheRead: 0, cacheWrite: 0, cost: { total: 0.001 } },
 			},
 		};
+	},
+
+	/** Final assistant turn carrying a satisfied acceptance report. */
+	acceptanceReport(): object {
+		const report = { criteriaSatisfied: [{ id: "criterion-1", status: "satisfied", evidence: "implemented" }], changedFiles: ["src/file.ts"], testsAddedOrUpdated: ["test/file.test.ts"], commandsRun: [{ command: "npm test", result: "passed", summary: "passed" }], validationOutput: ["tests passed"], residualRisks: [], noStagedFiles: true };
+		return events.assistantMessage(["done", "```acceptance-report", JSON.stringify(report), "```"].join("\n"));
+	},
+
+	watchdogStatusWarning(severity: "concern" | "blocker", summary: string, overrides: Record<string, unknown> = {}): object {
+		const { seq = 1, runId, agent, childIndex, ...warning } = overrides;
+		return {
+			type: "subagent.watchdog.status",
+			seq,
+			phase: "idle",
+			ts: Date.now(),
+			...(runId ? { runId } : {}),
+			...(agent ? { agent } : {}),
+			...(childIndex !== undefined ? { childIndex, stepIndex: childIndex } : {}),
+			warning: { severity, importance: "high", category: "test-gap", summary, evidence: "The transcript claims tests passed but no test command ran.", recommendedAction: "Run the focused test before finishing.", addressed: false, stalemate: false, ...warning },
+		};
+	},
+
+	/** Assistant write tool call plus its successful tool result, as one completed write. */
+	completedWrite(filePath: string, content: string, model = "mock/test-model"): object[] {
+		const id = `write-${++writeCallSeq}`;
+		return [
+			{
+				type: "message_end",
+				message: {
+					role: "assistant",
+					content: [{ type: "toolCall", id, name: "write", arguments: { path: filePath, content } }],
+					model,
+					stopReason: "toolUse",
+					usage: { input: 100, output: 50, cacheRead: 0, cacheWrite: 0, cost: { total: 0.001 } },
+				},
+			},
+			{
+				type: "tool_result_end",
+				message: {
+					role: "toolResult",
+					toolCallId: id,
+					toolName: "write",
+					isError: false,
+					content: [{ type: "text", text: `Wrote ${filePath}` }],
+				},
+			},
+		];
 	},
 
 	toolStart(toolName: string, args: Record<string, unknown> = {}): object {

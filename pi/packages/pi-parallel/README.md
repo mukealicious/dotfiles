@@ -1,50 +1,55 @@
 # pi-parallel
 
-A [pi](https://github.com/badlogic/pi-mono) extension that gives your agent web intelligence via [parallel.ai](https://parallel.ai). Four tools, zero config once installed — the LLM picks the right one automatically.
+A [pi](https://github.com/badlogic/pi-mono) extension that gives agents web access through the [Parallel](https://parallel.ai) Search and Extract APIs.
 
 | Tool | Use case |
 |------|----------|
-| `web_search` | Quick web lookups — "what is X", "latest news on Y" |
-| `web_fetch` | Pull clean markdown from a URL |
-| `deep_research` | Deep async research across many sources (2–10 min) |
-| `batch_enrich` | Augment a list of companies/people/domains with web data |
+| `web_search` | Discover sources and find current information |
+| `web_fetch` | Fetch clean markdown from known public webpages |
 
-## Setup
+The tools call Parallel's V1 REST API directly. No CLI process, MCP server, or SDK is involved.
 
-### 1. Get a parallel.ai account
-
-Sign up at [parallel.ai](https://parallel.ai), then install and authenticate the CLI:
+## Install
 
 ```bash
-npm install -g parallel-web-cli
-parallel-cli login
+pi install git:github.com/HazAT/pi-parallel
 ```
 
-### 2. Enable the local package
-
-This dotfiles repository vendors the package at `pi/packages/pi-parallel` and
-lists that path in both profile settings. Run the topic installer to materialize
-the settings; do not clone another copy into the unsupported fallback profile.
+Or clone it manually:
 
 ```bash
-~/.dotfiles/pi/install.sh
+git clone https://github.com/HazAT/pi-parallel ~/.pi/agent/extensions/pi-parallel
 ```
 
-### 3. Verify
+## Authentication
 
-Start pi and run `/parallel-setup`. You should see:
+The extension shares authentication with `parallel-cli` at:
 
+```text
+~/.config/parallel-web-tools/auth.json
 ```
-✓ parallel-cli 0.1.2 · authenticated via oauth
+
+If you already ran `parallel-cli login`, the extension uses the API key for the CLI's currently selected organization automatically.
+
+Otherwise, start pi and run:
+
+```text
+/parallel-setup
 ```
 
-That's it. The four tools are now available to your agent.
+Paste an API key from [platform.parallel.ai](https://platform.parallel.ai). The key is hidden while entering it and saved to the shared auth file with `0600` permissions. Run the command again to replace the key.
+
+When a tool is called without authentication, it returns a clear error instructing the agent to ask you to run `/parallel-setup`.
 
 ## How it works
 
-Each tool wraps `parallel-cli` via `spawn()` with JSON output. Search and extract are synchronous — call the CLI, parse the result, done. Research and enrich are async — they fire a `--no-wait` run to get a job ID, then poll for completion with live progress updates streamed back to the TUI. The CLI's required research result file is redirected to a temporary directory and removed after polling so tool calls do not leave artifacts in the active repository.
+- `web_search` sends synchronous `POST /v1/search` requests in low-latency Turbo mode with ranked, LLM-optimized excerpts.
+- `web_fetch` sends synchronous `POST /v1/extract` requests and reports both successful pages and per-URL failures.
+- Requests use the configured key through the `x-api-key` header and support cancellation.
+- Tool output is capped at 50KB or 2,000 lines.
+- Collapsed tool rows stay compact; expanded rows show page content, warnings, and fetch failures.
 
-`web_search.promptGuidelines` owns cross-tool routing in this setup, including Exa fallback and raw URL versus HTML extraction. Tool descriptions explain capabilities; parameter descriptions own defaults. Research adds its cost/depth guardrail and Exa adds its troubleshooting pointer. No skill file is needed.
+The agent chooses between the tools using their built-in descriptions and prompt guidelines. Typical investigation flow is `web_search` to find sources, followed by `web_fetch` for the most relevant pages.
 
 ## License
 

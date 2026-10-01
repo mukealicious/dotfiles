@@ -37,7 +37,7 @@ interface ExecutorModule {
 	};
 }
 
-const executorMod = await tryImport<ExecutorModule>("./subagent-executor.ts");
+const executorMod = await tryImport<ExecutorModule>("./src/runs/foreground/subagent-executor.ts");
 const available = !!executorMod?.createSubagentExecutor;
 const createSubagentExecutor = executorMod?.createSubagentExecutor;
 

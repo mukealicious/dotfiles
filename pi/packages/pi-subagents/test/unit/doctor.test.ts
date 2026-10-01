@@ -3,9 +3,9 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, it } from "node:test";
-import { buildDoctorReport } from "../../doctor.ts";
-import type { AgentConfig, ChainConfig } from "../../agents.ts";
-import type { SubagentState } from "../../types.ts";
+import { buildDoctorReport } from "../../src/extension/doctor.ts";
+import type { AgentConfig, ChainConfig } from "../../src/agents/agents.ts";
+import type { SubagentState } from "../../src/shared/types.ts";
 
 function makeState(cwd: string): SubagentState {
 	return {
@@ -51,6 +51,14 @@ describe("buildDoctorReport", () => {
 	it("formats a bounded successful environment summary", () => {
 		const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-doctor-success-"));
 		try {
+			const state = makeState(root);
+			state.subagentSpawns = {
+				sessionId: "session-abc123",
+				count: 3,
+				configuredLimit: 4,
+				granted: 1,
+				grantHistory: [{ sessionId: "session-abc123", amount: 1, grantedAt: 0, previousLimit: 4, limit: 5 }],
+			};
 			const paths = {
 				tempRootDir: path.join(root, "temp-root"),
 				asyncDir: path.join(root, "async"),
@@ -61,8 +69,8 @@ describe("buildDoctorReport", () => {
 
 			const report = buildDoctorReport({
 				cwd: root,
-				config: { defaultSessionDir: "~/subagent-sessions", intercomBridge: { mode: "always" } },
-				state: makeState(root),
+				config: { defaultSessionDir: "~/subagent-sessions", intercomBridge: { mode: "always" }, maxSubagentSpawnsPerSession: 4, maxActiveAsyncRunsPerSession: 2 },
+				state,
 				currentSessionFile: path.join(root, "sessions", "parent.jsonl"),
 				currentSessionId: "session-abc123",
 				orchestratorTarget: "subagent-chat-abc123",
@@ -74,9 +82,12 @@ describe("buildDoctorReport", () => {
 						builtin: [makeAgent("builtin-a", "builtin")],
 						user: [makeAgent("user-a", "user")],
 						project: [makeAgent("project-a", "project"), makeAgent("project-b", "project")],
+						agentDiagnostics: [{ source: "project", filePath: path.join(root, ".pi", "agents", "broken.md"), name: "broken", error: "invalid runner" }],
 						chains: [makeChain("user-flow", "user"), makeChain("project-flow", "project")],
 						userDir: path.join(root, "home", ".agents"),
 						projectDir: path.join(root, ".pi", "agents"),
+						userChainDir: path.join(root, "home", ".pi", "agent", "chains"),
+						projectChainDir: path.join(root, ".pi", "chains"),
 						userSettingsPath: path.join(root, "home", ".pi", "agent", "settings.json"),
 						projectSettingsPath: path.join(root, ".pi", "settings.json"),
 					}),
@@ -85,15 +96,12 @@ describe("buildDoctorReport", () => {
 						{ name: "package-skill", source: "user-package" },
 					],
 					diagnoseIntercomBridge: () => ({
-						active: false,
+						active: true,
 						mode: "always",
 						wantsIntercom: true,
-						piIntercomAvailable: false,
-						extensionDir: path.join(root, "missing-pi-intercom"),
-						configPath: path.join(root, "intercom", "config.json"),
+						supervisorChannelAvailable: true,
+						extensionDir: "native:pi-subagents-supervisor-channel",
 						orchestratorTarget: "subagent-chat-abc123",
-						reason: "pi-intercom extension was not found",
-						intercomConfigEnabled: true,
 					}),
 				},
 			});
@@ -104,12 +112,83 @@ describe("buildDoctorReport", () => {
 			assert.match(report, /- configured session dir: .*subagent-sessions/);
 			assert.match(report, /- current session file: .*parent\.jsonl/);
 			assert.match(report, /- temp root: ok /);
-			assert.match(report, /- agents: total 4 \(builtin 1, user 1, project 2\)/);
-			assert.match(report, /- chains: total 2 \(builtin 0, user 1, project 1\)/);
+			assert.match(report, /- agents: total 4 \(builtin 1, package 0, user 1, project 2\)/);
+			assert.match(report, /- invalid agent broken \(project\): invalid runner/);
+			assert.match(report, /Spawn budget\n- usage: 3\/5 used, 2 remaining \(configured 4; granted 1; grant allowance 3\)/);
+			assert.match(report, /- recent grants: \+1 at 1970-01-01T00:00:00\.000Z \(4 → 5\)/);
+			assert.match(report, /new parent session resets usage and grants; compaction does not/);
+			assert.match(report, /Run fan-out budget\n- configured limit: 64 \(default\)/);
+			assert.match(report, /cumulative claims are never released; a new top-level run creates a new budget/);
+			assert.match(report, /Active async capacity\n- usage: 0\/2 used/);
+			assert.match(report, /terminal state plus matching observed process-terminal proof, or abandoned-timeout for failed runs with a dead runner PID and stale activity when enabled; false keeps unknown-proof slots/);
+			assert.match(report, /Workflow script\n- launch: write a ```js workflow block in the reply, then call subagent\(\{ workflow: true \}\); or pass a file as workflow: "\.\/path\.js"\n- helpers: runs\.run, runs\.all, runs\.steer, runs\.status, runs\.ref\/refs, emit, console/);
+			assert.match(report, /if runs\.all is missing, reload or update pi-subagents; await Promise\.all\(\[runs\.run\(\.\.\.\)\]\) is also supported/);
 			assert.match(report, /- skills: total 2 \(project 1, user-package 1\)/);
-			assert.match(report, /- bridge: inactive \(pi-intercom extension was not found\)/);
-			assert.match(report, /- pi-intercom: unavailable /);
+			assert.match(report, /- bridge: active/);
+			assert.match(report, /- supervisor channel: available \(native:pi-subagents-supervisor-channel\)/);
+			assert.doesNotMatch(report, /Companion packages/);
 		} finally {
+			fs.rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("reports the effective source when the run fan-out environment value is invalid", () => {
+		const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-doctor-fanout-source-"));
+		const previous = process.env.PI_SUBAGENT_MAX_SPAWNS_PER_RUN;
+		try {
+			process.env.PI_SUBAGENT_MAX_SPAWNS_PER_RUN = "invalid";
+			const report = buildDoctorReport({
+				cwd: root,
+				config: { maxSubagentSpawnsPerRun: 12 },
+				state: makeState(root),
+				deps: {
+					isAsyncAvailable: () => true,
+					discoverAgentsAll: () => ({ builtin: [], user: [], project: [], chains: [], userDir: root, projectDir: root, userChainDir: root, projectChainDir: root, userSettingsPath: path.join(root, "user.json"), projectSettingsPath: path.join(root, "project.json") }),
+					discoverAvailableSkills: () => [],
+					diagnoseIntercomBridge: () => ({ active: false, mode: "off", wantsIntercom: false, supervisorChannelAvailable: false, extensionDir: "none" }),
+				},
+			});
+			assert.match(report, /Run fan-out budget\n- configured limit: 12 \(config\)/);
+		} finally {
+			if (previous === undefined) delete process.env.PI_SUBAGENT_MAX_SPAWNS_PER_RUN;
+			else process.env.PI_SUBAGENT_MAX_SPAWNS_PER_RUN = previous;
+			fs.rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("distinguishes dedicated runner forwarding from root state", () => {
+		const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-doctor-parent-routing-"));
+		const previousChild = process.env.PI_SUBAGENT_CHILD;
+		const previousParent = process.env.PI_SUBAGENT_PARENT_SESSION;
+		const report = () => buildDoctorReport({
+			cwd: root, config: {}, state: makeState(root),
+			deps: {
+				isAsyncAvailable: () => true,
+				discoverAgentsAll: () => ({ builtin: [], user: [], project: [], chains: [], userDir: root, projectDir: root, userChainDir: root, projectChainDir: root, userSettingsPath: path.join(root, "user.json"), projectSettingsPath: path.join(root, "project.json") }),
+				discoverAvailableSkills: () => [],
+				diagnoseIntercomBridge: () => ({ active: false, mode: "off", wantsIntercom: false, supervisorChannelAvailable: false, extensionDir: "none" }),
+			},
+		});
+		try {
+			process.env.PI_SUBAGENT_CHILD = "1";
+			process.env.PI_SUBAGENT_PARENT_SESSION = "launch-parent";
+			const runnerReport = report();
+			assert.match(runnerReport, /runner parent session: set \(launch-parent\) — explicit target for this dedicated child process/);
+			assert.doesNotMatch(runnerReport, /foreground external ask forwarding/);
+
+			delete process.env.PI_SUBAGENT_CHILD;
+			process.env.PI_SUBAGENT_PARENT_SESSION = "legacy-root";
+			const legacyReport = report();
+			assert.match(legacyReport, /root parent session: ignored legacy process-global value — root sessions do not use it for routing/);
+			assert.match(legacyReport, /foreground external ask forwarding: unavailable until the permission extension supports a session-scoped target/);
+
+			delete process.env.PI_SUBAGENT_PARENT_SESSION;
+			assert.match(report(), /root parent session: not set \(healthy\) — detached forwarding is attached at runner launch/);
+		} finally {
+			if (previousChild === undefined) delete process.env.PI_SUBAGENT_CHILD;
+			else process.env.PI_SUBAGENT_CHILD = previousChild;
+			if (previousParent === undefined) delete process.env.PI_SUBAGENT_PARENT_SESSION;
+			else process.env.PI_SUBAGENT_PARENT_SESSION = previousParent;
 			fs.rmSync(root, { recursive: true, force: true });
 		}
 	});
@@ -139,10 +218,9 @@ describe("buildDoctorReport", () => {
 						active: false,
 						mode: "fork-only",
 						wantsIntercom: false,
-						piIntercomAvailable: false,
-						extensionDir: path.join(root, "pi-intercom"),
+						supervisorChannelAvailable: true,
+						extensionDir: "native:pi-subagents-supervisor-channel",
 						reason: "bridge mode is fork-only and context is not fork",
-						intercomConfigEnabled: true,
 					}),
 				},
 			});
@@ -150,7 +228,7 @@ describe("buildDoctorReport", () => {
 			assert.match(report, /- async support: unavailable/);
 			assert.match(report, /- async runs: failed .*Error: not a directory:/);
 			assert.match(report, /- results: missing /);
-			assert.match(report, /- agents\/chains: failed — Error: discovery exploded/);
+			assert.match(report, /- agents: failed — Error: discovery exploded/);
 			assert.match(report, /- skills: total 0 \(none\)/);
 			assert.match(report, /- bridge: inactive \(bridge mode is fork-only and context is not fork\)/);
 		} finally {
