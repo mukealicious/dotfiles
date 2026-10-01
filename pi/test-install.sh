@@ -16,29 +16,8 @@ for dependency_version in acorn:8.18.0 jiti:2.7.0 undici:8.10.2 yaml:2.8.3; do
 done
 tar -C "$ROOT" --exclude=node_modules -cf - pi lib | tar -C "$REPO" -xf -
 fail() { echo "FAIL: $*" >&2; exit 1; }
-FAST_PATCH="$REPO/pi/patches/pi-openai-fast-1.1.1-policy.patch"
-FAST_STATUS_PATCH="$REPO/pi/patches/pi-openai-fast-1.1.1-footer-status.patch"
+# Exact upstream bytes exercise the unmodified installer's production digest checks.
 FAST_FIXTURE="$ROOT/pi/test-fixtures/pi-openai-fast-1.1.1-pristine-index.ts"
-cp "$FAST_FIXTURE" "$TMP/fast-pristine.ts"
-FAST_FIXTURE="$TMP/fast-pristine.ts"
-[ "$(shasum -a 256 "$FAST_FIXTURE" | awk '{print $1}')" = 2dbe16ae6db42877ca84d435395e0028a99e3bb8be932e4a576918495ce3911c ] || fail 'pinned pristine fixture digest mismatch'
-FAST_FIXTURE_PRISTINE_SHA256="$(shasum -a 256 "$FAST_FIXTURE" | awk '{print $1}')"
-mkdir -p "$TMP/patch/extensions"
-cp "$FAST_FIXTURE" "$TMP/patch/extensions/index.ts"
-(cd "$TMP/patch" && patch -p1 -N -F 0 -f < "$FAST_PATCH") >/dev/null
-cp "$TMP/patch/extensions/index.ts" "$TMP/fast-policy.ts"
-# Reuse the policy output from the successful pristine chain for the upgrade fixture.
-FAST_POLICY_FIXTURE="$TMP/fast-policy.ts"
-FAST_FIXTURE_POLICY_SHA256="$(shasum -a 256 "$FAST_POLICY_FIXTURE" | awk '{print $1}')"
-cp "$FAST_POLICY_FIXTURE" "$TMP/patch/extensions/index.ts"
-(cd "$TMP/patch" && patch -p1 -N -F 0 -f < "$FAST_STATUS_PATCH") >/dev/null
-FAST_FIXTURE_PATCHED_SHA256="$(shasum -a 256 "$TMP/patch/extensions/index.ts" | awk '{print $1}')"
-# Exercise the production digest code with fixture-only constants in this disposable copy.
-sed -e "s/2dbe16ae6db42877ca84d435395e0028a99e3bb8be932e4a576918495ce3911c/$FAST_FIXTURE_PRISTINE_SHA256/" \
-  -e "s/3c94d6a8895c23344824a420abef1cd455b9073408ecbe3a6374b65ec3a097f2/$FAST_FIXTURE_POLICY_SHA256/" \
-  -e "s/596b7a9171df69d6be59b875ce38760457866d244ac48f0fe431b1410cffd82d/$FAST_FIXTURE_PATCHED_SHA256/" \
-  "$REPO/pi/install.sh" > "$REPO/pi/install.sh.test"
-mv "$REPO/pi/install.sh.test" "$REPO/pi/install.sh"
 cp "$REPO/pi/packages/pi-subagents/node_modules/acorn/package.json" "$TMP/acorn.package.json"
 cp "$REPO/pi/packages/pi-subagents/node_modules/jiti/package.json" "$TMP/jiti.package.json"
 cp "$REPO/pi/packages/pi-subagents/node_modules/undici/package.json" "$TMP/undici.package.json"
@@ -127,7 +106,6 @@ grep -Fq 'does not match the lockfile' "$TMP/install.log" || fail 'wrong depende
 cmp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts" || fail 'wrong dependency preflight ran after fast package mutation'
 printf '{"name":"acorn","version":"8.18.0"}\n' > "$REPO/pi/packages/pi-subagents/node_modules/acorn/package.json"
 run || { tail -30 "$TMP/install.log"; fail install; }
-[ "$(shasum -a 256 "$FAST_PACKAGE/extensions/index.ts" | awk '{print $1}')" = "$FAST_FIXTURE_PATCHED_SHA256" ] || fail 'installed patch output digest differs from fixture pin'
 SETTINGS="$HOME/.pi/agent/settings.json"
 MODES="$HOME/.pi/agent/modes.json"
 MODELS="$HOME/.pi/agent/models.json"
@@ -135,9 +113,9 @@ MODELS="$HOME/.pi/agent/models.json"
 jq -e '.packages | index("npm:@benvargas/pi-openai-fast@1.1.1") != null and index("~/.dotfiles/pi/packages/pi-openai-fast") == null' "$SETTINGS" >/dev/null || fail 'fast package pin'
 jq -e '.packages[] | select(type == "object" and .source == "~/.dotfiles/pi/packages/pi-subagents") | .skills == ["skills/pi-subagents/SKILL.md"] and .prompts == []' "$SETTINGS" >/dev/null || fail 'upstream subagent resource selection'
 jq -e '.subagents.agentOverrides.scout | .model == "openai/gpt-6-luna" and .tools == ["read", "grep", "find", "ls"] and .output == false' "$SETTINGS" >/dev/null || fail 'scout policy'
-grep -Fq 'ctx.isProjectTrusted()' "$TMP/fast-policy.ts" || fail 'fast trust patch'
-grep -Fq 'supportedModels must be an array' "$TMP/fast-policy.ts" || fail 'fast allowlist patch'
-grep -Fq 'configuration must be a JSON object' "$TMP/fast-policy.ts" || fail 'fast config root patch'
+grep -Fq 'ctx.isProjectTrusted()' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast trust patch'
+grep -Fq 'supportedModels must be an array' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast allowlist patch'
+grep -Fq 'configuration must be a JSON object' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast config root patch'
 grep -Fq 'ctx.ui.setStatus("pi-openai-fast", status)' "$FAST_PACKAGE/extensions/index.ts" || fail 'native fast footer status'
 grep -Fq 'pi.on("model_select"' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast footer model refresh'
 [ ! -L "$SETTINGS" ] || fail 'runtime settings are symlinks'
@@ -175,7 +153,6 @@ run || { tail -30 "$TMP/install.log"; fail 'exact-current fast reinstall'; }
 cmp "$TMP/fast.patched" "$FAST_PACKAGE/extensions/index.ts" || fail 'fast patch idempotence'
 # Upgrade the exact prior policy output in place; partial states fail closed.
 (cd "$FAST_PACKAGE" && patch -R -p1 -F 0 -f < "$ROOT/pi/patches/pi-openai-fast-1.1.1-footer-status.patch") >/dev/null
-cmp "$TMP/fast-policy.ts" "$FAST_PACKAGE/extensions/index.ts" || fail 'previous policy output fixture mismatch'
 run || { tail -30 "$TMP/install.log"; fail 'previous policy output upgrade'; }
 cmp "$TMP/fast.patched" "$FAST_PACKAGE/extensions/index.ts" || fail 'prior policy upgrade output differs'
 cp "$FAST_PACKAGE/extensions/index.ts" "$TMP/fast.patched"
