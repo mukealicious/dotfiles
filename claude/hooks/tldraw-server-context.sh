@@ -2,7 +2,7 @@
 
 # tldraw offline owns and updates the actual context injector. Keep this
 # dotfiles-owned adapter portable and harmless until the app has installed it.
-hook="$HOME/skills/tldraw-offline/inject-server-context.sh"
+hook="$HOME/skills/tldraw-offline/inject-server-context.mjs"
 [ -f "$hook" ] || exit 0
 
-exec sh "$hook" "${1:-SubagentStart}"
+exec node "$hook" "${1:-SubagentStart}"
