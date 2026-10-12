@@ -1,6 +1,6 @@
 ---
 name: dotfiles-dev
-description: "Work on ~/.dotfiles: topics/installers, aliases/functions, Brewfile, git commands/config, Fish, AI skills/agents/instructions, or Holman-style architecture."
+description: "Dotfiles development in ~/.dotfiles. Use for topic installers, Fish, CLI ownership, Git commands, or shared AI configuration."
 references:
   - references/file-patterns.md
   - references/git-commands.md
@@ -8,64 +8,34 @@ references:
 
 # Dotfiles Development
 
-Topic-based dotfiles at `~/.dotfiles`. Each directory = one topic (tool/app).
+Read `~/.dotfiles/AGENTS.md` first unless already loaded; it owns repository
+constraints, source locations, and installer/toolchain boundaries.
 
-## Structure
+## Supporting Docs
 
-```
-~/.dotfiles/
-├── ai/           # Shared AI skills, agents, instructions (all tools)
-├── bin/          # Scripts, custom git commands
-├── claude/       # Claude Code config (settings, hooks)
-├── pi/           # Pi config (extensions, themes)
-├── git/          # Git config
-├── fish/         # Fish shell config, functions
-├── homebrew/     # Brewfile
-├── lib/          # Shared shell libraries (symlink.sh)
-├── script/       # bootstrap, install
-└── [topic]/      # Tool-specific config
-```
+| Branch | Read before editing |
+|---|---|
+| Shell scripts, symlinks, aliases, or a new topic | [references/file-patterns.md](references/file-patterns.md) |
+| Custom Git commands | [references/git-commands.md](references/git-commands.md) |
+| AI instructions, skills, projections, or agent assembly | `~/.dotfiles/ai/README.md` |
+| Pi configuration or extensions | `~/.dotfiles/pi/README.md` |
+| Claude settings, hooks, or MCP | `~/.dotfiles/claude/README.md` |
 
-> For skill architecture, ownership model, key commands, secrets, and common shell/Homebrew tasks, see `AGENTS.md`, `ai/README.md`, and `ai/instructions/base.md`.
+## Add a Topic
 
-### Add a Shared Skill
+1. Create `~/.dotfiles/[topic]/` and add the source files for that tool.
+2. Follow the file patterns above. Add an installer only for topic-specific setup.
+3. Change orchestration only for the dependencies described in `AGENTS.md`.
+4. Validate the changed behavior, then apply it with the topic's installer.
+   Use `script/symlink` for new `*.symlink` files or `fish/install.sh` for aliases
+   and keybindings. Confirm the expected links; reserve `dot` for a full update.
 
-1. Create `~/.dotfiles/ai/skills/[name]/SKILL.md`
-2. Add frontmatter with `name` and `description`
-3. Run `ai/install.sh` to refresh shared skill projections
+## AI Authoring
 
-Use `build-skill` skill for detailed guidance on format and progressive disclosure.
+Author shared skills in `ai/skills/<name>/`; use `claude/skills/<name>/` only for
+Claude-native runtime features. The AI README owns frontmatter, assembly, and
+projection guidance. Refresh runtime outputs with `ai/install.sh` when installation
+is part of the task; documentation-only edits need no installer run.
 
-### Add a Claude-Only Skill
-
-1. Create `~/.dotfiles/claude/skills/[name]/SKILL.md`
-2. Run `ai/install.sh` to project the Claude overlay into its runtime directories
-
-Only do this when the skill uses Claude-specific features such as hooks, `$SKILL_DIR`, plugins, or subagent delegation. Prefer shared skills.
-
-## Common Tasks
-
-### Add New Topic
-
-1. Create `~/.dotfiles/[topic]/`
-2. Add files using patterns below
-3. Run the topic's owning installer; use `script/bootstrap` if new `*.symlink` files need linking. Do not run the full `dot` updater just to apply a local change.
-4. If the topic adds `install.sh` and must run before other installers, update `script/install`'s `CORE_INSTALLERS`; otherwise it is auto-discovered in sorted fallback order
-5. If `dot` handles part of that topic directly, keep `bin/dot` and any `script/install --skip` usage in sync
-
-### Add Custom Git Command
-
-See [references/git-commands.md](references/git-commands.md) for templates and existing commands.
-
-Quick: Create executable `~/.dotfiles/bin/git-<name>`, use as `git <name>`.
-
-## File Patterns
-
-See [references/file-patterns.md](references/file-patterns.md) for complete reference.
-
-| Pattern | Behavior |
-|---------|----------|
-| `*.symlink` | Symlinked to `~/.<name>` |
-| `aliases.fish` | Auto-discovered and symlinked to Fish conf.d |
-| `keybindings.fish` | Auto-discovered and symlinked to Fish conf.d |
-| `install.sh` | Topic installer, run by `script/install` in deterministic order |
+The manual `writing-for-agents` skill is available when the user requests
+agent-document authoring guidance.

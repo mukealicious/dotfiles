@@ -1,5 +1,5 @@
 #!/bin/sh
-# Focused regression coverage for Pi's generated-resource cutover.
+# Regression coverage for generated resources and shared-skill retirement.
 set -eu
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
@@ -17,6 +17,35 @@ assert_file_contains() {
   text="$2"
   grep -Fq "$text" "$file" || fail "$file does not contain expected text"
 }
+
+RETIRED_SKILLS='mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context'
+
+assert_retired_skill_cleanup() {
+  for retired in $RETIRED_SKILLS; do
+    for provider in pi codex claude-code opencode; do
+      target="$SUCCESS_REPO/.ai-runtime/$provider/skills/$retired"
+      [ ! -e "$target" ] && [ ! -L "$target" ] || fail "$provider retains $retired"
+    done
+    for directory in "$SUCCESS_REPO/.agents/skills" "$SUCCESS_REPO/.claude/skills" "$SUCCESS_HOME/.claude/skills" "$SUCCESS_HOME/.config/opencode/skill"; do
+      [ ! -e "$directory/$retired" ] && [ ! -L "$directory/$retired" ] || fail "retired link survived: $directory/$retired"
+    done
+  done
+  for directory in "$SUCCESS_REPO/.agents/skills" "$SUCCESS_REPO/.claude/skills" "$SUCCESS_HOME/.claude/skills" "$SUCCESS_HOME/.config/opencode/skill"; do
+    [ "$(readlink "$directory/custom-link")" = "$SUCCESS_HOME/custom-skill" ] || fail "custom link changed"
+    [ "$(readlink "$directory/custom-broken-link")" = "$SUCCESS_HOME/missing-custom-skill" ] || fail "unrelated broken link removed"
+    assert_file_contains "$directory/custom-directory/SKILL.md" 'user-owned skill'
+  done
+}
+
+for retired in $RETIRED_SKILLS prelude bootstrap-prelude; do
+  [ ! -e "$ROOT/ai/skills/$retired" ] || fail "retired or unapproved source remains: $retired"
+done
+[ -s "$ROOT/ai/references/project-defaults.md" ] || fail "missing local project defaults"
+assert_file_contains "$ROOT/ai/instructions/base.md" '~/.dotfiles/ai/references/project-defaults.md'
+[ ! -e "$ROOT/ai/references/implementation-spec.md" ] && [ ! -L "$ROOT/ai/references/implementation-spec.md" ] || fail "retired local spec example remains"
+if grep -Fq 'implementation-spec.md' "$ROOT/ai/instructions/base.md"; then
+  fail "shared instructions still route to the retired spec example"
+fi
 
 make_test_repo() {
   target="$1"
@@ -94,7 +123,36 @@ ln -s "$SUCCESS_REPO_PHYSICAL/.ai-runtime/claude-code/skills/principle-boundary-
 mkdir -p "$SUCCESS_REPO/.ai-runtime/pi/skills/handoff" "$SUCCESS_REPO/.ai-runtime/claude-code/skills/handoff"
 printf 'retired handoff\n' > "$SUCCESS_REPO/.ai-runtime/pi/skills/handoff/SKILL.md"
 ln -s "$SUCCESS_REPO_PHYSICAL/.ai-runtime/claude-code/skills/handoff" "$SUCCESS_HOME/.claude/skills/handoff"
+# Seed the abandoned dotfiles coding corpus to prove replacement, not overlay.
+# The published collection has no references/ tree; stale resources must disappear.
+for provider in pi codex claude-code opencode; do
+  mkdir -p "$SUCCESS_REPO/.ai-runtime/$provider/skills/coding-standards/references"
+  printf 'obsolete October reference\n' > "$SUCCESS_REPO/.ai-runtime/$provider/skills/coding-standards/references/effect.md"
+done
+# Seed every retired projection and each installed alias, plus user-owned entries.
+for provider in pi codex claude-code opencode; do
+  for retired in $RETIRED_SKILLS; do
+    mkdir -p "$SUCCESS_REPO/.ai-runtime/$provider/skills/$retired"
+    printf 'retired skill\n' > "$SUCCESS_REPO/.ai-runtime/$provider/skills/$retired/SKILL.md"
+  done
+done
+mkdir -p "$SUCCESS_HOME/custom-skill"
+for directory in "$SUCCESS_REPO/.agents/skills" "$SUCCESS_REPO/.claude/skills" "$SUCCESS_HOME/.claude/skills" "$SUCCESS_HOME/.config/opencode/skill"; do
+  case "$directory" in
+    */.agents/skills) provider=codex ;;
+    */.config/opencode/skill) provider=opencode ;;
+    *) provider=claude-code ;;
+  esac
+  mkdir -p "$directory/custom-directory"
+  printf 'user-owned skill\n' > "$directory/custom-directory/SKILL.md"
+  ln -s "$SUCCESS_HOME/custom-skill" "$directory/custom-link"
+  ln -s "$SUCCESS_HOME/missing-custom-skill" "$directory/custom-broken-link"
+  for retired in $RETIRED_SKILLS; do
+    ln -s "$SUCCESS_REPO_PHYSICAL/.ai-runtime/$provider/skills/$retired" "$directory/$retired"
+  done
+done
 HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/migration.log" 2>&1
+assert_retired_skill_cleanup
 [ ! -e "$SUCCESS_HOME/.claude/skills/handoff" ] && [ ! -L "$SUCCESS_HOME/.claude/skills/handoff" ] || fail "retired handoff link survived"
 [ ! -e "$SUCCESS_HOME/.claude/skills/principle-boundary-discipline" ] && [ ! -L "$SUCCESS_HOME/.claude/skills/principle-boundary-discipline" ] || fail "stale installed principle link survived"
 for profile in agent; do
@@ -172,16 +230,25 @@ for provider in pi codex claude-code opencode; do
   for reference in herdr/references/workflows.md mono-color/references/recipe.md mono-color/references/color-and-layout.md mono-color/references/image-and-type.md mono-color/references/composition.md mono-color/references/production.md mono-color/references/inspection.md; do
     [ -s "$skills/$reference" ] || fail "$provider is missing $reference"
   done
-  for principle in "$SUCCESS_REPO/ai/skills/mu-mode/principles"/*.md; do
-    [ -s "$principle" ] || fail "Mu Mode has no bundled principles"
-    name="$(basename "$principle")"
-    cmp -s "$principle" "$skills/mu-mode/principles/$name" || fail "$provider changed or omitted $name"
+  for skill in diagnosing-bugs write-discoverable-code uncomplect coding-standards cloudflare-composition-root effect-service-design tech-spec writing-for-agents; do
+    diff -r "$SUCCESS_REPO/ai/skills/$skill" "$skills/$skill" || fail "$provider changed or omitted $skill resources/metadata"
   done
+  [ ! -e "$skills/coding-standards/references" ] || fail "$provider retains the abandoned coding corpus"
+  for skipped in prelude bootstrap-prelude; do
+    [ ! -e "$skills/$skipped" ] || fail "$provider imports skipped $skipped"
+  done
+  assert_file_contains "$skills/writing-for-agents/SKILL.md" 'disable-model-invocation: true'
+  [ -s "$skills/writing-for-agents/SKILL-MECHANICS.md" ] || fail "$provider lost authoring mechanics"
+  [ -s "$skills/writing-for-agents/agents/openai.yaml" ] || fail "$provider lost upstream authoring metadata"
+  [ ! -e "$skills/writing-for-agents/scripts" ] && [ ! -e "$skills/writing-for-agents/references" ] || fail "$provider carried over retired authoring resources"
+  assert_file_contains "$skills/tech-spec/SKILL.md" 'disable-model-invocation: true'
+  assert_file_contains "$skills/tech-spec/SKILL.md" '../coding-standards/SKILL.md'
+  [ -s "$skills/diagnosing-bugs/scripts/hitl-loop.template.sh" ] || fail "$provider lost debugging template"
+  [ -s "$skills/uncomplect/references/source-map.md" ] || fail "$provider lost Uncomplect source map"
+  [ -s "$skills/uncomplect/evals/trigger-evals.json" ] || fail "$provider lost upstream evals"
   for standalone in "$skills"/principle-*; do
     [ ! -e "$standalone" ] || fail "$provider exposes a standalone principle skill"
   done
-  [ "$(find "$skills/mu-mode" -name SKILL.md | wc -l | tr -d ' ')" = 1 ] || fail "$provider exposes nested Mu Mode skills"
-  assert_file_contains "$skills/mu-mode/SKILL.md" "disable-model-invocation: true"
   [ ! -e "$skills/implement" ] || fail "$provider retains the retired implement wrapper"
   [ -f "$skills/mermaid/tools/validate.sh" ] || fail "$provider lost the preserved Mermaid validator"
 done
@@ -195,6 +262,27 @@ printf '%s\n' 'custom agent' > "$SUCCESS_HOME/.pi/agent/agents/custom.md"
 printf '%s\n' 'custom chain' > "$SUCCESS_HOME/.pi/agent/agents/custom.chain.md"
 ln -s "$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/agents/removed.md" "$SUCCESS_HOME/.pi/agent/agents/removed.md"
 HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/idempotence.log" 2>&1
+assert_retired_skill_cleanup
+for instruction in \
+  "$SUCCESS_HOME/.AGENTS.md" \
+  "$SUCCESS_HOME/.claude/CLAUDE.md" \
+  "$SUCCESS_REPO/.ai-runtime/pi/AGENTS.md" \
+  "$SUCCESS_HOME/.config/opencode/AGENTS.md" \
+  "$SUCCESS_HOME/.codex/instructions.md" \
+  "$SUCCESS_HOME/.gemini/GEMINI.md"; do
+  assert_file_contains "$instruction" 'ai/references/project-defaults.md'
+  if grep -Fq 'implementation-spec.md' "$instruction"; then
+    fail "installed instructions retain the retired spec pointer: $instruction"
+  fi
+done
+for provider in pi codex claude-code opencode; do
+  [ ! -e "$SUCCESS_REPO/.ai-runtime/$provider/skills/coding-standards/references" ] || fail "$provider restored the abandoned coding corpus on repeat install"
+done
+for directory in "$SUCCESS_REPO/.agents/skills" "$SUCCESS_REPO/.claude/skills" "$SUCCESS_HOME/.claude/skills" "$SUCCESS_HOME/.config/opencode/skill"; do
+  for skill in coding-standards cloudflare-composition-root effect-service-design tech-spec writing-for-agents; do
+    [ -L "$directory/$skill" ] && [ -s "$directory/$skill/SKILL.md" ] || fail "missing installed skill link: $directory/$skill"
+  done
+done
 [ -f "$SUCCESS_HOME/.pi/agent/agents/custom.md" ] || fail "custom agent was removed"
 [ -f "$SUCCESS_HOME/.pi/agent/agents/custom.chain.md" ] || fail "custom chain was removed"
 [ ! -e "$SUCCESS_HOME/.pi/agent/agents/removed.md" ] && [ ! -L "$SUCCESS_HOME/.pi/agent/agents/removed.md" ] || fail "stale managed agent link was preserved"

@@ -4,6 +4,21 @@ One everyday environment at `~/.pi/agent`, using OpenAI's **Sign in with
 ChatGPT**, native MCP, and native codemode. Use `pi` or `pi-print`; retired
 `pi-personal`/`pi-work` wrappers and print aliases have been removed.
 
+## Reading Map
+
+- **Settings/resources:** read [Ownership](#ownership) before changing managed
+  resources or native preferences.
+- **Connections/credentials:** read [Native MCP and codemode](#native-mcp-and-codemode)
+  before changing MCP setup; credentials stay machine-local.
+- **Delegation:** after operator authorization, read
+  [Continuation and delegation](#continuation-and-delegation) and the matching
+  upstream `pi-subagents` skill before launching children.
+- **Customization/patches:** read [CUSTOMIZATION-AUDIT.md](CUSTOMIZATION-AUDIT.md)
+  before changing ownership boundaries, and [patches/README.md](patches/README.md)
+  before changing or applying package patches.
+- **Legacy work/personal migration:** read [One-time consolidation](#one-time-consolidation)
+  only on machines still using those directories; it is not routine setup.
+
 ## Setup
 
 Pi itself uses its own updater rather than mise's JS release airlock:
@@ -197,8 +212,9 @@ Retained packages:
 - **pi-subagents@0.74.0:** unchanged upstream source pinned at
   `10694a673cb077b4d3ec6a6cfe68acb6c28b83a5`, including its matching orchestration
   skill. Package prompts and the optional council skill are not auto-loaded.
-  See its [README](packages/pi-subagents/README.md) and
-  [provenance](packages/pi-subagents/VENDORED_FROM.md).
+  Read its [README](packages/pi-subagents/README.md) for supported workflows and
+  [provenance](packages/pi-subagents/VENDORED_FROM.md) when reviewing the pin or
+  accepted limitations.
   **Known limitation:** Claude Code async dynamic fanout fails with model/effort
   overrides or pinned agent models. Use native Pi children or Claude Code
   single/static-parallel runs instead; no local implementation fix is carried.
@@ -213,8 +229,9 @@ Retained packages:
   Upstream removed Mermaid; its previously selected skill/validator remain unchanged
   as the frozen shared snapshot `ai/skills/mermaid/`, not as a package patch.
 
-`/review [scope]` is now a native prompt using the shared read-only review skill
-and agent, without PR checkout, editing or an automatic fix loop. `/answer`,
+`/review [scope]` expands [prompts/review.md](prompts/review.md) into a read-only
+review request. The managed `review` agent provides independent review when
+requested; there is no separate review skill, PR checkout, or automatic fix loop. `/answer`,
 `/btw`, `/loop`, the UV bash override and whimsical indicator are not loaded.
 Native bash plus shared `uv` instructions replace interception; this is policy,
 not sandbox enforcement. Unreferenced local Python shims were removed.

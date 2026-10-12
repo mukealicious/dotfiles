@@ -2,22 +2,16 @@
 
 - Upstream: https://github.com/joelhooks/skills
 - Path: `skills/uncomplect/`
-- Ref: `7c0a930d761bc05f50c3d31cf55ba7f289b45861`
-- Role: Pressure-test stateful systems and replacement designs through simplicity, deep modules, deletability, domain authority, effects, and lifecycle modeling.
+- Ref: `022f29cbfa2ddd36916622d49c02b763060f6847` (latest main reviewed 2026-10-12)
+- Previous ref: `7c0a930d761bc05f50c3d31cf55ba7f289b45861`
+- Role: Independent architectural simplification and replacement-design guidance, explicitly retained by the user.
 
-## Initial baseline
+`SKILL.md`, `references/source-map.md`, and all `evals/` files preserve the upstream snapshot. Local additions are this provenance file and `metadata.watch-sources` in `SKILL.md`. One extra trailing blank line in `references/source-map.md` was removed to satisfy `git diff --check`; all substantive upstream text is unchanged.
 
-`SKILL.md`, `references/source-map.md`, and `evals/` are preserved verbatim
-from the pinned upstream snapshot. This provenance file is the only addition.
-Keep the initial trial faithful to upstream before making evidence-based changes.
-The skill already conditions effect-system usage on the project's existing stack;
-no local framework substitutions or review integrations have been added.
+The refresh adds behavior/interface separation, whole-unit infrastructure ownership and deletion, and agent-sized context enforced through types/lint/boundaries. The external Rat Stack link is an example, not a local skill dependency or adoption requirement. No framework substitutions, router, or review integration is added.
 
-The bundled benchmark reports upstream results, not locally reproduced results.
+Bundled benchmarks report upstream results, not locally reproduced evaluations.
 
 ## License status
 
-No license was found in the upstream repository root or GitHub license endpoint
-during adoption. No license grant is inferred from public availability or the
-README's installation instructions. Clarify reuse terms before redistributing
-this snapshot.
+No license file was found at the upstream repository root or within the skill in the reviewed archive. No license grant is inferred from public availability or installation instructions. Clarify reuse terms before redistribution.

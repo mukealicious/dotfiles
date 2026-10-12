@@ -9,6 +9,7 @@
   {"query":"Map the DDD boundaries here. A dashboard projection is acting like the aggregate authority.","should_trigger":true},
   {"query":"Design this architecture twice and compare change amplification, hidden knowledge, and what each option deletes.","should_trigger":true},
   {"query":"We have retry policy, operator policy, lifecycle, and business failure braided into one failed status. Unbraid it.","should_trigger":true},
+  {"query":"We separated these concerns last month and agents braided them back together. How do we make the separation stick?","should_trigger":true},
   {"query":"Fix the spelling mistakes in this README and keep the wording otherwise unchanged.","should_trigger":false},
   {"query":"Implement this already-specified XState machine from the attached transition table.","should_trigger":false},
   {"query":"Debug why this HTTP request times out in production.","should_trigger":false},

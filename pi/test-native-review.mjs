@@ -18,7 +18,9 @@ test('native review prompt loads and expands without a checkout/fix-loop command
     assert.equal(prompts.length, 1);
     assert.equal(prompts[0].name, 'review');
     const expanded = expandPromptTemplate('/review staged changes', prompts);
-    assert.match(expanded, /Review staged changes using the code-review skill/);
+    assert.match(expanded, /Review staged changes\. Read the repository's instructions/);
+    assert.doesNotMatch(expanded, /code-review skill/);
+    assert.match(expanded, /file\/line references and concrete impact/);
     assert.match(expanded, /do not edit files, check out branches or PRs/);
     assert.match(expanded, /automatic review\/fix loop/);
     assert.match(expandPromptTemplate('/review', prompts), /current uncommitted changes/);

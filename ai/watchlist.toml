@@ -14,6 +14,69 @@ review = "semantic-diff"
 notes = "Shared retrospective skill source for ai/skills/post-mortem/SKILL.md"
 
 [[sources]]
+id = "coding-standards"
+repo = "dmmulroy/skills"
+path = "coding-standards"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Explicitly adopted published collection; see ai/skills/coding-standards/VENDORED_FROM.md"
+
+[[sources]]
+id = "cloudflare-composition-root"
+repo = "dmmulroy/skills"
+path = "cloudflare-composition-root"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Explicitly adopted published collection; see ai/skills/cloudflare-composition-root/VENDORED_FROM.md"
+
+[[sources]]
+id = "effect-service-design"
+repo = "dmmulroy/skills"
+path = "effect-service-design"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Explicitly adopted published collection; see ai/skills/effect-service-design/VENDORED_FROM.md"
+
+[[sources]]
+id = "tech-spec"
+repo = "dmmulroy/skills"
+path = "tech-spec"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Explicitly adopted published collection; see ai/skills/tech-spec/VENDORED_FROM.md"
+
+[[sources]]
+id = "writing-for-agents"
+repo = "dmmulroy/.dotfiles"
+path = "home/.agents/skills/writing-for-agents"
+branch = "main"
+kind = "skill"
+review = "pattern-scan"
+notes = "Unchanged manual skill; exact pin in ai/skills/writing-for-agents/VENDORED_FROM.md. No SKILL.md watch metadata, so no automatic local pinned comparison."
+
+[[sources]]
+id = "write-discoverable-code"
+repo = "dmmulroy/.dotfiles"
+path = "home/.agents/skills/write-discoverable-code"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Current Mulroy snapshot of Modem searchable-code guidance; original MIT notice retained"
+
+[[sources]]
+id = "diagnosing-bugs"
+repo = "dmmulroy/.dotfiles"
+path = "home/.agents/skills/diagnosing-bugs"
+branch = "main"
+kind = "skill"
+review = "semantic-diff"
+notes = "Current Mulroy snapshot of Matt Pocock debugging guidance; see ai/skills/diagnosing-bugs/VENDORED_FROM.md"
+
+[[sources]]
 id = "grilling"
 repo = "dmmulroy/.dotfiles"
 path = "home/.agents/skills/grilling"
@@ -21,24 +84,6 @@ branch = "main"
 kind = "skill"
 review = "semantic-diff"
 notes = "Reviewed grilling source for ai/skills/grilling/SKILL.md"
-
-[[sources]]
-id = "domain-modeling"
-repo = "dmmulroy/.dotfiles"
-path = "home/.agents/skills/domain-modeling"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Reviewed domain-modeling source for ai/skills/domain-modeling/"
-
-[[sources]]
-id = "tdd"
-repo = "dmmulroy/.dotfiles"
-path = "home/.agents/skills/tdd"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Reviewed TDD source and focused references for ai/skills/tdd/"
 
 [[sources]]
 id = "bro"
@@ -50,15 +95,6 @@ review = "semantic-diff"
 notes = "Reviewed plain-language restatement source for ai/skills/bro/SKILL.md"
 
 [[sources]]
-id = "codebase-design"
-repo = "mattpocock/skills"
-path = "skills/engineering/codebase-design"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Pinned sole deep-module/interface/seam owner for ai/skills/codebase-design/"
-
-[[sources]]
 id = "grill-me"
 repo = "mattpocock/skills"
 path = "skills/productivity/grill-me"
@@ -68,13 +104,13 @@ review = "semantic-diff"
 notes = "Thin manual entry provenance for ai/skills/grill-me/SKILL.md"
 
 [[sources]]
-id = "grill-with-docs"
-repo = "mattpocock/skills"
-path = "skills/engineering/grill-with-docs"
+id = "uncomplect"
+repo = "joelhooks/skills"
+path = "skills/uncomplect"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
-notes = "Thin composition provenance for ai/skills/grill-with-docs/"
+notes = "Independent architectural simplification skill; see ai/skills/uncomplect/VENDORED_FROM.md"
 
 [[sources]]
 id = "impeccable"

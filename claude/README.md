@@ -1,197 +1,99 @@
-# Claude Code Skills & Agents
+# Claude Code Configuration
 
-Claude-specific overlays, projected shared skills, and subagents for automated agentic workflows.
+Read this document before changing Claude settings, hooks, MCP, or advisor setup.
+For shared instructions, skill authoring/projections, and agent assembly, read
+[ai/README.md](../ai/README.md).
 
-## Runtime Architecture
+## Ownership
 
-Claude runtime files now use a mix of symlinks and managed assembled outputs:
+| Source | Owner / runtime |
+|---|---|
+| `claude/settings.json` | `claude/install.sh` links it to `~/.claude/settings.json` |
+| `claude/hooks/` | Hook implementations referenced by settings |
+| `ai/skills/` | `ai/install.sh` projects shared skills and links them into Claude runtimes |
+| `claude/skills/` | Optional Claude-only authoring overlays; never a generated projection |
+| `claude/agents/` | Combined advisor files and split `review` metadata, installed by `ai/install.sh` |
 
-```mermaid
-graph LR
-    subgraph "Dotfiles Repo"
-        settings["claude/settings.json"]
-        shared_skills["ai/skills/*"]
-        claude_skills["claude/skills/*"]
-        review_body["ai/agents/review.body.md"]
-        review_meta["claude/agents/review.frontmatter"]
-        legacy_agents["claude/agents/{oracle,librarian}.md"]
-        hooks_src["claude/hooks/*"]
-    end
+Author portable skills in `ai/skills/`. Use `claude/skills/` only for Claude-native
+runtime requirements such as hooks, `$SKILL_DIR`, plugins, or subagent-specific
+behavior. The [shared skill inventory](../ai/README.md#skill-inventory) owns
+capability routing and invocation guidance; manual-only skills are not started
+automatically.
 
-    subgraph "~/.claude/"
-        settings_dst["settings.json"]
-        skills_dst["skills/*"]
-        review_dst["agents/review.md"]
-        legacy_agents_dst["agents/{oracle,librarian}.md"]
-    end
+No marketplace plugins are installed by this repo. Keep shared workflows
+reviewable rather than adding a second harness-specific copy.
 
-    settings -->|symlink| settings_dst
-    shared_skills -->|projected| skills_dst
-    claude_skills -->|overlay| skills_dst
-    review_body -->|assemble| review_dst
-    review_meta -->|assemble| review_dst
-    legacy_agents -->|symlink| legacy_agents_dst
-```
-
-**Key files:**
-- `settings.json` → `~/.claude/settings.json` - Global permissions, hooks, and MCP servers
-- `ai/skills/*` + `claude/skills/*` → `~/.claude/skills/*` - Portable skills plus Claude-specific overlays
-- `ai/agents/review.body.md` + `claude/agents/review.frontmatter` → `~/.claude/agents/review.md` - Shared-body exemplar agent
-- `agents/{oracle,librarian}.md` → `~/.claude/agents/{oracle,librarian}.md` - Legacy combined subagents pending migration
-- `hooks/` - PreToolUse, Stop, and Notification hooks (referenced from settings.json)
-
-**Installation flow:**
-1. `script/bootstrap` or `bin/dot` runs all `*/install.sh` scripts
-2. `claude/install.sh` symlinks settings.json and configures MCP servers
-3. `ai/install.sh` projects shared skills from `ai/skills/`, applies `claude/skills/` overlays, assembles `review`, and symlinks the remaining legacy agents
-
-Author portable skills in `ai/skills/`, keep `claude/skills/` for Claude-native overlays, and edit repo files rather than `~/.claude/`.
-
-## Structure
-
-```
-ai/
-├── agents/
-│   └── review.body.md      # Shared review body
-└── skills/                 # Portable skills projected into ~/.claude/skills
-    ├── build-skill/        # Skill authoring guide
-    ├── code-review/        # Proportional advisory review
-    ├── codebase-design/    # Deep modules, interfaces, and seams
-    ├── domain-modeling/    # Domain terminology and glossary
-    ├── grilling/           # Dependency-aware design-tree questioning
-    ├── librarian/          # Multi-repo exploration
-    ├── opensrc/            # External package/repo source context
-    ├── tdd/                # Red/green vertical slices
-    └── ...                 # See ai/README.md for the complete inventory
-
-claude/
-├── install.sh              # Symlinks settings.json + configures MCP servers
-├── settings.json           # Global config (permissions, hooks, MCP)
-├── hooks/                  # Lifecycle hooks
-│   ├── safety-rm.sh              # PreToolUse: rewrites rm to trash
-│   ├── notify-idle.sh            # Stop/Notification: sound + macOS alert
-│   └── tldraw-server-context.sh  # Portable adapter for tldraw's app-managed hook
-├── agents/                 # Legacy Claude agents plus shared review metadata
-└── skills/                 # Claude-only overlays (currently empty; shared skills projected here by ai/install.sh)
-```
-
-## Subagents
-
-Specialized AI advisors invoked via natural language. The role names below are the canonical capability labels; Claude-specific model pins live in the agent frontmatter, not in the shared architecture:
+## Advisors
 
 | Agent | Purpose |
-|-------|---------|
-| **oracle** | Senior advisor for architecture, planning, complex debugging |
-| **librarian** | Multi-repo explorer for external libraries |
-| **review** | Code reviewer focused on bugs, security |
+|---|---|
+| `oracle` | Architecture, planning, and complex debugging |
+| `librarian` | Source-backed external-library investigation |
+| `review` | Bugs, security, and change correctness |
 
-**Usage:**
+Before delegating, follow the read-only advisor and implementation-routing
+constraints in [CLAUDE.md](../CLAUDE.md#claude-code). Models and tool permissions
+are defined in each role's frontmatter.
+
+### Edit or Add an Agent
+
+- Edit `oracle` and `librarian` in `claude/agents/<name>.md`.
+- Edit `review`'s portable body in `ai/agents/review.body.md` and Claude metadata
+  in `claude/agents/review.frontmatter`.
+- New combined `claude/agents/<name>.md` roles are linked by `ai/install.sh`.
+  Define explicit tool permissions and a task-routing description.
+- The shared-body assembler currently handles only `review`; a new
+  `*.body.md`/`*.frontmatter` pair alone is not sufficient. Inspect assembly
+  support before adopting that pattern for another role.
+
+Refresh installed roles with `ai/install.sh` when applying agent configuration.
+Edit sources here, not assembled or linked files in `~/.claude/agents/`.
+
+## MCP and Hooks
+
+`claude/install.sh` removes the legacy user-scope `context7` entry and attempts
+idempotent `grep_app` registration. `grep_app` is GitHub-wide discovery;
+the shared `librarian`/`opensrc` workflows own source-backed investigation.
+Inspect `claude mcp list` to verify local connections and authentication.
+Other OAuth connections, including Linear, are machine/user-managed rather than
+configured by this installer. Per-agent MCP scoping is not configured here.
+
+The installer does not manage Codex MCP entries. If an old Codex `context7`
+connection remains, remove it only as an explicitly intended one-time cleanup:
+
+```bash
+codex mcp remove context7
 ```
-Use the oracle agent to review this architecture
-Use the librarian to explore how zod validates schemas
-Use review to check my recent changes
-```
 
-## Skills
+### Safety Hook
 
-Shared skills live in `ai/skills/` and are projected to `~/.claude/skills/` at
-install time. Claude-only overlays in `claude/skills/` remain optional and are
-currently empty. See `ai/README.md` for the complete inventory and provenance.
+`hooks/safety-rm.sh` asks for confirmation and rewrites supported simple
+destructive `rm` commands to `trash`, preserving path quoting. Complex `rm`
+syntax can require review without a rewrite. This hook is not a shell sandbox or
+a guarantee against deletion; shared approval and ownership rules still apply.
 
-Key workflow boundaries:
+### Notifications and App Context
 
-| Skill | Purpose |
-|-------|---------|
-| `code-review` | Proportional advisory review and final-pass cleanup |
-| `codebase-design` | Deep-module/interface vocabulary when structural shape matters |
-| `grilling` / `domain-modeling` | Design-tree questions and durable domain language |
-| `tdd` | Test-first slices at public behavioral seams |
-| `bro` | Manual plain-language restatement |
-| `framing-doc` / `kickoff-doc` | Distinct shaping documents |
-| `opensrc` / `librarian` | Source-backed external investigation |
-| `build-skill` / `dotfiles-dev` | Skill authoring and repository conventions |
-
-`bro`, `grill-me`, and `grill-with-docs` are manual entry points;
-model invocation does not start them automatically. Run `ai/install.sh` to
-refresh the projection after editing source skills.
-
-## Adding New Skills
-
-1. Create `ai/skills/<name>/` for a shared skill, or `claude/skills/<name>/` only for a Claude-only overlay.
-2. Add `SKILL.md` with YAML frontmatter:
-   ```yaml
-   ---
-   name: skill-name
-   description: Brief description of what the skill does
-   ---
-   ```
-3. Add supporting scripts/resources next to the skill when needed.
-4. Run `ai/install.sh` to refresh the runtime projections.
-
-Default to `ai/skills/`. Use `claude/skills/` only when the skill truly depends on Claude-specific features such as hooks, `$SKILL_DIR`, or subagent-specific runtime behavior.
-
-## Adding New Agents
-
-Prefer the shared-body pattern for new portable agents:
-
-1. Create `ai/agents/<name>.body.md` with the neutral agent instructions.
-2. Create `claude/agents/<name>.frontmatter` with Claude-specific metadata:
-   ```yaml
-   name: agent-name
-   description: When to use this agent
-   tools: Read, Grep, Glob, WebFetch
-   disallowedTools: Edit, Write
-   model: sonnet
-   ```
-3. Run `ai/install.sh` to assemble the installed runtime file.
-
-`oracle` and `librarian` still use the older combined `agents/<name>.md` format until they are migrated.
-
-## How Skills Work
-
-Skills use "progressive disclosure" - Claude loads information in stages:
-1. **Metadata**: Name and description (always loaded)
-2. **Instructions**: The SKILL.md content (loaded when skill is triggered)
-3. **Resources**: Supporting files/scripts (loaded as needed via bash commands)
-
-Skills are invoked automatically by Claude when the user's request matches the skill's description.
-
-## Plugins
-
-No Claude marketplace plugins are installed by this repo. Prefer vendored/shared skills under `ai/skills/` and Claude-specific overlays under `claude/skills/` to keep behavior reviewable and reduce supply-chain risk.
+Stop/Notification hooks provide sound and macOS notifications. Herdr owns its
+installed agent-state hook. The tldraw SubagentStart adapter forwards app-managed
+context; inspect its source and the current hook settings before changing it.
 
 ## Installation
 
-The `install.sh` script is automatically run by:
-- `script/install` (during initial setup)
-- `bin/dot` (during updates)
+`script/install` and `bin/dot` run the topic installer. To apply only Claude
+settings/MCP changes:
 
-Or run manually:
 ```bash
 ./claude/install.sh
 ```
 
-## MCP and Hook Maintenance
+Use `ai/install.sh` for instructions, skill projections, or agents instead.
+Documentation-only changes need neither installer.
 
-`claude/install.sh` owns Claude settings and MCP setup; `ai/install.sh` owns
-instructions, skill projections (including Claude overlays), and agent assembly.
-Linear provides project-management access via OAuth. `grep_app` provides
-GitHub-wide code discovery at user scope in `~/.claude.json`; use `opensrc` for
-source-backed investigation. Per-agent MCP scoping is not configured here.
+## Claude-Native Reference
 
-For an old local `context7` installation, these are one-time manual cleanup
-commands, not installer or session-start steps:
+Read these only when the task needs Claude-specific skill features or packaging:
 
-```bash
-claude mcp remove --scope user context7
-codex mcp remove context7
-```
-
-The PreToolUse safety hook rewrites guarded `rm` commands to `trash` and asks for
-confirmation. Stop/Notification hooks provide sound and macOS notifications.
-
-## Documentation
-
-- [Claude Skills Overview](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
-- [Skills Quickstart](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/quickstart)
-- [Best Practices](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices)
+- [Skills overview](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
+- [Skills quickstart](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/quickstart)
+- [Skill best practices](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices)

@@ -1,9 +1,9 @@
 ---
-description: Read-only code review using the shared code-review skill
+description: Read-only review of a diff and its surrounding code
 argument-hint: "[scope or focus]"
 ---
-Review ${@:-the current uncommitted changes} using the code-review skill. Read that
-skill first, inspect the relevant diff and surrounding code, and report actionable
+Review ${@:-the current uncommitted changes}. Read the repository's instructions,
+inspect the relevant diff and surrounding code, and report actionable
 findings ordered by severity with file/line references and concrete impact. State
 validation limits and residual risks if there are no findings.
 

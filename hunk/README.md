@@ -92,8 +92,8 @@ annotation runtime:
    `hunk session comment list --repo . --type user`.
 3. The agent edits the same spec, then reloads the live review. Empty comments
    never imply approval; implementation starts only after direct user approval.
-4. Hunk owns user-facing annotations. `/skill:code-review` remains the separate
-   advisory code-review workflow, not a mandatory follow-up.
+4. Hunk owns user-facing annotations. Pi's native `/review` prompt remains the
+   separate read-only advisory review entry point, not a mandatory follow-up.
 
 ## Git opt-in aliases
 

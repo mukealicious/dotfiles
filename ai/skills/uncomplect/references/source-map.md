@@ -28,7 +28,7 @@ Use Young to test whether the boundary makes a wrong model cheap to replace. His
 - [Eric Evans, DDD Reference](https://www.domainlanguage.com/ddd/reference/)
 - [Scott Wlaschin, Domain Modeling Made Functional](https://pragprog.com/titles/swdddf/domain-modeling-made-functional/)
 
-Use DDD to name bounded contexts, aggregate invariants, commands, events, policies, and projections. A projection can report a decision. It cannot become the authority that makes the decision.
+Use DDD to name bounded contexts, aggregate invariants, commands, events, policies, and read models. A read model (DDD's projection) can report a decision. It cannot become the authority that makes the decision.
 
 ## Typed effects: boundaries
 
@@ -43,3 +43,15 @@ Use an effect system to model effectful services, expected failures, retries, tr
 - [Persistence](https://stately.ai/docs/persistence)
 
 Use a state machine when modes change which events are legal, or when the workflow needs cancellation, retries, resumability, or child actors. Normalize persisted state before granting it current authority.
+
+## Lauren Tan: agent-sized context
+
+- [Lauren Tan on Dune and shipping agent-written PRs](https://x.com/poteto/status/2102050467505430555)
+
+Use Tan to make a separation last. Agents copy what they find, so a boundary has to be visible in the tree and enforced by the highest rung that can hold it: the codebase, then static analysis, then rules, skills, and the style guide. Keep one paved path per pattern.
+
+## Worked example
+
+- [rat-stack](https://github.com/joelhooks/rat-stack)
+
+A reference stack built on these lenses. Each capability is defined once and projected to every interface. Each cartridge carries its own infrastructure and can be pulled out whole. Lint enforces boundaries and comment rules. Use it to see the principles in one codebase, not as a template to copy.

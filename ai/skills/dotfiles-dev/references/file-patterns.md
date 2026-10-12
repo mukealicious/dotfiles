@@ -1,70 +1,75 @@
 # Dotfiles File Patterns
 
+Read this reference before changing shell scripts, symlinks, aliases, or topic
+setup. `~/.dotfiles/AGENTS.md` owns installer ordering and toolchain boundaries.
+
 ## Auto-processed Patterns
 
-| Pattern | Behavior | Example |
-|---------|----------|---------|
-| `*.symlink` | Symlinked to `~/.<name>` | `gitconfig.symlink` → `~/.gitconfig` |
-| `aliases.fish` | Auto-discovered and symlinked to Fish conf.d | `git/aliases.fish` → Fish conf.d |
-| `keybindings.fish` | Auto-discovered and symlinked to Fish conf.d | `fzf/keybindings.fish` → Fish conf.d |
-| `install.sh` | Topic installer | Run by `script/install`/`dot` in deterministic order |
-| `mise.toml` (`npm:` tools) | Versioned JS CLIs | `opensrc` |
-| `mise.lock` | Exact cross-machine toolchain pins | Node, pnpm, Bun, JS CLIs |
-| `pnpm/config.yaml` | Global pnpm policy | Seven-day release airlock |
-| `mise/node-globals.reqs` | npm CLIs that need the mise-managed Node runtime | `pkg@version|reviewed-build-dep` |
-| `uv.reqs` | Python CLI tools installed by `uv tool install` | `lue-reader` |
-
-## Symlink Naming
-
-The `.symlink` suffix is stripped and a dot prefix added:
-
-- `gitconfig.symlink` → `~/.gitconfig`
-
-## Shared Libraries
-
-| File | Purpose |
-|------|---------|
-| `lib/log.sh` | Shared shell logging helpers (`log_section`, `log_step`, `log_info`, `log_success`, `log_warn`, `log_hint`). |
-| `lib/symlink.sh` | Shared `ensure_symlink` (read-write) and `check_symlink` (read-only) helpers. Sourced by installers and `dot-doctor`. |
-
-## Diagnostic Commands
-
-| Command | Description |
-|---------|-------------|
-| `dot doctor` | Validates CLIs, symlinks, Fish config, AI assembly, PATH. Exit 0 = healthy, exit 1 = failures. |
-
-## Install Scripts
-
-`install.sh` scripts should be idempotent. `script/install` runs them in a deterministic pattern: explicit `CORE_INSTALLERS` order for foundational topics, then sorted auto-discovery for everything else. Called by `script/install` and `bin/dot`.
-
-When adding a new topic:
-- If its installer has no special ordering requirements, no `script/install` change is needed.
-- If it must run before the general fallback installers, add it to `script/install`'s `CORE_INSTALLERS`.
-- If `bin/dot` has special pre/post sequencing around it, update `bin/dot` too. `bin/dot` can skip installers already handled directly via `script/install --skip <path>`.
-- Extra args passed to `script/install` are forwarded to each installer (for example `script/install --force`).
-- Consider whether `dot doctor` needs a corresponding check.
-
-## CLI Installer Boundaries
-
-| Tool type | Owner | Notes |
+| Pattern | Behavior | Owner |
 |---|---|---|
-| System/native macOS CLIs and apps | `Brewfile` | Prefer Homebrew for broadly packaged binaries. |
-| Python CLIs | `uv.reqs` | Installed with `uv tool install`. |
-| Versioned JS CLIs | `mise.toml` (`npm:<package>`) | Installed as isolated mise tools; explicitly approve required install scripts. |
-| Native-sensitive Node CLIs | `mise/node-globals.reqs` | Installed with `mise exec -- npm install -g` so native deps match the pinned Node runtime. |
-| Behavior wrappers | `bin/` | `~/.dotfiles/bin` should win on PATH over runtime package bins. |
+| `*.symlink` | Strip the suffix, add a dot, and link to `~/.<name>` | `script/symlink` |
+| `aliases.fish` | Link to Fish `conf.d/<topic>-aliases.fish` | `fish/install.sh` |
+| `keybindings.fish` | Link to Fish `conf.d/<topic>-keybindings.fish` | `fish/install.sh` |
+| `install.sh` | Run in core order, then sorted discovery | `script/install` |
+
+Use [the topic workflow](../SKILL.md#add-a-topic) when adding a tool. Before
+changing orchestration, inspect `script/install`'s `CORE_INSTALLERS` and any direct
+handling in `bin/dot`. Extra installer arguments are forwarded, including
+`--force`. Consider whether `bin/dot-doctor` needs a corresponding read-only check.
+
+## Topic Installer Template
+
+For an `install.sh` one directory below the repository root:
 
 ```sh
 #!/bin/sh
-#
-# Install dependencies for [topic]
-
 set -e
 
-# Check if already installed
-if command -v mytool >/dev/null 2>&1; then
-    exit 0
-fi
+DOTFILES_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+. "$DOTFILES_ROOT/lib/symlink.sh" # Also loads lib/log.sh.
 
-# Install logic here
+FORCE=false
+for arg in "$@"; do
+  case "$arg" in
+    --force) FORCE=true ;;
+  esac
+done
 ```
+
+Use `lib/log.sh` directly when no symlink helper is needed. Inspect the helper
+definitions before changing logging or link behavior rather than copying them.
+
+### Safe Glob Iteration
+
+For ordinary source files:
+
+```sh
+for file in "$DIR"/*; do
+  [ -e "$file" ] || continue
+  # Process the file.
+done
+```
+
+When inspecting links, also test `-L`: `-e` alone misses a dangling symlink.
+`ensure_symlink` handles writes; `check_symlink` handles read-only diagnostics.
+The shared helper preserves conflicts by default; `FORCE=true` repairs misdirected
+links and backs up regular files/directories before replacing them.
+
+### Failure Handling
+
+`set -e` is suppressed for commands used as `if`/`while` tests and non-final
+commands in `&&`/`||` lists. Use explicit `if` blocks for expected failures
+and recovery; a failed non-final test is not an automatic script exit.
+
+```sh
+if command -v mytool >/dev/null 2>&1; then
+  # Configure the existing tool.
+  :
+else
+  # Perform the topic's required setup or report the missing dependency.
+  :
+fi
+```
+
+Completion means required setup succeeded or a failure was reported. Tool presence
+alone is not proof that its configuration is correct.

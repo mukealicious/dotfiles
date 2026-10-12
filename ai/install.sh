@@ -267,6 +267,24 @@ clean_stale_managed_markdown_files() {
   done
 }
 
+# Retired projected/source skills leave dangling links. Only remove links into
+# our managed trees; an unrelated broken link may be intentional user state.
+clean_dead_managed_skill_links() {
+  dir="$1"
+  [ -d "$dir" ] || return 0
+  for link in "$dir"/*; do
+    [ -L "$link" ] || continue
+    [ -e "$link" ] && continue
+    current="$(readlink "$link")"
+    case "$current" in
+      "$DOTFILES_ROOT/.ai-runtime/"*/skills/*|"$DOTFILES_ROOT/ai/skills/"*|"$DOTFILES_ROOT/claude/skills/"*)
+        echo "  Removing stale managed skill link: $(basename "$link")"
+        rm "$link"
+        ;;
+    esac
+  done
+}
+
 #
 # Helper: Materialize a runtime skill directory
 #
@@ -284,7 +302,7 @@ sync_skill_runtime_dir() {
   overlay_src="$4"
 
   mkdir -p "$target_dir"
-  clean_dead_symlinks "$target_dir"
+  clean_dead_managed_skill_links "$target_dir"
 
   if [ -d "$baseline_src" ]; then
     for skill_dir in "$baseline_src"/*/; do

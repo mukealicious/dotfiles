@@ -1,37 +1,23 @@
 # Custom Git Commands
 
-Located in `~/.dotfiles/bin/`. Executable scripts named `git-*` become git subcommands.
+Read this reference before adding or changing `~/.dotfiles/bin/git-*`.
+Executable files named `git-<name>` become `git <name>` subcommands.
 
-## Existing Commands
+Inspect existing `bin/git-*` scripts for the nearest convention instead of
+maintaining a second command inventory here.
 
-| Command | Purpose |
-|---------|---------|
-| `git-up` | Smart pull with stash/rebase |
-| `git-wtf` | Branch status overview |
-| `git-undo` | Undo recent operations |
-| `git-promote` | Promote to tracking branch |
-| `git-unpushed` | Show unpushed commits |
-| `git-unpushed-stat` | Stats on unpushed commits |
-| `git-rank-contributors` | Contributor statistics |
-| `git-amend` | Easy commit amending |
-| `git-credit` | Credit co-authors |
-| `git-copy-branch-name` | Copy branch to clipboard |
-| `git-track` | Setup remote tracking |
-| `git-edit-new` | Open new/modified files in editor |
-| `git-nuke` | Force delete branches |
-| `git-all` | Run across multiple repos |
+## Add a Command
 
-## Creating New Commands
+1. Create `~/.dotfiles/bin/git-<name>` with a purpose and usage header.
+2. Use the Bash template below, or the uv template for Python.
+3. Make it executable with `chmod +x`.
+4. Validate against a disposable repository when it changes Git state; invoke
+   it as `git <name>` only within the user's authorized scope.
 
-1. Create executable script: `~/.dotfiles/bin/git-<name>`
-2. Add shebang (`#!/bin/bash` or `#!/usr/bin/env python3`)
-3. Make executable: `chmod +x`
-4. Use as `git <name>`
-
-### Template (Bash)
+### Bash
 
 ```bash
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # git-example - Description of what this does
 #
@@ -42,22 +28,23 @@ set -e
 # Implementation here
 ```
 
-### Template (Python)
+### Python
+
+Use the shared `uv` skill for dependencies and script locking.
 
 ```python
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
 """
 git-example - Description of what this does
 
 Usage: git example [options]
 """
 
-import subprocess
-import sys
 
 def main():
     # Implementation here
     pass
+
 
 if __name__ == "__main__":
     main()

@@ -129,7 +129,8 @@ for file in hammerspoon/init.lua hammerspoon/lib/*.lua hammerspoon/test/*.lua; d
   pnpm --package=luaparse@0.3.1 dlx luaparse "$file" >/dev/null
 done
 
-ai/skills/build-skill/scripts/validate_skill.sh ai/skills/moja-glava
+# Shared skill discovery/frontmatter checks (no model invocation)
+mise exec -- node --test pi/test-native-skills.mjs
 ```
 
 After Hammerspoon is running, its standard menu provides **Console** and **Reload Config** for maintenance; they are intentionally not mixed into the capture palette.

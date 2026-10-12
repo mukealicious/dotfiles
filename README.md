@@ -42,8 +42,8 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `fish/` | Fish shell config, functions, completions |
 | `git/` | Git config, aliases, custom commands |
 | `claude/` | Claude Code settings, skills, agents, hooks |
-| `ai/` | Unified AI instructions (shared across tools) |
-| `homebrew/` | Brewfile and installer |
+| `ai/` | Shared AI instructions, skills, and agent assembly |
+| `homebrew/` | Homebrew installer (packages are declared in the root `Brewfile`) |
 | `macos/` | macOS system preferences |
 | `herdr/` | Herdr agent multiplexer notes |
 | `wezterm/` | WezTerm terminal config |
@@ -60,37 +60,13 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `python/` | Python tools via uv |
 | `ruby/` | Ruby config (gemrc, irbrc) |
 
-### Ownership Model
+### Ownership and Installer Boundaries
 
-Keep install logic in the narrowest layer that owns it:
-
-| Layer | Owns | Put here when | Avoid |
-|------|------|---------------|-------|
-| `bin/dot` | Top-level user workflow | The step is part of the human-facing `dot` update flow, especially if later commands depend on it immediately | Topic-specific install details or broad auto-discovery logic |
-| `script/install` | Installer orchestration | The change affects installer ordering, global installer discovery, skip behavior, or argument forwarding | Tool-specific install logic |
-| `[topic]/install.sh` | Topic setup | The step only configures one topic/tool and can be rerun idempotently | Cross-topic orchestration or assumptions about global order unless documented in `script/install` |
-| `dot doctor` | Diagnostics | You need a health check or fix hint for a topic | Performing installation side effects |
-
-Simple rules:
-- Add topic-specific setup to `[topic]/install.sh`.
-- Add a topic to `script/install`'s `CORE_INSTALLERS` only if it has ordering requirements.
-- Touch `bin/dot` only when the top-level `dot` UX or pre/post sequencing must change.
-- If `bin/dot` handles a topic directly, keep `script/install --skip <path>` in sync.
-- When adding install behavior, consider whether `dot doctor` should also gain a check.
-
-### CLI Installer Boundaries
-
-Use the installer that owns the tool's runtime and failure modes:
-
-| Tool type | Owner | Use when |
-|-----------|-------|----------|
-| System/native macOS CLIs and apps | `Brewfile` | Homebrew has a stable package/cask |
-| Python CLIs | `uv.reqs` | Installed with `uv tool install` |
-| Versioned JS CLIs | `mise.toml` (`npm:<package>`) | Durable npm-registry CLIs installed as isolated mise tools |
-| Native-sensitive Node CLIs | `mise/node-globals.reqs` | npm CLIs with native deps or Node ABI sensitivity, installed under the pinned mise Node runtime |
-| Behavior wrappers | `bin/` | Dotfiles needs to add policy/behavior around an underlying tool; wrappers should win on PATH |
-
-Example: Flue CLI, `opensrc`, and `agent-browser` are isolated `npm:` tools in `mise.toml`. QMD stays in `mise/node-globals.reqs` because it uses native Node dependencies, while `bin/qmd` owns per-project `.qmd` detection.
+Read [AGENTS.md](AGENTS.md#ownership-model) before changing installers, wrappers,
+or diagnostics; it owns repository constraints and toolchain boundaries.
+Read [Dotfiles File Patterns](ai/skills/dotfiles-dev/references/file-patterns.md)
+before changing shell scripts or symlink behavior. Keep setup in its topic owner,
+orchestration in `script/install`, and diagnostics read-only.
 
 ### JavaScript Toolchain Policy
 
@@ -111,19 +87,6 @@ pnpm init --init-package-manager
 
 Review and commit `mise.toml`, `mise.lock`, `package.json`, and `pnpm-lock.yaml`. The normal `dot` workflow upgrades mise tools within these declared release lines, refreshes both macOS platform entries in `mise.lock`, and prompts you to review and commit the lockfile. Moving to a new major release line remains an explicit edit to `mise/config.toml`.
 
-### File Conventions
-
-| Pattern | Behavior |
-|---------|----------|
-| `*.symlink` | Symlinked to `~/.<name>` (e.g., `gitconfig.symlink` → `~/.gitconfig`) |
-| `install.sh` | Topic-specific installer, run by `script/install` in deterministic order |
-| `aliases.fish` | Auto-discovered and symlinked to Fish conf.d |
-| `keybindings.fish` | Auto-discovered and symlinked to Fish conf.d |
-| `mise.toml` / `mise.lock` | Compatible tool release lines plus exact top-level cross-machine pins |
-| `pnpm/config.yaml` | Global pnpm security policy |
-| `mise/node-globals.reqs` | Native-sensitive Node CLIs installed with mise-managed npm |
-| `uv.reqs` | Python CLI tools installed with uv |
-
 ### Custom Commands
 
 Scripts in `bin/` added to PATH include:
@@ -133,80 +96,25 @@ Scripts in `bin/` added to PATH include:
 - `ai-watch` — Generate upstream watchlist/review reports
 - `e` — Launch editor
 - `coffee` — Friendly caffeinate wrapper (prevent sleep)
-- `git-*` — 14 custom git commands (amend, nuke, undo, etc.)
+- `git-*` — Custom git commands; read the [command guide](ai/skills/dotfiles-dev/references/git-commands.md) before adding or changing one
 
 ## AI Integration
 
-This repo has deep integration with AI coding agents.
+Shared instructions, skills, and agent sources live in `ai/`; harness-specific
+configuration lives in its topic. Runtime files are assembled/projected by
+`ai/install.sh`, not authored in installed directories.
 
-### Instruction Composition
+- **Instructions, skills, agents, and provenance:** read
+  [ai/README.md](ai/README.md) before changing ownership or assembly, or to choose
+  a task-specific skill.
+- **Claude settings, hooks, MCP, and read-only advisors:** read
+  [claude/README.md](claude/README.md).
+- **Pi settings, MCP, extensions, delegation, or legacy migration:** read
+  [pi/README.md](pi/README.md). Pi uses one subscription-backed environment at
+  `~/.pi/agent`; old work/personal wrappers are retired.
 
-Shared guidance now lives in `ai/instructions/base.md`, with small harness appendices added only where needed.
-
-`ai/install.sh` assembles the final installed instruction files:
-
-- `~/.claude/CLAUDE.md` = shared base + Claude appendix
-- `.ai-runtime/pi/AGENTS.md` = shared base + Pi appendix, linked from both Pi profiles
-- `~/.config/opencode/AGENTS.md` = shared base + OpenCode appendix
-- `~/.codex/instructions.md` and `~/.gemini/GEMINI.md` = shared base only
-
-`~/.AGENTS.md` remains a base-only compatibility output rather than the main source of truth.
-
-Pi uses one subscription-backed environment at `~/.pi/agent`, native MCP,
-and native codemode. Use `pi`; old work/personal wrappers are retired.
-Shared instructions, skills, and managed agents are staged under
-`.ai-runtime/pi/`. See [Pi setup and migration](pi/README.md).
-
-The primary portability model is shared instructions plus shared skills. Harness-native `agents/` formats are optional and used only when a tool materially benefits from named agent metadata.
-
-### Safety Hook
-
-PreToolUse hook intercepts destructive `rm` commands and rewrites to macOS `trash`:
-
-```sh
-rm -rf ./build  →  trash ./build
-```
-
-User confirms the modified command. No accidental deletions.
-
-### Notification Hook
-
-Stop and Notification hooks play a sound and show a macOS notification when Claude Code finishes a task or needs attention.
-
-### Claude Subagents
-
-Specialized AI advisors with distinct capabilities:
-
-| Agent | Model | Purpose |
-|-------|-------|---------|
-| `oracle` | Opus | Architecture decisions, complex debugging |
-| `librarian` | Sonnet | Multi-repo exploration, library internals |
-| `review` | Sonnet | Code review (bugs, security, structure) |
-
-### AI Skills
-
-Shared skills in `ai/skills/` are projected to Claude, Pi, OpenCode, and Codex:
-
-| Skill | Owns |
-|-------|------|
-| `code-review` | Proportional advisory review and final-pass cleanup |
-| `codebase-design` | Deep modules, interfaces, seams, locality, and testability |
-| `grilling` | Dependency-aware design-tree questioning |
-| `domain-modeling` | Domain language and the `CONTEXT.md` glossary |
-| `tdd` | Red/green vertical slices and public-behavior tests |
-| `bro` | Manual plain-language restatement |
-| `framing-doc` / `kickoff-doc` | Evidence-grounded framing and builder-facing shaped territory |
-| `apple-reminders` | Explicit-intent Apple Reminders reads and writes through RemCTL |
-| `herdr` | Managed-pane coordination, attention, and native worktree topology |
-| `opensrc` / `librarian` | Source-backed external code investigation |
-| `build-skill` / `dotfiles-dev` | Skill authoring and repository conventions |
-| `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
-
-Visual and artifact capabilities stay separate: `impeccable` owns product UI/UX,
-`tufte-data-viz` owns quantitative visualization, `visual-deliverables` owns
-self-contained HTML/SVG explainers, and `hunk-review` owns Hunk review sessions.
-See [ai/README.md](ai/README.md) for the full capability inventory, provenance,
-and projection model.
+Claude's safety hook adds confirmation for guarded `rm` commands; it is not a
+deletion guarantee. Shared safety rules remain in `ai/instructions/base.md`.
 
 ## Shell Features
 
@@ -263,13 +171,9 @@ gbage  # list branches sorted by last commit date
 
 ## Adding New Topics
 
-1. Create directory: `mkdir ~/.dotfiles/newtopic/`
-2. Add files following conventions:
-   - `config.symlink` → symlinked to `~/.config`
-   - `install.sh` → run during `script/install`
-   - `aliases.fish` → auto-loaded by Fish
-3. Run `dot` to apply
-4. If the topic adds `install.sh` and it has ordering requirements, update `script/install`'s `CORE_INSTALLERS`; otherwise it will be picked up automatically in sorted fallback order
+Use the [dotfiles-dev topic workflow](ai/skills/dotfiles-dev/SKILL.md#add-a-topic).
+Apply local changes with the owning installer or `script/symlink` rather than
+running the full updater.
 
 ### Example: Adding Aliases
 
@@ -279,7 +183,8 @@ Create `newtopic/aliases.fish`:
 alias foo='echo bar'
 ```
 
-Run `dot`. The alias is automatically symlinked and available.
+Run `fish/install.sh` to refresh the topic alias links. Start a new Fish shell
+or source the linked file to load the alias in the current shell.
 
 ## Secrets Management
 
@@ -287,6 +192,7 @@ Never committed:
 
 - `~/.localrc` — Private environment variables, API keys
 - `~/.gitconfig.local` — Private git config (included automatically)
+- `.env*` — Project-local credentials and environment state
 
 ## Prerequisites
 
@@ -294,12 +200,13 @@ Never committed:
 - Git (usually preinstalled)
 - Internet connection (for Homebrew)
 
-Everything else is installed by bootstrap.
+Bootstrap runs installer orchestration. Pi runtime dependency preparation and
+sign-in have explicit steps in [Pi setup](pi/README.md#setup).
 
 ## Maintenance
 
 ```sh
-dot                    # Daily update (safe to run anytime)
+dot                    # Full update of managed tools and configuration
 dot doctor             # Check environment health
 script/bootstrap       # Re-run symlinks (interactive)
 script/install         # Re-run all installers (explicit core order + sorted fallback)

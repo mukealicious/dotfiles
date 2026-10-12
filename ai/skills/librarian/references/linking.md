@@ -1,61 +1,27 @@
-# GitHub Linking Patterns
+# Source Linking
 
-All file/dir/code refs -> fluent markdown links. Never raw URLs.
+Read before citing external source files. Link relevant names inline rather than
+showing bare URLs.
 
 ## URL Formats
 
-### File
-```
-https://github.com/{owner}/{repo}/blob/{ref}/{path}
-```
+| Host / target | Format |
+|---|---|
+| GitHub file | `https://github.com/{owner}/{repo}/blob/{ref}/{path}` |
+| GitHub directory | `https://github.com/{owner}/{repo}/tree/{ref}/{path}` |
+| GitLab file | `https://gitlab.com/{owner}/{repo}/-/blob/{ref}/{path}` |
 
-### File + Lines
-```
-https://github.com/{owner}/{repo}/blob/{ref}/{path}#L{start}-L{end}
-```
+For GitHub line citations, append `#L42` or `#L42-L50`. Include enough surrounding
+lines to show the claim's context.
 
-### Directory
-```
-https://github.com/{owner}/{repo}/tree/{ref}/{path}
-```
+## Resolve the Ref
 
-### GitLab (note `/-/blob/`)
-```
-https://gitlab.com/{owner}/{repo}/-/blob/{ref}/{path}
-```
+Use the inspected checkout's commit or a confirmed tag/ref from fetch metadata.
+A package version does not prove its tag is `v{version}`; a repository does not
+prove its default branch is `main`. Verify rather than constructing either by
+convention. Prefer commit-pinned links for durable evidence.
 
-## Ref Resolution
-
-| Source | Use as ref |
-|--------|------------|
-| Known version | `v{version}` |
-| Default branch | `main` or `master` |
-| opensrc fetch | ref from result |
-| Specific commit | full SHA |
-
-## Examples
-
-### Correct
-```markdown
-The [`parseAsync`](https://github.com/colinhacks/zod/blob/main/src/types.ts#L450-L480) method handles...
-```
-
-### Wrong
-```markdown
-See https://github.com/colinhacks/zod/blob/main/src/types.ts#L100
-The parseAsync method in src/types.ts handles...
-```
-
-## Line Numbers
-
-- Single: `#L42`
-- Range: `#L42-L50`
-- Prefer ranges for context (2-5 lines around key code)
-
-## Registry -> GitHub
-
-| Registry | Find repo in |
-|----------|--------------|
-| npm | `package.json` -> `repository` |
-| PyPI | `pyproject.toml` or setup.py |
-| crates | `Cargo.toml` |
+Find repository identity in registry metadata or the package's manifest
+(`package.json`, `pyproject.toml`, or `Cargo.toml`), then verify the cited file and
+line range at that ref. When no public source URL exists, report the local path
+and inspected ref with that limitation.
