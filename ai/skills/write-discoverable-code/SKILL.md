@@ -15,6 +15,11 @@ metadata:
 
 # Write discoverable code
 
+Use these techniques within the repository's naming, type, framework, and testing
+conventions. Searchability is the goal; branding, file layout, export comments,
+and module shapes below are options where compatible, not mandates to change
+project policy or rename framework-required files.
+
 Coding agents discover code by searching for strings and reading small windows around the
 hits. They have no hover text, no jump-to-definition, and no memory between sessions. These
 rules make code resolvable in one search instead of five.

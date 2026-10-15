@@ -19,6 +19,12 @@
 - For durable artifacts such as PRs, handoffs, and architecture docs, prefer compact tables, diagrams, before/after blocks, and review maps.
 - When reporting failure, state what happened, impact, cause if known, next action, and what remains preserved.
 
+## Project Engineering Policy
+
+- Repository instructions and linked local docs own engineering policy: architecture, framework idioms, errors, state, testing, and delivery trade-offs.
+- Shared specialist skills offer methods within that policy, not authority to replace it. Preserve established project choices unless a change is explicitly requested.
+- When policy is missing, inspect code and configuration first; ask only about consequential unresolved choices. Draft project guidance when requested, not as a prerequisite to ordinary implementation.
+
 ## Working Style
 
 - For implementation requests, complete the change and fix failures caused by it within scope. Continue without intermediate approval unless a consequential decision or agreed review gate is reached.

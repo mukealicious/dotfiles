@@ -1,9 +1,13 @@
+# Optional TypeScript policy seed
+
+This is historical reference material, not active engineering policy. Read only
+when the user chooses it as input to project-policy drafting. Its prescriptive
+wording belongs to the original upstream policy; it does not override the target
+repository. Select, adapt, or reject individual ideas rather than adopting the
+whole document. Provenance and license are retained beside this file.
+
 ---
-name: coding-standards
-description: Correct-by-construction TypeScript standards. Use for TypeScript engineering or when another skill needs the user's coding standards.
-metadata:
-  watch-sources: dmmulroy/skills/coding-standards@8603380821fee6a77c82639f364ce8fe4f5a92be
----
+
 These standards describe how to design and write TypeScript code in this codebase. They are especially intended for agents: inspect existing code before adding patterns, libraries, Adapters, or abstractions, but apply these standards to all new and refactored behavior. Follow existing conventions only when they are compatible with these standards.
 
 ## Decision priority

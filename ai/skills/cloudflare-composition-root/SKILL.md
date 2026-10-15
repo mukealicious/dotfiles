@@ -1,11 +1,13 @@
 ---
 name: cloudflare-composition-root
-description: Composition roots for Hono and Cloudflare. Use when adding a binding-backed service or refactoring raw runtime dependencies out of inner code.
+description: Composition roots for Hono and Cloudflare. Use when implementing a project-chosen composition-root pattern or an explicitly requested runtime-boundary refactor.
 metadata:
   watch-sources: dmmulroy/skills/cloudflare-composition-root@8603380821fee6a77c82639f364ce8fe4f5a92be
 ---
 
 # Cloudflare Composition Root
+
+Apply this method within the repository's architecture, error model, and testing policy. It does not authorize introducing service layers or changing conventions merely because a project uses Cloudflare.
 
 Use a **composition root**: each runtime entrypoint turns raw Cloudflare capabilities into application-owned dependencies, assembles services, and invokes them. Inner code receives ports, never `Env`, raw bindings, framework service locators, or binding names.
 
@@ -18,7 +20,7 @@ Cloudflare entrypoint
   → protocol projection
 ```
 
-Apply `../coding-standards/SKILL.md` for TypeScript contracts, parsing, errors, side effects, and tests. When implementation shape is unclear, consult [EXAMPLES.md](EXAMPLES.md) for Hono, WorkerEntrypoint, adapter, and refactor templates.
+Read the repository's instructions and linked engineering policy for TypeScript contracts, parsing, errors, side effects, and tests. When implementation shape is unclear, consult [EXAMPLES.md](EXAMPLES.md) for Hono, WorkerEntrypoint, adapter, and refactor templates.
 
 ## Ownership
 

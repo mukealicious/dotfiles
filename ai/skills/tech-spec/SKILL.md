@@ -25,7 +25,7 @@ Completion criterion: the branch is chosen from actual available context; missin
 
 ### 1. Load standards and local context
 
-Inspect existing code and docs for local vocabulary, module layout, domain concepts, errors, adapters, observability, runtime patterns, and test style.
+Read repository instructions and linked engineering policy, then inspect code and docs for local vocabulary, module layout, domain concepts, errors, adapters, observability, runtime patterns, and test style. The project's architecture and testing decisions govern this handoff; the outline does not authorize a new architecture or methodology.
 
 Completion criterion: the spec uses project vocabulary and does not introduce a pattern, library, adapter, schema style, or test strategy before checking local precedent.
 
@@ -139,9 +139,9 @@ For each file, state the contract, code path, boundary, adapter, domain concept,
 
 Completion criterion: every contract and call-stack step maps to a file/module or an open question.
 
-### 7. Write the RGR TDD test plan
+### 7. Write the test plan
 
-Use the [Testing section of coding standards](../coding-standards/SKILL.md) for this plan. Plan vertical Red-Green-Refactor slices: one failing behavior test, minimal implementation, repeat. Do not write a horizontal "all tests first, all code later" plan.
+Use the repository's testing policy and established tools. Where the project calls for TDD, plan vertical Red-Green-Refactor slices: one failing behavior test, minimal implementation, repeat. Otherwise describe proportionate validation slices using the project's workflow rather than introducing a global TDD mandate.
 
 Favor behavior through public interfaces and real seams over implementation-coupled mocks.
 
@@ -157,7 +157,7 @@ Cover proportionately:
 - observability and safe summaries where relevant;
 - end-to-end flows for high-consequence behavior.
 
-Completion criterion: every public behavior, invariant, important failure path, changed boundary, and changed seam has a red test slice or an explicit reason not to test it.
+Completion criterion: every public behavior, invariant, important failure path, changed boundary, and changed seam has a validation slice or an explicit reason not to test it.
 
 ### 8. Produce the spec
 
@@ -231,7 +231,7 @@ Use this shape unless the task is tiny enough to compress without losing contrac
 
 ## Files to Add / Change / Delete
 
-## RGR TDD Test Plan
+## Test Plan
 
 ## Risks and Open Questions
 ```

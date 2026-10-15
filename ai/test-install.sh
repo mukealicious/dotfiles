@@ -18,7 +18,7 @@ assert_file_contains() {
   grep -Fq "$text" "$file" || fail "$file does not contain expected text"
 }
 
-RETIRED_SKILLS='mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context'
+RETIRED_SKILLS='coding-standards mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context'
 
 assert_retired_skill_cleanup() {
   for retired in $RETIRED_SKILLS; do
@@ -230,7 +230,7 @@ for provider in pi codex claude-code opencode; do
   for reference in herdr/references/workflows.md mono-color/references/recipe.md mono-color/references/color-and-layout.md mono-color/references/image-and-type.md mono-color/references/composition.md mono-color/references/production.md mono-color/references/inspection.md; do
     [ -s "$skills/$reference" ] || fail "$provider is missing $reference"
   done
-  for skill in diagnosing-bugs write-discoverable-code uncomplect coding-standards cloudflare-composition-root effect-service-design tech-spec writing-for-agents; do
+  for skill in diagnosing-bugs write-discoverable-code uncomplect cloudflare-composition-root effect-service-design tech-spec writing-for-agents; do
     diff -r "$SUCCESS_REPO/ai/skills/$skill" "$skills/$skill" || fail "$provider changed or omitted $skill resources/metadata"
   done
   [ ! -e "$skills/coding-standards/references" ] || fail "$provider retains the abandoned coding corpus"
@@ -242,7 +242,14 @@ for provider in pi codex claude-code opencode; do
   [ -s "$skills/writing-for-agents/agents/openai.yaml" ] || fail "$provider lost upstream authoring metadata"
   [ ! -e "$skills/writing-for-agents/scripts" ] && [ ! -e "$skills/writing-for-agents/references" ] || fail "$provider carried over retired authoring resources"
   assert_file_contains "$skills/tech-spec/SKILL.md" 'disable-model-invocation: true'
-  assert_file_contains "$skills/tech-spec/SKILL.md" '../coding-standards/SKILL.md'
+  [ ! -e "$skills/coding-standards" ] || fail "$provider retains the retired policy skill"
+  assert_file_contains "$SUCCESS_REPO/ai/references/coding-standards/typescript.md" 'not active engineering policy'
+  assert_file_contains "$SUCCESS_REPO/ai/references/coding-standards/typescript.md" '## Testing'
+  for specialist in tech-spec cloudflare-composition-root effect-service-design write-discoverable-code; do
+    if grep -Fq '../coding-standards/' "$skills/$specialist/SKILL.md"; then
+      fail "$provider $specialist depends on the retired policy skill"
+    fi
+  done
   [ -s "$skills/diagnosing-bugs/scripts/hitl-loop.template.sh" ] || fail "$provider lost debugging template"
   [ -s "$skills/uncomplect/references/source-map.md" ] || fail "$provider lost Uncomplect source map"
   [ -s "$skills/uncomplect/evals/trigger-evals.json" ] || fail "$provider lost upstream evals"
@@ -271,6 +278,7 @@ for instruction in \
   "$SUCCESS_HOME/.codex/instructions.md" \
   "$SUCCESS_HOME/.gemini/GEMINI.md"; do
   assert_file_contains "$instruction" 'ai/references/project-defaults.md'
+  assert_file_contains "$instruction" '## Project Engineering Policy'
   if grep -Fq 'implementation-spec.md' "$instruction"; then
     fail "installed instructions retain the retired spec pointer: $instruction"
   fi
@@ -279,7 +287,7 @@ for provider in pi codex claude-code opencode; do
   [ ! -e "$SUCCESS_REPO/.ai-runtime/$provider/skills/coding-standards/references" ] || fail "$provider restored the abandoned coding corpus on repeat install"
 done
 for directory in "$SUCCESS_REPO/.agents/skills" "$SUCCESS_REPO/.claude/skills" "$SUCCESS_HOME/.claude/skills" "$SUCCESS_HOME/.config/opencode/skill"; do
-  for skill in coding-standards cloudflare-composition-root effect-service-design tech-spec writing-for-agents; do
+  for skill in cloudflare-composition-root effect-service-design tech-spec writing-for-agents; do
     [ -L "$directory/$skill" ] && [ -s "$directory/$skill/SKILL.md" ] || fail "missing installed skill link: $directory/$skill"
   done
 done

@@ -22,23 +22,29 @@ test('fresh native discovery loads the consolidated source projection without re
     await loader.reload();
     const result = loader.getSkills();
     assert.deepEqual(result.diagnostics, []);
-    for (const name of ['diagnosing-bugs', 'write-discoverable-code', 'uncomplect', 'coding-standards', 'cloudflare-composition-root', 'effect-service-design', 'tech-spec', 'writing-for-agents']) {
+    for (const name of ['diagnosing-bugs', 'write-discoverable-code', 'uncomplect', 'cloudflare-composition-root', 'effect-service-design', 'tech-spec', 'writing-for-agents']) {
       const loaded = result.skills.find(skill => skill.name === name);
       assert.ok(loaded, `${name} is discoverable`);
       assert.equal(loaded.filePath, path.join(projection, name, 'SKILL.md'));
-      assert.equal(loaded.disableModelInvocation, ['tech-spec', 'writing-for-agents'].includes(name), 'preserve upstream invocation behavior');
+      assert.equal(loaded.disableModelInvocation, ['tech-spec', 'writing-for-agents'].includes(name), 'preserve deliberate manual versus automatic invocation');
       assert.ok(loaded.description.length > 20, 'native loader parses multiline descriptions');
     }
-    const retired = ['mu-mode', 'mu-stack', 'rat-stack', 'tdd', 'domain-modeling', 'codebase-design', 'code-review', 'grill-with-docs', 'build-skill', 'agent-context', 'prelude', 'bootstrap-prelude'];
+    const retired = ['coding-standards', 'mu-mode', 'mu-stack', 'rat-stack', 'tdd', 'domain-modeling', 'codebase-design', 'code-review', 'grill-with-docs', 'build-skill', 'agent-context', 'prelude', 'bootstrap-prelude'];
     assert.deepEqual(result.skills.filter(skill => retired.includes(skill.name)), []);
-    for (const file of ['diagnosing-bugs/scripts/hitl-loop.template.sh', 'write-discoverable-code/LICENSE', 'uncomplect/references/source-map.md', 'cloudflare-composition-root/EXAMPLES.md', 'effect-service-design/references/AUDIT.md', 'effect-service-design/agents/openai.yaml', 'writing-for-agents/SKILL-MECHANICS.md', 'writing-for-agents/agents/openai.yaml', 'writing-for-agents/LICENSE', ...['coding-standards', 'cloudflare-composition-root', 'effect-service-design', 'tech-spec'].map(name => `${name}/LICENSE`)]) {
+    for (const file of ['diagnosing-bugs/scripts/hitl-loop.template.sh', 'write-discoverable-code/LICENSE', 'uncomplect/references/source-map.md', 'cloudflare-composition-root/EXAMPLES.md', 'effect-service-design/references/AUDIT.md', 'effect-service-design/agents/openai.yaml', 'writing-for-agents/SKILL-MECHANICS.md', 'writing-for-agents/agents/openai.yaml', 'writing-for-agents/LICENSE', ...['cloudflare-composition-root', 'effect-service-design', 'tech-spec'].map(name => `${name}/LICENSE`)]) {
       assert.ok(fs.existsSync(path.join(projection, file)), file);
     }
     const spec = fs.readFileSync(path.join(projection, 'tech-spec/SKILL.md'), 'utf8');
-    assert.ok(spec.includes('../coding-standards/SKILL.md'));
-    assert.ok(fs.readFileSync(path.join(projection, 'coding-standards/SKILL.md'), 'utf8').includes('## Testing'));
+    assert.ok(spec.includes("repository's testing policy"));
+    const seed = fs.readFileSync(path.resolve('ai/references/coding-standards/typescript.md'), 'utf8');
+    assert.ok(seed.includes('not active engineering policy'));
+    assert.ok(seed.includes('## Testing'));
+    for (const name of ['tech-spec', 'cloudflare-composition-root', 'effect-service-design', 'write-discoverable-code']) {
+      const specialist = fs.readFileSync(path.join(projection, name, 'SKILL.md'), 'utf8');
+      assert.ok(!specialist.includes('../coding-standards/'), `${name} must not depend on the retired policy skill`);
+    }
     assert.ok(!spec.includes('Use the sibling TDD workflow'), 'missing upstream dependency is repaired');
-    assert.ok(!fs.existsSync(path.join(projection, 'coding-standards/references')), 'do not blend in the abandoned October corpus');
+    assert.ok(!fs.existsSync(path.join(projection, 'coding-standards')), 'plain reference material must not be installed as a skill');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

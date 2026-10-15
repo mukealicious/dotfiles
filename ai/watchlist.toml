@@ -20,7 +20,7 @@ path = "coding-standards"
 branch = "main"
 kind = "skill"
 review = "semantic-diff"
-notes = "Explicitly adopted published collection; see ai/skills/coding-standards/VENDORED_FROM.md"
+notes = "Historical policy retained as plain ai/references/coding-standards/typescript.md, not an installed skill. See adjacent VENDORED_FROM.md; review ideas, not automatic policy updates."
 
 [[sources]]
 id = "cloudflare-composition-root"

@@ -70,7 +70,7 @@ auto-sync mechanism.
 
 | Upstream | Local scope | Ownership |
 |---|---|---|
-| `dmmulroy/skills@8603380821fee6a77c82639f364ce8fe4f5a92be` | `coding-standards`, `cloudflare-composition-root`, `effect-service-design`, `tech-spec` | Explicitly adopted published collection; root MIT notice retained; tech-spec's missing TDD dependency repaired |
+| `dmmulroy/skills@8603380821fee6a77c82639f364ce8fe4f5a92be` | `references/coding-standards`, `cloudflare-composition-root`, `effect-service-design`, `tech-spec` | MIT notice retained; coding standards are plain optional reference, not a skill; specialist methods defer to project policy |
 | `dmmulroy/.dotfiles@bdf5e0611d62436eeb5dc58555c1396ced2dddeb` | `diagnosing-bugs`, `write-discoverable-code` | Current Matt Pocock/Modem snapshots, with verified original MIT notices |
 | `dmmulroy/.dotfiles@bdf5e0611d62436eeb5dc58555c1396ced2dddeb` | `writing-for-agents` | Unchanged manual authoring skill; verified Matt Pocock origin and MIT notice; replaces build-skill and agent-context |
 | `dmmulroy/.dotfiles@7c086fe40c01bf494aea7184da2eb7aaf7b7dff4` | `grilling`, `bro` | Previously retained instructions; outside this engineering consolidation |
@@ -120,6 +120,25 @@ Current install targets:
 | `~/.AGENTS.md` | `ai/instructions/base.md` compatibility output |
 
 Composition rule: keep the shared base strong, keep appendices short and additive, and keep provider or model specifics out of the shared file.
+
+### Project Engineering Policy
+
+Global instructions own agent conduct and safety; repository instructions and
+linked docs own architecture, framework idioms, errors, state, testing, and delivery
+trade-offs. Shared specialist skills operate within those decisions.
+
+- Invoke `writing-for-agents` for the reusable method of authoring agent guidance.
+- Start from the closest related project's standards when useful; adapt selected
+  rules into the target project's own authoritative docs and link them from its
+  agent instructions. Another project's live policy is not an ongoing dependency.
+- [Coding standards references](references/coding-standards/README.md) preserve the
+  former policy and link concrete upstream examples. They are optional source
+  material, not an installed skill or a mandatory template. There is no separate
+  policy-generation workflow.
+- Existing projects keep their own decisions; experiments do not inherit a
+  production architecture checklist. No work/personal/framework presets are imposed.
+- Cloudflare, Effect, discoverability, and spec-writing guidance must not silently
+  reintroduce the shared policy through dependency links or examples.
 
 ### Shared Agents
 
@@ -189,7 +208,6 @@ For new-project stack selection or approved modernization, read
 | `apple-reminders` | Explicit-intent Apple Reminders reads and writes through RemCTL |
 | `breadboarding` | Workflow places, affordances, stores, and wiring |
 | `bro` | Manual plain-language restatement |
-| `coding-standards` | Correct-by-construction TypeScript engineering standards |
 | `effect-service-design` | Effect service contracts, Layers, composition, and audits |
 | `cloudflare-composition-root` | Application-owned services at Cloudflare runtime boundaries |
 | `tech-spec` | Manual, design-only typed architecture handoff and grill-first workflow |

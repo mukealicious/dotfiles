@@ -1,11 +1,13 @@
 ---
 name: effect-service-design
-description: Design Effect services. Use when designing a new Effect service module or auditing an existing codebase for service, Layer, and composition improvements.
+description: Design Effect services in projects that already use or explicitly chose Effect. Use for service design or requested service, Layer, and composition audits.
 metadata:
   watch-sources: dmmulroy/skills/effect-service-design@8603380821fee6a77c82639f364ce8fe4f5a92be
 ---
 
 # Effect Service Design
+
+Apply this method within the repository's engineering policy and pinned Effect version. Its module shapes are design options, not authority to introduce Effect, rename established APIs, or migrate unrelated code.
 
 Treat a service as an **authority seam**: a cohesive capability whose requirements should propagate through Effect context. An **Effect service module** owns the service contract, construction, production Layer, and any honest reusable test implementation that belong to the same capability.
 

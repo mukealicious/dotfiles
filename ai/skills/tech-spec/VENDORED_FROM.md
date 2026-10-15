@@ -20,10 +20,11 @@ Preserved `disable-model-invocation: true`: this remains a manual, design-only w
 - Added this provenance file and `metadata.watch-sources`.
 - Copied the repository's root MIT `LICENSE` unchanged, including its Matt Pocock
   copyright notice. Do not rewrite attribution to infer different authorship.
-- Replaced the missing sibling TDD-workflow dependency with a relative link to
-  the Testing section of `coding-standards/SKILL.md`. Upstream ships no sibling TDD skill.
-  The explicit RGR plan, grill-first branch, required outline, and design-only
-  behavior are otherwise unchanged; no retired global TDD skill was restored.
+- Replaced the missing sibling TDD-workflow dependency with project-local testing
+  policy (superseding the earlier link to shared coding standards). RGR slices
+  apply where the project calls for TDD, rather than imposing a global methodology.
+- Made repository engineering policy authoritative for the handoff. The grill-first
+  branch and design-only behavior remain; no retired global TDD skill was restored.
 
 No upstream installer, package manifest, or `prelude` skill is imported or run.
 The four adopted skills do not depend on prelude; installation remains owned by
