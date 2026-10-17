@@ -59,11 +59,11 @@ version = "0.15.7"
 backend = "npm:portless"
 
 [[tools.pnpm]]
-version = "11.28.4"
+version = "11.28.5"
 backend = "aqua:pnpm/pnpm"
 
 [tools.pnpm."platforms.macos-arm64"]
-checksum = "sha256:82e0ee8e453b7057ed9ded5c94ed38bc2b61aa24fe395be408bd6a68350a8078"
-url = "https://github.com/pnpm/pnpm/releases/download/v11.28.4/pnpm-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/608496108"
+checksum = "sha256:809b67a5e31e4fab0342c5bf069072dd597f9fec6714b3375cf15b25125f213e"
+url = "https://github.com/pnpm/pnpm/releases/download/v11.28.5/pnpm-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/613990816"
 provenance = "github-attestations"
