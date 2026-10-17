@@ -5,7 +5,6 @@ brew "starship"                  # Cross-shell prompt with git, language detecti
 
 # Core Development Tools
 brew "gh"                        # GitHub CLI
-brew "vercel-cli"                # Vercel CLI for deployment and development
 brew "git"
 brew "git-lfs"
 brew "coreutils"
@@ -32,7 +31,7 @@ brew "pandoc"                    # Universal document converter (markdown -> pla
 brew "typst"                     # Document compiler for rendering generated .typ files
 brew "ffmpeg"                    # Audio/video processing (required by lue-reader TTS)
 brew "yt-dlp"                    # YouTube video/audio downloader
-brew "tw93/tap/mole"             # Mac cleanup and optimization tool (mo)
+brew "mole"                      # Mac cleanup and optimization tool (mo)
 
 # Modern CLI Tools
 brew "ast-grep"                  # Structural code search/rewrite (sg command)
@@ -55,6 +54,7 @@ brew "libyaml"                   # YAML parsing library (fast PyYAML backend)
 brew "b2-tools"                  # Backblaze B2 command-line tool
 
 # Casks
+cask "vercel"                    # Vercel CLI for deployment and development
 cask "brave-browser@beta"        # Dedicated Surf browser; isolates automation from personal Brave updates
 cask "codex"                     # OpenAI's coding agent
 cask "claude-code"               # Claude AI coding assistant CLI
