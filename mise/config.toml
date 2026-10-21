@@ -14,6 +14,8 @@ bun = "1.3"
 "npm:opensrc" = { version = "0.7", allow_builds = ["opensrc"] }
 "npm:agent-browser" = { version = "0.31", allow_builds = ["agent-browser"] }
 "npm:portless" = "0.15"
+# Pin the beta explicitly; generic latest resolution selects the older stable line.
+"npm:cf" = "1.0.0-beta.17"
 
 [settings]
 lockfile = true
