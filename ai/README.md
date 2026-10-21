@@ -81,7 +81,6 @@ auto-sync mechanism.
 | `rjs/shaping-skills@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9` | `framing-doc`, `kickoff-doc`, `breadboarding` | Framing, shaped kickoff territory, and breadboarding |
 | `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | `impeccable` | Product UI/UX and visual interaction design |
 | `yanliudesign/mono-color-skill@a08c45df61ae480e2b0d78b978a304e06ba2894e` | `mono-color` | One-ink and controlled two-ink editorial art direction and raster generation |
-| `plannotator/effective-html`, `ThariqS/html-effectiveness` | `visual-deliverables` | Self-contained HTML/SVG explainers and curated examples |
 | `joelhooks/skills@022f29cbfa2ddd36916622d49c02b763060f6847` | `uncomplect` | Independent upstream skill, source map, and evals; local provenance metadata only |
 | Pinned maintenance/research influences | `production-readiness`, `tufte-data-viz`, `herdr`, `hunk-review` | Production risk, quantitative visualization, Herdr, and Hunk |
 
@@ -231,7 +230,6 @@ For new-project stack selection or approved modernization, read
 | `tufte-data-viz` | Quantitative visualization judgment |
 | `uncomplect` | Upstream-baseline pressure test for stateful systems, replacement designs, and accidental complexity |
 | `upstream-review` | Manual provenance and adoption decisions |
-| `visual-deliverables` | Self-contained HTML/SVG explainers |
 | `write-discoverable-code` | Searchable names, clear types, and discoverable module boundaries |
 | `writing-for-agents` | Manual authoring reference for skills, AGENTS/CLAUDE files, and other agent-facing documents |
 
@@ -249,7 +247,6 @@ after shaping.
   their exports; `impeccable` owns code-first product UI/UX and critique;
   `mono-color` owns one-ink and controlled two-ink editorial art direction and
   raster assets; `tufte-data-viz` owns quantitative graphics;
-  `visual-deliverables` owns self-contained HTML/SVG explainers;
   Mermaid owns text-native diagrams; `tldraw-offline` owns the editable local canvas.
 - **Research:** `researcher` gathers delegated evidence; `qmd` searches local
   Markdown; `opensrc` acquires snapshots; `librarian` analyzes external code;

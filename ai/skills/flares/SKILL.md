@@ -151,7 +151,6 @@ Read [cloudflare-native-blueprint.md](./references/cloudflare-native-blueprint.m
 ## Skill Combinations
 
 - Use [thin-ai-clients.md](references/thin-ai-clients.md) when an AI-heavy Flare needs a UI-vs-agent or local-vs-cloud architecture decision.
-- Use `visual-deliverables` for local one-file HTML explainers before hosting.
 - Use `breadboarding` when the mini-app workflow needs places/affordances/stores/wiring.
 - Use `framing-doc` or `kickoff-doc` when a durable synthesis should precede the Flare.
 - Use `qmd` when personal notes or a markdown vault are source context.

@@ -76,7 +76,7 @@ Interactions:
 - “what is unclear?” comments;
 - “which path should we take?” poll.
 
-Pair with `visual-deliverables` for one-file HTML quality and `breadboarding` for workflow maps.
+Pair with `breadboarding` for workflow maps.
 
 Cloudflare defaults:
 
