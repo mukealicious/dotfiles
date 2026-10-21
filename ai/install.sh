@@ -4,7 +4,7 @@
 #
 # Single source of truth for AI tool configuration:
 # - Unified instruction files (CLAUDE.md, AGENTS.md, etc.)
-# - Repo runtime skill projections plus installed skills/agents
+# - Repo runtime skill projections plus installed skills
 #   for Claude Code, Codex, and OpenCode
 #
 # Usage:
@@ -139,47 +139,15 @@ assemble_instruction_file() {
   write_managed_file "$tmp_file" "$target" "$desc"
 }
 
-#
-# Helper: Clean dead symlinks from a directory
-#
-clean_dead_symlinks() {
-  dir="$1"
-  [ -d "$dir" ] || return 0
-  for link in "$dir"/*; do
-    [ -L "$link" ] || continue
-    [ -e "$link" ] && continue
-    echo "  Removing dead symlink: $(basename "$link")"
-    rm "$link"
-  done
-}
-
-clean_stale_managed_markdown_files() {
-  dir="$1"
-  marker="$2"
-  expected_names="$3"
-
-  [ -d "$dir" ] || return 0
-
-  for file in "$dir"/*.md; do
-    [ -f "$file" ] || continue
-    if ! grep -Fq "$marker" "$file" 2>/dev/null; then
-      continue
-    fi
-
-    name="$(basename "$file")"
-    keep=false
-    for expected in $expected_names; do
-      if [ "$name" = "$expected" ]; then
-        keep=true
-        break
-      fi
-    done
-
-    if [ "$keep" = "false" ]; then
-      echo "  Removing stale managed file: $name"
-      rm "$file"
-    fi
-  done
+# Only exact links from retired publishers are ours to remove.
+remove_retired_agent_link() {
+  target="$1"
+  source="$2"
+  [ ! -L "$(dirname "$target")" ] || return 0
+  if [ -L "$target" ] && [ "$(readlink "$target")" = "$source" ]; then
+    rm "$target"
+    echo "  Removed retired managed agent link: $target"
+  fi
 }
 
 # Retired projected/source skills leave dangling links. Only remove links into
@@ -280,87 +248,10 @@ validate_staged_pi_tree() {
   tree="$1"
 
   [ -f "$tree/AGENTS.md" ] || { pi_profile_error "staged Pi tree is missing AGENTS.md"; return 1; }
-  [ -d "$tree/agents" ] || { pi_profile_error "staged Pi tree is missing agents/"; return 1; }
   [ -d "$tree/skills" ] || { pi_profile_error "staged Pi tree is missing skills/"; return 1; }
 
   set -- "$tree/skills"/*
   [ -e "$1" ] || { pi_profile_error "staged Pi tree contains no projected skills"; return 1; }
-}
-
-preflight_pi_profile() {
-  profile_dir="$1"
-  staged_tree="$2"
-  instruction="$profile_dir/AGENTS.md"
-  agents_dir="$profile_dir/agents"
-
-  if [ -e "$instruction" ] || [ -L "$instruction" ]; then
-    if ! is_exact_symlink "$instruction" "$PI_RUNTIME_TREE/AGENTS.md"; then
-      pi_profile_error "$instruction is not the installer-managed link; preserve it and move it before rerunning"
-      return 1
-    fi
-  fi
-
-  if [ -e "$agents_dir" ] || [ -L "$agents_dir" ]; then
-    if [ -L "$agents_dir" ]; then
-      pi_profile_error "$agents_dir must be a real directory; refusing to replace its unrelated link"
-      return 1
-    elif [ ! -d "$agents_dir" ]; then
-      pi_profile_error "$agents_dir exists but is not a directory"
-      return 1
-    fi
-  fi
-
-  [ -d "$agents_dir" ] || return 0
-  for managed_agent in "$staged_tree/agents"/*.md; do
-    [ -f "$managed_agent" ] || continue
-    name="$(basename "$managed_agent")"
-    target="$agents_dir/$name"
-    [ -e "$target" ] || [ -L "$target" ] || continue
-    if is_exact_symlink "$target" "$PI_RUNTIME_TREE/agents/$name"; then
-      continue
-    fi
-    pi_profile_error "managed agent collision at $target; rename or remove the profile-local entry before rerunning"
-    return 1
-  done
-}
-
-link_pi_profile_resources() {
-  profile_dir="$1"
-  tree="$2"
-  instruction="$profile_dir/AGENTS.md"
-  agents_dir="$profile_dir/agents"
-
-  mkdir -p "$profile_dir"
-  if [ ! -e "$instruction" ] && [ ! -L "$instruction" ]; then
-    ln -s "$tree/AGENTS.md" "$instruction"
-    echo "  Linked $instruction"
-  fi
-
-  mkdir -p "$agents_dir"
-
-  # Remove only stale links previously managed by this generated tree. Preserve
-  # profile-local files and links with any other owner.
-  for target in "$agents_dir"/*.md; do
-    [ -L "$target" ] || continue
-    current="$(readlink "$target")"
-    case "$current" in
-      "$tree/agents/"*)
-        [ -e "$target" ] && continue
-        echo "  Removing stale managed Pi agent link: $target"
-        rm "$target"
-        ;;
-    esac
-  done
-
-  for managed_agent in "$tree/agents"/*.md; do
-    [ -f "$managed_agent" ] || continue
-    name="$(basename "$managed_agent")"
-    target="$agents_dir/$name"
-    if [ ! -e "$target" ] && [ ! -L "$target" ]; then
-      ln -s "$managed_agent" "$target"
-      echo "  Linked $target"
-    fi
-  done
 }
 
 swap_staged_pi_tree() {
@@ -434,7 +325,7 @@ mkdir -p "$HOME/.codex"
 assemble_instruction_file "$HOME/.codex/instructions.md" "$HOME/.codex/instructions.md" ""
 
 #
-# Skills and Agents (single source of truth for all AI tools)
+# Skills (single source of truth for all AI tools)
 #
 # Portable skills are authored once in ai/skills/ and projected into
 # provider-aware runtime sources under .ai-runtime/.
@@ -446,8 +337,6 @@ assemble_instruction_file "$HOME/.codex/instructions.md" "$HOME/.codex/instructi
 CLAUDE_DIR="$HOME/.claude"
 SHARED_SKILLS_SRC="$DOTFILES_ROOT/ai/skills"
 CLAUDE_SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
-CLAUDE_AGENTS_SRC="$DOTFILES_ROOT/claude/agents"
-PI_AGENTS_SRC="$DOTFILES_ROOT/pi/agents"
 OPENCODE_DIR="$HOME/.config/opencode"
 PROJECTED_SKILLS_ROOT="$DOTFILES_ROOT/.ai-runtime"
 PROJECTED_CODEX_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/codex/skills"
@@ -482,51 +371,38 @@ sync_skill_runtime_dir "$PROJECTED_CLAUDE_SKILLS_SRC" "$PROJECT_CLAUDE_SKILLS_DI
 log_info "Setting up Claude Code skills..."
 sync_skill_runtime_dir "$PROJECTED_CLAUDE_SKILLS_SRC" "$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills" "$CLAUDE_SKILLS_SRC"
 
-# Retire only Claude advisor links owned by this checkout. Preserve user entries.
-mkdir -p "$CLAUDE_DIR/agents"
-for name in librarian oracle; do
-  target="$CLAUDE_DIR/agents/$name.md"
-  if [ -L "$target" ] && [ "$(readlink "$target")" = "$CLAUDE_AGENTS_SRC/$name.md" ]; then
-    rm "$target"
-    echo "  Removed retired managed Claude agent: $name"
-  fi
+# Narrow retirement cleanup; user-owned agents and directories are not managed.
+for name in librarian oracle review; do
+  remove_retired_agent_link "$CLAUDE_DIR/agents/$name.md" "$DOTFILES_ROOT/claude/agents/$name.md"
+  remove_retired_agent_link "$OPENCODE_DIR/agents/$name.md" "$DOTFILES_ROOT/claude/agents/$name.md"
 done
-clean_stale_managed_markdown_files "$CLAUDE_DIR/agents" "$MANAGED_AGENT_MARKER" ""
+review_file="$CLAUDE_DIR/agents/review.md"
+if [ ! -L "$CLAUDE_DIR/agents" ] && [ ! -L "$review_file" ] && [ -f "$review_file" ] \
+  && grep -Fq "$MANAGED_AGENT_MARKER" "$review_file"; then
+  rm "$review_file"
+  echo "  Removed retired generated Claude review agent"
+fi
 
 # Pi generated resources. Build and validate a complete sibling tree before
 # changing the active tree or installed resource links.
 log_info "Staging generated Pi resources..."
 PI_RUNTIME_TREE="$PROJECTED_SKILLS_ROOT/pi"
 PI_STAGE_TREE="$(mktemp -d "$PROJECTED_SKILLS_ROOT/.pi.stage.XXXXXX")"
-mkdir -p "$PI_STAGE_TREE/agents"
 assemble_instruction_file "$PI_STAGE_TREE/AGENTS.md" "$PI_STAGE_TREE/AGENTS.md" "$PI_INSTRUCTIONS_APPENDIX"
 run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" pi "$SHARED_SKILLS_SRC" "$PI_STAGE_TREE/skills" "$PI_RUNTIME_TREE/skills"
-
-# Materialize standalone Pi agents so the generated tree does not depend on a
-# mutable agent-directory state.
-for agent_file in "$PI_AGENTS_SRC"/*.md; do
-  [ -e "$agent_file" ] || continue
-  case "$agent_file" in
-    *.appendix.md|*.body.md)
-      continue
-      ;;
-  esac
-  cp "$agent_file" "$PI_STAGE_TREE/agents/$(basename "$agent_file")"
-done
 
 if ! validate_staged_pi_tree "$PI_STAGE_TREE"; then
   rm -rf "$PI_STAGE_TREE"
   exit 1
 fi
 
-# Detect collisions before swapping the generated tree, so a profile-local
-# custom agent or chain is never overwritten by a managed agent link.
-for profile_dir in "$HOME/.pi/agent"; do
-  if ! preflight_pi_profile "$profile_dir" "$PI_STAGE_TREE"; then
-    rm -rf "$PI_STAGE_TREE"
-    exit 1
-  fi
-done
+# The instruction link remains managed; agent directories are user-owned.
+pi_instruction="$HOME/.pi/agent/AGENTS.md"
+if { [ -e "$pi_instruction" ] || [ -L "$pi_instruction" ]; } \
+  && ! is_exact_symlink "$pi_instruction" "$PI_RUNTIME_TREE/AGENTS.md"; then
+  pi_profile_error "$pi_instruction is not the installer-managed link; preserve it and move it before rerunning"
+  exit 1
+fi
 
 if ! swap_staged_pi_tree "$PI_STAGE_TREE" "$PI_RUNTIME_TREE"; then
   rm -rf "$PI_STAGE_TREE"
@@ -534,34 +410,17 @@ if ! swap_staged_pi_tree "$PI_STAGE_TREE" "$PI_RUNTIME_TREE"; then
 fi
 PI_STAGE_TREE=""
 
-for profile_dir in "$HOME/.pi/agent"; do
-  link_pi_profile_resources "$profile_dir" "$PI_RUNTIME_TREE"
+mkdir -p "$HOME/.pi/agent"
+if [ ! -e "$pi_instruction" ] && [ ! -L "$pi_instruction" ]; then
+  ln -s "$PI_RUNTIME_TREE/AGENTS.md" "$pi_instruction"
+fi
+for name in researcher review; do
+  remove_retired_agent_link "$HOME/.pi/agent/agents/$name.md" "$PI_RUNTIME_TREE/agents/$name.md"
 done
 
 # OpenCode skills
 log_info "Setting up OpenCode skills..."
 # Note: OpenCode uses 'skill' not 'skills'. It gets only portable shared skills.
 sync_skill_runtime_dir "$PROJECTED_OPENCODE_SKILLS_SRC" "$OPENCODE_DIR/skill" "$OPENCODE_DIR/skill" ""
-
-# OpenCode agents
-# NOTE: Claude agents use incompatible frontmatter (tools: comma string vs YAML record).
-# Skipping symlink until OpenCode-specific agents are created.
-# See: https://opencode.ai/docs/agents/
-# Clean up stale agent symlinks from before this was disabled.
-if [ -d "$OPENCODE_DIR/agents" ]; then
-  clean_dead_symlinks "$OPENCODE_DIR/agents"
-  for link in "$OPENCODE_DIR/agents"/*; do
-    [ -L "$link" ] || continue
-    target="$(readlink "$link")"
-    case "$target" in
-      */claude/agents/*)
-        echo "  Removing stale OpenCode agent symlink: $(basename "$link") (Claude-incompatible)"
-        rm "$link"
-        ;;
-    esac
-  done
-  # Remove empty agents dir
-  rmdir "$OPENCODE_DIR/agents" 2>/dev/null || true
-fi
 
 log_success "AI configuration complete!"

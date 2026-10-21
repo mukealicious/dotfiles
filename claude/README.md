@@ -1,7 +1,7 @@
 # Claude Code Configuration
 
 Read this document before changing Claude settings, hooks, MCP, or advisor setup.
-For shared instructions, skill authoring/projections, and agent assembly, read
+For shared instructions, skill authoring/projections, and retirement cleanup, read
 [ai/README.md](../ai/README.md).
 
 ## Ownership

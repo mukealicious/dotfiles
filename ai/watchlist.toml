@@ -23,15 +23,6 @@ review = "semantic-diff"
 notes = "Historical policy retained as plain ai/references/coding-standards/typescript.md, not an installed skill. See adjacent VENDORED_FROM.md; review ideas, not automatic policy updates."
 
 [[sources]]
-id = "cloudflare-composition-root"
-repo = "dmmulroy/skills"
-path = "cloudflare-composition-root"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Explicitly adopted published collection; see ai/skills/cloudflare-composition-root/VENDORED_FROM.md"
-
-[[sources]]
 id = "effect-service-design"
 repo = "dmmulroy/skills"
 path = "effect-service-design"

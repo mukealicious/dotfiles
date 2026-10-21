@@ -70,7 +70,7 @@ auto-sync mechanism.
 
 | Upstream | Local scope | Ownership |
 |---|---|---|
-| `dmmulroy/skills@8603380821fee6a77c82639f364ce8fe4f5a92be` | `references/coding-standards`, `cloudflare-composition-root`, `effect-service-design`, `tech-spec` | MIT notice retained; coding standards are plain optional reference, not a skill; specialist methods defer to project policy |
+| `dmmulroy/skills@8603380821fee6a77c82639f364ce8fe4f5a92be` | `references/coding-standards`, `effect-service-design`, `tech-spec` | MIT notice retained; coding standards are plain optional reference, not a skill; specialist methods defer to project policy |
 | `dmmulroy/.dotfiles@bdf5e0611d62436eeb5dc58555c1396ced2dddeb` | `diagnosing-bugs`, `write-discoverable-code` | Current Matt Pocock/Modem snapshots, with verified original MIT notices |
 | `dmmulroy/.dotfiles@bdf5e0611d62436eeb5dc58555c1396ced2dddeb` | `writing-for-agents` | Unchanged manual authoring skill; verified Matt Pocock origin and MIT notice; replaces build-skill and agent-context |
 | `dmmulroy/.dotfiles@7c086fe40c01bf494aea7184da2eb7aaf7b7dff4` | `grilling`, `bro` | Previously retained instructions; outside this engineering consolidation |
@@ -146,8 +146,9 @@ built-in agents for authorized delegation; model selection follows harness and
 runtime settings rather than dotfiles role overrides. Independent review remains
 available through an explicit request.
 
-`ai/install.sh` removes retired managed agents while preserving user-owned agents
-and chains. Historical agent definitions remain in Git, not active projections.
+`ai/install.sh` removes exact retired managed agent links and the marked Claude
+review file. It does not publish agents, create agent directories, or validate
+user-owned agents and chains. Historical agent definitions remain in Git, not active projections.
 
 ### Shared Skills (`ai/skills/`)
 
@@ -196,7 +197,6 @@ For new-project stack selection or approved modernization, read
 | `breadboarding` | Workflow places, affordances, stores, and wiring |
 | `bro` | Manual plain-language restatement |
 | `effect-service-design` | Effect service contracts, Layers, composition, and audits |
-| `cloudflare-composition-root` | Application-owned services at Cloudflare runtime boundaries |
 | `tech-spec` | Manual, design-only typed architecture handoff and grill-first workflow |
 | `diagnosing-bugs` | Reproduce, minimize, diagnose, and regression-test hard bugs through a tight feedback loop |
 | `dotfiles-dev` | Dotfiles implementation conventions |

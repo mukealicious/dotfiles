@@ -18,7 +18,7 @@ assert_file_contains() {
   grep -Fq "$text" "$file" || fail "$file does not contain expected text"
 }
 
-RETIRED_SKILLS='coding-standards mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context librarian visual-deliverables'
+RETIRED_SKILLS='coding-standards mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context librarian visual-deliverables cloudflare-composition-root'
 
 assert_retired_skill_cleanup() {
   for retired in $RETIRED_SKILLS; do
@@ -125,12 +125,11 @@ for name in librarian oracle review; do
   assert_file_contains "$EMPTY_HOME/.claude/agents/$name.md" 'user-owned replacement'
 done
 
-# Exact legacy links migrate, while custom profile-local agents and chains stay
-# in their own real directories. A same-name regular file must stop the run.
+# Instructions and skills install without publishing any agent definitions.
 SUCCESS_REPO="$TMP_ROOT/success-repo"
 SUCCESS_HOME="$TMP_ROOT/success-home"
 make_test_repo "$SUCCESS_REPO"
-# Exercise optional agent linking/collision handling without shipping a persona.
+# Old source directories must no longer activate agent publishing.
 mkdir -p "$SUCCESS_REPO/pi/agents"
 printf '%s\n' '---' 'name: fixture' '---' 'Test fixture agent.' > "$SUCCESS_REPO/pi/agents/fixture.md"
 SUCCESS_REPO_PHYSICAL="$(cd "$SUCCESS_REPO" && pwd -P)"
@@ -177,8 +176,8 @@ assert_retired_skill_cleanup
 for profile in agent; do
   [ "$(readlink "$SUCCESS_HOME/.pi/$profile/AGENTS.md")" = "$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/AGENTS.md" ] || fail "$profile instruction link was not migrated"
   [ -d "$SUCCESS_HOME/.pi/$profile/agents" ] && [ ! -L "$SUCCESS_HOME/.pi/$profile/agents" ] || fail "$profile agents directory is not real"
-  [ "$(readlink "$SUCCESS_HOME/.pi/$profile/agents/fixture.md")" = "$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/agents/fixture.md" ] || fail "$profile fixture agent was not linked individually"
-  cmp "$SUCCESS_REPO/pi/agents/fixture.md" "$SUCCESS_HOME/.pi/$profile/agents/fixture.md" || fail 'fixture projection changed content'
+  [ ! -e "$SUCCESS_HOME/.pi/$profile/agents/fixture.md" ] || fail "installer published an agent"
+  [ ! -e "$SUCCESS_REPO/.ai-runtime/pi/agents" ] || fail "generated agent tree survived"
 done
 # Installed instructions must resolve scripts against the published tree, not
 # the temporary directory used while constructing it.
@@ -248,7 +247,7 @@ for provider in pi codex claude-code opencode; do
   for reference in herdr/references/workflows.md mono-color/references/recipe.md mono-color/references/color-and-layout.md mono-color/references/image-and-type.md mono-color/references/composition.md mono-color/references/production.md mono-color/references/inspection.md; do
     [ -s "$skills/$reference" ] || fail "$provider is missing $reference"
   done
-  for skill in diagnosing-bugs write-discoverable-code uncomplect cloudflare-composition-root effect-service-design tech-spec writing-for-agents; do
+  for skill in diagnosing-bugs write-discoverable-code uncomplect effect-service-design tech-spec writing-for-agents; do
     diff -r "$SUCCESS_REPO/ai/skills/$skill" "$skills/$skill" || fail "$provider changed or omitted $skill resources/metadata"
   done
   [ ! -e "$skills/coding-standards/references" ] || fail "$provider retains the abandoned coding corpus"
@@ -263,7 +262,7 @@ for provider in pi codex claude-code opencode; do
   [ ! -e "$skills/coding-standards" ] || fail "$provider retains the retired policy skill"
   assert_file_contains "$SUCCESS_REPO/ai/references/coding-standards/typescript.md" 'not active engineering policy'
   assert_file_contains "$SUCCESS_REPO/ai/references/coding-standards/typescript.md" '## Testing'
-  for specialist in tech-spec cloudflare-composition-root effect-service-design write-discoverable-code; do
+  for specialist in tech-spec effect-service-design write-discoverable-code; do
     if grep -Fq '../coding-standards/' "$skills/$specialist/SKILL.md"; then
       fail "$provider $specialist depends on the retired policy skill"
     fi
@@ -285,7 +284,7 @@ done
 [ -f "$SUCCESS_HOME/.pi/agent/AGENTS.md" ] || fail "legacy fallback was modified"
 printf '%s\n' 'custom agent' > "$SUCCESS_HOME/.pi/agent/agents/custom.md"
 printf '%s\n' 'custom chain' > "$SUCCESS_HOME/.pi/agent/agents/custom.chain.md"
-ln -s "$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/agents/removed.md" "$SUCCESS_HOME/.pi/agent/agents/removed.md"
+ln -s "$SUCCESS_HOME/missing-custom-agent.md" "$SUCCESS_HOME/.pi/agent/agents/custom-link.md"
 HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/idempotence.log" 2>&1
 assert_retired_skill_cleanup
 for instruction in \
@@ -305,21 +304,32 @@ for provider in pi codex claude-code opencode; do
   [ ! -e "$SUCCESS_REPO/.ai-runtime/$provider/skills/coding-standards/references" ] || fail "$provider restored the abandoned coding corpus on repeat install"
 done
 for directory in "$SUCCESS_REPO/.agents/skills" "$SUCCESS_REPO/.claude/skills" "$SUCCESS_HOME/.claude/skills" "$SUCCESS_HOME/.config/opencode/skill"; do
-  for skill in cloudflare-composition-root effect-service-design tech-spec writing-for-agents; do
+  for skill in effect-service-design tech-spec writing-for-agents; do
     [ -L "$directory/$skill" ] && [ -s "$directory/$skill/SKILL.md" ] || fail "missing installed skill link: $directory/$skill"
   done
 done
 [ -f "$SUCCESS_HOME/.pi/agent/agents/custom.md" ] || fail "custom agent was removed"
 [ -f "$SUCCESS_HOME/.pi/agent/agents/custom.chain.md" ] || fail "custom chain was removed"
-[ ! -e "$SUCCESS_HOME/.pi/agent/agents/removed.md" ] && [ ! -L "$SUCCESS_HOME/.pi/agent/agents/removed.md" ] || fail "stale managed agent link was preserved"
+[ "$(readlink "$SUCCESS_HOME/.pi/agent/agents/custom-link.md")" = "$SUCCESS_HOME/missing-custom-agent.md" ] || fail "custom broken agent link changed"
 [ ! -e "$SUCCESS_HOME/.pi/personal/agents/custom.md" ] || fail "work custom agent crossed profiles"
-rm "$SUCCESS_HOME/.pi/agent/agents/fixture.md"
-printf '%s\n' 'user-owned collision' > "$SUCCESS_HOME/.pi/agent/agents/fixture.md"
+# Agent directories may themselves be user-owned links; do not traverse them.
+mv "$SUCCESS_HOME/.pi/agent/agents" "$SUCCESS_HOME/custom-agents"
+ln -s "$SUCCESS_HOME/custom-agents" "$SUCCESS_HOME/.pi/agent/agents"
+printf 'user-owned review\n' > "$SUCCESS_HOME/custom-agents/review.md"
+HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/custom-agent-directory.log" 2>&1
+[ "$(readlink "$SUCCESS_HOME/.pi/agent/agents")" = "$SUCCESS_HOME/custom-agents" ] || fail "custom agent directory changed"
+assert_file_contains "$SUCCESS_HOME/custom-agents/review.md" "user-owned review"
+
+# Instruction ownership remains fail-closed even with no agent publisher.
+rm "$SUCCESS_HOME/.pi/agent/AGENTS.md"
+printf 'user-owned instructions\n' > "$SUCCESS_HOME/.pi/agent/AGENTS.md"
+cp "$SUCCESS_REPO/.ai-runtime/pi/AGENTS.md" "$TMP_ROOT/previous-instructions"
 if HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/collision.log" 2>&1; then
-  fail "managed-name collision unexpectedly succeeded"
+  fail "instruction collision unexpectedly succeeded"
 fi
-assert_file_contains "$TMP_ROOT/collision.log" "managed agent collision"
-assert_file_contains "$SUCCESS_HOME/.pi/agent/agents/fixture.md" "user-owned collision"
+assert_file_contains "$TMP_ROOT/collision.log" "not the installer-managed link"
+assert_file_contains "$SUCCESS_HOME/.pi/agent/AGENTS.md" "user-owned instructions"
+cmp "$SUCCESS_REPO/.ai-runtime/pi/AGENTS.md" "$TMP_ROOT/previous-instructions" || fail "instruction collision replaced active tree"
 
 # Ongoing installers must not manage retired profiles.
 if grep -Eq '\.pi/(work|personal)' "$ROOT/pi/install.sh" "$ROOT/ai/install.sh"; then

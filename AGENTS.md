@@ -76,7 +76,7 @@ the root-resolution template, safe glob iteration, failure handling, and
   Machine-local credentials and native preferences remain runtime-owned.
 - Author shared skills in `ai/skills/`; `.agents/skills/`, `.claude/skills/`, and
   `.ai-runtime/` are installer-managed projections.
-- `ai/install.sh` owns shared instructions, projected skills, and assembled agents.
+- `ai/install.sh` owns shared instructions and projected skills; agents are harness/user-owned.
 - `claude/install.sh` owns Claude settings and MCP setup.
 - `pi/install.sh` owns Pi startup settings, resource links, and packages.
 - Never commit `~/.localrc`, `~/.gitconfig.local`, or `.env*` files.
