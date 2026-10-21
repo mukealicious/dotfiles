@@ -12,7 +12,6 @@ For shared instructions, skill authoring/projections, and agent assembly, read
 | `claude/hooks/` | Hook implementations referenced by settings |
 | `ai/skills/` | `ai/install.sh` projects shared skills and links them into Claude runtimes |
 | `claude/skills/` | Optional Claude-only authoring overlays; never a generated projection |
-| `claude/agents/` | Combined advisor files and split `review` metadata, installed by `ai/install.sh` |
 
 Author portable skills in `ai/skills/`. Use `claude/skills/` only for Claude-native
 runtime requirements such as hooks, `$SKILL_DIR`, plugins, or subagent-specific
@@ -23,37 +22,17 @@ automatically.
 No marketplace plugins are installed by this repo. Keep shared workflows
 reviewable rather than adding a second harness-specific copy.
 
-## Advisors
+## Delegation
 
-| Agent | Purpose |
-|---|---|
-| `oracle` | Architecture, planning, and complex debugging |
-| `librarian` | Source-backed external-library investigation |
-| `review` | Bugs, security, and change correctness |
-
-Before delegating, follow the read-only advisor and implementation-routing
-constraints in [CLAUDE.md](../CLAUDE.md#claude-code). Models and tool permissions
-are defined in each role's frontmatter.
-
-### Edit or Add an Agent
-
-- Edit `oracle` and `librarian` in `claude/agents/<name>.md`.
-- Edit `review`'s portable body in `ai/agents/review.body.md` and Claude metadata
-  in `claude/agents/review.frontmatter`.
-- New combined `claude/agents/<name>.md` roles are linked by `ai/install.sh`.
-  Define explicit tool permissions and a task-routing description.
-- The shared-body assembler currently handles only `review`; a new
-  `*.body.md`/`*.frontmatter` pair alone is not sufficient. Inspect assembly
-  support before adopting that pattern for another role.
-
-Refresh installed roles with `ai/install.sh` when applying agent configuration.
-Edit sources here, not assembled or linked files in `~/.claude/agents/`.
+Use Claude's built-in agents for authorized delegation. Dotfiles no longer ships
+custom advisor personas or their model pins. `ai/install.sh` cleans up retired
+managed advisors while preserving user-owned entries in `~/.claude/agents/`.
 
 ## MCP and Hooks
 
 `claude/install.sh` removes the legacy user-scope `context7` entry and attempts
 idempotent `grep_app` registration. `grep_app` is GitHub-wide discovery;
-the shared `librarian`/`opensrc` workflows own source-backed investigation.
+the shared `opensrc` skill covers source-cache acquisition for local inspection.
 Inspect `claude mcp list` to verify local connections and authentication.
 Other OAuth connections, including Linear, are machine/user-managed rather than
 configured by this installer. Per-agent MCP scoping is not configured here.

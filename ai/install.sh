@@ -118,54 +118,6 @@ write_managed_file() {
   echo "  Wrote $desc"
 }
 
-write_managed_agent_file() {
-  src_tmp="$1"
-  target="$2"
-  desc="$3"
-  legacy_suffix="$4"
-
-  mkdir -p "$(dirname "$target")"
-
-  if [ -L "$target" ]; then
-    current="$(normalize_symlink_path "$(readlink "$target")")"
-    if [ -n "$legacy_suffix" ]; then
-      case "$current" in
-        *"$legacy_suffix")
-          echo "  Replacing legacy symlink: $desc"
-          rm "$target"
-          ;;
-        *)
-          _handle_unexpected_symlink "$current" "$target" "$desc" "$src_tmp" || return 0
-          ;;
-      esac
-    else
-      _handle_unexpected_symlink "$current" "$target" "$desc" "$src_tmp" || return 0
-    fi
-  elif [ -e "$target" ]; then
-    if grep -Fq "$MANAGED_AGENT_MARKER" "$target" 2>/dev/null; then
-      :
-    elif [ "$FORCE" = "true" ]; then
-      echo "  Replacing existing $desc"
-      rm -f "$target"
-    else
-      echo "  Warning: $desc exists and is not installer-managed"
-      echo "    Skipping to preserve existing content"
-      echo "    Fix: mv \"$target\" \"$target.bak\" && dot"
-      rm "$src_tmp"
-      return 0
-    fi
-  fi
-
-  if [ -f "$target" ] && cmp -s "$src_tmp" "$target"; then
-    echo "  $desc already up to date"
-    rm "$src_tmp"
-    return 0
-  fi
-
-  mv "$src_tmp" "$target"
-  echo "  Wrote $desc"
-}
-
 assemble_instruction_file() {
   target="$1"
   desc="$2"
@@ -185,43 +137,6 @@ assemble_instruction_file() {
   } > "$tmp_file"
 
   write_managed_file "$tmp_file" "$target" "$desc"
-}
-
-assemble_agent_file() {
-  frontmatter_src="$1"
-  body_src="$2"
-  appendix_src="$3"
-  target="$4"
-  desc="$5"
-  legacy_suffix="$6"
-
-  if [ ! -f "$frontmatter_src" ]; then
-    echo "  ERROR: missing agent frontmatter: $frontmatter_src"
-    exit 1
-  fi
-
-  if [ ! -f "$body_src" ]; then
-    echo "  ERROR: missing shared agent body: $body_src"
-    exit 1
-  fi
-
-  mkdir -p "$(dirname "$target")"
-  tmp_file="$(mktemp "$(dirname "$target")/.dotfiles-agent.XXXXXX")"
-  _TMPFILES="$_TMPFILES $tmp_file"
-
-  {
-    printf '%s\n' '---'
-    cat "$frontmatter_src"
-    printf '%s\n' '---'
-    printf '%s\n\n' "$MANAGED_AGENT_MARKER"
-    cat "$body_src"
-    if [ -n "$appendix_src" ] && [ -f "$appendix_src" ]; then
-      printf '\n\n'
-      cat "$appendix_src"
-    fi
-  } > "$tmp_file"
-
-  write_managed_agent_file "$tmp_file" "$target" "$desc" "$legacy_suffix"
 }
 
 #
@@ -368,8 +283,6 @@ validate_staged_pi_tree() {
   [ -d "$tree/agents" ] || { pi_profile_error "staged Pi tree is missing agents/"; return 1; }
   [ -d "$tree/skills" ] || { pi_profile_error "staged Pi tree is missing skills/"; return 1; }
 
-  set -- "$tree/agents"/*.md
-  [ -f "$1" ] || { pi_profile_error "staged Pi tree contains no managed agents"; return 1; }
   set -- "$tree/skills"/*
   [ -e "$1" ] || { pi_profile_error "staged Pi tree contains no projected skills"; return 1; }
 }
@@ -533,7 +446,6 @@ assemble_instruction_file "$HOME/.codex/instructions.md" "$HOME/.codex/instructi
 CLAUDE_DIR="$HOME/.claude"
 SHARED_SKILLS_SRC="$DOTFILES_ROOT/ai/skills"
 CLAUDE_SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
-SHARED_AGENTS_SRC="$DOTFILES_ROOT/ai/agents"
 CLAUDE_AGENTS_SRC="$DOTFILES_ROOT/claude/agents"
 PI_AGENTS_SRC="$DOTFILES_ROOT/pi/agents"
 OPENCODE_DIR="$HOME/.config/opencode"
@@ -543,12 +455,6 @@ PROJECTED_CLAUDE_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/claude-code/skills"
 PROJECTED_OPENCODE_SKILLS_SRC="$PROJECTED_SKILLS_ROOT/opencode/skills"
 PROJECT_AGENTS_SKILLS_DIR="$DOTFILES_ROOT/.agents/skills"
 PROJECT_CLAUDE_SKILLS_DIR="$DOTFILES_ROOT/.claude/skills"
-REVIEW_BODY_SRC="$SHARED_AGENTS_SRC/review.body.md"
-CLAUDE_REVIEW_FRONTMATTER="$CLAUDE_AGENTS_SRC/review.frontmatter"
-CLAUDE_REVIEW_APPENDIX="$CLAUDE_AGENTS_SRC/review.appendix.md"
-PI_REVIEW_FRONTMATTER="$PI_AGENTS_SRC/review.frontmatter"
-PI_REVIEW_APPENDIX="$PI_AGENTS_SRC/review.appendix.md"
-
 if command -v mise >/dev/null 2>&1 && mise which -C "$DOTFILES_ROOT" node >/dev/null 2>&1; then
   run_node() {
     mise exec -C "$DOTFILES_ROOT" -- node "$@"
@@ -576,40 +482,16 @@ sync_skill_runtime_dir "$PROJECTED_CLAUDE_SKILLS_SRC" "$PROJECT_CLAUDE_SKILLS_DI
 log_info "Setting up Claude Code skills..."
 sync_skill_runtime_dir "$PROJECTED_CLAUDE_SKILLS_SRC" "$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills" "$CLAUDE_SKILLS_SRC"
 
-# Claude Code agents
-if [ -d "$CLAUDE_AGENTS_SRC" ]; then
-  log_info "Setting up Claude Code agents..."
-  mkdir -p "$CLAUDE_DIR/agents"
-  clean_dead_symlinks "$CLAUDE_DIR/agents"
-  claude_generated_agents=""
-
-  if [ -f "$REVIEW_BODY_SRC" ] && [ -f "$CLAUDE_REVIEW_FRONTMATTER" ]; then
-    claude_generated_agents="review.md"
+# Retire only Claude advisor links owned by this checkout. Preserve user entries.
+mkdir -p "$CLAUDE_DIR/agents"
+for name in librarian oracle; do
+  target="$CLAUDE_DIR/agents/$name.md"
+  if [ -L "$target" ] && [ "$(readlink "$target")" = "$CLAUDE_AGENTS_SRC/$name.md" ]; then
+    rm "$target"
+    echo "  Removed retired managed Claude agent: $name"
   fi
-
-  clean_stale_managed_markdown_files "$CLAUDE_DIR/agents" "$MANAGED_AGENT_MARKER" "$claude_generated_agents"
-
-  if [ -n "$claude_generated_agents" ]; then
-    assemble_agent_file \
-      "$CLAUDE_REVIEW_FRONTMATTER" \
-      "$REVIEW_BODY_SRC" \
-      "$CLAUDE_REVIEW_APPENDIX" \
-      "$CLAUDE_DIR/agents/review.md" \
-      "$CLAUDE_DIR/agents/review.md" \
-      "claude/agents/review.md"
-  fi
-
-  for agent_file in "$CLAUDE_AGENTS_SRC"/*.md; do
-    [ -e "$agent_file" ] || continue
-    case "$agent_file" in
-      *.appendix.md)
-        continue
-        ;;
-    esac
-    agent_name=$(basename "$agent_file")
-    ensure_symlink "$agent_file" "$CLAUDE_DIR/agents/$agent_name" "$CLAUDE_DIR/agents/$agent_name"
-  done
-fi
+done
+clean_stale_managed_markdown_files "$CLAUDE_DIR/agents" "$MANAGED_AGENT_MARKER" ""
 
 # Pi generated resources. Build and validate a complete sibling tree before
 # changing the active tree or installed resource links.
@@ -619,16 +501,6 @@ PI_STAGE_TREE="$(mktemp -d "$PROJECTED_SKILLS_ROOT/.pi.stage.XXXXXX")"
 mkdir -p "$PI_STAGE_TREE/agents"
 assemble_instruction_file "$PI_STAGE_TREE/AGENTS.md" "$PI_STAGE_TREE/AGENTS.md" "$PI_INSTRUCTIONS_APPENDIX"
 run_node "$DOTFILES_ROOT/ai/scripts/project-skills.mjs" pi "$SHARED_SKILLS_SRC" "$PI_STAGE_TREE/skills" "$PI_RUNTIME_TREE/skills"
-
-if [ -f "$REVIEW_BODY_SRC" ] && [ -f "$PI_REVIEW_FRONTMATTER" ]; then
-  assemble_agent_file \
-    "$PI_REVIEW_FRONTMATTER" \
-    "$REVIEW_BODY_SRC" \
-    "$PI_REVIEW_APPENDIX" \
-    "$PI_STAGE_TREE/agents/review.md" \
-    "$PI_STAGE_TREE/agents/review.md" \
-    ""
-fi
 
 # Materialize standalone Pi agents so the generated tree does not depend on a
 # mutable agent-directory state.

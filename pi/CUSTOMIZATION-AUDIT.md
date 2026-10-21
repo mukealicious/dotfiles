@@ -26,6 +26,9 @@ Selected source pins are not endorsements of unreviewed package features. For pr
 
 ## Deliberately retired
 
+- **Custom `/review` prompt:** removed; request reviews directly. Installer cleanup removes only the former managed link and preserves user-owned prompts.
+- **Custom advisor/research/review personas and scout/worker overrides:** removed in favor of harness defaults and explicit task requests. The shared librarian skill is retired; source acquisition remains in opensrc. Historical validation below describes the former roles, not currently installed agents.
+
 - **Files/todos add-ons:** `/files`, `/todos`, and the `todo` tool are disabled. Their two patches and installer patching helpers are removed; existing todo data and inactive package code stay untouched. `/fast` and its single policy patch remain supported.
 - **Custom handoff product:** no handoff extension, connection/backlink library, handoff skill, receipt-driven continuation, or automatic cross-session continuation remains. Use native conversation/branch/resume controls and approved upstream subagent workflows. Existing handoff records, session histories, backups, and unmanaged links are historical/user data and are not automatically removed or interpreted.
 - **Local Parallel CLI/research fork:** removed in favor of unchanged upstream 3.0.0's direct HTTP search/fetch interface. Retained CLI/auth files are not managed or deleted by this decision.

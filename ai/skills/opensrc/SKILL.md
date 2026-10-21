@@ -5,8 +5,7 @@ description: Fetch external package or repository source into a local cache. Use
 
 # OpenSrc
 
-Acquire source snapshots for local inspection. Source analysis and citations belong
-to the shared `librarian` skill.
+Acquire source snapshots for local inspection.
 
 ## Workflow
 
@@ -49,8 +48,7 @@ CLI metadata or the checkout. Use returned paths rather than guessing cache layo
 
 Read the relevant README/package metadata, entrypoints, examples/tests, and
 implementation. Return the package/repo, resolved version/ref, actual source path,
-key findings, and any resolution or coverage limits. Load `librarian` for deeper
-analysis or comparison.
+key findings, and any resolution or coverage limits.
 
 ## Cache and Workspace Safety
 

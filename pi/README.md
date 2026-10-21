@@ -69,7 +69,7 @@ explicit isolated native invocation when needed; never commit credentials.
 | `pi/extensions/`, `pi/themes/`, `pi/prompts/` | Installed resource links |
 | `ai/instructions/`, `pi/instructions/` | Generated `.ai-runtime/pi/AGENTS.md` |
 | Shared skills in `ai/skills/` | Generated `.ai-runtime/pi/skills/` |
-| `pi/agents/` and shared agent bodies | Individual links in `~/.pi/agent/agents/` |
+| User agents and chains | Runtime-owned `~/.pi/agent/agents/`; no custom roles shipped |
 | Machine-local connections | **`~/.pi/agent/mcp.json`**, edited through `/mcp` or CLI |
 
 The installer owns resource selection (`packages`, `skills`, `extensions`,
@@ -78,7 +78,7 @@ keys; existing native `/model` and `/settings` preferences and runtime identity
 survive reinstalls. Native compaction/thinking/retry defaults are no longer
 repeated in the source baseline; existing explicit choices remain respected.
 It does not overwrite an existing `mcp.json` or fast-mode configuration. OAuth lives in private `auth.json` and `mcp-auth.json`, not
-Git. Custom agents and chains live alongside managed agent links.
+Git. Custom agents and chains remain user-owned.
 
 Skills are shared across work and personal projects. Project-specific guidance
 belongs in repository `AGENTS.md` or trusted `.pi/` configuration.
@@ -229,9 +229,9 @@ Retained packages:
   Upstream removed Mermaid; its previously selected skill/validator remain unchanged
   as the frozen shared snapshot `ai/skills/mermaid/`, not as a package patch.
 
-`/review [scope]` expands [prompts/review.md](prompts/review.md) into a read-only
-review request. The managed `review` agent provides independent review when
-requested; there is no separate review skill, PR checkout, or automatic fix loop. `/answer`,
+Request code reviews directly. Independent review uses authorized harness
+delegation; there is no custom review prompt, agent, skill, PR checkout, or
+automatic fix loop. `/answer`,
 `/btw`, `/loop`, the UV bash override and whimsical indicator are not loaded.
 Native bash plus shared `uv` instructions replace interception; this is policy,
 not sandbox enforcement. Unreferenced local Python shims were removed.
@@ -274,15 +274,13 @@ execution. Upstream owns the implementation, schema, lifecycle and discovery;
 we own the reviewed source pin, dependencies and supported personal configuration.
 Do not restore old resolver/lifecycle patches to satisfy retired fork tests.
 
-Personal policy uses `subagents.agentOverrides` in settings: scout has a read-only
-tool allowlist and Luna model, worker uses Luna. The managed `review` definition
-is a read-only Sol role. Our `researcher` definition uses Sol and explicitly loads
-Exa/Parallel providers so both foreground and background runs have its named web
-tools. It cannot edit files or delegate. These are permission lists, not an OS
-sandbox. Additional upstream builtins keep upstream defaults; notably `reviewer`
-is distinct from our read-only `review`, and `evidence-auditor` requires
-pi-web-access, which this setup does not install. Native settings preserve existing
-personal overrides on reinstall; project definitions/settings can override roles.
+No custom advisor/research/review roles or scout/worker overrides are shipped.
+Built-in agents use upstream defaults; this does not guarantee parent-model
+inheritance. Inspect available roles and models before delegation. The upstream
+`evidence-auditor` requires pi-web-access, which this setup does not install.
+Existing runtime/project overrides remain user-owned. On older installations,
+removing source defaults alone does not erase previously installed overrides;
+remove the old scout/worker entries deliberately if they are no longer wanted.
 
 Foreground children are in-process SDK sessions; background children use a detached
 runner. Foreground children do not inherit ambient extensions. Configure required
@@ -302,7 +300,7 @@ project trust as a sandbox for upstream discovery.
 Upstream workflow scripts, management, background status/recovery, intercom and
 worktrees use their supported conventions. Old saved chains and active-run files
 are preserved, not migrated or promised compatible. Management no longer has the
-fork's managed-link protection: edit managed agents in this checkout. Optional
+fork's managed-link protection; user-defined agents remain runtime-owned. Optional
 `disabledFeatures` in `~/.pi/agent/extensions/subagent/config.json` can disable
 agent management or workflow scripts (the latter enables simpler chain/tasks
 inputs); no compatibility adapter is installed. See upstream

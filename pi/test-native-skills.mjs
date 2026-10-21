@@ -29,7 +29,7 @@ test('fresh native discovery loads the consolidated source projection without re
       assert.equal(loaded.disableModelInvocation, ['tech-spec', 'writing-for-agents'].includes(name), 'preserve deliberate manual versus automatic invocation');
       assert.ok(loaded.description.length > 20, 'native loader parses multiline descriptions');
     }
-    const retired = ['coding-standards', 'mu-mode', 'mu-stack', 'rat-stack', 'tdd', 'domain-modeling', 'codebase-design', 'code-review', 'grill-with-docs', 'build-skill', 'agent-context', 'prelude', 'bootstrap-prelude'];
+    const retired = ['coding-standards', 'mu-mode', 'mu-stack', 'rat-stack', 'tdd', 'domain-modeling', 'codebase-design', 'code-review', 'grill-with-docs', 'build-skill', 'agent-context', 'librarian', 'visual-deliverables', 'prelude', 'bootstrap-prelude'];
     assert.deepEqual(result.skills.filter(skill => retired.includes(skill.name)), []);
     for (const file of ['diagnosing-bugs/scripts/hitl-loop.template.sh', 'write-discoverable-code/LICENSE', 'uncomplect/references/source-map.md', 'cloudflare-composition-root/EXAMPLES.md', 'effect-service-design/references/AUDIT.md', 'effect-service-design/agents/openai.yaml', 'writing-for-agents/SKILL-MECHANICS.md', 'writing-for-agents/agents/openai.yaml', 'writing-for-agents/LICENSE', ...['cloudflare-composition-root', 'effect-service-design', 'tech-spec'].map(name => `${name}/LICENSE`)]) {
       assert.ok(fs.existsSync(path.join(projection, file)), file);

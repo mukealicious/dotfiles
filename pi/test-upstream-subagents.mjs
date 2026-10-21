@@ -21,10 +21,10 @@ test('vendored manifest and selected resources match the reviewed upstream relea
   const selection = settings.packages.find(p => p.source?.endsWith('/pi-subagents'));
   assert.deepEqual(selection.skills, ['skills/pi-subagents/SKILL.md']);
   assert.deepEqual(selection.prompts, []);
-  assert.deepEqual(settings.subagents.agentOverrides.scout.tools, ['read', 'grep', 'find', 'ls']);
+  assert.equal(settings.subagents?.agentOverrides, undefined);
 });
 
-test('personal researcher providers and restricted tools load in real upstream SDK children', async () => {
+test('explicit provider and tool selections load in real upstream SDK children', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pi-upstream-host-'));
   const previous = process.env.PI_CODING_AGENT_DIR;
   let factory;
@@ -37,15 +37,13 @@ test('personal researcher providers and restricted tools load in real upstream S
       ...host,
       ModelRuntime: { create: () => host.ModelRuntime.create({ credentials: new InMemoryCredentialStore(), modelsPath: null, allowModelNetwork: false }) },
     }) });
-    const researcher = host.parseFrontmatter(fs.readFileSync(new URL('./agents/researcher.md', import.meta.url), 'utf8')).frontmatter;
     const providers = [
       path.resolve('pi/packages/pi-exa/extensions/index.ts'),
       path.resolve('pi/packages/pi-parallel/extension/index.ts'),
     ];
-    assert.deepEqual(researcher.extensions.split(',').map(p => p.trim().replace('~/.dotfiles', process.cwd())), providers);
     for (const role of [
-      { tools: settings.subagents.agentOverrides.scout.tools, extensions: [], model: 'openai/gpt-6-luna' },
-      { tools: researcher.tools.split(',').map(s => s.trim()), extensions: providers, model: researcher.model },
+      { tools: ['read', 'grep', 'find', 'ls'], extensions: [], model: 'openai/gpt-6-luna' },
+      { tools: ['read', 'web_search', 'web_fetch', 'exa_search'], extensions: providers, model: 'openai/gpt-6-sol' },
     ]) {
       const errors = [];
       let active;

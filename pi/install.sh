@@ -280,6 +280,12 @@ setup_pi_resources() {
   done
 
   mkdir -p "$AGENT_DIR/prompts"
+  # Remove only the exact retired shortcut link, not a user-owned replacement.
+  review_prompt="$AGENT_DIR/prompts/review.md"
+  if [ -L "$review_prompt" ] && [ "$(readlink "$review_prompt")" = "$DOTFILES_ROOT/pi/prompts/review.md" ]; then
+    rm "$review_prompt"
+    log_success "Removed retired managed review prompt"
+  fi
   for prompt in "$DOTFILES_ROOT/pi/prompts/"*.md; do
     [ -e "$prompt" ] || continue
     name="$(basename "$prompt")"

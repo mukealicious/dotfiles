@@ -837,20 +837,7 @@ done
 
 header "AI agents"
 
-MANAGED_AGENT_MARKER='# Managed by ~/.dotfiles/ai/install.sh. Edit source files instead.'
-CLAUDE_AGENTS_SRC="$DOTFILES_ROOT/claude/agents"
-
-# Assembled review agent
-if [ -f "$CLAUDE_DIR/agents/review.md" ]; then
-  if grep -Fq "$MANAGED_AGENT_MARKER" "$CLAUDE_DIR/agents/review.md" 2>/dev/null; then
-    pass "~/.claude/agents/review.md (assembled)"
-  else
-    warn "~/.claude/agents/review.md exists but is not installer-managed"
-  fi
-else
-  warn "~/.claude/agents/review.md is missing"
-  info "Fix: dot"
-fi
+# Custom advisor personas are retired; user-owned agents are optional.
 
 # Pi keeps a real profile-local agents directory; only managed files link to
 # the generated shared agent tree. Custom agents and chains remain local.
@@ -892,18 +879,6 @@ if [ -d "$PI_EXTENSIONS_SRC" ]; then
       extension_name="$(basename "$extension")"
       check_symlink "$extension" "$profile_dir/extensions/$extension_name" "~/.pi/$profile/extensions/$extension_name"
     done
-  done
-fi
-
-# Symlinked agent files
-if [ -d "$CLAUDE_AGENTS_SRC" ]; then
-  for agent_file in "$CLAUDE_AGENTS_SRC"/*.md; do
-    [ -e "$agent_file" ] || continue
-    case "$agent_file" in
-      *.appendix.md) continue ;;
-    esac
-    agent_name="$(basename "$agent_file")"
-    check_symlink "$agent_file" "$CLAUDE_DIR/agents/$agent_name" "~/.claude/agents/$agent_name"
   done
 fi
 

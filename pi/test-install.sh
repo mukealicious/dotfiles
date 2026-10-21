@@ -67,6 +67,8 @@ printf 'untouched\n' > "$HOME/.pi/personal/settings.json"
 printf 'untouched\n' > "$HOME/.pi/work/settings.json"
 ln -s "$REPO/pi/extensions/handoff.ts" "$HOME/.pi/agent/extensions/handoff.ts"
 ln -s "$REPO/pi/lib" "$HOME/.pi/agent/lib"
+mkdir -p "$HOME/.pi/agent/prompts"
+ln -s "$REPO/pi/prompts/review.md" "$HOME/.pi/agent/prompts/review.md"
 mkdir -p "$HOME/.pi/agent/sessions/handoff-connections"
 printf 'preserved connection\n' > "$HOME/.pi/agent/sessions/handoff-connections/kept.json"
 run() { sh "$REPO/pi/install.sh" > "$TMP/install.log" 2>&1; }
@@ -112,7 +114,7 @@ MODELS="$HOME/.pi/agent/models.json"
 [ ! -e "$MODELS" ] || fail 'installer created competing native priority policy'
 jq -e '.packages | index("npm:@benvargas/pi-openai-fast@1.1.1") != null and index("~/.dotfiles/pi/packages/pi-openai-fast") == null' "$SETTINGS" >/dev/null || fail 'fast package pin'
 jq -e '.packages[] | select(type == "object" and .source == "~/.dotfiles/pi/packages/pi-subagents") | .skills == ["skills/pi-subagents/SKILL.md"] and .prompts == []' "$SETTINGS" >/dev/null || fail 'upstream subagent resource selection'
-jq -e '.subagents.agentOverrides.scout | .model == "openai/gpt-6-luna" and .tools == ["read", "grep", "find", "ls"] and .output == false' "$SETTINGS" >/dev/null || fail 'scout policy'
+jq -e '.subagents.agentOverrides == null' "$SETTINGS" >/dev/null || fail 'unexpected custom agent overrides'
 grep -Fq 'ctx.isProjectTrusted()' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast trust patch'
 grep -Fq 'supportedModels must be an array' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast allowlist patch'
 grep -Fq 'configuration must be a JSON object' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast config root patch'
@@ -128,7 +130,7 @@ jq -e '(.skills | index("~/.dotfiles/.agents/skills") != null) and (.skills | in
 for extension in notify modes; do
   [ -L "$HOME/.pi/agent/extensions/$extension.ts" ] || fail "missing $extension"
 done
-[ -L "$HOME/.pi/agent/prompts/review.md" ] || fail 'native review prompt missing'
+[ ! -e "$HOME/.pi/agent/prompts/review.md" ] && [ ! -L "$HOME/.pi/agent/prompts/review.md" ] || fail 'retired review prompt survived'
 [ ! -e "$HOME/.pi/agent/extensions/usage-footer.ts" ] || fail 'legacy footer active'
 [ ! -L "$HOME/.pi/agent/extensions/handoff.ts" ] || fail 'retired managed handoff link survived'
 [ ! -L "$HOME/.pi/agent/lib" ] || fail 'retired managed library link survived'
@@ -196,11 +198,17 @@ for profile in personal work; do
 done
 if grep -Fq mcp-adapter "$HOME/installs.log"; then fail 'adapter installed'; fi
 [ ! -e "$HOME/npm.log" ] || fail 'routine installer invoked npm'
+printf 'user-owned review prompt\n' > "$HOME/.pi/agent/prompts/review.md"
 printf 'user-owned extension\n' > "$HOME/.pi/agent/extensions/handoff.ts"
 mkdir "$HOME/custom-lib"
 ln -s "$HOME/custom-lib" "$HOME/.pi/agent/lib"
 run || { tail -30 "$TMP/install.log"; fail 'install with unmanaged retired-name entries'; }
 grep -qx 'user-owned extension' "$HOME/.pi/agent/extensions/handoff.ts" || fail 'user-owned handoff entry changed'
+grep -qx 'user-owned review prompt' "$HOME/.pi/agent/prompts/review.md" || fail 'user-owned review prompt changed'
+rm "$HOME/.pi/agent/prompts/review.md"
+ln -s "$HOME/custom-review.md" "$HOME/.pi/agent/prompts/review.md"
+run || fail 'install with unmanaged review prompt link'
+[ "$(readlink "$HOME/.pi/agent/prompts/review.md")" = "$HOME/custom-review.md" ] || fail 'unmanaged review prompt link changed'
 [ "$(readlink "$HOME/.pi/agent/lib")" = "$HOME/custom-lib" ] || fail 'unmanaged library link changed'
 for package in "$REPO/pi/packages/pi-exa" "$REPO/pi/packages/pi-parallel" "$REPO/pi/packages/pi-subagents" git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857; do
   if (PI_TEST_INSTALL_FAIL="$package" run); then fail "$package install failure reported success"; fi

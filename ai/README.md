@@ -139,27 +139,15 @@ trade-offs. Shared specialist skills operate within those decisions.
 - Cloudflare, Effect, discoverability, and spec-writing guidance must not silently
   reintroduce the shared policy through dependency links or examples.
 
-### Shared Agents
+### Delegation
 
-Harness-native agents are optional. The primary cross-harness portability story in this repo is shared instructions plus shared skills.
+No custom advisor, researcher, or review personas are shipped. Use the harness's
+built-in agents for authorized delegation; model selection follows harness and
+runtime settings rather than dotfiles role overrides. Independent review remains
+available through an explicit request.
 
-The `review` role uses a shared-core pattern:
-
-- `ai/agents/*.body.md` holds the neutral role/task body.
-- `claude/agents/*.frontmatter` and `pi/agents/*.frontmatter` hold harness-specific metadata.
-- `ai/install.sh` assembles the runtime agent files each harness expects.
-
-Agent Assembly Status:
-
-| Capability | Shared source | Harness metadata | Installed outputs |
-|---|---|---|---|
-| `review` | `ai/agents/review.body.md` | `claude/agents/review.frontmatter`, `pi/agents/review.frontmatter` | `~/.claude/agents/review.md`, `.ai-runtime/pi/agents/review.md`, and `~/.pi/agent/agents/review.md` |
-
-`ai/install.sh` currently assembles only `review` from split sources; adding a new
-body/frontmatter pair does not automatically add assembly support. Other roles,
-including Claude's `oracle`/`librarian` and Pi's `researcher`, use combined Markdown
-files. Managed Pi agents are linked individually alongside user-owned agents and
-chains. Edit managed roles in this checkout, not through runtime agent management.
+`ai/install.sh` removes retired managed agents while preserving user-owned agents
+and chains. Historical agent definitions remain in Git, not active projections.
 
 ### Shared Skills (`ai/skills/`)
 
@@ -219,7 +207,7 @@ For new-project stack selection or approved modernization, read
 | `herdr` | Herdr pane/workspace/agent coordination |
 | `hunk-review` | Hunk diff and comment workflow |
 | `impeccable` | Product UI/UX and visual interaction design |
-| `librarian` / `opensrc` | Source-backed external investigation / source-cache acquisition |
+| `opensrc` | External source-cache acquisition |
 | `mermaid` | Frozen upstream Mermaid validation skill preserved after its removal from Mitsupi |
 | `moja-glava` | Durable private knowledge checkpoints |
 | `mono-color` | One-ink and controlled two-ink editorial art direction, raster assets, and production prompts |
@@ -233,8 +221,8 @@ For new-project stack selection or approved modernization, read
 | `write-discoverable-code` | Searchable names, clear types, and discoverable module boundaries |
 | `writing-for-agents` | Manual authoring reference for skills, AGENTS/CLAUDE files, and other agent-facing documents |
 
-The review agent and native `/review` prompt provide read-only review without a
-separate review skill. Follow repository-local conventions for tests, terminology,
+Request reviews directly; no separate review skill, prompt, or custom agent is
+shipped. Follow repository-local conventions for tests, terminology,
 ADRs, and stack decisions; do not resurrect retired global playbooks.
 
 `framing-doc` and `kickoff-doc` remain distinct: framing captures the evidence
@@ -248,8 +236,7 @@ after shaping.
   `mono-color` owns one-ink and controlled two-ink editorial art direction and
   raster assets; `tufte-data-viz` owns quantitative graphics;
   Mermaid owns text-native diagrams; `tldraw-offline` owns the editable local canvas.
-- **Research:** `researcher` gathers delegated evidence; `qmd` searches local
-  Markdown; `opensrc` acquires snapshots; `librarian` analyzes external code;
+- **Research:** `qmd` searches local Markdown; `opensrc` acquires source snapshots;
   `summarize` ingests documents; `surf-browser` operates authenticated browsing.
 - **Maintenance:** `upstream-review` decides adoption; `post-mortem` identifies
   lessons; users can invoke `writing-for-agents` for agent-document authoring;
@@ -276,7 +263,6 @@ Custom extensions symlinked by `pi/install.sh`. Third-party extensions installed
 
 Native bash follows shared `uv` guidance. The UV bash override and unreferenced
 local interceptor shims are retired; instructions are policy, not a sandbox.
-`/review` uses a native read-only prompt instead of automated checkout/fix loops.
 
 ## Harness Maintenance
 

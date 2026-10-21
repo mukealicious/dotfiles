@@ -10,16 +10,6 @@
     "~/.dotfiles/.agents/skills",
     "!**/.dotfiles/.agents/skills/**"
   ],
-  "subagents": {
-    "agentOverrides": {
-      "scout": {
-        "model": "openai/gpt-6-luna",
-        "tools": ["read", "grep", "find", "ls"],
-        "output": false
-      },
-      "worker": { "model": "openai/gpt-6-luna" }
-    }
-  },
   "packages": [
     "~/.dotfiles/pi/packages/pi-exa",
     "~/.dotfiles/pi/packages/pi-parallel",

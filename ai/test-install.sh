@@ -18,7 +18,7 @@ assert_file_contains() {
   grep -Fq "$text" "$file" || fail "$file does not contain expected text"
 }
 
-RETIRED_SKILLS='coding-standards mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context'
+RETIRED_SKILLS='coding-standards mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context librarian visual-deliverables'
 
 assert_retired_skill_cleanup() {
   for retired in $RETIRED_SKILLS; do
@@ -96,24 +96,43 @@ fi
 assert_file_contains "$FAIL_REPO/.ai-runtime/pi/AGENTS.md" "previous generated tree"
 [ "$(readlink "$FAIL_HOME/.pi/agent/AGENTS.md")" = "$FAIL_REPO/.ai-runtime/pi/AGENTS.md" ] || fail "failed stage changed instruction link"
 
-# An incomplete stage must fail validation without replacing the active tree.
+# A tree with no custom agents is valid; old managed links must be retired.
 EMPTY_REPO="$TMP_ROOT/empty-agent-repo"
 EMPTY_HOME="$TMP_ROOT/empty-agent-home"
 make_test_repo "$EMPTY_REPO"
 prepare_legacy_profiles "$EMPTY_HOME" "$EMPTY_REPO"
-rm "$EMPTY_REPO/ai/agents/review.body.md" "$EMPTY_REPO/pi/agents/researcher.md"
-if HOME="$EMPTY_HOME" PATH="$TEST_PATH" sh "$EMPTY_REPO/ai/install.sh" >"$TMP_ROOT/empty-agent.log" 2>&1; then
-  fail "agent-less staged Pi tree unexpectedly succeeded"
-fi
-assert_file_contains "$TMP_ROOT/empty-agent.log" "staged Pi tree contains no managed agents"
-assert_file_contains "$EMPTY_REPO/.ai-runtime/pi/AGENTS.md" "previous generated tree"
-[ "$(readlink "$EMPTY_HOME/.pi/agent/AGENTS.md")" = "$EMPTY_REPO/.ai-runtime/pi/AGENTS.md" ] || fail "agent-less stage changed instruction link"
+ln -s "$EMPTY_REPO/.ai-runtime/pi/agents/researcher.md" "$EMPTY_HOME/.pi/agent/agents/researcher.md"
+ln -s "$EMPTY_REPO/.ai-runtime/pi/agents/review.md" "$EMPTY_HOME/.pi/agent/agents/review.md"
+mkdir -p "$EMPTY_HOME/.claude/agents"
+for name in librarian oracle; do
+  ln -s "$EMPTY_REPO/claude/agents/$name.md" "$EMPTY_HOME/.claude/agents/$name.md"
+done
+printf '%s\n' '# Managed by ~/.dotfiles/ai/install.sh. Edit source files instead.' > "$EMPTY_HOME/.claude/agents/review.md"
+printf 'user-owned advisor\n' > "$EMPTY_HOME/.claude/agents/custom.md"
+ln -s "$EMPTY_HOME/missing-advisor" "$EMPTY_HOME/.claude/agents/custom-link.md"
+HOME="$EMPTY_HOME" PATH="$TEST_PATH" sh "$EMPTY_REPO/ai/install.sh" >"$TMP_ROOT/empty-agent.log" 2>&1
+for target in "$EMPTY_HOME/.pi/agent/agents/researcher.md" "$EMPTY_HOME/.pi/agent/agents/review.md" "$EMPTY_HOME/.claude/agents/librarian.md" "$EMPTY_HOME/.claude/agents/oracle.md" "$EMPTY_HOME/.claude/agents/review.md"; do
+  [ ! -e "$target" ] && [ ! -L "$target" ] || fail "retired agent survived: $target"
+done
+assert_file_contains "$EMPTY_HOME/.claude/agents/custom.md" 'user-owned advisor'
+[ -L "$EMPTY_HOME/.claude/agents/custom-link.md" ] || fail "unrelated broken advisor link removed"
+# Same-name user-owned replacements must survive repeated installation.
+for name in librarian oracle review; do
+  printf 'user-owned replacement\n' > "$EMPTY_HOME/.claude/agents/$name.md"
+done
+HOME="$EMPTY_HOME" PATH="$TEST_PATH" sh "$EMPTY_REPO/ai/install.sh" >"$TMP_ROOT/agent-preservation.log" 2>&1
+for name in librarian oracle review; do
+  assert_file_contains "$EMPTY_HOME/.claude/agents/$name.md" 'user-owned replacement'
+done
 
 # Exact legacy links migrate, while custom profile-local agents and chains stay
 # in their own real directories. A same-name regular file must stop the run.
 SUCCESS_REPO="$TMP_ROOT/success-repo"
 SUCCESS_HOME="$TMP_ROOT/success-home"
 make_test_repo "$SUCCESS_REPO"
+# Exercise optional agent linking/collision handling without shipping a persona.
+mkdir -p "$SUCCESS_REPO/pi/agents"
+printf '%s\n' '---' 'name: fixture' '---' 'Test fixture agent.' > "$SUCCESS_REPO/pi/agents/fixture.md"
 SUCCESS_REPO_PHYSICAL="$(cd "$SUCCESS_REPO" && pwd -P)"
 prepare_legacy_profiles "$SUCCESS_HOME" "$SUCCESS_REPO"
 # Seed the old standalone projection and its installed link to test cleanup.
@@ -158,9 +177,8 @@ assert_retired_skill_cleanup
 for profile in agent; do
   [ "$(readlink "$SUCCESS_HOME/.pi/$profile/AGENTS.md")" = "$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/AGENTS.md" ] || fail "$profile instruction link was not migrated"
   [ -d "$SUCCESS_HOME/.pi/$profile/agents" ] && [ ! -L "$SUCCESS_HOME/.pi/$profile/agents" ] || fail "$profile agents directory is not real"
-  [ "$(readlink "$SUCCESS_HOME/.pi/$profile/agents/review.md")" = "$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/agents/review.md" ] || fail "$profile review agent was not linked individually"
-  [ "$(readlink "$SUCCESS_HOME/.pi/$profile/agents/researcher.md")" = "$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/agents/researcher.md" ] || fail "$profile researcher agent was not linked individually"
-  cmp "$SUCCESS_REPO/pi/agents/researcher.md" "$SUCCESS_HOME/.pi/$profile/agents/researcher.md" || fail 'researcher projection changed content'
+  [ "$(readlink "$SUCCESS_HOME/.pi/$profile/agents/fixture.md")" = "$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/agents/fixture.md" ] || fail "$profile fixture agent was not linked individually"
+  cmp "$SUCCESS_REPO/pi/agents/fixture.md" "$SUCCESS_HOME/.pi/$profile/agents/fixture.md" || fail 'fixture projection changed content'
 done
 # Installed instructions must resolve scripts against the published tree, not
 # the temporary directory used while constructing it.
@@ -295,13 +313,13 @@ done
 [ -f "$SUCCESS_HOME/.pi/agent/agents/custom.chain.md" ] || fail "custom chain was removed"
 [ ! -e "$SUCCESS_HOME/.pi/agent/agents/removed.md" ] && [ ! -L "$SUCCESS_HOME/.pi/agent/agents/removed.md" ] || fail "stale managed agent link was preserved"
 [ ! -e "$SUCCESS_HOME/.pi/personal/agents/custom.md" ] || fail "work custom agent crossed profiles"
-rm "$SUCCESS_HOME/.pi/agent/agents/review.md"
-printf '%s\n' 'user-owned collision' > "$SUCCESS_HOME/.pi/agent/agents/review.md"
+rm "$SUCCESS_HOME/.pi/agent/agents/fixture.md"
+printf '%s\n' 'user-owned collision' > "$SUCCESS_HOME/.pi/agent/agents/fixture.md"
 if HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/collision.log" 2>&1; then
   fail "managed-name collision unexpectedly succeeded"
 fi
 assert_file_contains "$TMP_ROOT/collision.log" "managed agent collision"
-assert_file_contains "$SUCCESS_HOME/.pi/agent/agents/review.md" "user-owned collision"
+assert_file_contains "$SUCCESS_HOME/.pi/agent/agents/fixture.md" "user-owned collision"
 
 # Ongoing installers must not manage retired profiles.
 if grep -Eq '\.pi/(work|personal)' "$ROOT/pi/install.sh" "$ROOT/ai/install.sh"; then

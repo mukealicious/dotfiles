@@ -96,7 +96,7 @@ at its shell prompt. It does not create layout:
 
 ```bash
 herdr agent start reviewer --kind codex --pane <pane_id>
-herdr agent start researcher --kind pi --pane <pane_id> -- --skill librarian
+herdr agent start researcher --kind pi --pane <pane_id> -- --skill opensrc
 ```
 
 Arguments after `--` are passed to the target agent. The Pi `--skill` in the
