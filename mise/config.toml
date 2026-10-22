@@ -15,7 +15,10 @@ bun = "1.3"
 "npm:agent-browser" = { version = "0.31", allow_builds = ["agent-browser"] }
 "npm:portless" = "0.15"
 # Pin the beta explicitly; generic latest resolution selects the older stable line.
-"npm:cf" = "1.0.0-beta.17"
+# User-approved cf beta.20 + bundled dependency age exception (2026-10-21).
+# Until Oct 27: npm_config_min_release_age=0 mise install npm:cf --minimum-release-age 0d
+# This command-scoped exception leaves the global 7d policy unchanged.
+"npm:cf" = "1.0.0-beta.20"
 
 [settings]
 lockfile = true
