@@ -1,37 +1,36 @@
 ---
 name: herdr
-description: "Operate effectively inside Herdr: name the current conversation, organize work into workspaces/tabs/panes, run observable side processes, and coordinate agents. Use whenever HERDR_ENV=1 or when asked about Herdr."
+description: "Control Herdr workspaces, tabs, panes, and agents when explicitly asked. Use for requests about Herdr, not automatically from environment variables or ordinary coding tasks."
 metadata:
   watch-sources: herdrdev/herdr/skills/herdr/SKILL.md@346411fa21afd297f5ed3b3fa56f9e3fbf7654b7
 ---
 
 # Herdr
 
-Herdr is the terminal workspace manager surrounding the current agent.
+Herdr is a terminal workspace manager. Use it only for explicitly requested
+Herdr work; do not probe its environment, discover panes, or rename tabs as part
+of ordinary startup. Loading this skill to discuss or edit it is not a request
+to control Herdr.
 
-## Startup
+## Requested tab naming
 
-Check `HERDR_ENV` before substantive work. When it is `1`, identify the calling
-pane and rename its tab once the user's intent is clear:
+Apply this guidance only when asked to create or rename a tab:
 
-```bash
-herdr pane current --current
-herdr tab rename <tab_id-from-response> "π Improve agent ergonomics"
-```
-
-- Use caller-relative `--current` or injected `HERDR_*` IDs, not UI focus.
+- Identify the requested target, not the currently focused tab.
 - Prefix Pi tabs with `π`; for another reported agent, use its name unless a
   compact sigil is documented. Omit the prefix when no agent is reported.
 - Use 2–5 task/outcome words after the prefix. Avoid repo names, vague labels,
   separators, and transient status (`WIP`, `blocked`, `done`).
-- Preserve a useful user-supplied label. Rename again only for a material pivot.
-- Tab renaming is low-risk and reversible; no approval needed.
+- Preserve a useful user-supplied label. Do not automatically rename existing tabs.
 
 ## Identity and ownership
 
-When `HERDR_ENV` is not `1`, there is no caller-relative pane. Do not use
-`--current`, infer ownership from UI focus, or inspect Herdr merely because a
-socket is available. Out-of-band control requires an explicit user request or
+Use caller-relative `--current` or injected `HERDR_*` IDs only when the agent is
+directly hosted in a Herdr pane. Inherited variables in a server-hosted session
+(such as Pi Pocket) do not establish pane ownership. When `HERDR_ENV` is not `1`,
+there is no caller-relative pane. Otherwise, if direct hosting is not established,
+use explicit targets instead. Never infer ownership from UI focus or inspect
+Herdr merely because a socket is available. Out-of-band control requires an explicit user request or
 narrowly delegated workflow scope. Discover the target by requested workspace,
 repository, labels, or known task-created IDs; operate on explicit live IDs.
 Ask if the target remains ambiguous. Do not rename a conversation tab unless
@@ -59,8 +58,7 @@ harness for bounded delegation unless visible terminal work adds value.
 Read [references/workflows.md](references/workflows.md) when creating layouts,
 opening Hunk (explicit request required), running persistent processes, or
 coordinating agents. Read [references/cli.md](references/cli.md) for command
-syntax, waits, keys, moves, and workspace operations. Neither is required just
-to name the current conversation.
+syntax, waits, keys, moves, and workspace operations.
 
 The installed binary is authoritative: use `herdr --help` and relevant group help
 when syntax is uncertain. `herdr --skill` (0.8+) prints release-matched upstream

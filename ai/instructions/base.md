@@ -2,7 +2,6 @@
 
 ## Startup
 
-- Inspect `HERDR_ENV` before substantive work. When it is `1`, load the `herdr` skill and follow its startup workflow.
 - Read and follow the nearest repo-local `AGENTS.md` or equivalent guidance. Check existing worktree changes before editing.
 
 ## Operating Contract
