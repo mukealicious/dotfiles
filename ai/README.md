@@ -82,6 +82,7 @@ auto-sync mechanism.
 | `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | `impeccable` | Product UI/UX and visual interaction design |
 | `yanliudesign/mono-color-skill@a08c45df61ae480e2b0d78b978a304e06ba2894e` | `mono-color` | One-ink and controlled two-ink editorial art direction and raster generation |
 | `joelhooks/skills@022f29cbfa2ddd36916622d49c02b763060f6847` | `uncomplect` | Independent upstream skill, source map, and evals; local provenance metadata only |
+| `cursor/plugins@d1453c11d1dde9714d4c313c97d3a68432265c7f` | `technical-writing` | Manual-only pstack writing standard; companion `unslop` references removed; MIT notice retained |
 | Pinned maintenance/research influences | `production-readiness`, `tufte-data-viz`, `herdr`, `hunk-review` | Production risk, quantitative visualization, Herdr, and Hunk |
 
 Rules for retained upstreams:
@@ -219,6 +220,7 @@ For new-project stack selection or approved modernization, read
 | `uncomplect` | Upstream-baseline pressure test for stateful systems, replacement designs, and accidental complexity |
 | `upstream-review` | Manual provenance and adoption decisions |
 | `write-discoverable-code` | Searchable names, clear types, and discoverable module boundaries |
+| `technical-writing` | Manual writing and review standard for human-facing technical documents; near-upstream pstack skill |
 | `writing-for-agents` | Manual authoring reference for skills, AGENTS/CLAUDE files, and other agent-facing documents |
 
 Request reviews directly; no separate review skill, prompt, or custom agent is
