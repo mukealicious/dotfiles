@@ -94,6 +94,7 @@ cp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts"
 mv "$REPO/pi/packages/pi-subagents/node_modules" "$TMP/subagents-node-modules"
 if run; then fail 'missing runtime dependencies reported success'; fi
 grep -Fq 'Stop all Pi/subagent runners' "$TMP/install.log" || fail 'missing dependency stop-runner instruction'
+grep -Fq -- "-- npm --prefix $REPO/pi/packages/pi-subagents ci --omit=dev --ignore-scripts" "$TMP/install.log" || fail 'dependency recovery command lacks explicit npm prefix'
 [ ! -e "$HOME/.pi/agent/settings.json" ] || fail 'dependency preflight ran after settings mutation'
 [ ! -e "$HOME/.pi/agent/extensions/notify.ts" ] || fail 'dependency preflight ran after extension mutation'
 cmp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts" || fail 'dependency preflight ran after fast package mutation'

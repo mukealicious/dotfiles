@@ -34,7 +34,7 @@ Requires Pi 0.99.1 or later. Before first setup, or when the reviewed subagent
 lockfile changes, stop all Pi/subagent runners and prepare its runtime dependencies:
 
 ```sh
-(cd pi/packages/pi-subagents && npm_config_legacy_peer_deps=true mise exec -C ~/.dotfiles -- npm ci --omit=dev --ignore-scripts)
+npm_config_legacy_peer_deps=true mise exec -C ~/.dotfiles -- npm --prefix ~/.dotfiles/pi/packages/pi-subagents ci --omit=dev --ignore-scripts
 ```
 
 Routine `pi/install.sh` only checks dependency manifest versions against the

@@ -124,7 +124,7 @@ check_subagents_dependencies() {
     if [ ! -f "$dependency_dir/package.json" ] || [ -z "$expected_version" ] \
       || ! jq -e --arg name "$dependency" --arg version "$expected_version" '.name == $name and .version == $version' "$dependency_dir/package.json" >/dev/null 2>&1; then
       log_error "pi-subagents dependency is missing or does not match the lockfile: $dependency_dir"
-      log_hint "Stop all Pi/subagent runners, then refresh dependencies manually: cd $DOTFILES_ROOT/pi/packages/pi-subagents && npm_config_legacy_peer_deps=true mise exec -C $DOTFILES_ROOT -- npm ci --omit=dev --ignore-scripts"
+      log_hint "Stop all Pi/subagent runners, then refresh dependencies manually: npm_config_legacy_peer_deps=true mise exec -C $DOTFILES_ROOT -- npm --prefix $DOTFILES_ROOT/pi/packages/pi-subagents ci --omit=dev --ignore-scripts"
       exit 1
     fi
   done
