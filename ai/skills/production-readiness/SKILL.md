@@ -8,6 +8,7 @@ metadata:
 references:
   - references/resilience-checklist.md
   - references/data-boundaries.md
+  - references/approval-retry-model-checking.md
 ---
 
 # Production Readiness
@@ -21,7 +22,10 @@ deployments, migrations, or anything that can fail outside the process.
 1. **Name the boundary.** Identify every external dependency, persistent store,
    async path, migration, and deployment gate touched by the change.
 2. **State invariants.** What must remain true under retries, concurrency,
-   partial failure, stale reads, or duplicate events?
+   partial failure, stale reads, or duplicate events? When approval or retry
+   safety depends on event order, use the optional
+   [approval and retry model-checking reference](./references/approval-retry-model-checking.md).
+   It includes a runnable finite-state experiment, deliberate faults, and scope limits.
 3. **Check resilience.** Use
    [resilience-checklist.md](./references/resilience-checklist.md) for
    timeouts, retries, circuit breakers, bulkheads, backpressure, observability,
