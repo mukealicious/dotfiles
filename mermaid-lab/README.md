@@ -1,11 +1,26 @@
-# Optional Pele / Mermaid lab
+# Try Pele for faster, phone-friendly diagram previews
 
-This is an opt-in local experiment, not a replacement for the official Mermaid
-validator. Nothing installs it through `dot`, changes `PATH`, or projects a skill.
-The preserved `ai/skills/mermaid/` snapshot remains unchanged.
+[Kepano’s Pele post](https://x.com/kepano/status/2111472054293913749) suggested a
+faster way to draw diagrams from the Mermaid text we already use. The useful
+question was not whether the benchmark looked impressive. Could it preview our
+diagrams and keep the labels readable in a narrow space?
 
-Use Pele for fast local SVG previews. Keep official Mermaid validation when the
-consumer is Mermaid. A successful Pele render does not prove Mermaid compatibility.
+I compared the same diagrams in Pele and Mermaid, then tried narrow layouts,
+large text, and newer features. Both rendered all 39 diagrams in the local sample.
+Pele was much faster in this local comparison. The picture shows a more visible
+benefit: Pele rearranges this flowchart for a 320px space instead of shrinking
+the whole horizontal diagram.
+
+![Actual synthetic output: Pele stacks the flowchart vertically at 320px while Mermaid keeps the horizontal layout.](docs/preview-comparison.png)
+
+**Recommendation:** try Pele as an optional preview. Keep official Mermaid
+validation. Layout and math behavior differ, and this test does not establish
+Safari or iOS compatibility. Nothing installs it through `dot`, changes `PATH`,
+or replaces the Mermaid skill.
+
+## Technical record
+
+The following sections preserve the commands, measurements, and boundaries.
 
 ## Run
 
