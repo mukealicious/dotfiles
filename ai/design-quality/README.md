@@ -1,10 +1,25 @@
-# Design copy quality fixture
+# Catch repeated form hints without losing useful guidance
 
-Status: experimental, manual, advisory only. No installer or skill projection changes.
+[Rachel’s clean-copy prompt](https://x.com/chaotictransfem/status/2100325136503071202)
+called out interface text that repeats the obvious. [Vercel’s design
+process](https://vercel.com/blog/teaching-agents-product-design-at-vercel) suggested
+a useful next step: turn a narrow rule into feedback, not another long prompt.
 
-This is one executable feedback loop beside the existing `impeccable` skill, not a
-replacement skill. It covers one mechanical subset of redundant copy. It does not
-decide whether arbitrary text is useful, infer product policy, or shorten text.
+I tried a small check that flags a form hint when it repeats the field label.
+The synthetic form below has 2 such hints. Reviewing those 2 edits removes the
+repetition while keeping the units and the warning about lost drafts. The check
+reports the problem. It does not delete anything.
+
+![Actual fixture output before and after review: repeated labels disappear, while attempts, seconds, and the loss warning remain.](docs/copy-before-after.png)
+
+**Recommendation:** keep this as an optional review aid beside Impeccable. Try it
+on a real form before making it a standard check. The lab supports this exact
+case, not automatic copy removal or improved design judgment by an agent.
+No installer or skill projection changes.
+
+## Technical record
+
+The following sections preserve the commands, supported cases, and limits.
 
 ## Run locally
 
