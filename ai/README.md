@@ -9,6 +9,7 @@ Shared AI instructions, skills, and harness-aware assembly.
 | Change source ownership, projections, instructions, or agents | [Architecture](#architecture) |
 | Choose task guidance | [Skill inventory](#skill-inventory), then the matching skill |
 | Review/adopt upstream changes | [Upstream provenance](#upstream-provenance-and-review), then the artifact's metadata |
+| Run the experimental local copy-quality check | [Design copy quality fixture](design-quality/README.md) |
 | Change Claude settings, hooks, or MCP | [claude/README.md](../claude/README.md) |
 | Change Pi resources, models, MCP, or delegation setup | [pi/README.md](../pi/README.md) |
 
