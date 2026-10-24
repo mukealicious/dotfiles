@@ -45,7 +45,9 @@ The gallery uses only the synthetic fixtures, never the vault report.
 
 Browser resources come from an ephemeral loopback server. The comparison blocks
 non-local browser requests and also uses a restrictive CSP. The gallery and safety
-tests block all browser requests. Package installation still uses the registry.
+tests abort all routed browser requests. Safety request detection runs without CSP;
+one regression deliberately reinstates CSP to demonstrate its observation blind
+spot. Package installation still uses the registry.
 
 ## Preview boundaries
 
@@ -77,9 +79,23 @@ resolvers can insert unsanitized markup. Do not add these capabilities casually.
 | Full global bundles | Pele 709,352 bytes; Mermaid 5,493,176 bytes (7.74×) |
 | Gzip bundles | Pele 266,350 bytes; Mermaid 1,583,461 bytes (5.95×) |
 | Responsive `mount()` | 1000 → 320 → 1000px; flowchart viewBox 463×152 → 241×308 → 463×152 |
-| Local tests | 52 passed, including 11 hostile SVG cases, 24 typography cases, and feature checks; 0 intercepted browser requests |
+| Local tests | 56 passed, including 11 hostile SVG cases, 24 typography cases, and 4 safety-control/guard tests; 1 positive-control request intercepted and aborted, 0 requests intercepted from Pele fixtures |
 | Upstream targeted tests | 69 passed; upstream TypeScript check passed |
 | Dependency audit | Preview production dependencies: no reported advisories. Lab development tree: 1 low KaTeX advisory through Mermaid |
+
+The corrected safety checks supersede the initial CSP-protected request count.
+CSP can block a request before Playwright routing observes it. Without CSP, the
+synthetic SVG stylesheet `@import` control produced exactly 1 intercepted and
+aborted request. With CSP, the regression observed 1 policy violation and 0 route
+interceptions. The former attribute-only guard accepted that SVG; the new guard
+rejects it. This establishes a test evidence gap, not a Pele vulnerability.
+
+The guard now inspects stylesheet contents, style attributes, and 10 paint/reference
+attributes, including escaped CSS imports and URLs. It permits resolved local
+fragment references and rejects external or unresolved ones. All 11 Pele fixtures
+passed this guard and produced 0 route interceptions without CSP during the
+bounded test observation. The focused safety run passed 17 tests. These checks
+are not a general SVG/CSS sanitizer or proof that all SVG inputs are inert.
 
 Environment: macOS arm64, Node 24.22.1, pnpm 11.28.8, Chrome 155.0.8059.86.
 The comparison times render + SVG insertion + layout after warm imports. It uses
