@@ -76,7 +76,6 @@ CORE_INSTALLERS=(
   "./claude/install.sh"
   "./opencode/install.sh"
   "./pi/install.sh"
-  "./agent-browser/install.sh"
 )
 
 seen_installers=''

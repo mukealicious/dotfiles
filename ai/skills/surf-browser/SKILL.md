@@ -1,6 +1,6 @@
 ---
 name: surf-browser
-description: Use for browser automation in this dotfiles setup, especially real logged-in browsing. Use surf-brave for the dedicated Brave Beta agent browser and surf-edge for work/Edge. Use agent-browser only for headless or isolated test automation.
+description: Use for browser automation in this dotfiles setup, especially real logged-in browsing. Use surf-brave for the dedicated Brave Beta agent browser and surf-edge for work/Edge.
 ---
 
 # Surf Browser
@@ -55,7 +55,7 @@ Swap `surf-edge` for `surf-brave` on work/Edge tasks.
 ## When Surf is the wrong tool
 
 - For public web search or factual lookup, use search/extract tools instead of driving a browser.
-- For headless, CI-like, cloud, iOS, React/vitals, video, or heavily isolated automation, prefer `agent-browser`.
+- For headless or CI automation, use the project's own test tooling and isolation policy; no global headless browser is installed by these dotfiles.
 - For local app visual QA, Surf is useful only if the app is served in Brave/Edge and login/session reuse matters.
 
 ## Troubleshooting

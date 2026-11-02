@@ -29,7 +29,7 @@ dot -e       # Open dotfiles in editor
 | **AI Coding** | Claude Code, OpenCode, Gemini CLI, Codex, Pi |
 | **Window Mgmt** | AeroSpace (i3-like tiling), Ice (menu bar) |
 | **Database** | PostgreSQL 17, Redis |
-| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, Flue CLI, Portless, agent-browser, surf-cli, RemCTL |
+| **CLI Tools** | fzf, eza, bat, ripgrep, fd, jq, httpie, ast-grep, zoxide, shellcheck, just, ni, Flue CLI, Portless, surf-cli, RemCTL |
 
 ## Architecture
 
@@ -53,7 +53,6 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `pnpm/` | Default JavaScript package-manager policy and aliases |
 | `mise/` | Canonical JS toolchain versions, lockfile, and native Node CLIs such as QMD |
 | `pi/` | Pi coding agent config, extensions |
-| `agent-browser/` | Headless browser automation for AI agents |
 | `surf/` | Surf browser lanes using dedicated Brave Beta/Edge agent control |
 | `remctl/` | Pinned RemCTL install and Apple Reminders agent runtime |
 | `ripgrep/` | Ripgrep config and environment setup |
