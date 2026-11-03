@@ -5,7 +5,7 @@
 - Paths: `skills/mermaid/SKILL.md`, `skills/mermaid/tools/validate.sh`
 - License: upstream Apache-2.0, included as `LICENSE`.
 
-Both source files are unchanged. Upstream later deleted this skill at
+The skill body and validator are unchanged; the local description names diagram creation, editing, and validation explicitly. Upstream later deleted this skill at
 `f1c881db21a9ec53977ff8379b74e64e290fef93`. Keep the previously selected Mermaid
 capability as a portable frozen snapshot rather than patching it back into the
 new Mitsupi package. It is not a maintained current-upstream skill.

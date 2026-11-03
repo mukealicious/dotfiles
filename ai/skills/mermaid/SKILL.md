@@ -1,6 +1,6 @@
 ---
 name: mermaid
-description: "Must read guide on creating/editing mermaid charts with valiation tools"
+description: Create, edit, or validate Mermaid diagrams.
 ---
 
 # Mermaid Skill

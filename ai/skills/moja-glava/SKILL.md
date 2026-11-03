@@ -1,6 +1,6 @@
 ---
 name: moja-glava
-description: Capture, study, find, resume, update, and connect durable knowledge in the user's Moja Glava Obsidian vault. Use when asked to save, remember, bookmark, clip, study, explore, preserve an agent session, recall prior work, or continue a saved session through Moja Glava.
+description: Use Moja Glava to save, study, retrieve, or resume knowledge and agent sessions when the user names the vault or Obsidian, or context establishes Moja Glava as the destination.
 ---
 
 # Moja Glava

@@ -1,13 +1,7 @@
 ---
 name: write-discoverable-code
-description: |
-  Rules for writing code that coding agents (and humans) can find and understand through
-  plain-text search. Apply whenever writing or renaming code: functions, types, constants,
-  files, error messages, doc comments.
-
-  Grounded in measurement: agents navigate by plain-text search, not by AST or
-  language server, so every identifier is a search query and every search miss
-  costs wasted reads.
+description: Review code naming and discoverability within project conventions.
+disable-model-invocation: true
 license: MIT
 metadata:
   watch-sources: dmmulroy/.dotfiles/home/.agents/skills/write-discoverable-code@bdf5e0611d62436eeb5dc58555c1396ced2dddeb

@@ -1,6 +1,7 @@
 ---
 name: uncomplect
-description: Pressure-test a stateful system or replacement design through Rich Hickey's simplicity and complection, Greg Young's deletability, Ousterhout's deep modules, DDD boundaries, typed effects, explicit lifecycle modeling, and Lauren Tan's agent-sized context. Use when the user asks "what would Rich Hickey do", "optimize for deletion", "make this simpler", "define this error out of existence", "review this state machine", "design it twice", or wants to replace a working prototype without preserving its accidental architecture.
+description: Pressure-test stateful systems and replacement designs for simpler boundaries, explicit lifecycles, and deletable components.
+disable-model-invocation: true
 metadata:
   watch-sources: joelhooks/skills/skills/uncomplect@022f29cbfa2ddd36916622d49c02b763060f6847
 basis:

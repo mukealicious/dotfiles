@@ -59,15 +59,6 @@ review = "semantic-diff"
 notes = "Current Mulroy snapshot of Modem searchable-code guidance; original MIT notice retained"
 
 [[sources]]
-id = "diagnosing-bugs"
-repo = "dmmulroy/.dotfiles"
-path = "home/.agents/skills/diagnosing-bugs"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Current Mulroy snapshot of Matt Pocock debugging guidance; see ai/skills/diagnosing-bugs/VENDORED_FROM.md"
-
-[[sources]]
 id = "grilling"
 repo = "dmmulroy/.dotfiles"
 path = "home/.agents/skills/grilling"

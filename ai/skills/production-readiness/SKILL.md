@@ -1,6 +1,6 @@
 ---
 name: production-readiness
-description: Review services, deployments, integrations, and backend changes for production resilience. Use for pre-release checks, outage-risk reviews, service architecture, external dependencies, timeouts, retries, observability, capacity, idempotency, migrations, and failure-mode analysis.
+description: Review production resilience for explicit readiness or reliability reviews, or changes with concrete risks to availability, data integrity, or recovery, such as destructive migrations, retry semantics, or rollout safety.
 metadata:
   watch-sources: |
     wondelai/skills/release-it@eff8b3cab2d9afab9dc09c4cc04e80ad9641db29
@@ -12,9 +12,10 @@ references:
 
 # Production Readiness
 
-Use this skill when code crosses production boundaries: remote calls, queues,
-databases, file storage, browser APIs, payments, webhooks, scheduled jobs,
-deployments, migrations, or anything that can fail outside the process.
+Use this review for explicit readiness or reliability assessments, or when a
+change creates a concrete risk to production availability, data integrity, or
+recovery. Name that risk before expanding the review; routine boundary edits
+follow the project’s normal implementation and validation workflow.
 
 ## Workflow
 

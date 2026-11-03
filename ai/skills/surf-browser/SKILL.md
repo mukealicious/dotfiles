@@ -1,6 +1,6 @@
 ---
 name: surf-browser
-description: Use for browser automation in this dotfiles setup, especially real logged-in browsing. Use surf-brave for the dedicated Brave Beta agent browser and surf-edge for work/Edge.
+description: Use Surf for browsing that requires existing logged-in Brave/Edge sessions, or when the user explicitly requests Surf, surf-brave, or surf-edge.
 ---
 
 # Surf Browser

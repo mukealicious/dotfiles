@@ -22,16 +22,16 @@ test('fresh native discovery loads the consolidated source projection without re
     await loader.reload();
     const result = loader.getSkills();
     assert.deepEqual(result.diagnostics, []);
-    for (const name of ['diagnosing-bugs', 'write-discoverable-code', 'uncomplect', 'effect-service-design', 'tech-spec', 'writing-for-agents']) {
+    for (const name of ['write-discoverable-code', 'uncomplect', 'effect-service-design', 'tech-spec', 'writing-for-agents', 'project-guidance']) {
       const loaded = result.skills.find(skill => skill.name === name);
       assert.ok(loaded, `${name} is discoverable`);
       assert.equal(loaded.filePath, path.join(projection, name, 'SKILL.md'));
-      assert.equal(loaded.disableModelInvocation, ['tech-spec', 'writing-for-agents'].includes(name), 'preserve deliberate manual versus automatic invocation');
+      assert.equal(loaded.disableModelInvocation, ['tech-spec', 'writing-for-agents', 'write-discoverable-code', 'uncomplect'].includes(name), 'preserve deliberate manual versus automatic invocation');
       assert.ok(loaded.description.length > 20, 'native loader parses multiline descriptions');
     }
-    const retired = ['coding-standards', 'mu-mode', 'mu-stack', 'rat-stack', 'tdd', 'domain-modeling', 'codebase-design', 'code-review', 'grill-with-docs', 'build-skill', 'agent-context', 'librarian', 'visual-deliverables', 'cloudflare-composition-root', 'prelude', 'bootstrap-prelude'];
+    const retired = ['diagnosing-bugs', 'coding-standards', 'mu-mode', 'mu-stack', 'rat-stack', 'tdd', 'domain-modeling', 'codebase-design', 'code-review', 'grill-with-docs', 'build-skill', 'agent-context', 'librarian', 'visual-deliverables', 'cloudflare-composition-root', 'prelude', 'bootstrap-prelude'];
     assert.deepEqual(result.skills.filter(skill => retired.includes(skill.name)), []);
-    for (const file of ['diagnosing-bugs/scripts/hitl-loop.template.sh', 'write-discoverable-code/LICENSE', 'uncomplect/references/source-map.md', 'effect-service-design/references/AUDIT.md', 'effect-service-design/agents/openai.yaml', 'writing-for-agents/SKILL-MECHANICS.md', 'writing-for-agents/agents/openai.yaml', 'writing-for-agents/LICENSE', ...['effect-service-design', 'tech-spec'].map(name => `${name}/LICENSE`)]) {
+    for (const file of ['write-discoverable-code/LICENSE', 'uncomplect/references/source-map.md', 'effect-service-design/references/AUDIT.md', 'effect-service-design/agents/openai.yaml', 'writing-for-agents/SKILL-MECHANICS.md', 'writing-for-agents/agents/openai.yaml', 'writing-for-agents/LICENSE', ...['effect-service-design', 'tech-spec'].map(name => `${name}/LICENSE`)]) {
       assert.ok(fs.existsSync(path.join(projection, file)), file);
     }
     const spec = fs.readFileSync(path.join(projection, 'tech-spec/SKILL.md'), 'utf8');

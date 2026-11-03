@@ -71,7 +71,7 @@ auto-sync mechanism.
 | Upstream | Local scope | Ownership |
 |---|---|---|
 | `dmmulroy/skills@8603380821fee6a77c82639f364ce8fe4f5a92be` | `references/coding-standards`, `effect-service-design`, `tech-spec` | MIT notice retained; coding standards are plain optional reference, not a skill; specialist methods defer to project policy |
-| `dmmulroy/.dotfiles@bdf5e0611d62436eeb5dc58555c1396ced2dddeb` | `diagnosing-bugs`, `write-discoverable-code` | Current Matt Pocock/Modem snapshots, with verified original MIT notices |
+| `dmmulroy/.dotfiles@bdf5e0611d62436eeb5dc58555c1396ced2dddeb` | `write-discoverable-code` | Manual discoverability guidance, with verified original MIT notice |
 | `dmmulroy/.dotfiles@bdf5e0611d62436eeb5dc58555c1396ced2dddeb` | `writing-for-agents` | Unchanged manual authoring skill; verified Matt Pocock origin and MIT notice; replaces build-skill and agent-context |
 | `dmmulroy/.dotfiles@7c086fe40c01bf494aea7184da2eb7aaf7b7dff4` | `grilling`, `bro` | Previously retained instructions; outside this engineering consolidation |
 | `mitsuhiko/agent-stuff@b7c45d67c634d361d67340789a02f64ffb9e16f1` | `mermaid` | Unchanged skill/validator snapshot; removed upstream, preserved rather than silently dropped by the package upgrade |
@@ -104,17 +104,17 @@ entry to `ai/watchlist.toml` and verify it with `bin/ai-watch --source <id>`.
 Instructions now use the same shared-vs-adapter split as the skill system:
 
 - `ai/instructions/base.md` is the shared source of truth for portable guidance.
-- `claude/instructions/appendix.md`, `pi/instructions/appendix.md`, and `opencode/instructions/appendix.md` add only harness-specific behavior.
+- `pi/instructions/appendix.md` adds Pi guidance; other harnesses use the shared base alone.
 - `ai/install.sh` assembles the final installed files each harness expects.
 
 Current install targets:
 
 | Installed file | Composition |
 |---|---|
-| `~/.claude/CLAUDE.md` | `ai/instructions/base.md` + `claude/instructions/appendix.md` |
+| `~/.claude/CLAUDE.md` | `ai/instructions/base.md` |
 | `.ai-runtime/pi/AGENTS.md` | `ai/instructions/base.md` + `pi/instructions/appendix.md` |
 | `~/.pi/agent/AGENTS.md` | symlink → `.ai-runtime/pi/AGENTS.md` |
-| `~/.config/opencode/AGENTS.md` | `ai/instructions/base.md` + `opencode/instructions/appendix.md` |
+| `~/.config/opencode/AGENTS.md` | `ai/instructions/base.md` |
 | `~/.codex/instructions.md` | `ai/instructions/base.md` |
 | `~/.gemini/GEMINI.md` | `ai/instructions/base.md` |
 | `~/.AGENTS.md` | `ai/instructions/base.md` compatibility output |
@@ -127,14 +127,16 @@ Global instructions own agent conduct and safety; repository instructions and
 linked docs own architecture, framework idioms, errors, state, testing, and delivery
 trade-offs. Shared specialist skills operate within those decisions.
 
-- Invoke `writing-for-agents` for the reusable method of authoring agent guidance.
+- Use `project-guidance` when asked to establish project conventions, including
+  greenfield setup. It reads `writing-for-agents` as its authoring reference;
+  ordinary implementation does not run a policy-setup workflow.
 - Start from the closest related project's standards when useful; adapt selected
   rules into the target project's own authoritative docs and link them from its
   agent instructions. Another project's live policy is not an ongoing dependency.
 - [Coding standards references](references/coding-standards/README.md) preserve the
   former policy and link concrete upstream examples. They are optional source
-  material, not an installed skill or a mandatory template. There is no separate
-  policy-generation workflow.
+  material, not an installed skill or a mandatory template. The setup workflow
+  selects only conventions justified by the target project.
 - Existing projects keep their own decisions; experiments do not inherit a
   production architecture checklist. No work/personal/framework presets are imposed.
 - Cloudflare, Effect, discoverability, and spec-writing guidance must not silently
@@ -199,10 +201,8 @@ For new-project stack selection or approved modernization, read
 | `bro` | Manual plain-language restatement |
 | `effect-service-design` | Effect service contracts, Layers, composition, and audits |
 | `tech-spec` | Manual, design-only typed architecture handoff and grill-first workflow |
-| `diagnosing-bugs` | Reproduce, minimize, diagnose, and regression-test hard bugs through a tight feedback loop |
 | `dotfiles-dev` | Dotfiles implementation conventions |
 | `framing-doc` / `kickoff-doc` | Evidence-grounded framing and shaped kickoff territory |
-| `flares` | Cloudflare-native mini-apps and thin AI-client guidance |
 | `grill-me` | Thin manual entry into grilling |
 | `grilling` | Dependency-aware design-tree questioning |
 | `herdr` | Herdr pane/workspace/agent coordination |
@@ -219,7 +219,8 @@ For new-project stack selection or approved modernization, read
 | `tufte-data-viz` | Quantitative visualization judgment |
 | `uncomplect` | Upstream-baseline pressure test for stateful systems, replacement designs, and accidental complexity |
 | `upstream-review` | Manual provenance and adoption decisions |
-| `write-discoverable-code` | Searchable names, clear types, and discoverable module boundaries |
+| `write-discoverable-code` | Manual discoverability review within project conventions |
+| `project-guidance` | Explicitly requested project-convention setup using the writing-for-agents authoring reference |
 | `technical-writing` | Manual writing and review standard for human-facing technical documents; near-upstream pstack skill |
 | `writing-for-agents` | Manual authoring reference for skills, AGENTS/CLAUDE files, and other agent-facing documents |
 
@@ -270,8 +271,8 @@ local interceptor shims are retired; instructions are policy, not a sandbox.
 
 Claude and Pi setup, settings ownership, MCP, and runtime validation live in their
 READMEs linked above. For OpenCode configuration, inspect `opencode/install.sh`
-and its source JSON; the OpenCode appendix owns TUI-specific output conventions.
-Codex and Gemini use the shared base without an appendix.
+and its source JSON. Claude, OpenCode, Codex, and Gemini use the shared base
+without an appendix.
 
 ## Setup
 
