@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copy description regression fixture</title>
+<style>
+  :root { color-scheme: light; font: 16px/1.5 system-ui, sans-serif; color: oklch(24% .015 265); background: oklch(98% .006 265); }
+  body { max-width: 65ch; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 1.8rem; line-height: 1.2; }
+  h2 { font-size: 1.3rem; margin-top: 32px; }
+  section { margin: 24px 0; }
+  label, input, select, textarea { display: block; }
+  input, select, textarea, button { font: inherit; border: 1px solid oklch(65% .02 265); border-radius: 4px; padding: 10px; min-height: 44px; box-sizing: border-box; max-width: 100%; }
+  label { font-weight: 600; }
+  button { color: inherit; background: oklch(94% .012 265); cursor: pointer; }
+  :focus-visible { outline: 3px solid oklch(50% .12 265); outline-offset: 3px; }
+  p { margin: 8px 0; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; background: oklch(94% .012 265); }
+</style>
+<h1>Copy description regression fixture</h1>
+<p>Local, synthetic settings UI. Only exact linked repetition is a mechanical warning. Other copy needs context.</p>
+<p id="test-status" role="status">Running browser tests...</p>
+<pre id="test-results"></pre>
+<h2>Before and after</h2>
+<button id="toggle" type="button">Show reviewed after state</button>
+<div id="preview"></div>
+<h2>Warnings</h2>
+<pre id="findings"></pre>
+<script>
+window.addEventListener('error', event => {
+  document.getElementById('test-status').textContent = 'FAIL: ' + event.message;
+});
+window.addEventListener('unhandledrejection', event => {
+  document.getElementById('test-status').textContent = 'FAIL: ' + event.reason;
+});
+</script>
+<template id="surface">
+  <section data-case="exact">
+    <label for="retry">Retry limit</label><input id="retry" value="3" aria-describedby="retry-hint retry-unit">
+    <p id="retry-hint">Retry limit</p><p id="retry-unit">attempts</p>
+  </section>
+  <section data-case="whitespace">
+    <label for="display-name">Display name</label><input id="display-name" value="Taylor" aria-describedby="name-hint name-hint">
+    <p id="name-hint">  Display   name  </p>
+  </section>
+  <section data-case="units">
+    <label for="timeout">Timeout</label><input id="timeout" value="30" aria-describedby="timeout-hint"><p id="timeout-hint">seconds</p>
+  </section>
+  <section data-case="consequence">
+    <label for="delete">Delete unsynced drafts</label><input id="delete" type="checkbox" aria-describedby="delete-hint"><p id="delete-hint">Anything not yet synced is lost.</p>
+  </section>
+  <section data-case="compatibility">
+    <label for="key">API key</label><input id="key" aria-describedby="key-hint"><p id="key-hint">Keys issued before March must be rotated first.</p>
+  </section>
+  <section data-case="format">
+    <label for="date">Start date</label><input id="date" aria-describedby="date-hint"><p id="date-hint">Use YYYY-MM-DD.</p>
+  </section>
+  <section data-case="status">
+    <label for="status-input">Saving</label><input id="status-input" aria-describedby="status-hint"><p id="status-hint" role="status">Saving</p>
+  </section>
+  <section data-case="live-ancestor" aria-live="polite">
+    <label for="live-input">Uploading</label><input id="live-input" aria-describedby="live-hint"><p id="live-hint">Uploading</p>
+  </section>
+  <section data-case="semantic-name">
+    <label for="semantic">Name</label><input id="semantic" aria-label="Billing name" aria-describedby="semantic-hint"><p id="semantic-hint">Name</p>
+  </section>
+  <section data-case="labelledby">
+    <label for="named">Name</label><span id="billing-label">Billing name</span><input id="named" aria-labelledby="billing-label" aria-describedby="named-hint"><p id="named-hint">Name</p>
+  </section>
+  <section data-case="markup">
+    <label for="markup">Email</label><input id="markup" aria-describedby="markup-hint"><p id="markup-hint"><strong>Email</strong></p>
+  </section>
+  <section data-case="case-sensitive">
+    <label for="case">US</label><input id="case" aria-describedby="case-hint"><p id="case-hint">us</p>
+  </section>
+  <section data-case="punctuation">
+    <label for="punctuation">Version</label><input id="punctuation" aria-describedby="punctuation-hint"><p id="punctuation-hint">Version?</p>
+  </section>
+  <section data-case="unlinked">
+    <label for="unlinked">Notes</label><textarea id="unlinked"></textarea><p>Notes</p>
+  </section>
+  <section data-case="missing-ref">
+    <label for="missing-ref">Code</label><input id="missing-ref" aria-describedby="does-not-exist">
+  </section>
+  <section data-case="self-label">
+    <label id="self-label" for="self">Code</label><input id="self" aria-describedby="self-label">
+  </section>
+  <section data-case="duplicate-id">
+    <label for="ambiguous">Region</label><input id="ambiguous" aria-describedby="ambiguous-hint"><p id="ambiguous-hint">Region</p><p id="ambiguous-hint">Region</p>
+  </section>
+  <section data-case="multiple-labels">
+    <label for="multiple">Region</label><label for="multiple">Location</label><input id="multiple" aria-describedby="multiple-hint"><p id="multiple-hint">Region</p>
+  </section>
+</template>
+<script type="module">
+import { findDuplicateDescriptions } from './copy-duplicate-descriptions.mjs';
+const status = document.getElementById('test-status');
+const results = document.getElementById('test-results');
+const makeDocument = () => {
+  const doc = document.implementation.createHTMLDocument('Synthetic fixture');
+  doc.body.append(document.getElementById('surface').content.cloneNode(true));
+  return doc;
+};
+const failures = [];
+let count = 0;
+function check(name, value) {
+  count++;
+  if (!value) failures.push(name);
+}
+function equal(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+function reviewAfter(doc) {
+  // These 2 edits are human-reviewed fixture changes, not a linter autofix.
+  doc.getElementById('retry-hint').remove();
+  doc.getElementById('retry').setAttribute('aria-describedby', 'retry-unit');
+  doc.getElementById('name-hint').remove();
+  doc.getElementById('display-name').removeAttribute('aria-describedby');
+}
+try {
+  const before = makeDocument();
+  const original = before.body.innerHTML;
+  const expected = new Map([['exact', ['retry-hint']], ['whitespace', ['name-hint']]]);
+  const findings = findDuplicateDescriptions(before);
+  for (const section of before.querySelectorAll('[data-case]')) {
+    const ids = findings.filter(f => section.contains(before.getElementById(f.controlId))).map(f => f.descriptionId);
+    check(section.dataset.case, equal(ids, expected.get(section.dataset.case) ?? []));
+  }
+  for (const tag of ['select', 'textarea']) {
+    const doc = makeDocument();
+    const input = doc.getElementById('retry');
+    const replacement = doc.createElement(tag);
+    replacement.id = input.id;
+    replacement.setAttribute('aria-describedby', input.getAttribute('aria-describedby'));
+    input.replaceWith(replacement);
+    check(`${tag} supports native explicit labels`, findDuplicateDescriptions(doc).some(f => f.controlId === 'retry'));
+  }
+  const duplicateControl = makeDocument();
+  duplicateControl.body.append(duplicateControl.getElementById('retry').cloneNode());
+  check('duplicate control IDs are not guessed', !findDuplicateDescriptions(duplicateControl).some(f => f.controlId === 'retry'));
+  const overriddenDescription = makeDocument();
+  overriddenDescription.getElementById('retry-hint').setAttribute('aria-label', 'Maximum retries');
+  check('description ARIA names are not guessed', !findDuplicateDescriptions(overriddenDescription).some(f => f.controlId === 'retry'));
+  check('advisory check does not mutate DOM', before.body.innerHTML === original);
+  check('stable rule ID and actionable warning', findings.every(f => f.ruleId === 'copy/duplicate-linked-description' && f.message.includes('ID reference')));
+  const protectedIds = ['retry-unit', 'timeout-hint', 'delete-hint', 'key-hint', 'date-hint', 'status-hint', 'live-hint'];
+  const protectedCopy = protectedIds.map(id => before.getElementById(id).outerHTML);
+  const labels = [...before.querySelectorAll('label')].map(e => e.outerHTML);
+  const after = makeDocument();
+  reviewAfter(after);
+  check('reviewed after state has no warnings', findDuplicateDescriptions(after).length === 0);
+  check('load-bearing copy unchanged', equal(protectedCopy, protectedIds.map(id => after.getElementById(id).outerHTML)));
+  check('all labels unchanged', equal(labels, [...after.querySelectorAll('label')].map(e => e.outerHTML)));
+  check('removed ID references are also removed', [...after.querySelectorAll('[aria-describedby]')].every(e => !e.getAttribute('aria-describedby').split(/\s+/u).some(id => ['retry-hint', 'name-hint'].includes(id))));
+  const mutant = makeDocument();
+  mutant.getElementById('timeout-hint').remove();
+  check('safety assertion rejects a deleted unit', !equal(protectedCopy, protectedIds.map(id => mutant.getElementById(id)?.outerHTML)));
+  window.copyFixtureResult = { passed: count - failures.length, total: count, failures, beforeWarnings: findings.length, afterWarnings: findDuplicateDescriptions(after).length };
+  status.textContent = failures.length ? 'FAIL: browser regression tests' : `PASS: ${count}/${count} browser assertions`;
+  results.textContent = JSON.stringify(window.copyFixtureResult, null, 2);
+  let showingAfter = false;
+  function render() {
+    const doc = makeDocument();
+    if (showingAfter) reviewAfter(doc);
+    const preview = document.getElementById('preview');
+    preview.replaceChildren();
+    // The visible demo excludes malformed/ambiguous negative-test controls.
+    for (const section of [...doc.querySelectorAll('section')].slice(0, 6)) preview.append(section);
+    document.getElementById('findings').textContent = JSON.stringify(findDuplicateDescriptions(document), null, 2);
+    document.getElementById('toggle').textContent = showingAfter ? 'Show before state' : 'Show reviewed after state';
+  }
+  document.getElementById('toggle').addEventListener('click', () => { showingAfter = !showingAfter; render(); });
+  render();
+} catch (error) {
+  window.copyFixtureResult = { failures: [String(error)] };
+  status.textContent = 'FAIL: fixture could not run';
+  results.textContent = String(error.stack ?? error);
+}
+</script>
+</html>
