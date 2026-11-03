@@ -12,6 +12,7 @@
 
 ## Communication
 
+- Spell the brand **inVibe**, including at the start of sentences. Preserve exact casing in code identifiers, URLs, and verbatim quotes.
 - Be concise and direct.
 - Ask when blocked or ambiguity materially changes the outcome.
 - State consequential assumptions briefly.
