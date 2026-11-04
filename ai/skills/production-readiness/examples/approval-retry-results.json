@@ -1,0 +1,377 @@
+{
+  "node": "v24.22.1",
+  "bounds": [
+    {
+      "variant": "corrected",
+      "maxAttempts": 1,
+      "states": 24,
+      "transitions": 36,
+      "coverage": [
+        "budget-exhausted",
+        "interrupted-after-effect",
+        "interrupted-before-effect",
+        "success-payload-0",
+        "success-payload-1"
+      ],
+      "counterexamples": {}
+    },
+    {
+      "variant": "corrected",
+      "maxAttempts": 2,
+      "states": 78,
+      "transitions": 156,
+      "coverage": [
+        "budget-exhausted",
+        "interrupted-after-effect",
+        "interrupted-before-effect",
+        "late-delivery-after-success",
+        "remote-deduplication",
+        "success-payload-0",
+        "success-payload-1"
+      ],
+      "counterexamples": {}
+    },
+    {
+      "variant": "corrected",
+      "maxAttempts": 3,
+      "states": 240,
+      "transitions": 624,
+      "coverage": [
+        "budget-exhausted",
+        "interrupted-after-effect",
+        "interrupted-before-effect",
+        "late-delivery-after-success",
+        "remote-deduplication",
+        "success-payload-0",
+        "success-payload-1"
+      ],
+      "counterexamples": {}
+    },
+    {
+      "variant": "corrected",
+      "maxAttempts": 4,
+      "states": 726,
+      "transitions": 2352,
+      "coverage": [
+        "budget-exhausted",
+        "interrupted-after-effect",
+        "interrupted-before-effect",
+        "late-delivery-after-success",
+        "remote-deduplication",
+        "success-payload-0",
+        "success-payload-1"
+      ],
+      "counterexamples": {}
+    }
+  ],
+  "mutations": [
+    {
+      "variant": "unsafe-retry",
+      "maxAttempts": 3,
+      "states": 240,
+      "transitions": 624,
+      "coverage": [
+        "budget-exhausted",
+        "interrupted-after-effect",
+        "interrupted-before-effect",
+        "late-delivery-after-success",
+        "success-payload-0",
+        "success-payload-1"
+      ],
+      "counterexamples": {
+        "AtMostOneEffect": [
+          {
+            "action": "Initial",
+            "state": {
+              "phase": "draft",
+              "request": 0,
+              "approved": null,
+              "payload": null,
+              "attempts": [],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Approve current payload",
+            "state": {
+              "phase": "ready",
+              "request": 0,
+              "approved": 0,
+              "payload": null,
+              "attempts": [],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Dispatch approved operation",
+            "state": {
+              "phase": "inflight",
+              "request": 0,
+              "approved": 0,
+              "payload": 0,
+              "attempts": [
+                {
+                  "key": "attempt-1",
+                  "status": "pending"
+                }
+              ],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Interrupt local worker",
+            "state": {
+              "phase": "uncertain",
+              "request": 0,
+              "approved": 0,
+              "payload": 0,
+              "attempts": [
+                {
+                  "key": "attempt-1",
+                  "status": "pending"
+                }
+              ],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Retry interrupted operation",
+            "state": {
+              "phase": "inflight",
+              "request": 0,
+              "approved": 0,
+              "payload": 0,
+              "attempts": [
+                {
+                  "key": "attempt-1",
+                  "status": "pending"
+                },
+                {
+                  "key": "attempt-2",
+                  "status": "pending"
+                }
+              ],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Remote commits attempt 1",
+            "state": {
+              "phase": "inflight",
+              "request": 0,
+              "approved": 0,
+              "payload": 0,
+              "attempts": [
+                {
+                  "key": "attempt-1",
+                  "status": "committed"
+                },
+                {
+                  "key": "attempt-2",
+                  "status": "pending"
+                }
+              ],
+              "acceptedKeys": [
+                "attempt-1"
+              ],
+              "effects": 1,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Remote commits attempt 2",
+            "state": {
+              "phase": "inflight",
+              "request": 0,
+              "approved": 0,
+              "payload": 0,
+              "attempts": [
+                {
+                  "key": "attempt-1",
+                  "status": "committed"
+                },
+                {
+                  "key": "attempt-2",
+                  "status": "committed"
+                }
+              ],
+              "acceptedKeys": [
+                "attempt-1",
+                "attempt-2"
+              ],
+              "effects": 2,
+              "unauthorizedDispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "variant": "unsafe-approval",
+      "maxAttempts": 3,
+      "states": 478,
+      "transitions": 1244,
+      "coverage": [
+        "budget-exhausted",
+        "interrupted-after-effect",
+        "interrupted-before-effect",
+        "late-delivery-after-success",
+        "remote-deduplication",
+        "success-payload-0",
+        "success-payload-1"
+      ],
+      "counterexamples": {
+        "ApprovedPayloadOnly": [
+          {
+            "action": "Initial",
+            "state": {
+              "phase": "draft",
+              "request": 0,
+              "approved": null,
+              "payload": null,
+              "attempts": [],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Approve current payload",
+            "state": {
+              "phase": "ready",
+              "request": 0,
+              "approved": 0,
+              "payload": null,
+              "attempts": [],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Edit payload",
+            "state": {
+              "phase": "ready",
+              "request": 1,
+              "approved": 0,
+              "payload": null,
+              "attempts": [],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Dispatch approved operation",
+            "state": {
+              "phase": "inflight",
+              "request": 1,
+              "approved": 0,
+              "payload": 1,
+              "attempts": [
+                {
+                  "key": "operation-1",
+                  "status": "pending"
+                }
+              ],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "variant": "unsafe-success",
+      "maxAttempts": 3,
+      "states": 292,
+      "transitions": 784,
+      "coverage": [
+        "budget-exhausted",
+        "interrupted-after-effect",
+        "interrupted-before-effect",
+        "late-delivery-after-success",
+        "remote-deduplication",
+        "success-payload-0",
+        "success-payload-1"
+      ],
+      "counterexamples": {
+        "SuccessRequiresEffect": [
+          {
+            "action": "Initial",
+            "state": {
+              "phase": "draft",
+              "request": 0,
+              "approved": null,
+              "payload": null,
+              "attempts": [],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Approve current payload",
+            "state": {
+              "phase": "ready",
+              "request": 0,
+              "approved": 0,
+              "payload": null,
+              "attempts": [],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Dispatch approved operation",
+            "state": {
+              "phase": "inflight",
+              "request": 0,
+              "approved": 0,
+              "payload": 0,
+              "attempts": [
+                {
+                  "key": "operation-1",
+                  "status": "pending"
+                }
+              ],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          },
+          {
+            "action": "Record success",
+            "state": {
+              "phase": "done",
+              "request": 0,
+              "approved": 0,
+              "payload": 0,
+              "attempts": [
+                {
+                  "key": "operation-1",
+                  "status": "pending"
+                }
+              ],
+              "acceptedKeys": [],
+              "effects": 0,
+              "unauthorizedDispatch": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
