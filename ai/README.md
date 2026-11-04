@@ -215,6 +215,7 @@ For new-project stack selection or approved modernization, read
 | `pen-design` | Local MCP-first Pen.dev integration; loads provider guidance at runtime rather than redistributing it |
 | `post-mortem` | Session lessons and guidance improvements |
 | `production-readiness` | Service, data, deployment, and reliability risk |
+| `security-audit-local` | Manual, source-only trust-boundary review; optional synthetic authorization lab, not a full audit runner |
 | `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
 | `tufte-data-viz` | Quantitative visualization judgment |
 | `uncomplect` | Upstream-baseline pressure test for stateful systems, replacement designs, and accidental complexity |
