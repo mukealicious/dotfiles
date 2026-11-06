@@ -1,6 +1,6 @@
 ---
 name: mono-color
-description: "Create one-ink or controlled two-ink editorial artwork and prompts. Use for 单色海报、双色印刷、孔版印刷、risograph、网点照片、zine posters, duotone prints, or explicit mono-color styling. For interfaces, owns art direction and raster assets only; impeccable owns UI."
+description: "Create one-ink or controlled two-ink editorial artwork and prompts. Use for 单色海报、双色印刷、孔版印刷、risograph、网点照片、zine posters, duotone prints, or explicit mono-color styling. For interfaces, owns art direction and raster assets only, not UI implementation."
 license: MIT. See LICENSE.
 metadata:
   watch-sources: yanliudesign/mono-color-skill@a08c45df61ae480e2b0d78b978a304e06ba2894e
@@ -27,9 +27,10 @@ For project-bound work, place the selected image in an existing asset directory
 and report its verified path. Preview-only output may remain at the provider's
 default location and render inline. Never claim a nonexistent file path.
 
-For websites and app interfaces, compose with `impeccable`: it owns information
+For websites and app interfaces, follow project-local guidance for information
 architecture, semantic copy, navigation, CTAs, controls, accessibility, responsive
 behavior, and implementation. This skill owns art direction and raster assets.
+Use `mu-design-eng` only when explicitly requested.
 Keep UI text and controls semantic, not baked into the bitmap. The print limits
 and hard avoids apply to artwork, not to necessary interface affordances.
 

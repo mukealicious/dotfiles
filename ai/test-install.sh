@@ -19,7 +19,7 @@ assert_file_contains() {
   grep -Fq "$text" "$file" || fail "$file does not contain expected text"
 }
 
-RETIRED_SKILLS='diagnosing-bugs coding-standards mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context librarian visual-deliverables cloudflare-composition-root'
+RETIRED_SKILLS='impeccable diagnosing-bugs coding-standards mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context librarian visual-deliverables cloudflare-composition-root'
 
 assert_retired_skill_cleanup() {
   for retired in $RETIRED_SKILLS; do
@@ -184,9 +184,6 @@ done
 # the temporary directory used while constructing it.
 PI_SKILLS="$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/skills"
 for instruction in \
-  "$PI_SKILLS/impeccable/SKILL.md" \
-  "$PI_SKILLS/impeccable/reference/live.md" \
-  "$PI_SKILLS/impeccable/reference/teach.md" \
   "$PI_SKILLS/moja-glava/SKILL.md" \
   "$PI_SKILLS/moja-glava/references/studying.md"; do
   [ -f "$instruction" ] || fail "missing installed instruction $instruction"
@@ -196,7 +193,7 @@ cat > "$CHECKER" <<'NODE'
 const fs = require('node:fs');
 const path = require('node:path');
 const [root, directory] = process.argv.slice(2);
-const counts = new Map([['impeccable', 0], ['moja-glava', 0]]);
+const counts = new Map([['moja-glava', 0]]);
 function check(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const file = path.join(dir, entry.name);
@@ -227,19 +224,19 @@ NODE
 "$NODE" "$CHECKER" "$PI_SKILLS" "$PI_SKILLS"
 # Deliberately reference a missing file to verify that the checker fails closed.
 NEGATIVE_ROOT="$TMP_ROOT/negative-pi-skills"
-mkdir -p "$NEGATIVE_ROOT/impeccable"
-printf '%s\n' "$PI_SKILLS/impeccable/scripts/missing-regression-file.mjs" > "$NEGATIVE_ROOT/impeccable/SKILL.md"
+mkdir -p "$NEGATIVE_ROOT/moja-glava"
+printf '%s\n' "$PI_SKILLS/moja-glava/scripts/missing-regression-file.mjs" > "$NEGATIVE_ROOT/moja-glava/SKILL.md"
 if "$NODE" "$CHECKER" "$PI_SKILLS" "$NEGATIVE_ROOT" >"$TMP_ROOT/missing-reference.log" 2>&1; then
   fail "script-reference checker accepted a missing file"
 fi
 assert_file_contains "$TMP_ROOT/missing-reference.log" "missing referenced script"
-for skill in impeccable moja-glava; do
+for skill in moja-glava; do
   [ -d "$PI_SKILLS/$skill/scripts" ] || fail "missing published $skill scripts"
 done
 # Other providers continue to reference their own published projection roots.
 for provider in codex claude-code opencode; do
   provider_skills="$SUCCESS_REPO_PHYSICAL/.ai-runtime/$provider/skills"
-  assert_file_contains "$provider_skills/impeccable/SKILL.md" "$provider_skills/impeccable/scripts"
+  assert_file_contains "$provider_skills/moja-glava/references/studying.md" "$provider_skills/moja-glava/scripts"
 done
 # Progressive disclosure must survive projection with its supporting resources.
 for provider in pi codex claude-code opencode; do
@@ -259,6 +256,7 @@ for provider in pi codex claude-code opencode; do
   [ -s "$skills/writing-for-agents/SKILL-MECHANICS.md" ] || fail "$provider lost authoring mechanics"
   [ -s "$skills/writing-for-agents/agents/openai.yaml" ] || fail "$provider lost upstream authoring metadata"
   [ ! -e "$skills/writing-for-agents/scripts" ] && [ ! -e "$skills/writing-for-agents/references" ] || fail "$provider carried over retired authoring resources"
+  assert_file_contains "$skills/mu-design-eng/SKILL.md" 'disable-model-invocation: true'
   assert_file_contains "$skills/tech-spec/SKILL.md" 'disable-model-invocation: true'
   assert_file_contains "$skills/write-discoverable-code/SKILL.md" 'disable-model-invocation: true'
   assert_file_contains "$skills/project-guidance/SKILL.md" '~/.dotfiles/ai/skills/writing-for-agents/SKILL.md'

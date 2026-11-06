@@ -79,7 +79,7 @@ auto-sync mechanism.
 | `viticci/remctl@e7b4e8563903935aa2bab6d4d24d983499b4a4e8` | `apple-reminders` | Agent-safe Apple Reminders reads, explicit-intent writes, and verification through RemCTL |
 | `mattpocock/skills@9c9f36ccd3995266cd675468af71639c8dde1ec5` | Thin `grill-me` | Manual entry-point provenance |
 | `rjs/shaping-skills@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9` | `framing-doc`, `kickoff-doc`, `breadboarding` | Framing, shaped kickoff territory, and breadboarding |
-| `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | `impeccable` | Product UI/UX and visual interaction design |
+| `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | Material in `mu-design-eng` | Instruction-only visual judgment; original skill and executable helpers retired |
 | `yanliudesign/mono-color-skill@a08c45df61ae480e2b0d78b978a304e06ba2894e` | `mono-color` | One-ink and controlled two-ink editorial art direction and raster generation |
 | `joelhooks/skills@022f29cbfa2ddd36916622d49c02b763060f6847` | `uncomplect` | Independent upstream skill, source map, and evals; local provenance metadata only |
 | `cursor/plugins@d1453c11d1dde9714d4c313c97d3a68432265c7f` | `technical-writing` | Manual-only pstack writing standard; companion `unslop` references removed; MIT notice retained |
@@ -207,8 +207,7 @@ For new-project stack selection or approved modernization, read
 | `grilling` | Dependency-aware design-tree questioning |
 | `herdr` | Herdr pane/workspace/agent coordination |
 | `hunk-review` | Hunk diff and comment workflow |
-| `impeccable` | Current product UI/UX owner; replacement acceptance and runtime retirement remain pending |
-| `mu-design-eng` | Manual-only candidate: one entry point with design and motion playbooks; see its provenance and acceptance record |
+| `mu-design-eng` | Manual-only design and motion playbooks; no automatic general UI/design skill is assigned |
 | `opensrc` | External source-cache acquisition |
 | `mermaid` | Frozen upstream Mermaid validation skill preserved after its removal from Mitsupi |
 | `moja-glava` | Durable private knowledge checkpoints |
@@ -233,11 +232,12 @@ ADRs, and stack decisions; do not resurrect retired global playbooks.
 grounded “why” before shaping; kickoff records builder-facing shaped territory
 after shaping.
 
-### Design replacement candidate
+### Manual design skill
 
 [`mu-design-eng`](skills/mu-design-eng/SKILL.md) composes Impeccable's visual judgment, Emil's
 interaction workflows, and pstack's entry-point/playbook structure. It remains
-manual-only during evaluation; it does not replace the current automatic owner yet.
+manual-only by Owner choice. Impeccable and all its executable helpers are retired;
+there is no automatic general UI/design skill replacement.
 Its [source map](skills/mu-design-eng/VENDORED_FROM.md) records retained depth and adaptations.
 Run `node ai/test-design-skill.mjs` for isolated reference/projection checks. The
 [acceptance record](../specs/design-skill-acceptance.md) separates those checks from
@@ -247,7 +247,7 @@ refresh installed projections or stop existing helpers.
 ### One-owner capability boundaries
 
 - **Visual:** `pen-design` owns Pen-generated editable `.pen` artifacts and
-  their exports; `impeccable` owns code-first product UI/UX and critique;
+  their exports; `mu-design-eng` supports code-first UI/UX only when explicitly invoked;
   `mono-color` owns one-ink and controlled two-ink editorial art direction and
   raster assets; `tufte-data-viz` owns quantitative graphics;
   Mermaid owns text-native diagrams; `tldraw-offline` owns the editable local canvas.

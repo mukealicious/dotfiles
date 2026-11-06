@@ -25,8 +25,8 @@ Agree on the intended artifact and destination. Inspect existing work before
 editing, and preserve unrelated canvas content. Use Pen.dev tooling for `.pen`
 files rather than treating them as ordinary text files.
 
-For visual decisions, use `impeccable`; code-only interface work does not require
-Pen.dev. Use `mono-color` when the task calls for its print-art direction.
+Use project-local guidance for visual decisions; code-only interface work does not
+require Pen.dev. `mu-design-eng` is available only when explicitly requested. Use `mono-color` when the task calls for its print-art direction.
 Inspect a rendered preview before reporting a design as complete, and give the
 user the saved artifact's location. Report missing access or failed operations
 without claiming an export succeeded.

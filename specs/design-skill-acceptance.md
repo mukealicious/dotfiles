@@ -1,6 +1,6 @@
 # Design skill candidate acceptance
 
-Status: manual-only candidate named `mu-design-eng`. The Owner approved commit and trial installation through `ai/install.sh`. Automatic activation and Impeccable retirement remain pending.
+Status: `mu-design-eng` remains manual-only by explicit Owner choice. The Owner subsequently authorized removal of Impeccable and all its live-mode tooling, without automatic activation of the replacement. Earlier trial results below remain historical evidence, not outcome-equivalence claims.
 
 The validation table below records the pre-install candidate checks. Trial installation enables explicit use; it does not establish routing or rendered outcome equivalence.
 
@@ -14,7 +14,7 @@ The Owner approved one entry point with playbooks and references after rejecting
 - Emil supplies detailed motion and interaction workflows, recipes, mobile guidance, and stress cases.
 - pstack supplies condition-based composition. Its model rules, delegation machinery, external-action authority, and shipping workflow are excluded.
 - No new executable helper or package dependency ships with the candidate.
-- The current Impeccable source and projector special cases remain unchanged. The approved installer refresh adds the manual candidate without retiring Impeccable.
+- Impeccable source, executable helpers, projector special cases, and automatic handoffs are removed. Installer regression coverage verifies retirement across all 4 providers while preserving the manual replacement.
 
 The [source map](../ai/skills/mu-design-eng/VENDORED_FROM.md) records adaptations and deliberate exclusions. The [migration plan](impeccable-replacement-plan.md) retains process, residue, recovery, and runtime gates.
 

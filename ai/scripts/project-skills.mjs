@@ -3,37 +3,30 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const IMPECCABLE_COMMAND_HINT =
-  'craft|shape · audit|critique · animate|bolder|colorize|delight|layout|overdrive|quieter|typeset · adapt|clarify|distill · harden|onboard|optimize|polish · teach|document|extract|live';
-
 const PROVIDER_PLACEHOLDERS = {
   'claude-code': {
     model: 'Claude',
     config_file: 'CLAUDE.md',
     ask_instruction: 'STOP and call the AskUserQuestion tool to clarify.',
     command_prefix: '/',
-    command_hint: IMPECCABLE_COMMAND_HINT,
   },
   codex: {
     model: 'GPT',
     config_file: 'AGENTS.md',
     ask_instruction: 'ask the user directly to clarify what you cannot infer.',
     command_prefix: '$',
-    command_hint: IMPECCABLE_COMMAND_HINT,
   },
   opencode: {
     model: 'Claude',
     config_file: 'AGENTS.md',
     ask_instruction: 'STOP and call the `question` tool to clarify.',
     command_prefix: '/',
-    command_hint: IMPECCABLE_COMMAND_HINT,
   },
   pi: {
     model: 'the model',
     config_file: 'AGENTS.md',
     ask_instruction: 'ask the user directly to clarify what you cannot infer.',
     command_prefix: '/',
-    command_hint: IMPECCABLE_COMMAND_HINT,
   },
 };
 
@@ -164,19 +157,6 @@ const skillInfo = skillDirs.map((skillName) => {
 const allSkillNames = skillInfo.map((skill) => skill.name);
 const commandNames = skillInfo.filter((skill) => skill.userInvocable).map((skill) => skill.name);
 
-function impeccableSubcommands(skillSourceDir, provider) {
-  const metadataPath = path.join(skillSourceDir, 'scripts', 'command-metadata.json');
-  if (!fs.existsSync(metadataPath)) {
-    return null;
-  }
-
-  const commandPrefix = PROVIDER_PLACEHOLDERS[provider].command_prefix;
-  const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-  return Object.keys(metadata)
-    .map((command) => `${commandPrefix}impeccable ${command}`)
-    .join(', ');
-}
-
 fs.rmSync(targetDir, { recursive: true, force: true });
 fs.mkdirSync(targetDir, { recursive: true });
 
@@ -187,7 +167,6 @@ for (const skill of skillInfo) {
     sourceSkillDir,
     projectedSkillDir,
     (content) => replacePlaceholders(content, provider, commandNames, allSkillNames, {
-      availableCommands: skill.name === 'impeccable' ? impeccableSubcommands(sourceSkillDir, provider) : undefined,
       scriptsPath: path.resolve(referenceRoot || targetDir, skill.dirName, 'scripts'),
     }),
   );

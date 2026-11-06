@@ -95,15 +95,6 @@ review = "semantic-diff"
 notes = "Independent architectural simplification skill; see ai/skills/uncomplect/VENDORED_FROM.md"
 
 [[sources]]
-id = "impeccable"
-repo = "pbakaus/impeccable"
-path = ".agents/skills/impeccable"
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Upstream Impeccable 3.x consolidated skill source for ai/skills/impeccable/"
-
-[[sources]]
 id = "mono-color"
 repo = "yanliudesign/mono-color-skill"
 path = ""
