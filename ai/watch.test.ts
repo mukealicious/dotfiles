@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   createGitHubClient,
   createWatchReport,
+  extractFrontmatter,
   filterChangedFilesForSource,
   loadLocalArtifacts,
   parseArgs,
@@ -50,6 +51,18 @@ describe("parseArgs", () => {
 });
 
 describe("parseWatchSourcesFromFrontmatter", () => {
+  test("keeps the design candidate's 3 sources distinct", async () => {
+    const artifact = "ai/skills/mu-design-eng/SKILL.md";
+    const frontmatter = extractFrontmatter(await Bun.file(join(repoRoot, artifact)).text());
+    expect(frontmatter).not.toBeNull();
+    const sources = parseWatchSourcesFromFrontmatter(frontmatter!, artifact);
+    expect(sources.map(({ repo, path, ref }) => ({ repo, path, ref }))).toEqual([
+      { repo: "pbakaus/impeccable", path: "source/skills/impeccable", ref: "39bec7c08c8cb5d694221e2c2e4386140dde8759" },
+      { repo: "emilkowalski/skills", path: "skills", ref: "c8a79627b59d72d764d6ab6f2c87c09a48169833" },
+      { repo: "cursor/plugins", path: "pstack", ref: "2776ddd2355d6d6c8747d3964600f28daf62f049" },
+    ]);
+  });
+
   test("parses a single-line watch source", () => {
     const frontmatter = `name: test-skill
 description: Example skill description long enough to be realistic.

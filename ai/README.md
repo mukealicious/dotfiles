@@ -207,7 +207,8 @@ For new-project stack selection or approved modernization, read
 | `grilling` | Dependency-aware design-tree questioning |
 | `herdr` | Herdr pane/workspace/agent coordination |
 | `hunk-review` | Hunk diff and comment workflow |
-| `impeccable` | Product UI/UX and visual interaction design |
+| `impeccable` | Current product UI/UX owner; replacement acceptance and runtime retirement remain pending |
+| `mu-design-eng` | Manual-only candidate: one entry point with design and motion playbooks; see its provenance and acceptance record |
 | `opensrc` | External source-cache acquisition |
 | `mermaid` | Frozen upstream Mermaid validation skill preserved after its removal from Mitsupi |
 | `moja-glava` | Durable private knowledge checkpoints |
@@ -231,6 +232,17 @@ ADRs, and stack decisions; do not resurrect retired global playbooks.
 `framing-doc` and `kickoff-doc` remain distinct: framing captures the evidence
 grounded “why” before shaping; kickoff records builder-facing shaped territory
 after shaping.
+
+### Design replacement candidate
+
+[`mu-design-eng`](skills/mu-design-eng/SKILL.md) composes Impeccable's visual judgment, Emil's
+interaction workflows, and pstack's entry-point/playbook structure. It remains
+manual-only during evaluation; it does not replace the current automatic owner yet.
+Its [source map](skills/mu-design-eng/VENDORED_FROM.md) records retained depth and adaptations.
+Run `node ai/test-design-skill.mjs` for isolated reference/projection checks. The
+[acceptance record](../specs/design-skill-acceptance.md) separates those checks from
+routing trials and actual-browser outcome comparisons. Repository changes do not
+refresh installed projections or stop existing helpers.
 
 ### One-owner capability boundaries
 
