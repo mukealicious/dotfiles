@@ -26,9 +26,23 @@ Pi itself uses its own updater rather than mise's JS release airlock:
 ```sh
 pi update
 ai/install.sh
+dot skills
 pi/install.sh
 PI_CODING_AGENT_DIR="$HOME/.pi/agent" herdr integration install pi
 ```
+
+`dot skills` safely bootstraps or fast-forwards `~/Code/mu-stack`, then runs its
+standalone Claude/Codex installer. It does not run unrelated machine updates.
+The full `dot` workflow uses the same topic entry point after AI cleanup and
+before dependent harness setup. See [safety and recovery](../mu-stack/README.md).
+
+`pi/install.sh` itself only validates the manifest, nonempty skill directory,
+and required `SKILL.md` names/descriptions, then selects it through managed
+settings. It never fetches, updates, or runs the package installer.
+
+`ai/install.sh` retires only exact old managed skill links. Run it before
+`dot skills` during the initial extraction cutover; unrelated links and files
+remain untouched. Later skill updates need only `dot skills`.
 
 Requires Pi 0.99.1 or later. Before first setup, or when the reviewed subagent
 lockfile changes, stop all Pi/subagent runners and prepare its runtime dependencies:
@@ -68,7 +82,9 @@ explicit isolated native invocation when needed; never commit credentials.
 | `pi/extensions/modes.ts` | Four fixed capability presets using native model/thinking APIs |
 | `pi/extensions/`, `pi/themes/`, `pi/prompts/` | Installed resource links |
 | `ai/instructions/`, `pi/instructions/` | Generated `.ai-runtime/pi/AGENTS.md` |
-| Shared skills in `ai/skills/` | Generated `.ai-runtime/pi/skills/` |
+| `apple-reminders` and `dotfiles-dev` in `ai/skills/` | Generated `.ai-runtime/pi/skills/` |
+| Portable skills in `~/Code/mu-stack/skills/` | Local skills-only package selected in `pi/settings.json` |
+| `~/skills/tldraw-offline` | Separate user-managed skill path; unchanged |
 | User agents and chains | Runtime-owned `~/.pi/agent/agents/`; no custom roles shipped |
 | Machine-local connections | **`~/.pi/agent/mcp.json`**, edited through `/mcp` or CLI |
 
@@ -88,6 +104,11 @@ register the managed Codex projection as disabled before native project discover
 Keep both: a global exclusion alone does not filter auto-discovered project skills
 in Pi 0.99.1. This keeps Pi's provider-specific projection authoritative, including
 from nested working directories, without disabling other repositories' skills.
+The mu-stack package and its global Codex links in `~/.agents/skills/` resolve to
+the same canonical skill files. Native Pi deduplicates those real paths; no
+broad global-skill exclusion is needed. Isolated native tests cover repository,
+nested, and external working directories. The upstream review method lives in
+`~/Code/mu-stack/maintenance/upstream-review.md`, not in distributed skills.
 
 ## Native MCP and codemode
 
@@ -227,7 +248,7 @@ Retained packages:
   inactive package code remain untouched. Use your editor/Git/Hunk for files
   and ordinary notes for tasks; no replacement extension is installed.
   Upstream removed Mermaid; its previously selected skill/validator remain unchanged
-  as the frozen shared snapshot `ai/skills/mermaid/`, not as a package patch.
+  as the frozen snapshot `~/Code/mu-stack/skills/mermaid/`, not as a package patch.
 
 Request code reviews directly. Independent review uses authorized harness
 delegation; there is no custom review prompt, agent, skill, PR checkout, or
@@ -364,11 +385,13 @@ sh pi/test-launch.sh
 sh pi/test-install.sh
 node --test pi/test-migrate.mjs
 sh ai/test-install.sh
+sh ai/test-skill-doctor.sh
+node ai/test-design-skill.mjs
 sh herdr/test-install.sh
 npm --prefix pi install --package-lock=false --ignore-scripts
 npm --prefix pi run typecheck
 NODE="$(mise which -C "$PWD" node)"
-PI_OFFLINE=1 "$NODE" --experimental-strip-types --test pi/test-native-*.mjs pi/test-upstream-subagents.mjs pi/test-mitsupi-policy.mjs pi/extensions/tests/*.test.ts
+PI_OFFLINE=1 "$NODE" --experimental-strip-types --test pi/test-native-*.mjs pi/test-external-skills.mjs pi/test-upstream-subagents.mjs pi/test-mitsupi-policy.mjs pi/extensions/tests/*.test.ts
 PI_OFFLINE=1 "$NODE" --experimental-strip-types --test pi/packages/pi-exa/test/*.mjs pi/test-upstream-parallel.mjs
 ```
 
@@ -382,6 +405,13 @@ explicitly test non-offline behavior. Their harness isolates HOME and mocks
 execution; keep opt-in live CLI smoke variables unset. See the audit for the
 host-versus-upstream-toolchain validation boundary.
 
-`dot doctor` checks the unified installation. MCP connectivity and browser OAuth
+The external skill, design, watchlist, and Herdr checks use `~/Code/mu-stack` by
+default; set `MU_STACK_DIR` to validate another checkout. Native discovery tests
+use disposable homes, not live installers. They preserve portable provenance,
+resource, and manual-invocation assertions after extraction.
+
+`dot doctor` checks local projections, canonical Claude/Codex links, the mu-stack
+manifest and skill entry points, Pi selection, and exact stale dotfiles links. It does not install or
+sync portable skills. MCP connectivity and browser OAuth
 are separate checks: run `pi mcp list` and sign in through `/mcp`. No installer
 starts a model request or copies OAuth tokens between providers.

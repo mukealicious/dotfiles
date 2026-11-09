@@ -135,6 +135,14 @@ check_subagents_dependencies() {
 check_pi_version
 if [ "$FAST_ONLY" != "true" ]; then
   check_subagents_dependencies
+  # Local skills-only package selection needs no pi install, fetch, or sync.
+  # Refuse a missing or broadened package before changing runtime resources.
+  . "$DOTFILES_ROOT/pi/skill-package.sh"
+  if ! external_skill_package_is_valid "$HOME/Code/mu-stack"; then
+    log_error "Expected the skills-only mu-stack checkout at $HOME/Code/mu-stack with nonempty skills/ and valid SKILL.md entry points"
+    log_hint "Run dot skills to bootstrap/update the checkout, resolve any reported error, then rerun pi/install.sh"
+    exit 1
+  fi
 fi
 
 # Adopt the exact reviewed npm artifact, not another vendored fork. Configuration

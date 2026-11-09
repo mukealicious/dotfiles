@@ -62,8 +62,8 @@ Herdr 0.8+ exposes its release-matched upstream instructions with:
 herdr --skill
 ```
 
-This repo keeps one adapted global skill at `ai/skills/herdr/`; `ai/install.sh`
-projects it into Pi, Claude, Codex, and OpenCode runtimes. Do not install a second
+The canonical adapted skill lives at `~/Code/mu-stack/skills/herdr/`.
+mu-stack owns its Pi package and explicit Claude/Codex installation. Do not install a second
 upstream `herdr` skill globally. Review `herdr --skill` when Herdr changes, then
 adapt relevant CLI mechanics while retaining the local tab naming, layout, and
 coordination policy.

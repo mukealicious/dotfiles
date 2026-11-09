@@ -32,10 +32,14 @@ constraints, source locations, and installer/toolchain boundaries.
 
 ## AI Authoring
 
-Author shared skills in `ai/skills/<name>/`; use `claude/skills/<name>/` only for
-Claude-native runtime features. The AI README owns frontmatter, assembly, and
-projection guidance. Refresh runtime outputs with `ai/install.sh` when installation
-is part of the task; documentation-only edits need no installer run.
+Author portable skills in `~/Code/mu-stack/skills/<name>/`. Dotfiles keeps only
+`apple-reminders` and `dotfiles-dev` in `ai/skills/`; use `claude/skills/<name>/`
+only for Claude-native runtime features. Read the AI README before changing
+integration or projections. Apply dotfiles-owned changes with `ai/install.sh`;
+use mu-stack’s documented installer for its Claude/Codex links. Documentation-only
+edits need no installer run. For upstream comparisons and adoption decisions,
+read `~/Code/mu-stack/maintenance/upstream-review.md`. For dotfiles watchlist
+commands and inventory scope, also read `~/.dotfiles/ai/maintenance/upstream-review.md`.
 
 The manual `writing-for-agents` skill is available when the user requests
 agent-document authoring guidance.

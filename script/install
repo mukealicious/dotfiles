@@ -73,6 +73,9 @@ CORE_INSTALLERS=(
   "./python/install.sh"
   "./fish/install.sh"
   "./ai/install.sh"
+  # AI retires exact old skill links first; mu-stack requires mise's Node.
+  # Update/install must succeed before dependent harness setup.
+  "./mu-stack/install.sh"
   "./claude/install.sh"
   "./opencode/install.sh"
   "./pi/install.sh"

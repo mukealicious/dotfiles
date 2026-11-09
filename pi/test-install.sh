@@ -16,6 +16,9 @@ for dependency_version in acorn:8.18.0 jiti:2.7.0 undici:8.10.2 yaml:2.8.3; do
 done
 tar -C "$ROOT" --exclude=node_modules -cf - pi lib | tar -C "$REPO" -xf -
 fail() { echo "FAIL: $*" >&2; exit 1; }
+mkdir -p "$HOME/Code/mu-stack/skills/portable"
+printf '%s\n' '{"name":"mu-stack","pi":{"skills":["./skills"],"extensions":[],"prompts":[],"themes":[]}}' > "$HOME/Code/mu-stack/package.json"
+printf '%s\n' '---' 'name: portable' 'description: Portable fixture' '---' 'Guidance' > "$HOME/Code/mu-stack/skills/portable/SKILL.md"
 # Exact upstream bytes exercise the unmodified installer's production digest checks.
 FAST_FIXTURE="$ROOT/pi/test-fixtures/pi-openai-fast-1.1.1-pristine-index.ts"
 cp "$REPO/pi/packages/pi-subagents/node_modules/acorn/package.json" "$TMP/acorn.package.json"
@@ -108,6 +111,27 @@ grep -Fq 'does not match the lockfile' "$TMP/install.log" || fail 'wrong depende
 [ ! -e "$HOME/.pi/agent/settings.json" ] || fail 'wrong dependency preflight ran after settings mutation'
 cmp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts" || fail 'wrong dependency preflight ran after fast package mutation'
 printf '{"name":"acorn","version":"8.18.0"}\n' > "$REPO/pi/packages/pi-subagents/node_modules/acorn/package.json"
+mv "$HOME/Code/mu-stack/package.json" "$TMP/mu-stack.package.json"
+if run; then fail 'missing mu-stack package accepted'; fi
+grep -Fq 'skills-only mu-stack checkout' "$TMP/install.log" || fail 'missing mu-stack diagnostic'
+[ ! -e "$HOME/.pi/agent/settings.json" ] || fail 'package preflight mutated settings'
+cmp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts" || fail 'package preflight mutated Fast'
+printf '%s\n' '{"name":"mu-stack","pi":{"skills":["./skills"],"extensions":["./evil.ts"],"prompts":[],"themes":[]}}' > "$HOME/Code/mu-stack/package.json"
+if run; then fail 'non-skill mu-stack package accepted'; fi
+mv "$TMP/mu-stack.package.json" "$HOME/Code/mu-stack/package.json"
+mv "$HOME/Code/mu-stack/skills" "$TMP/portable-skills"
+if run; then fail 'missing package skills accepted'; fi
+mkdir "$HOME/Code/mu-stack/skills"
+if run; then fail 'empty package skills accepted'; fi
+rmdir "$HOME/Code/mu-stack/skills"
+mv "$TMP/portable-skills" "$HOME/Code/mu-stack/skills"
+mv "$HOME/Code/mu-stack/skills/portable/SKILL.md" "$TMP/portable-entry"
+if run; then fail 'missing SKILL.md accepted'; fi
+printf 'not a skill entry point\n' > "$HOME/Code/mu-stack/skills/portable/SKILL.md"
+if run; then fail 'invalid SKILL.md accepted'; fi
+mv "$TMP/portable-entry" "$HOME/Code/mu-stack/skills/portable/SKILL.md"
+[ ! -e "$HOME/.pi/agent/settings.json" ] || fail 'invalid package mutated settings'
+cmp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts" || fail 'invalid package mutated Fast'
 run || { tail -30 "$TMP/install.log"; fail install; }
 SETTINGS="$HOME/.pi/agent/settings.json"
 MODES="$HOME/.pi/agent/modes.json"
@@ -115,6 +139,8 @@ MODELS="$HOME/.pi/agent/models.json"
 [ ! -e "$MODELS" ] || fail 'installer created competing native priority policy'
 jq -e '.packages | index("npm:@benvargas/pi-openai-fast@1.1.1") != null and index("~/.dotfiles/pi/packages/pi-openai-fast") == null' "$SETTINGS" >/dev/null || fail 'fast package pin'
 jq -e '.packages[] | select(type == "object" and .source == "~/.dotfiles/pi/packages/pi-subagents") | .skills == ["skills/pi-subagents/SKILL.md"] and .prompts == []' "$SETTINGS" >/dev/null || fail 'upstream subagent resource selection'
+jq -e '[.packages[] | select(type == "object" and .source == "~/Code/mu-stack")] | length == 1 and (.[0] | .extensions == [] and .prompts == [] and .themes == [])' "$SETTINGS" >/dev/null || fail 'mu-stack skills-only selection'
+jq -e '.skills | index("~/skills/tldraw-offline") != null' "$SETTINGS" >/dev/null || fail 'external tldraw skill lost'
 jq -e '.subagents.agentOverrides == null' "$SETTINGS" >/dev/null || fail 'unexpected custom agent overrides'
 grep -Fq 'ctx.isProjectTrusted()' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast trust patch'
 grep -Fq 'supportedModels must be an array' "$FAST_PACKAGE/extensions/index.ts" || fail 'fast allowlist patch'
@@ -199,6 +225,9 @@ for profile in personal work; do
 done
 if grep -Fq mcp-adapter "$HOME/installs.log"; then fail 'adapter installed'; fi
 [ ! -e "$HOME/npm.log" ] || fail 'routine installer invoked npm'
+if grep -Fq mu-stack "$HOME/installs.log"; then fail 'routine installer installs or syncs mu-stack'; fi
+jq -e '[.packages[] | select(type == "object" and .source == "~/Code/mu-stack")] | length == 1' "$SETTINGS" >/dev/null || fail 'reinstall lost external package'
+jq -e '.skills | index("~/skills/tldraw-offline") != null' "$SETTINGS" >/dev/null || fail 'reinstall lost tldraw skill'
 printf 'user-owned review prompt\n' > "$HOME/.pi/agent/prompts/review.md"
 printf 'user-owned extension\n' > "$HOME/.pi/agent/extensions/handoff.ts"
 mkdir "$HOME/custom-lib"

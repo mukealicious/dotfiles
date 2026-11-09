@@ -18,7 +18,10 @@ Topic-centric dotfiles for a macOS development environment.
 | Git config | `git/gitconfig.symlink` |
 | Stream Deck layout/button | `streamdeck/layouts/`, `streamdeck/bin/sync-profile` |
 | Shared AI instruction | `ai/instructions/base.md` |
-| Shared AI skill | `ai/skills/[name]/SKILL.md` |
+| Shared AI skill | `~/Code/mu-stack/skills/[name]/SKILL.md` |
+| Portable skill checkout update | `mu-stack/install.sh` (`dot skills`); policy in `mu-stack/README.md` |
+| Dotfiles-owned skill | `ai/skills/` (`apple-reminders`, `dotfiles-dev`) |
+| Upstream maintenance | `ai/maintenance/upstream-review.md` for dotfiles tooling; canonical method in `~/Code/mu-stack/maintenance/upstream-review.md` |
 | Pi settings, resources, or extensions | Read [pi/README.md](pi/README.md) |
 | Claude settings, hooks, MCP, or advisors | Read [claude/README.md](claude/README.md) |
 
@@ -74,9 +77,13 @@ the root-resolution template, safe glob iteration, failure handling, and
 - Edit installer-managed configuration in this repository, not its installed
   outputs under `~/.claude/`, `~/.pi/`, `~/.codex/`, or `~/.config/opencode/`.
   Machine-local credentials and native preferences remain runtime-owned.
-- Author shared skills in `ai/skills/`; `.agents/skills/`, `.claude/skills/`, and
-  `.ai-runtime/` are installer-managed projections.
-- `ai/install.sh` owns shared instructions and projected skills; agents are harness/user-owned.
+- Author shared skills in `~/Code/mu-stack/skills/`. Keep only machine-owned
+  `apple-reminders` and `dotfiles-dev` in `ai/skills/`. Runtime projections are
+  installer-managed. mu-stack owns the repo-local upstream review method;
+  `ai/maintenance/upstream-review.md` owns only dotfiles tooling guidance.
+- `ai/install.sh` owns shared instructions and dotfiles-owned skill projections.
+  `mu-stack` owns portable skills and its explicit Claude/Codex installation;
+  Pi consumes its skills-only package. Agents are harness/user-owned.
 - `claude/install.sh` owns Claude settings and MCP setup.
 - `pi/install.sh` owns Pi startup settings, resource links, and packages.
 - Never commit `~/.localrc`, `~/.gitconfig.local`, or `.env*` files.

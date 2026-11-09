@@ -14,6 +14,7 @@ After bootstrap, use `dot` for daily updates:
 
 ```sh
 dot          # Update symlinks, macOS defaults, Homebrew, installers
+dot skills   # Update only mu-stack and install its Claude/Codex skill links
 dot doctor   # Check environment health
 dot -e       # Open dotfiles in editor
 ```
@@ -41,8 +42,9 @@ Each directory is a self-contained "topic" managing one tool or concern:
 |-------|---------|
 | `fish/` | Fish shell config, functions, completions |
 | `git/` | Git config, aliases, custom commands |
-| `claude/` | Claude Code settings, skills, agents, hooks |
-| `ai/` | Shared AI instructions, skills, and agent assembly |
+| `claude/` | Claude Code settings, optional native overlays, hooks |
+| `ai/` | Shared instructions, 2 machine-owned skills, runtime assembly |
+| `mu-stack/` | Safe update/bootstrap of the portable skills checkout and standalone installation |
 | `homebrew/` | Homebrew installer (packages are declared in the root `Brewfile`) |
 | `macos/` | macOS system preferences |
 | `herdr/` | Herdr agent multiplexer notes |
@@ -91,6 +93,7 @@ Review and commit `mise.toml`, `mise.lock`, `package.json`, and `pnpm-lock.yaml`
 Scripts in `bin/` added to PATH include:
 
 - `dot` — Update everything
+- `dot skills` — Update and install portable skills only ([safety and recovery](mu-stack/README.md))
 - `dot doctor` — Check environment health
 - `ai-watch` — Generate upstream watchlist/review reports
 - `e` — Launch editor
@@ -99,14 +102,18 @@ Scripts in `bin/` added to PATH include:
 
 ## AI Integration
 
-Shared instructions, skills, and agent sources live in `ai/`; harness-specific
-configuration lives in its topic. Runtime files are assembled/projected by
-`ai/install.sh`, not authored in installed directories.
+Portable skills live in `~/Code/mu-stack/skills/`, with a skills-only Pi package
+and an explicit Claude/Codex installer. Shared instructions and the machine-owned
+`apple-reminders` and `dotfiles-dev` skills remain in `ai/`; harness configuration
+lives in its topic. `ai/install.sh` owns dotfiles runtime assembly, not the
+external package. `mu-stack/install.sh` safely updates that checkout and runs its
+standalone installer. Both `dot` and `dot skills` use this same entry point; see
+[update policy and recovery](mu-stack/README.md). Agents remain harness/user-owned.
 
 - **Instructions, skills, agents, and provenance:** read
   [ai/README.md](ai/README.md) before changing ownership or assembly, or to choose
   a task-specific skill.
-- **Claude settings, hooks, MCP, and read-only advisors:** read
+- **Claude settings, hooks, and MCP:** read
   [claude/README.md](claude/README.md).
 - **Pi settings, MCP, extensions, delegation, or legacy migration:** read
   [pi/README.md](pi/README.md). Pi uses one subscription-backed environment at
@@ -206,6 +213,7 @@ sign-in have explicit steps in [Pi setup](pi/README.md#setup).
 
 ```sh
 dot                    # Full update of managed tools and configuration
+dot skills             # Scoped mu-stack update + skill installation
 dot doctor             # Check environment health
 script/bootstrap       # Re-run symlinks (interactive)
 script/install         # Re-run all installers (explicit core order + sorted fallback)
