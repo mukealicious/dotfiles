@@ -80,7 +80,6 @@ auto-sync mechanism.
 | `mattpocock/skills@9c9f36ccd3995266cd675468af71639c8dde1ec5` | Thin `grill-me` | Manual entry-point provenance |
 | `rjs/shaping-skills@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9` | `framing-doc`, `kickoff-doc`, `breadboarding` | Framing, shaped kickoff territory, and breadboarding |
 | `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | Material in `mu-design-eng` | Instruction-only visual judgment; original skill and executable helpers retired |
-| `yanliudesign/mono-color-skill@a08c45df61ae480e2b0d78b978a304e06ba2894e` | `mono-color` | One-ink and controlled two-ink editorial art direction and raster generation |
 | `joelhooks/skills@022f29cbfa2ddd36916622d49c02b763060f6847` | `uncomplect` | Independent upstream skill, source map, and evals; local provenance metadata only |
 | `cursor/plugins@d1453c11d1dde9714d4c313c97d3a68432265c7f` | `technical-writing` | Manual-only pstack writing standard; companion `unslop` references removed; MIT notice retained |
 | Pinned maintenance/research influences | `production-readiness`, `tufte-data-viz`, `herdr`, `hunk-review` | Production risk, quantitative visualization, Herdr, and Hunk |
@@ -211,7 +210,6 @@ For new-project stack selection or approved modernization, read
 | `opensrc` | External source-cache acquisition |
 | `mermaid` | Frozen upstream Mermaid validation skill preserved after its removal from Mitsupi |
 | `moja-glava` | Durable private knowledge checkpoints |
-| `mono-color` | One-ink and controlled two-ink editorial art direction, raster assets, and production prompts |
 | `pen-design` | Local MCP-first Pen.dev integration; loads provider guidance at runtime rather than redistributing it |
 | `post-mortem` | Session lessons and guidance improvements |
 | `production-readiness` | Service, data, deployment, and reliability risk |
@@ -248,8 +246,7 @@ refresh installed projections or stop existing helpers.
 
 - **Visual:** `pen-design` owns Pen-generated editable `.pen` artifacts and
   their exports; `mu-design-eng` supports code-first UI/UX only when explicitly invoked;
-  `mono-color` owns one-ink and controlled two-ink editorial art direction and
-  raster assets; `tufte-data-viz` owns quantitative graphics;
+  `tufte-data-viz` owns quantitative graphics;
   Mermaid owns text-native diagrams; `tldraw-offline` owns the editable local canvas.
 - **Research:** `qmd` searches local Markdown; `opensrc` acquires source snapshots;
   `summarize` ingests documents; `surf-browser` operates authenticated browsing.

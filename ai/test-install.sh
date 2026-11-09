@@ -242,7 +242,8 @@ done
 for provider in pi codex claude-code opencode; do
   skills="$SUCCESS_REPO/.ai-runtime/$provider/skills"
   [ ! -e "$skills/handoff" ] || fail "$provider retains the retired handoff skill"
-  for reference in herdr/references/workflows.md mono-color/references/recipe.md mono-color/references/color-and-layout.md mono-color/references/image-and-type.md mono-color/references/composition.md mono-color/references/production.md mono-color/references/inspection.md; do
+  [ ! -e "$skills/mono-color" ] || fail "$provider retains the retired mono-color skill"
+  for reference in herdr/references/workflows.md; do
     [ -s "$skills/$reference" ] || fail "$provider is missing $reference"
   done
   for skill in write-discoverable-code uncomplect effect-service-design tech-spec writing-for-agents project-guidance; do

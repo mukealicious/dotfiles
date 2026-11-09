@@ -95,15 +95,6 @@ review = "semantic-diff"
 notes = "Independent architectural simplification skill; see ai/skills/uncomplect/VENDORED_FROM.md"
 
 [[sources]]
-id = "mono-color"
-repo = "yanliudesign/mono-color-skill"
-path = ""
-branch = "main"
-kind = "skill"
-review = "semantic-diff"
-notes = "Upstream source for the adapted runtime subset in ai/skills/mono-color/"
-
-[[sources]]
 id = "shaping-framing-doc"
 repo = "rjs/shaping-skills"
 path = "framing-doc"

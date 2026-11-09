@@ -72,8 +72,8 @@ filesystem bridge, automatic source acceptance, package installer, or CSP editor
 Existing harness and project rules own execution, dependencies, network exposure,
 delegation, and shipping.
 
-For quantitative graphics use `tufte-data-viz`; for editorial artwork use
-`mono-color`; for editable Pen deliverables use `pen-design`; for workflow wiring
+For quantitative graphics use `tufte-data-viz`; for editable Pen deliverables
+use `pen-design`; for workflow wiring
 use `breadboarding`. Their specialist ownership remains intact.
 
 For every rendered claim, follow [verification](references/verification.md).
