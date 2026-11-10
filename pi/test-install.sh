@@ -134,6 +134,7 @@ mv "$TMP/portable-entry" "$HOME/Code/mu-stack/skills/portable/SKILL.md"
 cmp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts" || fail 'invalid package mutated Fast'
 run || { tail -30 "$TMP/install.log"; fail install; }
 SETTINGS="$HOME/.pi/agent/settings.json"
+jq -e 'has("theme") | not' "$SETTINGS" >/dev/null || fail 'fresh setup overrides native system theme'
 MODES="$HOME/.pi/agent/modes.json"
 MODELS="$HOME/.pi/agent/models.json"
 [ ! -e "$MODELS" ] || fail 'installer created competing native priority policy'

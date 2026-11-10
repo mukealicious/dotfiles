@@ -20,7 +20,8 @@ The previous accumulated audit is preserved in the [historical archive](docs/CUS
 | `@benvargas/pi-openai-fast` | Reviewed npm `1.1.1`. Keep the consolidated policy patch for isolation, explicit allowlists and fail-closed configuration/persistence, plus a small footer-status patch using Pi's native `ctx.ui.setStatus()` API. Whole-file pristine/policy/current digests guard installation; staged output is verified before replacement. This remains the sole managed priority toggle, not upstream behavior. |
 | Mermaid | Keep the portable skill snapshot from `mitsuhiko/agent-stuff` revision `b7c45d67c634d361d67340789a02f64ffb9e16f1`, because upstream removed the selected skill. The snapshot includes authoring guidance and validator; it is a shared AI skill, not a Mitsupi fork. |
 | `pi-exa` | Retain the direct Exa search API for its distinct semantic/code/multilingual search capability. Credentials remain private runtime configuration. |
-| Local `modes.ts` and Gruvbox theme | Keep the thin four-preset native model/thinking selector and existing theme; native state remains authoritative and the extension does not force startup/resume state. |
+| Local `modes.ts` | Keep the thin four-preset native model/thinking selector; native state remains authoritative and the extension does not force startup/resume state. |
+| Theme | No baseline override: current Pi's native `system` default follows the terminal palette/appearance. Existing saved preferences remain native-owned; Gruvbox files are optional, not selected by setup. |
 
 Selected source pins are not endorsements of unreviewed package features. For provenance and installation details see package `VENDORED_FROM.md` files and `pi/patches/README.md`.
 

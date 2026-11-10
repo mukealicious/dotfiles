@@ -196,7 +196,11 @@ Restart Pi (or open `/model` and reselect) to discard an already-loaded override
 The installer no longer creates model policy or changes user model files. Deliberate
 user overrides can still supersede the toggle; `/fast off` does not erase them.
 
-The existing Gruvbox theme is retained. Pi's native footer and `/session` own token/cost
+No theme is set in the baseline: current Pi defaults to `system`, which uses the
+terminal palette and follows reported light/dark appearance changes. For existing
+installations, select **system** under `/settings` → **Theme** once; reinstalling
+preserves saved theme preferences, including the old `gruvbox-dark` selection.
+The Gruvbox files remain available only as optional explicit choices. Pi's native footer and `/session` own token/cost
 reporting; the legacy Codex quota footer and `/usage` are retired. Native
 ChatGPT credentials are not sent to the old Codex quota endpoint, and Pi does
 not expose OpenAI subscription quota-window data through its native extension API.
