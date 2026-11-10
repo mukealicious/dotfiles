@@ -5,7 +5,7 @@ The previous accumulated audit is preserved in the [historical archive](docs/CUS
 
 ## Ownership and operating contract
 
-- Pi owns native models, sessions, MCP, codemode, tools, compaction, and conversation controls. The `pi/` installer owns resource selection and links; it bootstraps absent settings keys without claiming user preferences, credentials, or histories. Shared skills and instructions are owned by `ai/` and projected by its installer.
+- Pi owns native models, sessions, MCP, codemode, tools, compaction, and conversation controls. The `pi/` installer owns resource selection and links; it bootstraps absent settings keys without claiming user preferences, credentials, or histories. `ai/` owns shared instructions and the 2 machine-owned skill projections. Portable skills belong to `~/Code/mu-stack`, selected as a local skills-only package without automatic sync.
 - `pi/settings.json` selects installed resources and default tools. `~/.pi/agent/settings.json`, `models.json`, `mcp.json`, OAuth files, custom agents/chains, and conversation histories are runtime/user-owned. Do not overwrite, migrate, or clean them as an audit side effect.
 - Native MCP and codemode replace the retired adapter/proxy stack. `/mode` selects model/thinking presets; `/fast` independently controls supported priority mode. Native session history and session controls replace custom cross-session prompt history and handoff controls.
 - Use `pi/README.md` for setup and operation. It is the user-facing guide; this audit records reviewed customization boundaries and known qualification only.

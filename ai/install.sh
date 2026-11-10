@@ -150,22 +150,42 @@ remove_retired_agent_link() {
   fi
 }
 
-# Retired projected/source skills leave dangling links. Only remove links into
-# our managed trees; an unrelated broken link may be intentional user state.
+# Skill discovery directories must not redirect through user-owned ancestors.
+# Check every component, including ~/.agents and ~/.claude, before touching links.
+skill_directory_is_unredirected() {
+  skill_ancestor="$1"
+  while [ "$skill_ancestor" != / ] && [ "$skill_ancestor" != . ]; do
+    [ ! -L "$skill_ancestor" ] || return 1
+    skill_ancestor="$(dirname "$skill_ancestor")"
+  done
+  return 0
+}
+
+# Remove only an exact former managed target for the same skill name.
+# Prefix matches are not ownership proof; preserve aliases and unrelated links.
 clean_dead_managed_skill_links() {
   dir="$1"
-  [ -d "$dir" ] || return 0
+  [ -d "$dir" ] && skill_directory_is_unredirected "$dir" || return 0
   for link in "$dir"/*; do
     [ -L "$link" ] || continue
     [ -e "$link" ] && continue
-    current="$(readlink "$link")"
-    case "$current" in
-      "$DOTFILES_ROOT/.ai-runtime/"*/skills/*|"$DOTFILES_ROOT/ai/skills/"*|"$DOTFILES_ROOT/claude/skills/"*)
-        echo "  Removing stale managed skill link: $(basename "$link")"
-        rm "$link"
-        ;;
-    esac
+    name="$(basename "$link")"
+    if is_managed_skill_target "$(readlink "$link")" "$name"; then
+      echo "  Removing stale managed skill link: $name"
+      rm "$link"
+    fi
   done
+}
+
+is_managed_skill_target() {
+  case "$1" in
+    "$DOTFILES_ROOT/.ai-runtime/pi/skills/$2"|\
+    "$DOTFILES_ROOT/.ai-runtime/codex/skills/$2"|\
+    "$DOTFILES_ROOT/.ai-runtime/claude-code/skills/$2"|\
+    "$DOTFILES_ROOT/.ai-runtime/opencode/skills/$2"|\
+    "$DOTFILES_ROOT/ai/skills/$2"|"$DOTFILES_ROOT/claude/skills/$2") return 0 ;;
+  esac
+  return 1
 }
 
 #
@@ -184,6 +204,10 @@ sync_skill_runtime_dir() {
   label="$3"
   overlay_src="$4"
 
+  if ! skill_directory_is_unredirected "$target_dir"; then
+    log_warn "Preserving user-owned skill directory or ancestor link: $target_dir"
+    return 0
+  fi
   mkdir -p "$target_dir"
   clean_dead_managed_skill_links "$target_dir"
 
@@ -208,8 +232,8 @@ sync_skill_runtime_dir() {
 # Helper: Apply a managed symlink in an installer-managed runtime directory
 #
 # Behavior:
-# - If the target is already a symlink, replace it so managed runtime output wins
-# - If the target is a regular file/dir, preserve it and warn via ensure_symlink
+# - Replace only exact managed skill symlinks; preserve unrelated links
+# - Preserve regular files/directories, including when --force is given
 # - If the target is missing, create it
 #
 ensure_runtime_overlay_symlink() {
@@ -224,12 +248,19 @@ ensure_runtime_overlay_symlink() {
       return 0
     fi
 
-    echo "  Re-linking $desc"
-    rm "$target"
-    ln -s "$src" "$target"
+    if is_managed_skill_target "$(readlink "$target")" "$(basename "$target")"; then
+      echo "  Re-linking $desc"
+      rm "$target"
+      ln -s "$src" "$target"
+    else
+      log_warn "Preserving unmanaged skill link: $target"
+    fi
     return 0
   fi
-
+  if [ -e "$target" ]; then
+    log_warn "Preserving user-owned skill entry: $target"
+    return 0
+  fi
   ensure_symlink "$src" "$target" "$desc"
 }
 
@@ -325,9 +356,11 @@ mkdir -p "$HOME/.codex"
 assemble_instruction_file "$HOME/.codex/instructions.md" "$HOME/.codex/instructions.md" ""
 
 #
-# Skills (single source of truth for all AI tools)
+# Dotfiles-owned skills only (apple-reminders and dotfiles-dev).
+# Portable skills belong to ~/Code/mu-stack, not these projections.
+# mu-stack/install.sh owns its checkout update and Claude/Codex installation.
 #
-# Portable skills are authored once in ai/skills/ and projected into
+# The 2 machine-owned skills in ai/skills/ are projected into
 # provider-aware runtime sources under .ai-runtime/.
 # Runtime directories such as .agents/skills/ and .claude/skills/ are generated
 # outputs, not authoring homes. Claude-specific skills in claude/skills/ remain
@@ -422,5 +455,11 @@ done
 log_info "Setting up OpenCode skills..."
 # Note: OpenCode uses 'skill' not 'skills'. It gets only portable shared skills.
 sync_skill_runtime_dir "$PROJECTED_OPENCODE_SKILLS_SRC" "$OPENCODE_DIR/skill" "$OPENCODE_DIR/skill" ""
+
+# Cover former global entry points too, but never publish the external package.
+# Pi cleanup runs after the staged tree swap, when old projections are gone.
+for directory in "$PROJECT_AGENTS_SKILLS_DIR" "$PROJECT_CLAUDE_SKILLS_DIR" "$CLAUDE_DIR/skills" "$OPENCODE_DIR/skill" "$HOME/.agents/skills" "$HOME/.codex/skills" "$HOME/.pi/agent/skills"; do
+  clean_dead_managed_skill_links "$directory"
+done
 
 log_success "AI configuration complete!"

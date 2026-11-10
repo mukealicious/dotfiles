@@ -551,11 +551,11 @@ else
   info "Expected: $moja_glava_dir"
 fi
 
-if [ -f "$DOTFILES_ROOT/.ai-runtime/pi/skills/moja-glava/SKILL.md" ]; then
-  pass "Hammerspoon moja-glava skill projection"
+if [ -f "$HOME/Code/mu-stack/skills/moja-glava/SKILL.md" ]; then
+  pass "Hammerspoon moja-glava canonical skill"
 else
-  fail "Hammerspoon moja-glava skill projection is missing"
-  info "Fix: $DOTFILES_ROOT/ai/install.sh"
+  fail "Hammerspoon moja-glava skill is missing from mu-stack"
+  info "Fix: dot skills (requires GitHub access; preserves checkout conflicts)"
 fi
 
 hammerspoon_cli="/Applications/Hammerspoon.app/Contents/Frameworks/hs/hs"
@@ -753,6 +753,9 @@ check_managed_file "$HOME/.codex/instructions.md" "~/.codex/instructions.md"
 
 header "AI skill projections"
 
+. "$DOTFILES_ROOT/ai/scripts/check-external-skills.sh"
+check_external_skill_installation
+
 SHARED_SKILLS_SRC="$DOTFILES_ROOT/ai/skills"
 CLAUDE_SKILLS_SRC="$DOTFILES_ROOT/claude/skills"
 CLAUDE_DIR="$HOME/.claude"
@@ -766,7 +769,10 @@ check_projected_claude_skill() {
   if [ -d "$CLAUDE_SKILLS_SRC/$skill_name" ]; then
     check_symlink "$CLAUDE_SKILLS_SRC/$skill_name" "$CLAUDE_DIR/skills/$skill_name" "skills/$skill_name (overlay)"
   elif [ -d "$PROJECTED_CLAUDE_SKILLS/$skill_name" ]; then
-    check_symlink "$PROJECTED_CLAUDE_SKILLS/$skill_name" "$CLAUDE_DIR/skills/$skill_name" "skills/$skill_name (shared)"
+    check_symlink "$PROJECTED_CLAUDE_SKILLS/$skill_name" "$CLAUDE_DIR/skills/$skill_name" "skills/$skill_name (local)"
+  else
+    fail "Missing local Claude skill projection: $skill_name"
+    info "Fix: $DOTFILES_ROOT/ai/install.sh"
   fi
 }
 
@@ -804,7 +810,10 @@ check_projected_repo_skill() {
   if [ -n "$overlay_src" ] && [ -d "$overlay_src/$skill_name" ]; then
     check_symlink "$overlay_src/$skill_name" "$target_dir/$skill_name" "$label/$skill_name (overlay)"
   elif [ -d "$projected_src/$skill_name" ]; then
-    check_symlink "$projected_src/$skill_name" "$target_dir/$skill_name" "$label/$skill_name (shared)"
+    check_symlink "$projected_src/$skill_name" "$target_dir/$skill_name" "$label/$skill_name (local)"
+  else
+    fail "Missing local skill projection: $label/$skill_name"
+    info "Fix: $DOTFILES_ROOT/ai/install.sh"
   fi
 }
 
@@ -815,8 +824,6 @@ for runtime_pair in "$PROJECT_AGENTS_SKILLS_DIR|.agents/skills||$PROJECTED_CODEX
   rest="${rest#*|}"
   rt_overlay="${rest%%|*}"
   rt_projected="${rest#*|}"
-
-  [ -d "$rt_dir" ] || continue
 
   checked_repo_skills="|"
   for skills_root in "$SHARED_SKILLS_SRC" ${rt_overlay:+"$rt_overlay"}; do

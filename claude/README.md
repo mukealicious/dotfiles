@@ -10,14 +10,14 @@ For shared instructions, skill authoring/projections, and retirement cleanup, re
 |---|---|
 | `claude/settings.json` | `claude/install.sh` links it to `~/.claude/settings.json` |
 | `claude/hooks/` | Hook implementations referenced by settings |
-| `ai/skills/` | `ai/install.sh` projects shared skills and links them into Claude runtimes |
+| `~/Code/mu-stack/skills/` | mu-stack explicitly installs canonical Claude skill links |
+| `ai/skills/` | `ai/install.sh` projects the 2 dotfiles-owned skills |
 | `claude/skills/` | Optional Claude-only authoring overlays; never a generated projection |
 
-Author portable skills in `ai/skills/`. Use `claude/skills/` only for Claude-native
-runtime requirements such as hooks, `$SKILL_DIR`, plugins, or subagent-specific
-behavior. The [shared skill inventory](../ai/README.md#skill-inventory) owns
-capability routing and invocation guidance; manual-only skills are not started
-automatically.
+Author portable skills in `~/Code/mu-stack/skills/`. Use `claude/skills/` only
+for Claude-native runtime requirements such as hooks, `$SKILL_DIR`, plugins, or
+subagent-specific behavior. Read [ownership guidance](../ai/README.md#skill-ownership)
+before changing integration; manual-only skills are not started automatically.
 
 No marketplace plugins are installed by this repo. Keep shared workflows
 reviewable rather than adding a second harness-specific copy.
@@ -66,7 +66,11 @@ settings/MCP changes:
 ./claude/install.sh
 ```
 
-Use `ai/install.sh` for instructions, skill projections, or agents instead.
+Use `ai/install.sh` for instructions and dotfiles-owned projections instead.
+Use `dot skills` to update portable skills and install Claude/Codex links.
+For installation without a Git update, use
+`node ~/Code/mu-stack/scripts/install.mjs claude`.
+See [safe update and initial cutover](../mu-stack/README.md).
 Documentation-only changes need neither installer.
 
 ## Claude-Native Reference

@@ -19,7 +19,7 @@ assert_file_contains() {
   grep -Fq "$text" "$file" || fail "$file does not contain expected text"
 }
 
-RETIRED_SKILLS='impeccable diagnosing-bugs coding-standards mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context librarian visual-deliverables cloudflare-composition-root'
+RETIRED_SKILLS='breadboarding bro effect-service-design framing-doc grill-me grilling herdr hunk-review kickoff-doc mermaid moja-glava mu-design-eng opensrc pen-design post-mortem production-readiness project-guidance qmd surf-browser tech-spec technical-writing tufte-data-viz uncomplect upstream-review write-discoverable-code writing-for-agents impeccable diagnosing-bugs coding-standards mu-mode mu-stack rat-stack tdd domain-modeling codebase-design code-review grill-with-docs build-skill agent-context librarian visual-deliverables cloudflare-composition-root'
 
 assert_retired_skill_cleanup() {
   for retired in $RETIRED_SKILLS; do
@@ -167,10 +167,25 @@ for directory in "$SUCCESS_REPO/.agents/skills" "$SUCCESS_REPO/.claude/skills" "
   ln -s "$SUCCESS_HOME/custom-skill" "$directory/custom-link"
   ln -s "$SUCCESS_HOME/missing-custom-skill" "$directory/custom-broken-link"
   for retired in $RETIRED_SKILLS; do
-    ln -s "$SUCCESS_REPO_PHYSICAL/.ai-runtime/$provider/skills/$retired" "$directory/$retired"
+    # Cross-provider links remain live until the later Pi tree swap.
+    old_provider="$provider"
+    [ "$retired" != moja-glava ] || old_provider=pi
+    ln -s "$SUCCESS_REPO_PHYSICAL/.ai-runtime/$old_provider/skills/$retired" "$directory/$retired"
   done
 done
+# Former global entry points also need exact-link cleanup after the Pi swap.
+for directory in "$SUCCESS_HOME/.agents/skills" "$SUCCESS_HOME/.codex/skills" "$SUCCESS_HOME/.pi/agent/skills"; do
+  mkdir -p "$directory"
+  ln -s "$SUCCESS_REPO/.ai-runtime/pi/skills/moja-glava" "$directory/moja-glava"
+  ln -s "$SUCCESS_REPO/.ai-runtime/pi/skills/other-name" "$directory/custom-alias"
+  ln -s "$SUCCESS_REPO/.ai-runtime/custom/skills/retired" "$directory/retired"
+done
 HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/migration.log" 2>&1
+for directory in "$SUCCESS_HOME/.agents/skills" "$SUCCESS_HOME/.codex/skills" "$SUCCESS_HOME/.pi/agent/skills"; do
+  [ ! -L "$directory/moja-glava" ] || fail 'old global link survived'
+  [ -L "$directory/custom-alias" ] || fail 'alias into managed tree removed'
+  [ -L "$directory/retired" ] || fail 'unknown provider link removed'
+done
 assert_retired_skill_cleanup
 [ ! -e "$SUCCESS_HOME/.claude/skills/handoff" ] && [ ! -L "$SUCCESS_HOME/.claude/skills/handoff" ] || fail "retired handoff link survived"
 [ ! -e "$SUCCESS_HOME/.claude/skills/principle-boundary-discipline" ] && [ ! -L "$SUCCESS_HOME/.claude/skills/principle-boundary-discipline" ] || fail "stale installed principle link survived"
@@ -180,107 +195,13 @@ for profile in agent; do
   [ ! -e "$SUCCESS_HOME/.pi/$profile/agents/fixture.md" ] || fail "installer published an agent"
   [ ! -e "$SUCCESS_REPO/.ai-runtime/pi/agents" ] || fail "generated agent tree survived"
 done
-# Installed instructions must resolve scripts against the published tree, not
-# the temporary directory used while constructing it.
-PI_SKILLS="$SUCCESS_REPO_PHYSICAL/.ai-runtime/pi/skills"
-for instruction in \
-  "$PI_SKILLS/moja-glava/SKILL.md" \
-  "$PI_SKILLS/moja-glava/references/studying.md"; do
-  [ -f "$instruction" ] || fail "missing installed instruction $instruction"
-done
-CHECKER="$TMP_ROOT/check-pi-script-references.cjs"
-cat > "$CHECKER" <<'NODE'
-const fs = require('node:fs');
-const path = require('node:path');
-const [root, directory] = process.argv.slice(2);
-const counts = new Map([['moja-glava', 0]]);
-function check(dir) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const file = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      check(file);
-    } else if (entry.isFile() && file.endsWith('.md')) {
-      const content = fs.readFileSync(file, 'utf8');
-      if (content.includes('/.pi.stage.')) throw new Error(`stale staging reference in ${file}`);
-      for (const match of content.matchAll(/(\/[^\s"'<>`]+\/skills\/([^/\s"'<>`]+)\/scripts)\/([^\s"'<>`]+)/g)) {
-        const [, scriptsDirectory, skill, scriptName] = match;
-        if (!scriptsDirectory.startsWith('/')) continue;
-        const expectedDirectory = path.join(root, skill, 'scripts');
-        if (scriptsDirectory !== expectedDirectory) {
-          throw new Error(`wrong published script root ${scriptsDirectory}; expected ${expectedDirectory} in ${file}`);
-        }
-        const script = path.join(scriptsDirectory, scriptName);
-        if (!fs.existsSync(script)) throw new Error(`missing referenced script ${script} from ${file}`);
-        if (counts.has(skill)) counts.set(skill, counts.get(skill) + 1);
-      }
-    }
-  }
-}
-check(directory);
-for (const [skill, count] of counts) {
-  if (count === 0) throw new Error(`no installed ${skill} script references were checked`);
-}
-NODE
-"$NODE" "$CHECKER" "$PI_SKILLS" "$PI_SKILLS"
-# Deliberately reference a missing file to verify that the checker fails closed.
-NEGATIVE_ROOT="$TMP_ROOT/negative-pi-skills"
-mkdir -p "$NEGATIVE_ROOT/moja-glava"
-printf '%s\n' "$PI_SKILLS/moja-glava/scripts/missing-regression-file.mjs" > "$NEGATIVE_ROOT/moja-glava/SKILL.md"
-if "$NODE" "$CHECKER" "$PI_SKILLS" "$NEGATIVE_ROOT" >"$TMP_ROOT/missing-reference.log" 2>&1; then
-  fail "script-reference checker accepted a missing file"
-fi
-assert_file_contains "$TMP_ROOT/missing-reference.log" "missing referenced script"
-for skill in moja-glava; do
-  [ -d "$PI_SKILLS/$skill/scripts" ] || fail "missing published $skill scripts"
-done
-# Other providers continue to reference their own published projection roots.
-for provider in codex claude-code opencode; do
-  provider_skills="$SUCCESS_REPO_PHYSICAL/.ai-runtime/$provider/skills"
-  assert_file_contains "$provider_skills/moja-glava/references/studying.md" "$provider_skills/moja-glava/scripts"
-done
-# Progressive disclosure must survive projection with its supporting resources.
+# Only the 2 machine-owned skills belong in dotfiles projections.
 for provider in pi codex claude-code opencode; do
   skills="$SUCCESS_REPO/.ai-runtime/$provider/skills"
-  [ ! -e "$skills/handoff" ] || fail "$provider retains the retired handoff skill"
-  [ ! -e "$skills/mono-color" ] || fail "$provider retains the retired mono-color skill"
-  for reference in herdr/references/workflows.md; do
-    [ -s "$skills/$reference" ] || fail "$provider is missing $reference"
+  for skill in apple-reminders dotfiles-dev; do
+    diff -r "$SUCCESS_REPO/ai/skills/$skill" "$skills/$skill" || fail "$provider changed $skill"
   done
-  for skill in write-discoverable-code uncomplect effect-service-design tech-spec writing-for-agents project-guidance; do
-    diff -r "$SUCCESS_REPO/ai/skills/$skill" "$skills/$skill" || fail "$provider changed or omitted $skill resources/metadata"
-  done
-  [ ! -e "$skills/coding-standards/references" ] || fail "$provider retains the abandoned coding corpus"
-  for skipped in prelude bootstrap-prelude; do
-    [ ! -e "$skills/$skipped" ] || fail "$provider imports skipped $skipped"
-  done
-  assert_file_contains "$skills/writing-for-agents/SKILL.md" 'disable-model-invocation: true'
-  [ -s "$skills/writing-for-agents/SKILL-MECHANICS.md" ] || fail "$provider lost authoring mechanics"
-  [ -s "$skills/writing-for-agents/agents/openai.yaml" ] || fail "$provider lost upstream authoring metadata"
-  [ ! -e "$skills/writing-for-agents/scripts" ] && [ ! -e "$skills/writing-for-agents/references" ] || fail "$provider carried over retired authoring resources"
-  assert_file_contains "$skills/mu-design-eng/SKILL.md" 'disable-model-invocation: true'
-  assert_file_contains "$skills/tech-spec/SKILL.md" 'disable-model-invocation: true'
-  assert_file_contains "$skills/write-discoverable-code/SKILL.md" 'disable-model-invocation: true'
-  assert_file_contains "$skills/project-guidance/SKILL.md" '~/.dotfiles/ai/skills/writing-for-agents/SKILL.md'
-  [ ! -e "$skills/coding-standards" ] || fail "$provider retains the retired policy skill"
-  assert_file_contains "$SUCCESS_REPO/ai/references/coding-standards/typescript.md" 'not active engineering policy'
-  assert_file_contains "$SUCCESS_REPO/ai/references/coding-standards/typescript.md" '## Testing'
-  for specialist in tech-spec effect-service-design write-discoverable-code; do
-    if grep -Fq '../coding-standards/' "$skills/$specialist/SKILL.md"; then
-      fail "$provider $specialist depends on the retired policy skill"
-    fi
-  done
-  [ -s "$skills/uncomplect/references/source-map.md" ] || fail "$provider lost Uncomplect source map"
-  [ -s "$skills/uncomplect/evals/trigger-evals.json" ] || fail "$provider lost upstream evals"
-  for standalone in "$skills"/principle-*; do
-    [ ! -e "$standalone" ] || fail "$provider exposes a standalone principle skill"
-  done
-  [ ! -e "$skills/implement" ] || fail "$provider retains the retired implement wrapper"
-  [ -f "$skills/mermaid/tools/validate.sh" ] || fail "$provider lost the preserved Mermaid validator"
-done
-for provider in codex claude-code opencode; do
-  if grep -R -Fq '/skill:' "$SUCCESS_REPO/.ai-runtime/$provider/skills"; then
-    fail "$provider skill projection contains Pi-only /skill syntax"
-  fi
+  [ "$(ls "$skills" | wc -l | tr -d ' ')" = 2 ] || fail "$provider publishes non-local skills"
 done
 [ -f "$SUCCESS_HOME/.pi/agent/AGENTS.md" ] || fail "legacy fallback was modified"
 printf '%s\n' 'custom agent' > "$SUCCESS_HOME/.pi/agent/agents/custom.md"
@@ -308,7 +229,7 @@ for provider in pi codex claude-code opencode; do
   [ ! -e "$SUCCESS_REPO/.ai-runtime/$provider/skills/coding-standards/references" ] || fail "$provider restored the abandoned coding corpus on repeat install"
 done
 for directory in "$SUCCESS_REPO/.agents/skills" "$SUCCESS_REPO/.claude/skills" "$SUCCESS_HOME/.claude/skills" "$SUCCESS_HOME/.config/opencode/skill"; do
-  for skill in effect-service-design tech-spec writing-for-agents project-guidance; do
+  for skill in apple-reminders dotfiles-dev; do
     [ -L "$directory/$skill" ] && [ -s "$directory/$skill/SKILL.md" ] || fail "missing installed skill link: $directory/$skill"
   done
 done
@@ -323,6 +244,40 @@ printf 'user-owned review\n' > "$SUCCESS_HOME/custom-agents/review.md"
 HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/custom-agent-directory.log" 2>&1
 [ "$(readlink "$SUCCESS_HOME/.pi/agent/agents")" = "$SUCCESS_HOME/custom-agents" ] || fail "custom agent directory changed"
 assert_file_contains "$SUCCESS_HOME/custom-agents/review.md" "user-owned review"
+
+# Same-name collisions must survive, including broken links and --force.
+rm "$SUCCESS_HOME/.claude/skills/apple-reminders" "$SUCCESS_HOME/.claude/skills/dotfiles-dev"
+ln -s "$SUCCESS_HOME/missing-user-skill" "$SUCCESS_HOME/.claude/skills/apple-reminders"
+mkdir "$SUCCESS_HOME/.claude/skills/dotfiles-dev"
+printf 'user skill\n' > "$SUCCESS_HOME/.claude/skills/dotfiles-dev/SKILL.md"
+HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" --force >"$TMP_ROOT/skill-collision.log" 2>&1
+[ "$(readlink "$SUCCESS_HOME/.claude/skills/apple-reminders")" = "$SUCCESS_HOME/missing-user-skill" ] || fail 'broken same-name link replaced'
+assert_file_contains "$SUCCESS_HOME/.claude/skills/dotfiles-dev/SKILL.md" 'user skill'
+# Never publish into a user-owned skill directory symlink.
+mv "$SUCCESS_HOME/.claude/skills" "$SUCCESS_HOME/custom-skills"
+ln -s "$SUCCESS_HOME/custom-skills" "$SUCCESS_HOME/.claude/skills"
+ln -s "$SUCCESS_REPO/.ai-runtime/claude-code/skills/moja-glava" "$SUCCESS_HOME/custom-skills/moja-glava"
+HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/skill-directory.log" 2>&1
+[ -L "$SUCCESS_HOME/custom-skills/moja-glava" ] || fail 'traversed user skill directory link'
+
+# Redirected ancestors must block both publication and retirement cleanup.
+# Use real skills/ leaves so checking only that last component cannot pass.
+rm "$SUCCESS_HOME/.claude/skills"
+mkdir "$SUCCESS_HOME/.claude/skills"
+for parent in "$SUCCESS_HOME/.agents" "$SUCCESS_HOME/.claude" "$SUCCESS_REPO/.agents"; do
+  mkdir -p "$parent/skills"
+  [ ! -L "$parent/skills/apple-reminders" ] || rm "$parent/skills/apple-reminders"
+  [ ! -L "$parent/skills/moja-glava" ] || rm "$parent/skills/moja-glava"
+  ln -s "$SUCCESS_REPO/.ai-runtime/pi/skills/moja-glava" "$parent/skills/moja-glava"
+  mv "$parent" "$parent.redirected"
+  ln -s "$parent.redirected" "$parent"
+done
+HOME="$SUCCESS_HOME" PATH="$TEST_PATH" sh "$SUCCESS_REPO/ai/install.sh" >"$TMP_ROOT/skill-ancestor.log" 2>&1
+for parent in "$SUCCESS_HOME/.agents" "$SUCCESS_HOME/.claude" "$SUCCESS_REPO/.agents"; do
+  [ "$(readlink "$parent")" = "$parent.redirected" ] || fail 'redirected ancestor changed'
+  [ -L "$parent/skills/moja-glava" ] || fail 'cleanup traversed redirected ancestor'
+  [ ! -e "$parent/skills/apple-reminders" ] && [ ! -L "$parent/skills/apple-reminders" ] || fail 'publication traversed redirected ancestor'
+done
 
 # Instruction ownership remains fail-closed even with no agent publisher.
 rm "$SUCCESS_HOME/.pi/agent/AGENTS.md"

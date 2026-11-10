@@ -5,13 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { DefaultResourceLoader, SettingsManager } from '@earendil-works/pi-coding-agent';
 
 const settings = JSON.parse(fs.readFileSync(new URL('./settings.json', import.meta.url), 'utf8'));
 
-test('fresh native discovery loads the consolidated source projection without retired skills', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pi-engineering-skills-'));
+test('fresh native discovery loads only the 2 dotfiles-owned skills', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pi-local-skills-'));
   try {
     const projection = path.join(root, 'skills');
     execFileSync(process.execPath, [path.resolve('ai/scripts/project-skills.mjs'), 'pi', path.resolve('ai/skills'), projection]);
@@ -22,46 +21,13 @@ test('fresh native discovery loads the consolidated source projection without re
     await loader.reload();
     const result = loader.getSkills();
     assert.deepEqual(result.diagnostics, []);
-    for (const name of ['write-discoverable-code', 'uncomplect', 'effect-service-design', 'tech-spec', 'writing-for-agents', 'project-guidance']) {
-      const loaded = result.skills.find(skill => skill.name === name);
-      assert.ok(loaded, `${name} is discoverable`);
-      assert.equal(loaded.filePath, path.join(projection, name, 'SKILL.md'));
-      assert.equal(loaded.disableModelInvocation, ['tech-spec', 'writing-for-agents', 'write-discoverable-code', 'uncomplect'].includes(name), 'preserve deliberate manual versus automatic invocation');
-      assert.ok(loaded.description.length > 20, 'native loader parses multiline descriptions');
+    assert.deepEqual(result.skills.map(skill => skill.name).sort(), ['apple-reminders', 'dotfiles-dev']);
+    for (const loaded of result.skills) {
+      assert.equal(loaded.filePath, path.join(projection, loaded.name, 'SKILL.md'));
+      assert.equal(loaded.disableModelInvocation, false);
     }
-    const retired = ['diagnosing-bugs', 'coding-standards', 'mu-mode', 'mu-stack', 'rat-stack', 'tdd', 'domain-modeling', 'codebase-design', 'code-review', 'grill-with-docs', 'build-skill', 'agent-context', 'librarian', 'visual-deliverables', 'cloudflare-composition-root', 'prelude', 'bootstrap-prelude'];
-    assert.deepEqual(result.skills.filter(skill => retired.includes(skill.name)), []);
-    for (const file of ['write-discoverable-code/LICENSE', 'uncomplect/references/source-map.md', 'effect-service-design/references/AUDIT.md', 'effect-service-design/agents/openai.yaml', 'writing-for-agents/SKILL-MECHANICS.md', 'writing-for-agents/agents/openai.yaml', 'writing-for-agents/LICENSE', ...['effect-service-design', 'tech-spec'].map(name => `${name}/LICENSE`)]) {
-      assert.ok(fs.existsSync(path.join(projection, file)), file);
-    }
-    const spec = fs.readFileSync(path.join(projection, 'tech-spec/SKILL.md'), 'utf8');
-    assert.ok(spec.includes("repository's testing policy"));
-    const seed = fs.readFileSync(path.resolve('ai/references/coding-standards/typescript.md'), 'utf8');
-    assert.ok(seed.includes('not active engineering policy'));
-    assert.ok(seed.includes('## Testing'));
-    for (const name of ['tech-spec', 'effect-service-design', 'write-discoverable-code']) {
-      const specialist = fs.readFileSync(path.join(projection, name, 'SKILL.md'), 'utf8');
-      assert.ok(!specialist.includes('../coding-standards/'), `${name} must not depend on the retired policy skill`);
-    }
-    assert.ok(!spec.includes('Use the sibling TDD workflow'), 'missing upstream dependency is repaired');
-    assert.ok(!fs.existsSync(path.join(projection, 'coding-standards')), 'plain reference material must not be installed as a skill');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('writing-for-agents retains the exact reviewed upstream files and original MIT notice', () => {
-  // Dillon's bdf5e06 snapshot, plus Matt Pocock's LICENSE at 49dd158.
-  const blobs = {
-    'SKILL.md': '645088cb14b438f1cdc922dc2f279fd3a46f51be',
-    'SKILL-MECHANICS.md': '9cdbdb22aadc438755392216e75ad9a14cc9832e',
-    'agents/openai.yaml': '079c933b75743dec18b5d0c01006def20b6aad26',
-    'LICENSE': 'f1dd2c09108dde1a5f56097cee8461b3ea834499',
-  };
-  for (const [file, expected] of Object.entries(blobs)) {
-    const bytes = fs.readFileSync(path.resolve('ai/skills/writing-for-agents', file));
-    const actual = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
-    assert.equal(actual, expected, `${file} must remain unchanged from the reviewed source`);
   }
 });
 

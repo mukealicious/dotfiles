@@ -11,6 +11,12 @@
     "!**/.dotfiles/.agents/skills/**"
   ],
   "packages": [
+    {
+      "source": "~/Code/mu-stack",
+      "extensions": [],
+      "prompts": [],
+      "themes": []
+    },
     "~/.dotfiles/pi/packages/pi-exa",
     "~/.dotfiles/pi/packages/pi-parallel",
     "npm:@benvargas/pi-openai-fast@1.1.1",

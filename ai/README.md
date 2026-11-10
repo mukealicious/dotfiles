@@ -1,298 +1,121 @@
-# AI Tools Configuration
+# AI tools configuration
 
-Shared AI instructions, skills, and harness-aware assembly.
+Dotfiles owns machine configuration and shared instruction assembly. Portable
+skills now have a separate canonical repository: `~/Code/mu-stack`.
 
-## Reading Map
+## Ownership and reading map
 
-| Task | Read |
+| Task | Owner / read first |
 |---|---|
-| Change source ownership, projections, instructions, or agents | [Architecture](#architecture) |
-| Choose task guidance | [Skill inventory](#skill-inventory), then the matching skill |
-| Review/adopt upstream changes | [Upstream provenance](#upstream-provenance-and-review), then the artifact's metadata |
-| Change Claude settings, hooks, or MCP | [claude/README.md](../claude/README.md) |
-| Change Pi resources, models, MCP, or delegation setup | [pi/README.md](../pi/README.md) |
+| Portable skill authoring, provenance, installation | `~/Code/mu-stack/README.md`, then `skills/<name>/SKILL.md` |
+| Machine-owned skills | `ai/skills/apple-reminders/`, `ai/skills/dotfiles-dev/` |
+| Shared instruction policy | `ai/instructions/base.md` |
+| Instruction assembly and local skill projections | `ai/install.sh`, `ai/test-install.sh` |
+| Upstream comparisons and adoption decisions | Canonical method: `~/Code/mu-stack/maintenance/upstream-review.md`; [dotfiles tooling](maintenance/upstream-review.md) |
+| Claude settings, hooks, MCP | [Claude README](../claude/README.md) |
+| Pi resources, models, MCP, delegation | [Pi README](../pi/README.md) |
 
-Specs, progress notes, and provenance records explain past decisions; they are not
-startup workflows or permission to install, implement, or deploy.
+Specs and progress notes describe historical decisions, not active source paths
+or permission to implement, install, or deploy.
 
-## Architecture
+## Skill ownership
 
-Skill authoring and runtime discovery are separate concerns.
+`mu-stack/skills/` owns the extracted portable skills, including their supporting
+scripts, licenses, and provenance. `apple-reminders` and `dotfiles-dev` remain
+here because they describe this machine's setup. mu-stack owns the canonical
+review method in `maintenance/upstream-review.md`, outside distributed skills.
+Dotfiles keeps only its watchlist/tooling adapter in `ai/maintenance/upstream-review.md`. `mono-color`
+remains removed. `~/skills/tldraw-offline` remains separately owned and configured.
 
-### Authoring directories
+Edit the canonical source once. Runtime links and `.ai-runtime/` are generated
+outputs, not authoring locations. `dot skills` synchronizes the canonical
+mu-stack repository; it does not import changes from third-party skill sources.
+There is no capability profile or second maintained copy of a skill.
 
-Choose the source owner by runtime dependency:
+### Discovery and installation
 
-| Location | Standard | Works With | When To Use |
-|---|---|---|---|
-| `ai/skills/` | [Agent Skills Standard](https://agentskills.io) | All agents (Claude, Pi, OpenCode, Codex) | Default — instruction-only or standard scripts |
-| `claude/skills/` | Claude Code conventions | Claude Code only | Needs `$SKILL_DIR`, subagents, hooks, or plugins |
-| `pi/extensions/` | Pi TypeScript API | Pi only | Needs Pi TUI API, tool wrapping, or lifecycle hooks |
+- Pi consumes mu-stack as an explicit skills-only local package.
+- mu-stack's explicit installer links its canonical directories into
+  `~/.claude/skills/` and `~/.agents/skills/` for Claude Code and Codex.
+- Pi also discovers `~/.agents/skills/`. Canonical symlinks let it identify the
+  same real source rather than receiving provider-specific duplicate copies.
+- Dotfiles keeps projection support for its 2 machine-owned skills and optional
+  Claude-native overlays in `claude/skills/`.
+- Existing managed links to extracted projections are retired by the owning
+  installer. Foreign files and links must be preserved, not replaced by name.
 
-### Runtime projections
+See mu-stack's README for current official discovery sources and installation
+commands. Dotfiles owns checkout bootstrap/update through `mu-stack/install.sh`;
+`dot skills` runs that same topic entry point without unrelated machine updates.
+The full installer runs AI retirement cleanup, then mu-stack, then dependent
+Claude/OpenCode/Pi setup. See [safety and recovery](../mu-stack/README.md).
+For the initial extraction cutover, run `ai/install.sh` before `dot skills` to
+remove exact old managed links. Foreign collisions always require manual review.
+OpenCode's old extracted projections are retired; mu-stack currently documents
+Pi, Claude Code, and Codex installation only.
 
-Portable skills are authored once in `ai/skills/`. `ai/install.sh` refreshes the runtime-facing directories that consume that source:
+### Authoring
 
-- `.ai-runtime/codex/skills/` — repo-local Codex-style projected shared skills
-- `.ai-runtime/claude-code/skills/` — repo-local Claude-projected shared skills
-- `.ai-runtime/opencode/skills/` — repo-local OpenCode-projected shared skills
-- `.ai-runtime/pi/skills/` — repo-local Pi-projected shared skills
-- `.agents/skills/` — repo-local Codex-style runtime symlink projection of portable skills
-- `.claude/skills/` — repo-local Claude-style runtime symlink projection of portable skills plus Claude-only overlays
-- `~/.claude/skills/` — user-level Claude install
-- `~/.config/opencode/skill/` — user-level OpenCode install
-- Pi discovers `.ai-runtime/pi/skills/` via `~/.pi/agent/settings.json`
+Use standard `SKILL.md` frontmatter (`name`, `description`) and skill-relative
+references. Manual-only skills retain `disable-model-invocation: true`. Pi and Claude honor
+that marker; mu-stack documents the existing Codex invocation-policy limitation. Read mu-stack's
+`skills/writing-for-agents/SKILL.md` for requested agent-document authoring.
+Harness-native runtime features belong in the harness adapter, not a portable
+skill. Supporting references stay with their owning skill.
 
-These are generated outputs. Edit source files in the authoring directories, then
-refresh projections with `ai/install.sh` when applying runtime changes.
+The optional coding-standards source material moved to
+`mu-stack/skills/project-guidance/references/coding-standards/`. It is not an
+installed skill or global policy. Project-owned guidance remains authoritative.
+[Project defaults](references/project-defaults.md) remain here as local preferences
+for new projects or explicitly approved modernization.
 
-### Upstream Provenance and Review
+## Shared instructions
 
-This repo keeps upstream context close to the local artifact, then uses an optional batch review when needed:
-
-`provenance -> optional review -> manual adopt`
-
-- `metadata.watch-sources` links frontmatter-friendly files to upstream inspiration or pinned source refs
-- `VENDORED_FROM.md` links vendored directories and packages to their upstream source
-- `ai/watchlist.toml` defines which GitHub repos and paths are worth checking as a batch
-- `bin/ai-watch` collects read-only upstream facts and links them to local artifacts
-- `ai/skills/upstream-review/` interprets direct provenance or watchlist reports and ranks whether upstream changes are worth adopting or adapting
-
-The review system is intentionally manual: no auto-install, no auto-sync, no background polling.
-
-### Retained upstream sources
-
-Prefer unchanged reviewed upstream snapshots; retain adaptations only for concrete
-capability or safety requirements. The historical D6 source/SHA/disposition record is
-[`specs/pi-profile-and-skill-simplification-D6-retained-skill-audit.md`](../specs/pi-profile-and-skill-simplification-D6-retained-skill-audit.md).
-This document and the metadata beside each skill are provenance records, not an
-auto-sync mechanism.
-
-| Upstream | Local scope | Ownership |
-|---|---|---|
-| `dmmulroy/skills@8603380821fee6a77c82639f364ce8fe4f5a92be` | `references/coding-standards`, `effect-service-design`, `tech-spec` | MIT notice retained; coding standards are plain optional reference, not a skill; specialist methods defer to project policy |
-| `dmmulroy/.dotfiles@bdf5e0611d62436eeb5dc58555c1396ced2dddeb` | `write-discoverable-code` | Manual discoverability guidance, with verified original MIT notice |
-| `dmmulroy/.dotfiles@bdf5e0611d62436eeb5dc58555c1396ced2dddeb` | `writing-for-agents` | Unchanged manual authoring skill; verified Matt Pocock origin and MIT notice; replaces build-skill and agent-context |
-| `dmmulroy/.dotfiles@7c086fe40c01bf494aea7184da2eb7aaf7b7dff4` | `grilling`, `bro` | Previously retained instructions; outside this engineering consolidation |
-| `mitsuhiko/agent-stuff@b7c45d67c634d361d67340789a02f64ffb9e16f1` | `mermaid` | Unchanged skill/validator snapshot; removed upstream, preserved rather than silently dropped by the package upgrade |
-| `walterra/agent-tools@a678024a6fa7a765cd83997b3153f2eebb588d58` | `post-mortem` | Upstream retrospective workflow, with portable source-location/tool wording |
-| `viticci/remctl@e7b4e8563903935aa2bab6d4d24d983499b4a4e8` | `apple-reminders` | Agent-safe Apple Reminders reads, explicit-intent writes, and verification through RemCTL |
-| `mattpocock/skills@9c9f36ccd3995266cd675468af71639c8dde1ec5` | Thin `grill-me` | Manual entry-point provenance |
-| `rjs/shaping-skills@d8b65d7733c71e9bf436f0c2e4da60e5214a96d9` | `framing-doc`, `kickoff-doc`, `breadboarding` | Framing, shaped kickoff territory, and breadboarding |
-| `pbakaus/impeccable@39bec7c08c8cb5d694221e2c2e4386140dde8759` | Material in `mu-design-eng` | Instruction-only visual judgment; original skill and executable helpers retired |
-| `joelhooks/skills@022f29cbfa2ddd36916622d49c02b763060f6847` | `uncomplect` | Independent upstream skill, source map, and evals; local provenance metadata only |
-| `cursor/plugins@d1453c11d1dde9714d4c313c97d3a68432265c7f` | `technical-writing` | Manual-only pstack writing standard; companion `unslop` references removed; MIT notice retained |
-| Pinned maintenance/research influences | `production-readiness`, `tufte-data-viz`, `herdr`, `hunk-review` | Production risk, quantitative visualization, Herdr, and Hunk |
-
-Rules for retained upstreams:
-
-- keep the shared source in `ai/skills/` as close to the reviewed source as practical;
-- use `metadata.watch-sources` and `VENDORED_FROM.md` for exact provenance, with `ai/watchlist.toml` for optional manual drift review;
-- resolve provider-specific placeholders during projection, not by editing the source to one harness;
-- adopt only an explicitly reviewed snapshot or local owner-boundary adaptation; never auto-sync current upstream.
-
-#### Adding upstream provenance or a watched source
-
-If the source maps to one local file, add `metadata.watch-sources` to that file's
-frontmatter. If it maps to a vendored directory, add or update that directory's
-`VENDORED_FROM.md`. If it belongs in batch review, add one narrow `[[sources]]`
-entry to `ai/watchlist.toml` and verify it with `bin/ai-watch --source <id>`.
-
-### Shared Instructions
-
-Instructions now use the same shared-vs-adapter split as the skill system:
-
-- `ai/instructions/base.md` is the shared source of truth for portable guidance.
-- `pi/instructions/appendix.md` adds Pi guidance; other harnesses use the shared base alone.
-- `ai/install.sh` assembles the final installed files each harness expects.
-
-Current install targets:
+Instruction policy is unchanged by the extraction:
 
 | Installed file | Composition |
 |---|---|
 | `~/.claude/CLAUDE.md` | `ai/instructions/base.md` |
-| `.ai-runtime/pi/AGENTS.md` | `ai/instructions/base.md` + `pi/instructions/appendix.md` |
-| `~/.pi/agent/AGENTS.md` | symlink → `.ai-runtime/pi/AGENTS.md` |
-| `~/.config/opencode/AGENTS.md` | `ai/instructions/base.md` |
-| `~/.codex/instructions.md` | `ai/instructions/base.md` |
-| `~/.gemini/GEMINI.md` | `ai/instructions/base.md` |
-| `~/.AGENTS.md` | `ai/instructions/base.md` compatibility output |
+| `.ai-runtime/pi/AGENTS.md` | Base + `pi/instructions/appendix.md` |
+| `~/.pi/agent/AGENTS.md` | Link to the generated Pi instruction file |
+| `~/.config/opencode/AGENTS.md` | Base |
+| `~/.codex/instructions.md` | Base |
+| `~/.gemini/GEMINI.md` | Base |
+| `~/.AGENTS.md` | Base compatibility output |
 
-Composition rule: keep the shared base strong, keep appendices short and additive, and keep provider or model specifics out of the shared file.
+Global instructions own conduct and safety; repository instructions own
+engineering decisions. Specialist skills operate within those decisions.
+No custom advisors, researchers, or review personas are shipped. Agents and
+chains remain harness/user-owned. Narrow cleanup of exact retired managed agents
+preserves user-owned definitions.
 
-### Project Engineering Policy
+## Upstream provenance
 
-Global instructions own agent conduct and safety; repository instructions and
-linked docs own architecture, framework idioms, errors, state, testing, and delivery
-trade-offs. Shared specialist skills operate within those decisions.
+`metadata.watch-sources` and adjacent `VENDORED_FROM.md` files stay with each
+canonical artifact. Adopt only explicitly reviewed snapshots or justified local
+adaptations. Preserve licenses. Never automatically synchronize upstream content.
 
-- Use `project-guidance` when asked to establish project conventions, including
-  greenfield setup. It reads `writing-for-agents` as its authoring reference;
-  ordinary implementation does not run a policy-setup workflow.
-- Start from the closest related project's standards when useful; adapt selected
-  rules into the target project's own authoritative docs and link them from its
-  agent instructions. Another project's live policy is not an ongoing dependency.
-- [Coding standards references](references/coding-standards/README.md) preserve the
-  former policy and link concrete upstream examples. They are optional source
-  material, not an installed skill or a mandatory template. The setup workflow
-  selects only conventions justified by the target project.
-- Existing projects keep their own decisions; experiments do not inherit a
-  production architecture checklist. No work/personal/framework presets are imposed.
-- Cloudflare, Effect, discoverability, and spec-writing guidance must not silently
-  reintroduce the shared policy through dependency links or examples.
+`ai/watchlist.toml` and `bin/ai-watch` remain optional dotfiles maintenance tools.
+The watchlist can retain research interests in extracted skills, but the scanner
+only inventories dotfiles; inspect mu-stack directly for its local provenance.
+Read [the dotfiles adapter](maintenance/upstream-review.md) for inventory commands
+and its pointer to mu-stack’s canonical review method.
+Historical adoption records remain in `specs/` and Git history; their old paths
+are historical references.
 
-### Delegation
+## Apply and validate
 
-No custom advisor, researcher, or review personas are shipped. Use the harness's
-built-in agents for authorized delegation; model selection follows harness and
-runtime settings rather than dotfiles role overrides. Independent review remains
-available through an explicit request.
+Apply only the owning installer, not the full `dot` updater:
 
-`ai/install.sh` removes exact retired managed agent links and the marked Claude
-review file. It does not publish agents, create agent directories, or validate
-user-owned agents and chains. Historical agent definitions remain in Git, not active projections.
-
-### Shared Skills (`ai/skills/`)
-
-Follow the [Agent Skills Standard](https://agentskills.io):
-- YAML frontmatter (`name`, `description`) + Markdown body
-- No `$SKILL_DIR` — agent resolves paths from SKILL.md parent directory
-- Scripts accessed via shell commands relative to skill location
-
-Skills with `disable-model-invocation: true` are manual-only; their descriptions
-are not automatic routing pointers. Model-invoked descriptions should name the
-distinct task branches that need the skill. Give supporting docs explicit reading
-conditions; keep each rule in its source owner instead of copying it into callers.
-
-### Dependencies in Shared Skills
-
-**Strategy: zero install-time dependencies; prefer built-in runtimes.**
-
-Skills with scripts should use Node/Bun built-in APIs (WebSocket, fs, path, child_process, etc.) or shell commands. No per-skill `package.json` or install step unless explicitly documented.
-
-- **Node and Bun** are already toolchain prerequisites
-- Bun provides built-in WebSocket, HTTP server, file I/O — covers most local tooling needs
-- Vendored upstream skills may use `node` scripts when that is how upstream ships them
-- If a skill truly needs npm packages, add an explicit install step to `ai/install.sh` for that skill dir
-
-### Shared vs Adapter Rule
-
-Keep the core workflow in `ai/skills/` when it works without harness-native
-primitives. An overlay contributes optional runtime glue, not a second copy of the
-instructions. Repository contracts and shared safety rules remain authoritative;
-a design skill is not permission to implement or deploy.
-
-## Skill Inventory
-
-### Shared Skills
-
-The table below is the capability index; inspect each skill's frontmatter for
-invocation behavior. For engineering-source adoption history, read the
-[consolidation spec](../specs/engineering-skills-consolidation.md) and
-[progress record](../progress.md) only when those decisions matter to the task.
-For new-project stack selection or approved modernization, read
-[project defaults](references/project-defaults.md).
-
-| Skill | Owner / purpose |
-|---|---|
-| `apple-reminders` | Explicit-intent Apple Reminders reads and writes through RemCTL |
-| `breadboarding` | Workflow places, affordances, stores, and wiring |
-| `bro` | Manual plain-language restatement |
-| `effect-service-design` | Effect service contracts, Layers, composition, and audits |
-| `tech-spec` | Manual, design-only typed architecture handoff and grill-first workflow |
-| `dotfiles-dev` | Dotfiles implementation conventions |
-| `framing-doc` / `kickoff-doc` | Evidence-grounded framing and shaped kickoff territory |
-| `grill-me` | Thin manual entry into grilling |
-| `grilling` | Dependency-aware design-tree questioning |
-| `herdr` | Herdr pane/workspace/agent coordination |
-| `hunk-review` | Hunk diff and comment workflow |
-| `mu-design-eng` | Manual-only design and motion playbooks; no automatic general UI/design skill is assigned |
-| `opensrc` | External source-cache acquisition |
-| `mermaid` | Frozen upstream Mermaid validation skill preserved after its removal from Mitsupi |
-| `moja-glava` | Durable private knowledge checkpoints |
-| `pen-design` | Local MCP-first Pen.dev integration; loads provider guidance at runtime rather than redistributing it |
-| `post-mortem` | Session lessons and guidance improvements |
-| `production-readiness` | Service, data, deployment, and reliability risk |
-| `qmd` / `surf-browser` | Local Markdown search and authenticated browsing |
-| `tufte-data-viz` | Quantitative visualization judgment |
-| `uncomplect` | Upstream-baseline pressure test for stateful systems, replacement designs, and accidental complexity |
-| `upstream-review` | Manual provenance and adoption decisions |
-| `write-discoverable-code` | Manual discoverability review within project conventions |
-| `project-guidance` | Explicitly requested project-convention setup using the writing-for-agents authoring reference |
-| `technical-writing` | Manual writing and review standard for human-facing technical documents; near-upstream pstack skill |
-| `writing-for-agents` | Manual authoring reference for skills, AGENTS/CLAUDE files, and other agent-facing documents |
-
-Request reviews directly; no separate review skill, prompt, or custom agent is
-shipped. Follow repository-local conventions for tests, terminology,
-ADRs, and stack decisions; do not resurrect retired global playbooks.
-
-`framing-doc` and `kickoff-doc` remain distinct: framing captures the evidence
-grounded “why” before shaping; kickoff records builder-facing shaped territory
-after shaping.
-
-### Manual design skill
-
-[`mu-design-eng`](skills/mu-design-eng/SKILL.md) composes Impeccable's visual judgment, Emil's
-interaction workflows, and pstack's entry-point/playbook structure. It remains
-manual-only by Owner choice. Impeccable and all its executable helpers are retired;
-there is no automatic general UI/design skill replacement.
-Its [source map](skills/mu-design-eng/VENDORED_FROM.md) records retained depth and adaptations.
-Run `node ai/test-design-skill.mjs` for isolated reference/projection checks. The
-[acceptance record](../specs/design-skill-acceptance.md) separates those checks from
-routing trials and actual-browser outcome comparisons. Repository changes do not
-refresh installed projections or stop existing helpers.
-
-### One-owner capability boundaries
-
-- **Visual:** `pen-design` owns Pen-generated editable `.pen` artifacts and
-  their exports; `mu-design-eng` supports code-first UI/UX only when explicitly invoked;
-  `tufte-data-viz` owns quantitative graphics;
-  Mermaid owns text-native diagrams; `tldraw-offline` owns the editable local canvas.
-- **Research:** `qmd` searches local Markdown; `opensrc` acquires source snapshots;
-  `summarize` ingests documents; `surf-browser` operates authenticated browsing.
-- **Maintenance:** `upstream-review` decides adoption; `post-mortem` identifies
-  lessons; users can invoke `writing-for-agents` for agent-document authoring;
-  `dotfiles-dev` owns repository conventions; `hunk-review` owns Hunk annotations.
-
-### Claude-Specific (`claude/skills/`)
-
-Optional authoring directory for Claude-native overlays. Shared skills are
-projected to `.ai-runtime/claude-code/skills/` and linked into `.claude/skills/`
-and `~/.claude/skills/`; they are never generated into the authoring directory.
-
-### Pi Extensions (`pi/extensions/`)
-
-Custom extensions symlinked by `pi/install.sh`. Third-party extensions installed via packages:
-
-| Extension | Type | Description |
-|---|---|---|
-| `notify.ts` | Lifecycle hook | Non-Herdr desktop notification via OSC 777; suppressed under `HERDR_ENV=1` |
-| `modes.ts` | Command/shortcuts | Four capability presets using native model/thinking APIs; native editor and footer remain in control |
-
-| Package | Source | Provides |
-|---|---|---|
-| `git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857` | Armin Ronacher | Eight selected skills only; all extensions/prompts/themes disabled. Files/todos tools and their patches are retired; existing todo data is preserved. |
-
-Native bash follows shared `uv` guidance. The UV bash override and unreferenced
-local interceptor shims are retired; instructions are policy, not a sandbox.
-
-## Harness Maintenance
-
-Claude and Pi setup, settings ownership, MCP, and runtime validation live in their
-READMEs linked above. For OpenCode configuration, inspect `opencode/install.sh`
-and its source JSON. Claude, OpenCode, Codex, and Gemini use the shared base
-without an appendix.
-
-## Setup
-
-`script/install` runs `ai/install.sh`. To apply only AI source changes:
-
-```bash
+```sh
+sh ai/test-install.sh
 ~/.dotfiles/ai/install.sh
 ```
 
-Documentation-only edits need no installation. For assembly/projection changes,
-`sh ai/test-install.sh` validates disposable fixtures, including preservation of
-user-owned files. Native skill discovery/frontmatter checks live in
-`pi/test-native-skills.mjs`; they require the installed Pi host and current runtime
-projection. These checks do not prove model behavior.
+Use `dot skills` for the scoped checkout update and Claude/Codex installation.
+Use mu-stack's README for standalone installation without a Git update and its tests.
+Validate dotfiles update orchestration with `node --test mu-stack/test-update.mjs`.
+Pi integration changes use `pi/install.sh` after its isolated tests pass.
+Documentation-only changes need no installation. Native discovery checks live in
+`pi/test-native-skills.mjs`; they require the installed Pi host. Structural and
+loader checks do not prove model behavior.

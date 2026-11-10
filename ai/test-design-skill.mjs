@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const source = path.join(root, 'ai/skills/mu-design-eng');
+// Cross-repository acceptance check; dotfiles does not publish this skill.
+const source = path.join(process.env.MU_STACK_DIR || path.join(os.homedir(), 'Code/mu-stack'), 'skills/mu-design-eng');
 
 function files(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {

@@ -110,9 +110,10 @@ assert_contains "$REPO/herdr/config.toml" 'enabled = false'
 assert_contains "$REPO/herdr/config.toml" 'pane_history = false'
 
 # Keep release mechanics and the isolated review recipe discoverable in docs.
-assert_contains "$ROOT/ai/skills/herdr/references/workflows.md" "first observed \`idle\`, \`done\`, or \`blocked\` state"
-assert_contains "$ROOT/ai/skills/herdr/references/workflows.md" 'searches the selected current terminal snapshot'
-assert_contains "$ROOT/ai/skills/herdr/references/cli.md" 'including output that already exists'
+MU_STACK_DIR="${MU_STACK_DIR:-$HOME/Code/mu-stack}"
+assert_contains "$MU_STACK_DIR/skills/herdr/references/workflows.md" "first observed \`idle\`, \`done\`, or \`blocked\` state"
+assert_contains "$MU_STACK_DIR/skills/herdr/references/workflows.md" 'searches the selected current terminal snapshot'
+assert_contains "$MU_STACK_DIR/skills/herdr/references/cli.md" 'including output that already exists'
 assert_contains "$ROOT/herdr/README.md" 'herdr worktree create'
 assert_contains "$ROOT/herdr/README.md" 'hunk diff --watch'
 assert_contains "$ROOT/pi/extensions/notify.ts" 'if (process.env.HERDR_ENV === "1") return;'

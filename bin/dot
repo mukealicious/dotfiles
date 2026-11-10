@@ -19,6 +19,7 @@ displayUsageAndExit() {
   echo ""
   echo "Commands:"
   echo "  doctor      Run environment diagnostics"
+  echo "  skills      Update mu-stack and install its skills only"
   echo ""
   echo "Options:"
   echo "  --force     Back up and replace managed symlink conflicts"
@@ -78,6 +79,10 @@ open_dotfiles_for_editing() {
 force_symlinks=false
 
 case "${1:-}" in
+  skills)
+    shift
+    exec "$dotfilesDirectory/mu-stack/install.sh" "$@"
+    ;;
   doctor)
     shift
     exec "$dotfilesDirectory/bin/dot-doctor" "$@"

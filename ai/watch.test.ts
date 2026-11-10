@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -52,8 +52,9 @@ describe("parseArgs", () => {
 
 describe("parseWatchSourcesFromFrontmatter", () => {
   test("keeps the design candidate's 3 sources distinct", async () => {
-    const artifact = "ai/skills/mu-design-eng/SKILL.md";
-    const frontmatter = extractFrontmatter(await Bun.file(join(repoRoot, artifact)).text());
+    const artifact = "skills/mu-design-eng/SKILL.md";
+    const packageRoot = process.env.MU_STACK_DIR || join(homedir(), "Code/mu-stack");
+    const frontmatter = extractFrontmatter(await Bun.file(join(packageRoot, artifact)).text());
     expect(frontmatter).not.toBeNull();
     const sources = parseWatchSourcesFromFrontmatter(frontmatter!, artifact);
     expect(sources.map(({ repo, path, ref }) => ({ repo, path, ref }))).toEqual([
@@ -303,16 +304,16 @@ describe("createGitHubClient", () => {
   });
 });
 
-describe("upstream-review skill", () => {
-  test("documents the required rubric and read-only workflow", async () => {
-    const text = await Bun.file(new URL("./skills/upstream-review/SKILL.md", import.meta.url)).text();
+describe("upstream-review dotfiles adapter", () => {
+  test("owns local tooling and points to the canonical method without copying it", async () => {
+    const text = await Bun.file(new URL("./maintenance/upstream-review.md", import.meta.url)).text();
 
     expect(text).toContain("bin/ai-watch --json");
-    expect(text).toContain("Adopt now");
-    expect(text).toContain("Worth adapting");
-    expect(text).toContain("Interesting, not now");
-    expect(text).toContain("Skip");
-    expect(text).toContain("Risk notes");
-    expect(text).toContain("Do not edit files");
+    expect(text).toContain("ai/watchlist.toml");
+    expect(text).toContain("~/Code/mu-stack/maintenance/upstream-review.md");
+    expect(text).toContain("scans dotfiles only");
+    for (const label of ["Adopt now", "Worth adapting", "Interesting, not now", "Risk notes"]) {
+      expect(text).not.toContain(label);
+    }
   });
 });
