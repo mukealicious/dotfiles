@@ -134,6 +134,8 @@ mv "$TMP/portable-entry" "$HOME/Code/mu-stack/skills/portable/SKILL.md"
 cmp "$TMP/fast.original" "$FAST_PACKAGE/extensions/index.ts" || fail 'invalid package mutated Fast'
 run || { tail -30 "$TMP/install.log"; fail install; }
 SETTINGS="$HOME/.pi/agent/settings.json"
+jq -e '.packages | index("git:github.com/earendil-works/pi-claude-code@d5b5e04c314d3452d357174d16d10dda34daa2d2") != null' "$SETTINGS" >/dev/null || fail 'Claude Code provider pin'
+grep -Fxq "$HOME/.pi/agent install git:github.com/earendil-works/pi-claude-code@d5b5e04c314d3452d357174d16d10dda34daa2d2" "$HOME/installs.log" || fail 'Claude Code provider not installed'
 jq -e 'has("theme") | not' "$SETTINGS" >/dev/null || fail 'fresh setup overrides native system theme'
 MODES="$HOME/.pi/agent/modes.json"
 MODELS="$HOME/.pi/agent/models.json"
@@ -241,7 +243,7 @@ ln -s "$HOME/custom-review.md" "$HOME/.pi/agent/prompts/review.md"
 run || fail 'install with unmanaged review prompt link'
 [ "$(readlink "$HOME/.pi/agent/prompts/review.md")" = "$HOME/custom-review.md" ] || fail 'unmanaged review prompt link changed'
 [ "$(readlink "$HOME/.pi/agent/lib")" = "$HOME/custom-lib" ] || fail 'unmanaged library link changed'
-for package in "$REPO/pi/packages/pi-exa" "$REPO/pi/packages/pi-parallel" "$REPO/pi/packages/pi-subagents" git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857; do
+for package in "$REPO/pi/packages/pi-exa" "$REPO/pi/packages/pi-parallel" "$REPO/pi/packages/pi-subagents" git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857 git:github.com/earendil-works/pi-claude-code@d5b5e04c314d3452d357174d16d10dda34daa2d2; do
   if (PI_TEST_INSTALL_FAIL="$package" run); then fail "$package install failure reported success"; fi
   grep -Fq "injected install failure: $package" "$TMP/install.log" || fail "$package stderr was suppressed"
   grep -Fq "Retry manually:" "$TMP/install.log" || fail "$package recovery hint missing"

@@ -19,6 +19,7 @@
     "~/.dotfiles/pi/packages/pi-exa",
     "~/.dotfiles/pi/packages/pi-parallel",
     "npm:@benvargas/pi-openai-fast@1.1.1",
+    "git:github.com/earendil-works/pi-claude-code@d5b5e04c314d3452d357174d16d10dda34daa2d2",
     {
       "source": "~/.dotfiles/pi/packages/pi-subagents",
       "skills": ["skills/pi-subagents/SKILL.md"],

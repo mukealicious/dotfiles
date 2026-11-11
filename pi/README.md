@@ -205,6 +205,33 @@ reporting; the legacy Codex quota footer and `/usage` are retired. Native
 ChatGPT credentials are not sent to the old Codex quota endpoint, and Pi does
 not expose OpenAI subscription quota-window data through its native extension API.
 
+### Claude Code subscription provider
+
+The experimental **pi-claude-code** provider is pinned to upstream commit
+`d5b5e04c314d3452d357174d16d10dda34daa2d2` (manifest version 0.1.0).
+It uses the installed official `claude` CLI and its existing subscription login;
+credentials remain owned by Claude Code. Pi still executes tools and owns history.
+OpenAI defaults and the four capability modes are unchanged.
+
+After installation, restart Pi or run `/reload`, then:
+
+1. Run `/claude-code-status` to check readiness. If needed, run
+   `claude auth login` in a terminal, not Pi's `/login`.
+2. Use `/model` to select **Claude Code Subscription (Experimental)**.
+
+Upstream warns that subscription eligibility and billing may change. Requests
+share Claude Code's limits. The usage-credit guard stops after a reported overage
+charge; it cannot prevent that first charge. Disable usage credits in Claude's
+account settings if plan-only billing is required. We do not enable
+`PI_CLAUDE_CODE_ALLOW_USAGE_CREDITS`. API keys are stripped from child processes;
+conflicting auth/backend overrides are rejected.
+
+Model discovery sends no conversation or generation request, but permits Claude
+Code catalog/feature-flag traffic and telemetry. Set `DISABLE_TELEMETRY=1` to opt
+out (possibly reducing the catalog). Conversation workers disable telemetry.
+This provider is not automatically injected into foreground subagents; configure
+its extension explicitly when authorizing children that need it.
+
 Retained packages:
 
 - **pi-parallel@3.0.0:** unchanged upstream at

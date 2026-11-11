@@ -36,6 +36,7 @@ PI_BIN="$HOME/.bun/bin/pi"
 AGENT_DIR="$HOME/.pi/agent"
 MIN_PI_VERSION="0.99.1"
 MITSUPI_PACKAGE="git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857"
+CLAUDE_CODE_PACKAGE="git:github.com/earendil-works/pi-claude-code@d5b5e04c314d3452d357174d16d10dda34daa2d2"
 FAST_PACKAGE="npm:@benvargas/pi-openai-fast@1.1.1"
 FAST_DIR="$AGENT_DIR/npm/node_modules/@benvargas/pi-openai-fast"
 FAST_PATCH="$DOTFILES_ROOT/pi/patches/pi-openai-fast-1.1.1-policy.patch"
@@ -356,6 +357,7 @@ PACKAGES="
   $DOTFILES_ROOT/pi/packages/pi-parallel
   $DOTFILES_ROOT/pi/packages/pi-subagents
   $MITSUPI_PACKAGE
+  $CLAUDE_CODE_PACKAGE
 "
 
 log_info "Installing Pi packages..."
