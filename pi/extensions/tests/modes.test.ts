@@ -12,8 +12,8 @@ function harness() {
   const notices: { message: string; type: string }[] = [];
   const changes: string[] = [];
   const state = {
-    model: { provider: "openai", id: "gpt-6.1-sol" } as Model,
-    thinking: "high", idle: true, hasUI: true, available: true, authenticated: true,
+    model: { provider: "claude-code", id: "claude-opus-5-5" } as Model,
+    thinking: "medium", idle: true, hasUI: true, available: true, authenticated: true,
     selection: undefined as string | undefined, options: [] as string[], title: "",
     clamp: undefined as string | undefined, failure: undefined as Error | undefined,
     pending: undefined as Promise<void> | undefined,
@@ -54,26 +54,26 @@ function harness() {
 }
 
 const expected = [
-  ["light", "gpt-6-luna", "max"],
-  ["standard", "gpt-6.1-sol", "medium"],
-  ["default", "gpt-6.1-sol", "high"],
-  ["deep", "gpt-6-astra", "high"],
+  ["light", "claude-code", "claude-sonnet-5-5", "medium"],
+  ["default", "claude-code", "claude-opus-5-5", "medium"],
+  ["high", "claude-code", "claude-opus-5-5", "high"],
+  ["deep", "openai", "gpt-6-astra", "high"],
 ];
-for (const [name, model, thinking] of expected) {
+for (const [name, provider, model, thinking] of expected) {
   test(`/mode ${name} applies exact native model and thinking without changing startup`, async () => {
     const h = harness();
     assert.deepEqual(h.changes, []);
     await h.command(name);
     assert.deepEqual(h.changes, [`model:${model}`, `thinking:${thinking}`]);
-    assert.deepEqual(h.state.model, { provider: "openai", id: model });
+    assert.deepEqual(h.state.model, { provider, id: model });
     assert.equal(h.notices.at(-1)?.type, "info");
   });
 }
-test('cycling keeps both Sol depths and wraps in the original four-preset order', async () => {
+test('cycling keeps both Opus depths and wraps in the four-preset order', async () => {
   const h = harness();
   assert.deepEqual([...h.commands.keys()], ["mode"]);
   assert.deepEqual([...h.shortcuts.keys()], ["ctrl+shift+m", "ctrl+space"]);
-  for (const [name, model, thinking] of [expected[3], ...expected]) {
+  for (const [name, , model, thinking] of [expected[2], expected[3], ...expected]) {
     await h.shortcut();
     assert.equal(h.state.model.id, model);
     assert.equal(h.state.thinking, thinking);
@@ -85,10 +85,14 @@ test('cycling derives current state from native model/thinking, including manual
   h.state.model = { provider: "openai", id: "gpt-6-astra" };
   h.state.thinking = "high";
   await h.shortcut();
-  assert.equal(h.state.model.id, "gpt-6-luna");
+  assert.equal(h.state.model.id, "claude-sonnet-5-5");
   h.state.model = { provider: "other", id: "gpt-6-astra" };
   await h.shortcut();
-  assert.equal(h.state.model.id, "gpt-6-luna");
+  assert.equal(h.state.model.id, "claude-sonnet-5-5");
+  h.state.model = { provider: "claude-code", id: "claude-opus-5-5" };
+  h.state.thinking = "xhigh";
+  await h.shortcut();
+  assert.equal(h.state.model.id, "claude-sonnet-5-5", "unmatched effort is custom, not default");
 });
 test('native selector reports current mode, supports cancellation, and applies a selection', async () => {
   const h = harness();
@@ -125,7 +129,7 @@ test('overlapping requests cannot interleave model and thinking changes', async 
   await h.command("deep");
   release();
   await first;
-  assert.deepEqual(h.changes, ["model:gpt-6-luna", "thinking:max"]);
+  assert.deepEqual(h.changes, ["model:claude-sonnet-5-5", "thinking:medium"]);
   assert.ok(h.notices.some(n => n.type === "warning"));
 });
 test('native thinking clamping is reported instead of claiming exact preset success', async () => {

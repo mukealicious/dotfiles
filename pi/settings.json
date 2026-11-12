@@ -1,7 +1,7 @@
 {
-  "defaultProvider": "openai",
+  "defaultProvider": "claude-code",
   "defaultTools": ["+codemode"],
-  "defaultModel": "gpt-6-astra",
+  "defaultModel": "claude-opus-5-5",
   "defaultThinkingLevel": "medium",
   "skills": [
     "~/.dotfiles/.ai-runtime/pi/skills",

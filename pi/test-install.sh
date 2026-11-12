@@ -154,10 +154,10 @@ grep -Fq '"openai/gpt-6.1-sol"' "$FAST_PACKAGE/extensions/index.ts" || fail 'Sol
 grep -Fq 'priority requested, not server-confirmed' "$FAST_PACKAGE/extensions/index.ts" || fail 'Fast request intent missing'
 [ ! -L "$SETTINGS" ] || fail 'runtime settings are symlinks'
 [ ! -e "$MODES" ] || fail 'retired modes baseline created'
-jq -e '.defaultProvider == "openai" and .defaultModel == "gpt-6-astra" and .defaultTools == ["+codemode"] and ([.packages[] | select(type == "string") | contains("mcp-adapter")] | any | not)' "$SETTINGS" >/dev/null || fail 'native defaults'
+jq -e '.defaultProvider == "claude-code" and .defaultModel == "claude-opus-5-5" and .defaultTools == ["+codemode"] and ([.packages[] | select(type == "string") | contains("mcp-adapter")] | any | not)' "$SETTINGS" >/dev/null || fail 'native defaults'
 jq -e '.packages[] | select(type == "object" and .source == "git:github.com/mitsuhiko/agent-stuff@0865c849befd2021490679f96a8dee58c84ac857") | .themes == [] and .prompts == [] and (.extensions == []) and (.skills | length == 8)' "$SETTINGS" >/dev/null || fail 'Mitsupi curation'
 jq -e '(.skills | index("~/.dotfiles/.agents/skills") != null) and (.skills | index("!**/.dotfiles/.agents/skills/**") != null)' "$SETTINGS" >/dev/null || fail 'skill projection exclusion'
-for extension in notify modes; do
+for extension in notify modes model-restore; do
   [ -L "$HOME/.pi/agent/extensions/$extension.ts" ] || fail "missing $extension"
 done
 [ ! -e "$HOME/.pi/agent/prompts/review.md" ] && [ ! -L "$HOME/.pi/agent/prompts/review.md" ] || fail 'retired review prompt survived'

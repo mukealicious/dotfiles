@@ -1,7 +1,8 @@
 # Pi
 
-One everyday environment at `~/.pi/agent`, using OpenAI's **Sign in with
-ChatGPT**, native MCP, and native codemode. Use `pi` or `pi-print`; retired
+One everyday environment at `~/.pi/agent`, defaulting to Claude Opus 5.5
+through the Claude Code subscription provider, with OpenAI's **Sign in with
+ChatGPT** retained for the `deep` mode. Native MCP and native codemode are enabled. Use `pi` or `pi-print`; retired
 `pi-personal`/`pi-work` wrappers and print aliases have been removed.
 
 ## Reading Map
@@ -80,6 +81,7 @@ explicit isolated native invocation when needed; never commit credentials.
 | `pi/settings.json` | Writable `~/.pi/agent/settings.json` |
 | User model configuration | Writable `~/.pi/agent/models.json`; not created or modified by installation |
 | `pi/extensions/modes.ts` | Four fixed capability presets using native model/thinking APIs |
+| `pi/extensions/model-restore.ts` | Rechecks provider auth once when startup/resume falls back from the intended model |
 | `pi/extensions/`, `pi/themes/`, `pi/prompts/` | Installed resource links |
 | `ai/instructions/`, `pi/instructions/` | Generated `.ai-runtime/pi/AGENTS.md` |
 | `apple-reminders` and `dotfiles-dev` in `ai/skills/` | Generated `.ai-runtime/pi/skills/` |
@@ -156,27 +158,45 @@ remain supported. `/mcp` replaces `/mcp-adapter`.
 
 ## Models and useful extensions
 
-All capability modes use provider `openai`:
+The startup default is `claude-code/claude-opus-5-5` at `medium` thinking.
+Capability modes follow Anthropic's model guidance (Opus 5.5 at `medium` as the
+daily driver; raise effort before moving up a model):
 
-| Mode | Model | Thinking |
-|---|---|---|
-| light | GPT-6 Luna | max |
-| standard | GPT-6.1 Sol | medium |
-| default | GPT-6.1 Sol | high |
-| deep | GPT-6 Astra | high |
+| Mode | Provider | Model | Thinking |
+|---|---|---|---|
+| light | `claude-code` | Claude Sonnet 5.5 | medium |
+| default | `claude-code` | Claude Opus 5.5 | medium |
+| high | `claude-code` | Claude Opus 5.5 | high |
+| deep | `openai` | GPT-6 Astra | high |
 
 `/mode` or `Ctrl+Shift+M` opens the native selector; `/mode deep` applies a preset.
-`Ctrl+Space` cycles light → standard → default → deep. Both Sol depths remain
-separate stops, with Astra reserved for deep. The thin `modes.ts` extension derives the current preset from
-native model/thinking state and never overrides startup or resumed selections.
-Missing models or credentials produce an error rather than provider fallback.
+`Ctrl+Space` cycles light → default → high → deep. The thin `modes.ts` extension
+derives the current preset from native model/thinking state and never overrides
+startup or resumed selections. Missing models or credentials produce an error
+rather than provider fallback.
+
+`deep` stays on OpenAI only while that subscription lasts. Fable 5.2 runs on
+pay-as-you-go usage credits on Claude Pro but is included (up to 50% of weekly
+limits) on Max. After upgrading to Max, change `deep` to
+`claude-code`/`claude-fable-5-2` at `high` and update the mode test. If OpenAI is
+cancelled first, use `claude-code`/`claude-opus-5-5` at `xhigh` instead. Use
+Fable as the planner/orchestrator for major refactors, architecture, and leading
+subagents, with Opus 5.5 as the worker.
+
+**Fallback guard.** Pi decides provider availability from a startup auth check;
+for `claude-code` that is `claude auth status`. One failed or slow check makes
+startup, `/new`, or resume silently fall back to another provider (previously
+Astra). `model-restore.ts` rechecks that provider once on `session_start` and
+restores the session's recorded model (or the default model for a new session),
+or warns which model is active and why. Explicit `--model`/`--models` wins. If the
+warning persists, run `/claude-code-status`.
 
 Pi's native editor replaces Mitsupi's custom editor. Custom mode-border colors,
 `/mode store`, project mode overrides and cross-session prompt-history scanning
 are retired. Existing `modes.json` files and saved conversations remain untouched;
 mode files are no longer read or installed. Native session prompt history remains.
 
-`/fast on|off` is the sole managed priority control; `/mode` only selects model
+`/fast on|off` is the sole managed priority control for OpenAI models; `/mode` only selects model
 and thinking. The fast preference survives model switches; only models in its
 configured supported-model list receive `service_tier: "priority"`. Unsupported
 models stay unchanged. Priority availability and charges depend on OpenAI and
@@ -211,7 +231,7 @@ The experimental **pi-claude-code** provider is pinned to upstream commit
 `d5b5e04c314d3452d357174d16d10dda34daa2d2` (manifest version 0.1.0).
 It uses the installed official `claude` CLI and its existing subscription login;
 credentials remain owned by Claude Code. Pi still executes tools and owns history.
-OpenAI defaults and the four capability modes are unchanged.
+It is the default provider and backs three of the four capability modes.
 
 After installation, restart Pi or run `/reload`, then:
 

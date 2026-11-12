@@ -1,19 +1,26 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
-// Capability only: /fast remains the independent priority-tier control.
+// Capability only: /fast remains the independent OpenAI priority-tier control.
 // Native Pi owns the editor, persistence, model availability and credentials.
+// Ladder follows Anthropic's guidance: raise Opus effort before moving up a model.
+// deep stays on OpenAI until Claude Max includes Fable; then use claude-fable-5-2.
 const modes = [
-  { name: "light", model: "gpt-6-luna", thinking: "max" },
-  { name: "standard", model: "gpt-6.1-sol", thinking: "medium" },
-  { name: "default", model: "gpt-6.1-sol", thinking: "high" },
-  { name: "deep", model: "gpt-6-astra", thinking: "high" },
+  { name: "light", provider: "claude-code", model: "claude-sonnet-5-5", thinking: "medium" },
+  { name: "default", provider: "claude-code", model: "claude-opus-5-5", thinking: "medium" },
+  { name: "high", provider: "claude-code", model: "claude-opus-5-5", thinking: "high" },
+  { name: "deep", provider: "openai", model: "gpt-6-astra", thinking: "high" },
 ] as const;
+
+const loginHint: Record<string, string> = {
+  "claude-code": "run `claude auth login` in a terminal, then /claude-code-status",
+  openai: "use /login openai",
+};
 
 export default function (pi: ExtensionAPI) {
   let applying = false;
 
   function currentIndex(ctx: ExtensionContext): number {
-    return modes.findIndex(mode => ctx.model?.provider === "openai"
+    return modes.findIndex(mode => ctx.model?.provider === mode.provider
       && ctx.model.id === mode.model && pi.getThinkingLevel() === mode.thinking);
   }
 
@@ -28,14 +35,15 @@ export default function (pi: ExtensionAPI) {
       return;
     }
     applying = true;
+    const target = `${mode.provider}/${mode.model}`;
     try {
-      const model = ctx.modelRegistry.find("openai", mode.model);
+      const model = ctx.modelRegistry.find(mode.provider, mode.model);
       if (!model) {
-        ctx.ui.notify(`Mode ${name}: openai/${mode.model} is unavailable.`, "error");
+        ctx.ui.notify(`Mode ${name}: ${target} is unavailable.`, "error");
         return;
       }
       if (!await pi.setModel(model)) {
-        ctx.ui.notify(`Mode ${name}: authentication unavailable for openai/${mode.model}; use /login openai.`, "error");
+        ctx.ui.notify(`Mode ${name}: authentication unavailable for ${target}; ${loginHint[mode.provider]}.`, "error");
         return;
       }
       pi.setThinkingLevel(mode.thinking);
@@ -59,7 +67,7 @@ export default function (pi: ExtensionAPI) {
   }
 
   pi.registerCommand("mode", {
-    description: "Select capability preset: light, standard, default, deep",
+    description: "Select capability preset: light, default, high, deep",
     handler: async (args, ctx) => {
       if (args.trim()) await apply(args.trim(), ctx);
       else await select(ctx);
