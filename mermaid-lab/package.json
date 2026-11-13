@@ -1,0 +1,23 @@
+{
+  "name": "dotfiles-mermaid-lab",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.28.8",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test *.test.mjs",
+    "render": "node render-pele.mjs",
+    "compare": "node compare-renderers.mjs",
+    "gallery": "node make-gallery.mjs"
+  },
+  "dependencies": {
+    "pele": "1.10.0"
+  },
+  "devDependencies": {
+    "katex": "0.19.1",
+    "mermaid": "12.1.0",
+    "playwright-core": "1.64.1"
+  }
+}
