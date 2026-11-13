@@ -42,5 +42,10 @@ if [ -z "$npm_prefix" ] || [ ! -x "$qmd_bin" ]; then
   exit 127
 fi
 
+# qmd starts with `#!/usr/bin/env node`. mise exec appends its Node after
+# existing PATH entries, so another Node (for example Homebrew's) can win and
+# fail to load better-sqlite3. Put the pinned Node first.
+node_bin_dir="$(mise where -C "$DOTFILES_ROOT" "node@$NODE_VERSION")/bin"
+
 # shellcheck disable=SC2016 # Inner bash expands $1/$@ after mise has loaded the pinned Node env.
-exec mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- bash -c 'cd "$1" || exit 1; shift; exec "$@"' _ "$run_dir" "$qmd_bin" "$@"
+exec mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- bash -c 'cd "$1" || exit 1; PATH="$2:$PATH"; shift 2; exec "$@"' _ "$run_dir" "$node_bin_dir" "$qmd_bin" "$@"

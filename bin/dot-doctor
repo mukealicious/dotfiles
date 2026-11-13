@@ -113,6 +113,29 @@ if command -v mise >/dev/null 2>&1; then
   check_mise_tool_selected bun
 fi
 
+# mise is the only Node owner. A Homebrew formula that depends on node installs
+# a second Node at /opt/homebrew/bin/node, which can win on stale PATHs.
+if command -v brew >/dev/null 2>&1; then
+  brew_node_users="$(brew uses --installed node 2>/dev/null | tr '\n' ' ')"
+  if brew list --formula node >/dev/null 2>&1; then
+    fail "Homebrew installs a second Node${brew_node_users:+ for: $brew_node_users}"
+    info "Fix: move each JS CLI to mise.toml as an npm: tool, then brew uninstall it and node"
+  else
+    pass "Homebrew has no Node formula"
+  fi
+fi
+
+# fish_add_path without --global writes the universal fish_user_paths, which
+# every running fish session inherits and reorders ahead of mise.
+if command -v fish >/dev/null 2>&1; then
+  if fish -c 'set -qU fish_user_paths' 2>/dev/null; then
+    fail "fish has a universal fish_user_paths"
+    info "Fix: use fish_add_path --global --path, then run: fish -c 'set -Ue fish_user_paths'"
+  else
+    pass "fish has no universal fish_user_paths"
+  fi
+fi
+
 check_dotfiles_command ni
 check_dotfiles_command yarn
 

@@ -40,9 +40,17 @@ backend = "npm:@antfu/ni"
 version = "2.0.8"
 backend = "npm:@flue/cli"
 
+[[tools."npm:@google/gemini-cli"]]
+version = "0.67.0"
+backend = "npm:@google/gemini-cli"
+
 [[tools."npm:cf"]]
 version = "1.0.0-beta.20"
 backend = "npm:cf"
+
+[[tools."npm:neonctl"]]
+version = "9.1.0"
+backend = "npm:neonctl"
 
 [[tools."npm:opensrc"]]
 version = "0.7.3"
@@ -54,6 +62,10 @@ allow_builds = '["opensrc"]'
 [[tools."npm:portless"]]
 version = "0.15.13"
 backend = "npm:portless"
+
+[[tools."npm:svgo"]]
+version = "4.1.0"
+backend = "npm:svgo"
 
 [[tools.pnpm]]
 version = "11.28.10"

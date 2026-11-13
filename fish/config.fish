@@ -11,8 +11,12 @@ set -gx GIT_EDITOR "editor --wait"
 set -gx PROJECTS ~/Code
 set -gx DOTFILES ~/.dotfiles
 
-# PATH
-fish_add_path --move ~/.dotfiles/bin ~/.bun/bin ~/.local/bin
+# PATH. Always pass --global --path: plain fish_add_path writes the universal
+# fish_user_paths, which every running fish session inherits and reorders.
+# Bun and ~/.local globals go last, so mise runtimes and Homebrew win. The loop
+# below puts ~/.dotfiles/bin first. Do not set mise activate_aggressive: its
+# hook re-promotes mise runtimes above ~/.dotfiles/bin.
+fish_add_path --global --append --path ~/.bun/bin ~/.local/bin
 
 # Local secrets (not in git)
 test -f ~/.config/fish/local.fish; and source ~/.config/fish/local.fish
@@ -24,9 +28,8 @@ if command -q mise
 end
 
 # Dotfiles wrappers intentionally sit above runtime package bins. Do not call
-# fish_add_path here: it would re-promote every persistent fish_user_paths entry
-# (including Homebrew) above mise. Rebuild PATH locally so wrappers win while
-# mise remains the runtime/package-manager owner.
+# fish_add_path here: it would re-promote Homebrew above mise. Rebuild PATH
+# locally so wrappers win while mise remains the runtime/package-manager owner.
 set -l dotfiles_bin ~/.dotfiles/bin
 set -l runtime_path
 for path_entry in $PATH

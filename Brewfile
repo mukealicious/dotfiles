@@ -14,11 +14,12 @@ brew "opencode"                  # AI coding agent for terminal
 
 # Languages & Version Management
 brew "mise"                      # Owns Node, pnpm, Bun, and versioned JS CLIs
+# Do not add Homebrew formulas that depend on `node` (for example gemini-cli,
+# neonctl, or svgo). They install a second Node; add them to mise.toml as npm: tools.
 
 # Databases & Services
 brew "postgresql@17"
 brew "redis"
-brew "neonctl"                   # Neon serverless Postgres CLI
 
 # Utilities
 brew "tree"                      # Display directory tree structure
@@ -44,7 +45,6 @@ brew "hunk"                      # Review-first terminal diff viewer
 # Image Optimization
 brew "oxipng"                    # Fast PNG optimizer in Rust
 brew "pngquant"                  # PNG lossy compression
-brew "svgo"                      # SVG optimizer
 
 # Fast Python tools
 brew "uv"                        # Fast Python package manager
