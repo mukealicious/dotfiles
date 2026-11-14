@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Dotfiles policy wrapper: plain `surf` targets the dedicated Brave Beta lane.
+# Dotfiles policy wrapper: plain `surf` targets Microsoft Edge.
 # Use surf-edge for Microsoft Edge, and surf/install.sh for native-host setup.
 
 set -euo pipefail
@@ -10,9 +10,9 @@ case "${1:-}" in
   install|uninstall)
     echo "This dotfiles setup manages Surf native hosts with per-browser sockets." >&2
     echo "Use: $DOTFILES_ROOT/surf/install.sh" >&2
-    echo "For browser control, use surf (Brave default), surf-brave, or surf-edge." >&2
+    echo "For browser control, use surf (Edge default) or surf-edge." >&2
     exit 64
     ;;
 esac
 
-exec "$DOTFILES_ROOT/surf/bin/surf-lane" brave "$@"
+exec "$DOTFILES_ROOT/surf/bin/surf-lane" edge "$@"

@@ -55,7 +55,7 @@ brew "b2-tools"                  # Backblaze B2 command-line tool
 
 # Casks
 cask "vercel"                    # Vercel CLI for deployment and development
-cask "brave-browser@beta"        # Dedicated Surf browser; isolates automation from personal Brave updates
+cask "microsoft-edge"           # Surf agent browser; personal Brave remains separate
 cask "codex"                     # OpenAI's coding agent
 cask "claude-code"               # Claude AI coding assistant CLI
 cask "zed"                       # Primary code editor

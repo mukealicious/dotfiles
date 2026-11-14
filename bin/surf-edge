@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Surf lane for work/corporate browsing in Microsoft Edge.
+# Surf lane for all agent browsing in Microsoft Edge.
 
 set -euo pipefail
 

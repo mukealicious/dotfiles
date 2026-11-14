@@ -287,7 +287,7 @@ fi
 
 header "Surf browser lanes"
 
-for wrapper in surf surf-brave surf-edge; do
+for wrapper in surf surf-edge; do
   if [ -x "$DOTFILES_ROOT/bin/$wrapper" ]; then
     pass "$wrapper wrapper"
   else
@@ -378,17 +378,15 @@ check_surf_manifest() {
 
 case "$(uname -s)" in
   Darwin)
-    if [ -x "/Applications/Brave Browser Beta.app/Contents/MacOS/Brave Browser Beta" ]; then
-      pass "Brave Browser Beta dedicated Surf app"
+    if [ -x "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" ]; then
+      pass "Microsoft Edge Surf app"
     else
-      fail "Brave Browser Beta dedicated Surf app missing"
-      info "Fix: brew install --cask brave-browser@beta"
+      fail "Microsoft Edge Surf app missing"
+      info "Fix: brew install --cask microsoft-edge"
     fi
-    check_surf_manifest "Brave Beta" "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-brave.sock"
     check_surf_manifest "Microsoft Edge" "$HOME/Library/Application Support/Microsoft Edge/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-edge.sock"
     ;;
   Linux)
-    check_surf_manifest "Brave" "$HOME/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-brave.sock"
     check_surf_manifest "Microsoft Edge" "$HOME/.config/microsoft-edge/NativeMessagingHosts/surf.browser.host.json" "/tmp/surf-edge.sock"
     ;;
   *)

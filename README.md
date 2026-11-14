@@ -55,7 +55,7 @@ Each directory is a self-contained "topic" managing one tool or concern:
 | `pnpm/` | Default JavaScript package-manager policy and aliases |
 | `mise/` | Canonical JS toolchain versions, lockfile, and native Node CLIs such as QMD |
 | `pi/` | Pi coding agent config, extensions |
-| `surf/` | Surf browser lanes using dedicated Brave Beta/Edge agent control |
+| `surf/` | Surf browser automation using Microsoft Edge |
 | `remctl/` | Pinned RemCTL install and Apple Reminders agent runtime |
 | `ripgrep/` | Ripgrep config and environment setup |
 | `python/` | Python tools via uv |

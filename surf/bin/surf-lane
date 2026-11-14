@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Run surf-cli against a specific browser lane/socket.
-# This prevents Brave and Edge from competing for Surf's default /tmp/surf.sock.
+# Edge uses /tmp/surf-edge.sock instead of Surf's shared default socket.
 
 set -euo pipefail
 
 if [ "$#" -lt 1 ]; then
-  echo "Usage: surf-lane <brave|edge> [surf args...]" >&2
+  echo "Usage: surf-lane edge [surf args...]" >&2
   exit 64
 fi
 
@@ -13,14 +13,6 @@ lane="$1"
 shift
 
 case "$lane" in
-  brave)
-    socket="/tmp/surf-brave.sock"
-    # Use a separate app bundle, not a second process from the user's stable
-    # Brave bundle. Sparkle can replace that shared bundle while stable Brave
-    # is running, after which new human tabs cannot launch renderers.
-    browser_app="Brave Browser Beta"
-    browser_profile="Default"
-    ;;
   edge)
     socket="/tmp/surf-edge.sock"
     browser_app="Microsoft Edge"
@@ -28,7 +20,7 @@ case "$lane" in
     ;;
   *)
     echo "Unknown Surf lane: $lane" >&2
-    echo "Expected: brave or edge" >&2
+    echo "Expected: edge" >&2
     exit 64
     ;;
 esac
@@ -59,26 +51,6 @@ if [ -z "$surf_bin" ] || [ ! -x "$surf_bin" ]; then
   exit 127
 fi
 
-managed_extension_path=""
-browser_user_data=""
-if [ "$lane" = "brave" ]; then
-  case "$(uname -s)" in
-    Darwin)
-      managed_extension_path="$HOME/Library/Application Support/surf-cli-dotfiles/brave-agent-extension"
-      browser_user_data="$HOME/Library/Application Support/surf-cli-dotfiles/brave-user-data"
-      ;;
-    Linux)
-      managed_extension_path="$HOME/.local/share/surf-cli-dotfiles/brave-agent-extension"
-      browser_user_data="$HOME/.local/share/surf-cli-dotfiles/brave-user-data"
-      ;;
-  esac
-fi
-
-if [ "${1:-}" = "extension-path" ] && [ -n "$managed_extension_path" ]; then
-  printf '%s\n' "$managed_extension_path"
-  exit 0
-fi
-
 socket_ready() {
   mise exec -C "$DOTFILES_ROOT" "node@$NODE_VERSION" -- node -e '
     const net = require("node:net");
@@ -94,7 +66,7 @@ case "${1:-}" in
   install|uninstall)
     echo "This dotfiles setup manages Surf native hosts with per-browser sockets." >&2
     echo "Use: $DOTFILES_ROOT/surf/install.sh" >&2
-    echo "For browser control, use surf (Brave default), surf-brave, or surf-edge." >&2
+    echo "For browser control, use surf (Edge default) or surf-edge." >&2
     exit 64
     ;;
 esac
@@ -114,18 +86,7 @@ export SURF_SOCKET="$socket"
 if [ "$needs_socket" = true ] && [ "$(uname -s)" = "Darwin" ] && ! socket_ready; then
   browser_binary="/Applications/$browser_app.app/Contents/MacOS/$browser_app"
   if [ -x "$browser_binary" ]; then
-    browser_args=(--profile-directory="$browser_profile")
-    if [ -n "$browser_user_data" ]; then
-      browser_args+=(--user-data-dir="$browser_user_data")
-    fi
-    if [ -n "$managed_extension_path" ] && [ -d "$managed_extension_path" ]; then
-      browser_args+=(--load-extension="$managed_extension_path")
-    fi
-    "$browser_binary" "${browser_args[@]}" >/dev/null 2>&1 &
-  elif [ "$lane" = "brave" ]; then
-    echo "Surf's Brave lane requires the dedicated Brave Browser Beta app." >&2
-    echo "Fix: brew install --cask brave-browser@beta" >&2
-    exit 127
+    "$browser_binary" --profile-directory="$browser_profile" >/dev/null 2>&1 &
   else
     open -g -a "$browser_app" --args --profile-directory="$browser_profile" >/dev/null 2>&1 || true
   fi

@@ -4,8 +4,7 @@
 # Install Surf browser lane native hosts.
 #
 # This dotfiles setup intentionally avoids Surf's single default /tmp/surf.sock.
-# Brave and Edge get separate native-host wrappers and sockets so agents target
-# the intended browser consistently.
+# Edge uses its own native-host wrapper and socket; personal Brave stays separate.
 
 set -euo pipefail
 
@@ -64,18 +63,12 @@ fi
 case "$(uname -s)" in
   Darwin)
     WRAPPER_DIR="$HOME/Library/Application Support/surf-cli-dotfiles"
-    # Brave's macOS build resolves user-level native hosts through Chromium's
-    # Google Chrome path, even though its profile data lives under BraveSoftware.
-    brave_manifest_dir="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
-    brave_extension_path="$WRAPPER_DIR/brave-agent-extension"
-    brave_user_data_dir="$WRAPPER_DIR/brave-user-data"
+    retired_manifest="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/surf.browser.host.json"
     edge_manifest_dir="$HOME/Library/Application Support/Microsoft Edge/NativeMessagingHosts"
     ;;
   Linux)
     WRAPPER_DIR="$HOME/.local/share/surf-cli-dotfiles"
-    brave_manifest_dir="$HOME/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts"
-    brave_extension_path="$WRAPPER_DIR/brave-agent-extension"
-    brave_user_data_dir="$WRAPPER_DIR/brave-user-data"
+    retired_manifest="$HOME/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts/surf.browser.host.json"
     edge_manifest_dir="$HOME/.config/microsoft-edge/NativeMessagingHosts"
     ;;
   *)
@@ -84,21 +77,19 @@ case "$(uname -s)" in
     ;;
 esac
 
-sync_managed_extension() {
-  local source="$1"
-  local destination="$2"
-
-  "$NODE_PATH" - "$source" "$destination" <<'NODE'
+# Retire only our old Brave native host; preserve browser profiles and foreign hosts.
+"$NODE_PATH" - "$retired_manifest" "$WRAPPER_DIR/brave-host-wrapper.sh" <<'NODE'
 const fs = require('node:fs');
-const [source, destination] = process.argv.slice(2);
-fs.rmSync(destination, { recursive: true, force: true });
-fs.cpSync(source, destination, { recursive: true });
-NODE
+const [manifestPath, wrapperPath] = process.argv.slice(2);
+if (fs.existsSync(manifestPath) && !fs.lstatSync(manifestPath).isSymbolicLink()) {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  if (manifest.name === 'surf.browser.host' && manifest.path === wrapperPath &&
+      manifest.description?.includes('dotfiles managed')) {
+    fs.unlinkSync(manifestPath);
+    console.log('  Retired dotfiles-managed Brave Surf native host');
+  }
 }
-
-sync_managed_extension "$EXTENSION_PATH" "$brave_extension_path"
-log_success "Updated managed Brave agent extension"
-log_hint "Extension path: $brave_extension_path"
+NODE
 
 write_wrapper() {
   local lane="$1"
@@ -152,6 +143,27 @@ find_extension_id() {
   "$NODE_PATH" "$DOTFILES_ROOT/surf/scripts/find-extension-id.mjs" "$browser" "$extension_path" "$browser_root" 2>"$err_file"
 }
 
+# Edge may omit unpacked extensions from readable preferences. Retain a valid
+# ID from our existing host instead of leaving its Node path stale on upgrades.
+existing_extension_id() {
+  "$NODE_PATH" - "$1/surf.browser.host.json" "$WRAPPER_DIR/$2-host-wrapper.sh" <<'NODE'
+const fs = require('node:fs');
+try {
+  const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+  const origins = manifest.allowed_origins;
+  if (manifest.name !== 'surf.browser.host' || manifest.type !== 'stdio' ||
+      manifest.path !== process.argv[3] ||
+      !manifest.description?.includes('dotfiles managed') ||
+      !Array.isArray(origins) || origins.length !== 1) process.exit(1);
+  const match = /^chrome-extension:\/\/([a-p]{32})\/$/.exec(origins[0]);
+  if (!match) process.exit(1);
+  console.log(match[1]);
+} catch {
+  process.exit(1);
+}
+NODE
+}
+
 install_lane() {
   local browser="$1"
   local label="$2"
@@ -164,7 +176,8 @@ install_lane() {
   err_file="$(mktemp)"
 
   local extension_id
-  if extension_id="$(find_extension_id "$browser" "$extension_path" "$browser_root" "$err_file")"; then
+  if extension_id="$(find_extension_id "$browser" "$extension_path" "$browser_root" "$err_file")" ||
+     extension_id="$(existing_extension_id "$manifest_dir" "$browser")"; then
     local wrapper
     wrapper="$(write_wrapper "$browser" "$socket")"
     write_manifest "$manifest_dir" "$extension_id" "$wrapper" "$label"
@@ -174,9 +187,7 @@ install_lane() {
     while IFS= read -r line; do
       [ -n "$line" ] && log_hint "$line"
     done < "$err_file"
-    if [ "$browser" = "brave" ]; then
-      log_hint "First setup: run surf-brave tab.list once, then rerun this installer"
-    fi
+    log_hint "Load the unpacked extension in edge://extensions, then rerun this installer"
   fi
 
   rm -f "$err_file"
@@ -186,8 +197,7 @@ log_info "Setting up Surf browser lanes"
 log_hint "Extension path: $EXTENSION_PATH"
 log_hint "Do not use 'surf install' for these lanes; this installer writes per-browser sockets."
 
-install_lane "brave" "Brave Beta agent profile" "/tmp/surf-brave.sock" "$brave_manifest_dir" "$brave_extension_path" "$brave_user_data_dir"
 install_lane "edge" "Microsoft Edge" "/tmp/surf-edge.sock" "$edge_manifest_dir" "$EXTENSION_PATH" ""
 
 log_success "Surf lane setup complete"
-log_hint "Restart any browser whose native host was updated, then test with: surf-brave tab.list or surf-edge tab.list"
+log_hint "Restart any browser whose native host was updated, then test with: surf tab.list"
