@@ -1,8 +1,8 @@
 # Pi
 
 One everyday environment at `~/.pi/agent`, defaulting to Claude Opus 5.5
-through the Claude Code subscription provider, with OpenAI's **Sign in with
-ChatGPT** retained for the `deep` mode. Native MCP and native codemode are enabled. Use `pi` or `pi-print`; retired
+through the Claude Code subscription provider (Claude Max), with Fable 5.2 for
+the `deep` mode. Native MCP and native codemode are enabled. Use `pi` or `pi-print`; retired
 `pi-personal`/`pi-work` wrappers and print aliases have been removed.
 
 ## Reading Map
@@ -167,7 +167,7 @@ daily driver; raise effort before moving up a model):
 | light | `claude-code` | Claude Sonnet 5.5 | medium |
 | default | `claude-code` | Claude Opus 5.5 | medium |
 | high | `claude-code` | Claude Opus 5.5 | high |
-| deep | `openai` | GPT-6 Astra | high |
+| deep | `claude-code` | Claude Fable 5.2 | high |
 
 `/mode` or `Ctrl+Shift+M` opens the native selector; `/mode deep` applies a preset.
 `Ctrl+Space` cycles light → default → high → deep. The thin `modes.ts` extension
@@ -175,12 +175,9 @@ derives the current preset from native model/thinking state and never overrides
 startup or resumed selections. Missing models or credentials produce an error
 rather than provider fallback.
 
-`deep` stays on OpenAI only while that subscription lasts. Fable 5.2 runs on
-pay-as-you-go usage credits on Claude Pro but is included (up to 50% of weekly
-limits) on Max. After upgrading to Max, change `deep` to
-`claude-code`/`claude-fable-5-2` at `high` and update the mode test. If OpenAI is
-cancelled first, use `claude-code`/`claude-opus-5-5` at `xhigh` instead. Use
-Fable as the planner/orchestrator for major refactors, architecture, and leading
+Fable 5.2 is included on Claude Max (up to 50% of weekly limits); on Pro it
+would bill pay-as-you-go usage credits. If the plan drops back to Pro, change
+`deep` to `claude-code`/`claude-opus-5-5` at `xhigh`. Use Fable as the planner/orchestrator for major refactors, architecture, and leading
 subagents, with Opus 5.5 as the worker.
 
 **Fallback guard.** Pi decides provider availability from a startup auth check;

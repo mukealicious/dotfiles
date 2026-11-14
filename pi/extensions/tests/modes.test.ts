@@ -57,7 +57,7 @@ const expected = [
   ["light", "claude-code", "claude-sonnet-5-5", "medium"],
   ["default", "claude-code", "claude-opus-5-5", "medium"],
   ["high", "claude-code", "claude-opus-5-5", "high"],
-  ["deep", "openai", "gpt-6-astra", "high"],
+  ["deep", "claude-code", "claude-fable-5-2", "high"],
 ];
 for (const [name, provider, model, thinking] of expected) {
   test(`/mode ${name} applies exact native model and thinking without changing startup`, async () => {
@@ -82,11 +82,11 @@ test('cycling keeps both Opus depths and wraps in the four-preset order', async 
 });
 test('cycling derives current state from native model/thinking, including manual changes', async () => {
   const h = harness();
-  h.state.model = { provider: "openai", id: "gpt-6-astra" };
+  h.state.model = { provider: "claude-code", id: "claude-fable-5-2" };
   h.state.thinking = "high";
   await h.shortcut();
   assert.equal(h.state.model.id, "claude-sonnet-5-5");
-  h.state.model = { provider: "other", id: "gpt-6-astra" };
+  h.state.model = { provider: "other", id: "claude-fable-5-2" };
   await h.shortcut();
   assert.equal(h.state.model.id, "claude-sonnet-5-5");
   h.state.model = { provider: "claude-code", id: "claude-opus-5-5" };
@@ -102,7 +102,7 @@ test('native selector reports current mode, supports cancellation, and applies a
   assert.deepEqual(h.changes, []);
   h.state.selection = "deep";
   await h.shortcut("ctrl+shift+m");
-  assert.equal(h.state.model.id, "gpt-6-astra");
+  assert.equal(h.state.model.id, "claude-fable-5-2");
   assert.equal(h.state.thinking, "high");
 });
 for (const scenario of ["unknown", "store", "unavailable", "unauthenticated", "busy", "exception"]) {

@@ -3,17 +3,16 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 // Capability only: /fast remains the independent OpenAI priority-tier control.
 // Native Pi owns the editor, persistence, model availability and credentials.
 // Ladder follows Anthropic's guidance: raise Opus effort before moving up a model.
-// deep stays on OpenAI until Claude Max includes Fable; then use claude-fable-5-2.
+// deep uses Fable (included on Claude Max) as planner/orchestrator.
 const modes = [
   { name: "light", provider: "claude-code", model: "claude-sonnet-5-5", thinking: "medium" },
   { name: "default", provider: "claude-code", model: "claude-opus-5-5", thinking: "medium" },
   { name: "high", provider: "claude-code", model: "claude-opus-5-5", thinking: "high" },
-  { name: "deep", provider: "openai", model: "gpt-6-astra", thinking: "high" },
+  { name: "deep", provider: "claude-code", model: "claude-fable-5-2", thinking: "high" },
 ] as const;
 
 const loginHint: Record<string, string> = {
   "claude-code": "run `claude auth login` in a terminal, then /claude-code-status",
-  openai: "use /login openai",
 };
 
 export default function (pi: ExtensionAPI) {
